@@ -399,6 +399,36 @@ DefineUsage[
 
 
 
+(* ::Subsection::Closed:: *)
+(*UploadValidPackets*)
+
+
+DefineUsage[
+	UploadValidPackets,
+	{
+		BasicDefinitions -> {
+			{"UploadValidPackets[packets]", "uploadResults", "uploads valid 'packets' to the database and returns a message about any invalid packets."}
+		},
+		MoreInformation -> {
+			"Packets are validated using ValidUploadQ before upload and only valid packets are uploaded.",
+			"UploadValidPackets should only be used when each packet is fully independent of all other packets to ensure the database is left in a consistent state.",
+			"If all valid packets pass ValidUploadQ, they are uploaded in bulk."
+		},
+		Input :> {
+			{"packets", {PacketP[]..}, "A list of packets to upload."}
+		},
+		Output :> {
+			{"uploadResults", {ObjectReferenceP[]...} | {}, "The new or updated objects."}
+		},
+		SeeAlso -> {
+			"Upload",
+			"ValidUploadQ"
+		},
+		Author -> {"hayley"}
+	}
+];
+
+
 (* ::Subsection:: *)
 (*optionsToTable*)
 
@@ -424,5 +454,35 @@ DefineUsage[
 			"SafeOptions"
 		},
 		Author->{"hayley", "mohamad.zandian"}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*PreferredBeaker*)
+
+
+DefineUsage[PreferredBeaker,
+	{
+		BasicDefinitions -> {
+			{"PreferredBeaker[volume]","container","returns the smallest model of beaker which can hold the provided 'volume'."}
+		},
+		AdditionalDefinitions -> {
+			{"PreferredContainer[All]","containers","returns all beakers that could be chosen for the given 'model' for any volume."}
+		},
+		MoreInformation -> {
+			"The fields EngineDefault is used to determine only beakers with EngineDefault->True or all beakers should be returned."
+		},
+		Input :> {
+			{"volume",GreaterP[0 Milliliter],"The contents' volume to be contained in a preferred model container."}
+		},
+		Output :> {
+			{"container",Model[Container],"The beaker model best suited to contain the input volume."},
+			{"containers",{Model[Container]..},"All beaker models compatible with the given option values."}
+		},
+		SeeAlso -> {
+			"PreferredContainer",
+			"TransferDevices"
+		},
+		Author -> {"xu.yi"}
 	}
 ];

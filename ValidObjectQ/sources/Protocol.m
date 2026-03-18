@@ -4227,7 +4227,6 @@ validProtocolKarlFischerTitrationQTests[packet : PacketP[Object[Protocol, KarlFi
 	]
 
 }];
-
 (* ::Subsection::Closed:: *)
 (*validProtocolIRSpectroscopyQTests*)
 
@@ -9873,6 +9872,17 @@ validProtocolPlateMediaTests[packet:PacketP[Object[Protocol,PlateMedia]]]:={
 	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolWaterPreparationQTests*)
+
+validProtocolWaterPreparationQTests[packet:PacketP[Object[Protocol,WaterPreparation]]]:={
+	NullFieldTest[packet,{
+		SamplesIn,
+		ContainersIn,
+		Amounts
+	}]
+};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -9996,6 +10006,7 @@ registerValidQTestFunction[Object[Protocol, Transfer],validProtocolTransferQTest
 registerValidQTestFunction[Object[Protocol, Evaporate],validProtocolEvaporateQTests];
 registerValidQTestFunction[Object[Protocol, Uncover],validProtocolUncoverQTests];
 registerValidQTestFunction[Object[Protocol, Western],validProtocolWesternQTests];
+registerValidQTestFunction[Object[Protocol, WaterPreparation], validProtocolWaterPreparationQTests];
 registerValidQTestFunction[Object[Protocol, CapillaryELISA],validProtocolCapillaryELISAQTests];
 registerValidQTestFunction[Object[Protocol, CircularDichroism],validProtocolCircularDichroismQTests];
 registerValidQTestFunction[Object[Protocol, CountLiquidParticles],validProtocolCountLiquidParticlesQTests];

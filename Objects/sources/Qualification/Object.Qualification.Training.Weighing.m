@@ -372,6 +372,15 @@ DefineObjectType[Object[Qualification, Training, Weighing], {
 			Category -> "Weighing Skills",
 			Developer -> True
 		},
+		TargetAmountTareWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 * Milligram],
+			Units -> Milligram,
+			Description -> "The corrected weight of the empty container before measuring TargetAmount. This value is calculated from EmptyContainerWeight, TareWeight measured before EmptyContainerWeight, and TareWeight measured before TargetAmount.",
+			Category -> "Weighing Skills",
+			Developer -> True
+		},
 		ValidDestinationTareWeights -> {
 			Format -> Multiple,
 			Class -> Boolean,
@@ -440,6 +449,55 @@ DefineObjectType[Object[Qualification, Training, Weighing], {
 			],
 			Description -> "The objects to discard at the end of the protocol.",
 			Category -> "General",
+			Developer -> True
+		},
+		WaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		AlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The wipes used to wipe off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		BalanceCleaningBrush -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The brush used to dust off any stray material from the balance.",
+			Category -> "Cleaning"
+		},
+		ReplaceAlcoholBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if alcohol based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		ReplaceWaterBasedCleaningWipes -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if water based cleaning wipes has been emptied out and needs replacement.",
+			Category -> "Cleaning",
 			Developer -> True
 		}
 	}

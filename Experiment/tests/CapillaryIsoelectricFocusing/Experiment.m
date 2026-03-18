@@ -2196,9 +2196,10 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "InjectionTableReplicatesSpecified","If both an injectionTable and number of replicates are specified, raise an error:"},
+		Example[{Messages, "InjectionTableNumberOfReplicatesConflict","If the number of replicates in the InjectionTable conflicts with the NumberOfReplicates option, raise an error:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],SampleVolume->5Microliter,
-				Blanks -> Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],BlankVolume->30Microliter,
+				Blanks -> {Model[Sample, "1% SDS in 100mM Tris, pH 9.5"], Model[Sample, "1% SDS in 100mM Tris, pH 9.5"]},
+				BlankVolume->30Microliter,
 				NumberOfReplicates->2,
 				InjectionTable ->
 					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter},
@@ -2207,16 +2208,16 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 				Output->Options],
 			_List,
 			Messages:>{
-				Error::InjectionTableReplicatesSpecified,
+				Error::InjectionTableNumberOfReplicatesConflict,
 				Error::InvalidOption
 			}
 		],
 		Example[{Messages, "InjectionTableVolumeZero","If an injectionTable is specified with volume 0 microliter, raise an error:"},
 			ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],SampleVolume->5Microliter,
 				InjectionTable ->
-					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter},
+					{{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],0Microliter},
 						{Sample, Object[Sample, "ExperimentCIEF Test sample 1 (100 uL) "<>$SessionUUID],5Microliter},
-						{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],0Microliter}},
+						{Blank, Model[Sample, "1% SDS in 100mM Tris, pH 9.5"],30Microliter}},
 				Output->Options],
 			_List,
 			Messages:>{
@@ -3060,14 +3061,14 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 		],
 		(* centrifuge options *)
 		Example[{Options, Centrifuge, "Set the Centrifuge option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				Centrifuge -> True, Output -> Options];
 			Lookup[options, Centrifuge],
 			True,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeInstrument, "Set the CentrifugeInstrument option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				Centrifuge->True,CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
 				CentrifugeIntensity -> 1000*RPM,CentrifugeInstrument -> Model[Instrument, Centrifuge, "Avanti J-15R"],
 				Output -> Options];
@@ -3076,16 +3077,34 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
-				CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
-				CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1000 RPM,
+				Output -> Options
+			];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
+				CentrifugeTime -> 40 Minute,
+				CentrifugeTemperature -> 10 Celsius,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
 			40*Minute,
@@ -3093,7 +3112,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeTemperature, "Set the CentrifugeTemperature option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius, Output -> Options];
 			Lookup[options, CentrifugeTemperature],
 			10*Celsius,
@@ -3101,7 +3120,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeAliquot, "Set the CentrifugeAliquot option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				Centrifuge->True,CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
 				CentrifugeIntensity -> 1000*RPM, CentrifugeAliquot -> 1Milliliter, Output -> Options];
 			Lookup[options, CentrifugeAliquot],
@@ -3118,7 +3137,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeAliquotDestinationWell, "Set the CentrifugeAliquotDestinationWell option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				Centrifuge->True,CentrifugeTime -> 40*Minute, CentrifugeTemperature -> 10 Celsius,
 				CentrifugeIntensity -> 1000*RPM, CentrifugeAliquot -> 1Milliliter,CentrifugeAliquotContainer -> Model[Container,Vessel,"1.5mL Tube with 2mL Tube Skirt"],
 				CentrifugeAliquotDestinationWell -> "A1", Output -> Options];
@@ -3137,14 +3156,14 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, FiltrationType, "Set the FiltrationType option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FiltrationType -> Syringe, Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options}
 		],
 		Example[{Options, FilterInstrument, "Set the FilterInstrument option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"],
 				Output -> Options];
 			Lookup[options, FilterInstrument],
@@ -3152,7 +3171,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, Filter, "Set the Filter option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				Filter -> Model[Item, Filter, "id:n0k9mG8Kqrwp"],
 				Output -> Options];
 			Lookup[options, Filter],
@@ -3173,21 +3192,21 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterMaterial, "Set the PrefilterMaterial option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FilterMaterial -> PES, PrefilterMaterial -> Null, AliquotAmount -> 100*Microliter, Output -> Options];
 			Lookup[options, PrefilterMaterial],
 			Null,
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterPoreSize, "Set the PrefilterPoreSize option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FilterMaterial -> PTFE, PrefilterPoreSize -> 1.*Micrometer, AliquotAmount -> 100*Microliter, Output -> Options];
 			Lookup[options, PrefilterPoreSize],
 			1.*Micrometer,
 			Variables :> {options}
 		],
 		Example[{Options, FilterSyringe, "Set the FilterSyringe option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				Output -> Options];
 			Lookup[options, FilterSyringe],
@@ -3195,7 +3214,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "Set the FilterHousing option :"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 				FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
@@ -3273,12 +3292,27 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "Set the AliquotAmount option:"},
-			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
-				AliquotAmount -> 0.08*Milliliter, Output -> Options];
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08 Milliliter,
+				Output -> Options
+			];
 			Lookup[options, AliquotAmount],
-			0.08*Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCapillaryIsoelectricFocusing[
+				Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentCapillaryIsoelectricFocusing[Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
@@ -3498,7 +3532,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Object[Sample,"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test reagent "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF IgG Standard "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+					Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test sample 4 (250 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test sample 5 (100 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF model-less Test sample 5 (100 uL) "<>$SessionUUID],
@@ -3544,11 +3578,11 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Upload[<|Object->Object[Instrument, ProteinCapillaryElectrophoresis, "Maurice"], Replace[Contents]->{}|>]
 				];
 
-				sampleModel=UploadSampleModel["Unit test Model for ExperimentCIEF (deprecated) "<>$SessionUUID,
-					Composition->{
-						{100 VolumePercent,
-							Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
+				sampleModel=UploadSampleModel[
+					{
+						{100 VolumePercent, Model[Molecule,Protein,"Unknown Protein - 10 KDa"]}
 					},
+					Name -> "Unit test Model for ExperimentCIEF (deprecated) "<>$SessionUUID,
 					SingleUse->True,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -3556,11 +3590,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					ShelfLife->12 Month,
 					UnsealedShelfLife->9 Month
 				];
-				sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3571,11 +3606,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel2=UploadSampleModel["10 mg/mL bActin for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel2=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "10 mg/mL bActin for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3586,11 +3622,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel3=UploadSampleModel[ "0.24 mM bActin "<>$SessionUUID,
-					Composition->{
+				sampleModel3=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{0.24 Millimolar,Model[Molecule,Protein,"BActin"]}
 					},
+					Name -> "0.24 mM bActin "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -3601,11 +3638,12 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					BiosafetyLevel->"BSL-1",
 					IncompatibleMaterials->{None}
 				];
-				sampleModel4=UploadSampleModel["0.5% SDS in 100mM Tris, pH 9.5 "<>$SessionUUID,
-					Composition -> {{Quantity[100, "Millimolar"],
-						Link[Model[Molecule, "id:01G6nvwRWR0d"],
-							"01G6nv1ZlzO7"]}, {Quantity[0.5, IndependentUnit["MassPercent"]],
-						Link[Model[Molecule, "id:Y0lXejMq5eRl"], "1ZA60vZdXlGw"]}},
+				sampleModel4=UploadSampleModel[
+					{
+						{100 Millimolar, Model[Molecule, "id:01G6nvwRWR0d"]},
+						{0.5 MassPercent, Model[Molecule, "id:Y0lXejMq5eRl"]}
+					},
+					Name -> "0.5% SDS in 100mM Tris, pH 9.5 "<>$SessionUUID,
 					Expires -> True,
 					ShelfLife -> Quantity[365.`, "Days"],
 					UnsealedShelfLife->2 Week,
@@ -3829,7 +3867,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 						100*Microliter,
 						1500*Microliter,
 						1500*Microliter,
-						20*Milliliter,
+						50*Milliliter,
 						250*Microliter,
 						100*Microliter,
 						100*Microliter,
@@ -3856,7 +3894,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 						"ExperimentCIEF Test sample 3 (100 uL) "<>$SessionUUID,
 						"ExperimentCIEF Test reagent "<>$SessionUUID,
 						"ExperimentCIEF IgG Standard "<>$SessionUUID,
-						"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID,
+						"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID,
 						"ExperimentCIEF Test sample 4 (250 uL) "<>$SessionUUID,
 						"ExperimentCIEF Test sample 5 (100 uL) "<>$SessionUUID,
 						"ExperimentCIEF model-less Test sample 5 (100 uL) "<>$SessionUUID,
@@ -3967,7 +4005,7 @@ DefineTests[ExperimentCapillaryIsoelectricFocusing,
 					Object[Sample,"ExperimentCIEF Test sample 2 (100 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test reagent "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF IgG Standard "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEF Test sample 1 (20 mL) "<>$SessionUUID],
+					Object[Sample,"ExperimentCIEF Test sample 1 (50 mL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test sample 4 (250 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF Test sample 5 (100 uL) "<>$SessionUUID],
 					Object[Sample,"ExperimentCIEF model-less Test sample 5 (100 uL) "<>$SessionUUID],
@@ -4088,11 +4126,12 @@ DefineTests[ValidExperimentCapillaryIsoelectricFocusingQ,
 					anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
 				},
 
-				sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-					Composition->{
+				sampleModel1=UploadSampleModel[
+					{
 						{100 VolumePercent,Model[Molecule,"Water"]},
 						{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 					},
+					Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 					State->Liquid,
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Expires->True,
@@ -4389,11 +4428,12 @@ DefineTests[
 						anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
 					},
 
-					sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-						Composition->{
+					sampleModel1=UploadSampleModel[
+						{
 							{100 VolumePercent,Model[Molecule,"Water"]},
 							{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 						},
+						Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 						State->Liquid,
 						DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 						Expires->True,
@@ -4617,18 +4657,6 @@ DefineTests[
 		Example[{Basic,"No preview is currently available for ExperimentCapillaryIsoelectricFocusing:"},
 			ExperimentCapillaryIsoelectricFocusingPreview[Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]],
 			Null
-		],
-		Example[{Basic,"Return Null for multiple samples:"},
-			ExperimentCapillaryIsoelectricFocusingPreview[{Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID],Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]}],
-			Null
-		],
-		Example[{Additional,"If you wish to understand how the experiment will be performed, try using ExperimentCapillaryIsoelectricFocusingOptions:"},
-			ExperimentCapillaryIsoelectricFocusingOptions[Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]],
-			_Grid
-		],
-		Example[{Additional,"The inputs and options can also be checked to verify that the experiment can be safely run using ValidExperimentCapillaryIsoelectricFocusingQ:"},
-			ValidExperimentCapillaryIsoelectricFocusingQ[Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]],
-			True
 		]
 	},
 	Stubs:>{ (* Set global Variables *)
@@ -4653,48 +4681,28 @@ DefineTests[
 		Module[{objs,existingObjs},
 			objs=Quiet[Cases[
 				Flatten[{
-						Object[Container,Bench,"Unit test bench for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Object[Container,Vessel,"Unit test container 1 for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Object[Container,Vessel,"Unit test container 2 for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Object[Container,Plate,"Unit test container 3 for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Object[Container,Vessel,"Unit test container 4 for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Object[Container,Vessel,"Unit test container 5 for ExperimentCIEFPreview tests "<>$SessionUUID],
-						Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test sample 1 (discarded) "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test anolyte "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test catholyte "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test 0.5% MC "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test FL std "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test urea "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test ampholyte "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 1 "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 2 "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 3 "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 4 "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 5 "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test Arginine "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test 1% MC "<>$SessionUUID],
-						Object[Sample,"ExperimentCIEFPreview Test Unit test std peptide mix "<>$SessionUUID],
-						Object[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF Cartridge test Object 1 for ExperimentCIEFPreview "<>$SessionUUID]
-					}],
+					Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
+					Object[Container,Bench,"Unit test bench for ExperimentCIEFPreview tests "<>$SessionUUID],
+					Object[Container,Vessel,"Unit test container 1 for ExperimentCIEFPreview tests "<>$SessionUUID],
+					Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]
+				}],
 					ObjectP[]
 				]];
 			existingObjs=PickList[objs,DatabaseMemberQ[objs]];
 			EraseObject[existingObjs,Force->True,Verbose->False] (* make sure nothing is left over from previous test, cleanup whatever was left *)
 			];
-			Block[{$AllowSystemsProtocols=True},(* must use Block here, rather than With, With wont set it back to original value *)
+			Block[{$AllowSystemsProtocols = True, $DeveloperUpload = True},(* must use Block here, rather than With, With wont set it back to original value *)
 				Module[
 					{
-						testBench,container,container2,sample,sample2,container10,sampleModel1,cartridge1,allObjects,
-						anolyte,std,catholyte,mc05,flx,urea,ampholyte,piMarker1,piMarker2,arg,mc1,container13,container14
+						sampleModel1, testBench, container, sample
 					},
 
-					sampleModel1=UploadSampleModel["10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
-						Composition->{
+					sampleModel1=UploadSampleModel[
+						{
 							{100 VolumePercent,Model[Molecule,"Water"]},
 							{10 Milligram/Milliliter,Model[Molecule,Protein,"id:o1k9jAGP83Ba"]}
 						},
+						Name -> "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID,
 						State->Liquid,
 						DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 						Expires->True,
@@ -4707,8 +4715,7 @@ DefineTests[
 					];
 
 					{
-						testBench,
-						cartridge1
+						testBench
 					}=Upload[{
 						<|
 							Type -> Object[Container, Bench],
@@ -4717,152 +4724,46 @@ DefineTests[
 							DeveloperObject -> True,
 							StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
 							Site -> Link[$Site]
-						|>,
-						<|
-							Name->"cIEF Cartridge test Object 1 for ExperimentCIEFPreview "<>$SessionUUID,
-							Type->Object[Container,ProteinCapillaryElectrophoresisCartridge],
-							Model-> Link[Model[Container,ProteinCapillaryElectrophoresisCartridge, "cIEF"],Objects],
-							NumberOfUses->25,
-							DeveloperObject->True,
-							Status->Available,
-							Site -> Link[$Site]
 						|>
 					}];
 
 					{
-						container,
-						container2,
-						container10,
-						container13,
-						container14
+						container
 					}=UploadSample[
 						{
-							Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
-							Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"],
-							Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-							Model[Container, Vessel, "50mL Tube"],
-							Model[Container, Vessel, "50mL Tube"]
+							Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"]
 						},
 						{
-							{"Work Surface",testBench},
-							{"Work Surface",testBench},
-							{"Work Surface",testBench},
-							{"Work Surface",testBench},
 							{"Work Surface",testBench}
 						},
 						Status->Available,
 						Name->{
-							"Unit test container 1 for ExperimentCIEFPreview tests "<>$SessionUUID,
-							"Unit test container 2 for ExperimentCIEFPreview tests "<>$SessionUUID,
-							"Unit test container 3 for ExperimentCIEFPreview tests "<>$SessionUUID,
-							"Unit test container 4 for ExperimentCIEFPreview tests "<>$SessionUUID,
-							"Unit test container 5 for ExperimentCIEFPreview tests "<>$SessionUUID
+							"Unit test container 1 for ExperimentCIEFPreview tests "<>$SessionUUID
 						}
 					];
 
 					{
-						sample,
-						sample2,
-						anolyte,
-						catholyte,
-						mc05,
-						flx,
-						urea,
-						ampholyte,
-						piMarker1,
-						piMarker2,
-						arg,
-						mc1,
-						std
+						sample
 					}=UploadSample[
 						{
-							Model[Sample, "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
-							Model[Sample, "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
-							Model[Sample, "0.08M Phosphoric Acid in 0.1% Methyl Cellulose"],
-							Model[Sample, "0.1M Sodium Hydroxide in 0.1% Methyl Cellulose"],
-							Model[Sample, "0.5% Methyl Cellulose"],
-							Model[Sample, "cIEF Fluorescence Calibration Standard"],
-							Model[Sample, StockSolution, "10M Urea"],
-							Model[Sample, "Pharmalyte pH 3-10"],
-							Model[Sample, StockSolution, "Resuspended cIEF pI Marker - 4.05"],
-							Model[Sample, StockSolution, "Resuspended cIEF pI Marker - 9.99"],
-							Model[Sample, StockSolution, "500mM Arginine"],
-							Model[Sample, "1% Methyl Cellulose"],
-							Model[Sample, StockSolution, "Resuspended cIEF System Suitability Peptide Panel"]
+							Model[Sample, "10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID]
 						},
 						{
-							{"A1",container},
-							{"A1",container2},
-							{"A1",container13},
-							{"A1",container14},
-							{"A5",container10},
-							{"A6",container10},
-							{"A7",container10},
-							{"A8",container10},
-							{"A9",container10},
-							{"B8",container10},
-							{"B9",container10},
-							{"A10",container10},
-							{"A12",container10}
+							{"A1",container}
 
 						},
 						InitialAmount->{
-							100*Microliter,
-							100*Microliter,
-							20Milliliter,
-							20Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter,
-							2Milliliter
+							100*Microliter
 						},
 						Name->{
-							"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID,
-							"ExperimentCIEFPreview Test sample 1 (discarded) "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test anolyte "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test catholyte "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test 0.5% MC "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test FL std "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test urea "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test ampholyte "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test piMarker 1 "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test piMarker 2 "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test Arginine "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test 1% MC "<>$SessionUUID,
-							"ExperimentCIEFPreview Test Unit test std peptide mix "<>$SessionUUID
+							"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID
 
 						},
 						Status->Available,
 						StorageCondition->{
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
-							Link[Model[StorageCondition,"Ambient Storage"]],
 							Link[Model[StorageCondition,"Ambient Storage"]]
 						}
 					];
-
-					(* upload other items needed for testing the protocol All of those are Developer object -> True AwaitingStorageUpdate-> Null so that they are not treated as real objects in lab if messed something up *)
-					allObjects=Cases[Flatten[{container,container2,sample,sample2,cartridge1,
-						container10,container13,container14,anolyte,catholyte,mc05,flx,urea,ampholyte,arg,mc1}
-					],ObjectP[]];
-					Upload[<|Object->#,DeveloperObject->True,AwaitingStorageUpdate->Null|> &/@allObjects];
-					Upload[Cases[Flatten[{
-						<|Object->sample2,Status->Discarded,Model->Null|>
-					}],PacketP[]]];
 				]
 			]
 	),
@@ -4875,30 +4776,10 @@ DefineTests[
 		Module[{objs,existingObjs},
 			objs=Quiet[Cases[
 				Flatten[{
+					Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
 					Object[Container,Bench,"Unit test bench for ExperimentCIEFPreview tests "<>$SessionUUID],
 					Object[Container,Vessel,"Unit test container 1 for ExperimentCIEFPreview tests "<>$SessionUUID],
-					Object[Container,Vessel,"Unit test container 2 for ExperimentCIEFPreview tests "<>$SessionUUID],
-					Object[Container,Plate,"Unit test container 3 for ExperimentCIEFPreview tests "<>$SessionUUID],
-					Object[Container,Vessel,"Unit test container 4 for ExperimentCIEFPreview tests "<>$SessionUUID],
-					Object[Container,Vessel,"Unit test container 5 for ExperimentCIEFPreview tests "<>$SessionUUID],
-					Model[Sample,"10 mg/mL BSA Fraction V for cIEF tests "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test sample 1 (discarded) "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test anolyte "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test catholyte "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test 0.5% MC "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test FL std "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test urea "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test ampholyte "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 1 "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 2 "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 3 "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 4 "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test piMarker 5 "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test Arginine "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test 1% MC "<>$SessionUUID],
-					Object[Sample,"ExperimentCIEFPreview Test Unit test std peptide mix "<>$SessionUUID],
-					Object[Container,ProteinCapillaryElectrophoresisCartridge,"cIEF Cartridge test Object 1 for ExperimentCIEFPreview "<>$SessionUUID]
+					Object[Sample,"ExperimentCIEFPreview Test sample 1 (100 uL) "<>$SessionUUID]
 				}],
 				ObjectP[]
 			]];

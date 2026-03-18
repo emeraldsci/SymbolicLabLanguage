@@ -73,6 +73,7 @@ Error::IncorrectResolvedNumberOfWells = "The `2` option calculated from Rows and
 Error::InconsistentPositionAndNumberOfWells = "The length of the `1` option does not match the `2` option, both of which are `3`. Currently, `1` option has `4` entries, while the `2` is `5`. Please manually correct at least one of them so that length of `1` matches `2`.";
 Error::IncorrectOptionMagnitude = "The following options: `1` must be specified in a way such that option value of the left ones are `2` the right ones.";
 Error::MultipleMutuallyExclusiveOptions = "One and only one of the following options `1` should be specified. Please choose one to keep and set all other options to Null.";
+Error::MissingMaxCentrifugationForce = "The model has a centrifugeable Footprint, but lacks information on the maximum allowable centrifugal force. Please specify `1`. Use 0 GravitationalAcceleration if the model is not suitable for centrifugation.";
 
 
 (* ::Subsection:: *)
@@ -427,6 +428,15 @@ validModelContainerQTests[packet:PacketP[Model[Container]], ops:OptionsPattern[]
 			]
 		],
 
+		Test["If the Footprint is one of CentrifugeableFootprintP and not an irregular plate, MaxCentrifugationForce must be populated:",
+			If[MatchQ[Lookup[packet, Footprint], CentrifugeableFootprintP] && Not[MatchQ[packet, ObjectP[Model[Container, Plate, Irregular]]]],
+				!NullQ[Lookup[packet, MaxCentrifugationForce]],
+				True
+			],
+			True,
+			Message -> {Hold[Error::MissingMaxCentrifugationForce], MaxCentrifugationForce}
+		],
+
 		(* ---------- Finer-grained tests for container validity ---------- *)
 
 		containerModelImageAspectRatio[packet],
@@ -450,7 +460,8 @@ containerModelPositionsDimensionsValid[packet:PacketP[]]:=Module[
 		RequiredTogether test shared among all container types will catch cases where one or the other is not populated. *)
 	If[Or[MatchQ[positions,{}], MatchQ[positionPlotting, {}]], Return[Nothing]];
 
-	dims=Unitless[#, Meter]&/@Lookup[packet,Dimensions];
+	(* Replace {} or Null to {Null, Null, Null} so that if Dimensions field is not populated at all, we don't run into error *)
+	dims=(Unitless[#, Meter]&/@Lookup[packet,Dimensions]) /. {{} -> {Null, Null, Null}, Null -> {Null, Null, Null}};
 	{xDim,yDim,zDim}=dims[[#]] & /@ {1, 2, 3};
 
 	(* generate single position definitions from information from the Positions/PositionPlotting fields for each of the models *)
@@ -1579,6 +1590,23 @@ validModelContainerOperatorCartQTests[packet:PacketP[Model[Container,OperatorCar
 
 
 (* ::Subsection::Closed:: *)
+(*validModelContainerUtilityCartQTests*)
+
+
+validModelContainerUtilityCartQTests[packet:PacketP[Model[Container,UtilityCart]]]:={
+	(* Shared Fields which should be null *)
+	NullFieldTest[packet, {
+		CleaningMethod,
+		MinVolume,
+		MaxVolume,
+		PreferredBalance,
+		Ampoule,
+		Hermetic
+	}]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelContainerPlateQTests*)
 DefineOptions[
 	validModelContainerPlateQTests,
@@ -1604,7 +1632,7 @@ validModelContainerPlateQTests[packet:PacketP[Model[Container,Plate]], ops:Optio
 			False
 		],
 		True
-	],
+	];
 
 	liquidHandlerAdapterPacket = fetchPacketFromCacheOrDownload[{LiquidHandlerAdapter, Packet[Positions]}, packet, cache];
 	pendingParameterizationQ = TrueQ[Lookup[packet, PendingParameterization]];
@@ -1645,366 +1673,389 @@ validModelContainerPlateQTests[packet:PacketP[Model[Container,Plate]], ops:Optio
 		TransportStable
 	};
 
-	If[MatchQ[Lookup[packet,Type],Except[Model[Container,Plate,Irregular] | Model[Container,Plate,Irregular,CapillaryELISA] | Model[Container,Plate,Irregular,Crystallization]]],
 
-		(* For all plates that are not Irregular Plates *)
-		(* Shared fields *)
-		{
-			NotNullFieldTest[packet,
-				If[MatchQ[Lookup[packet, PendingParameterization], True],
-					commonFields,
-					Join[commonFields, parameterizedFields]
-				],
-				Message -> Automatic,
-				FieldSource -> fieldSource,
-				ParentFunction -> "UploadContainerModel"
-			],
+	Flatten[{
+		(* Required fields if CalibrationPlate is True *)
+		If[TrueQ[Lookup[packet, CalibrationPlate]],
+			NotNullFieldTest[packet, {InstrumentsCalibrated}],
+			{}
+		],
 
-			(* Shared fields shaping *)
+		If[MatchQ[Lookup[packet, Type], Except[Model[Container, Plate, Irregular] | Model[Container, Plate, Irregular, CapillaryELISA] | Model[Container, Plate, Irregular, Crystallization]]],
 
-			(* Well dimensions: *)
-			If[pendingParameterizationQ,
-				(* If still need parameterization, it's OK that Columns > 1 while HorizontalPitch == Null, but not the opposite *)
-				Test["If HorizontalPitch is informed, Columns must be greater than 1:",
-					Lookup[packet,{Columns, HorizontalPitch}],
-					{GreaterP[1], Except[NullP]} | {_, NullP},
-					Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
-						{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
-						{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
-						{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
-						{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
-						{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
-						{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
-						{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
-						{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
-					]
-				],
-				Test["If and only if Columns is greater than 1, HorizontalPitch is informed:",
-					Lookup[packet,{Columns, HorizontalPitch}],
-					{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
-					Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
-						{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
-						{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
-						{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
-						{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
-						{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
-						{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
-						{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
-						{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
-					]
-				]
-			],
-
-			If[pendingParameterizationQ,
-				(* If still need parameterization, it's OK that Rows > 1 while VerticalPitch == Null, but not the opposite *)
-				Test["If VerticalPitch is informed, Rows must be greater than 1:",
-					Lookup[packet,{Rows, VerticalPitch}],
-					{GreaterP[1], Except[NullP]} | {_, NullP},
-					Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
-						{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
-						{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
-						{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
-						{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
-						{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
-						{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
-						{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
-						{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
-					]
-				],
-				Test["If and only if Rows is greater than 1, VerticalPitch is informed:",
-					Lookup[packet,{Rows, VerticalPitch}],
-					{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
-					Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
-						{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
-						{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
-						{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
-						{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
-						{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
-						{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
-						{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
-						{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
-					]
-				]
-			],
-
-			If[pendingParameterizationQ,
-				Nothing,
-				Test["Either the two indexes in WellDimensions are informed, or WellDiameter is informed:",
-					Lookup[packet,{WellDimensions,WellDiameter}],
-					{NullP,Except[NullP]} |
-						{{Except[NullP],Except[NullP]},NullP}
-				]
-			],
-
-			If[pendingParameterizationQ,
-				(* If container is still pending parameterization, allow ConicalWellDepth to be Null in all cases *)
-				Test["If ConicalWellDepth is informed, WellBottom must be VBottom or RoundBottom:",
-					Lookup[packet,{WellBottom,ConicalWellDepth}],
-					{RoundBottom | VBottom, Except[NullP]} | {_,NullP},
-					Message -> Switch[Lookup[fieldSource, {ConicalWellDepth, WellBottom}],
-						{User, User}, {Hold[Error::InternalConicalDepthNotAllowed], ConicalWellDepth, WellBottom},
-						{User, Template}, {Hold[Error::InternalConicalDepthNotAllowedWithExistingField], ConicalWellDepth, WellBottom, "Template option", Lookup[packet, WellBottom]},
-						{User, Field}, {Hold[Error::InternalConicalDepthNotAllowedWithExistingField], ConicalWellDepth, WellBottom, "database", Lookup[packet, WellBottom]},
-						{Template, User}, {Hold[Error::InternalConicalDepthNotAllowedDueToExistingField], ConicalWellDepth, WellBottom, "Template option", Lookup[packet, WellBottom]},
-						{Field, User}, {Hold[Error::InternalConicalDepthNotAllowedDueToExistingField], ConicalWellDepth, WellBottom, "database", Lookup[packet, WellBottom]},
-						{Template, Template}, {Hold[Error::InternalConicalDepthNotAllowedBetweenExistingField], ConicalWellDepth, WellBottom, "Template option"},
-						{Field, Field}, {Hold[Error::InternalConicalDepthNotAllowedBetweenExistingField], ConicalWellDepth, WellBottom, "database"},
-						{_, _}, {Hold[Error::InternalConicalDepthNotAllowed], ConicalWellDepth, WellBottom}
-					]
-				],
-				Test["If and only if WellBottom is RoundBottom or VBottom, ConicalWellDepth is informed:",
-					Lookup[packet,{WellBottom,ConicalWellDepth}],
-					{RoundBottom | VBottom,Except[NullP]} | {Except[RoundBottom | VBottom],NullP}
-				]
-			],
-
-			(* Only do the test if all 3 fields are informed; if any one of them is missing, it should be caught by the previous NotNullFieldTest *)
-			(* Options resolver calculates the third one from the other two if only two of them is informed, so we shouldn't see error from resolver *)
-			If[!MemberQ[Lookup[packet, {Rows, Columns, NumberOfWells}, Null], Null],
-				Test["Columns * Rows equals NumberOfWells:",
-					Times@@Lookup[packet, {Rows, Columns}],
-					Lookup[packet, NumberOfWells],
-					Message -> Switch[Lookup[fieldSource, {NumberOfWells, Rows, Columns}],
-						{User, User, User}, {Hold[Error::ColumnRowInconsistency], NumberOfWells, Rows, Columns, "product of"},
-						_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfWells, Rows, Columns, "product of", PickList[{NumberOfWells, Rows, Columns}, Lookup[fieldSource, {NumberOfWells, Rows, Columns}], Template], "Template option"},
-						_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfWells, Rows, Columns, "product of", PickList[{NumberOfWells, Rows, Columns}, Lookup[fieldSource, {NumberOfWells, Rows, Columns}], Field], "database"},
-						{_, _, _}, {Hold[Error::ColumnRowInconsistency], NumberOfWells, Rows, Columns, "product of"}
-					]
-				],
-				Nothing
-			],
-
-			If[!MemberQ[Lookup[packet, {Columns, Rows, AspectRatio}, Null], Null],
-				Test["Columns/Rows  equals AspectRatio:",
-					Lookup[packet,AspectRatio],
-					_?(Equal[#,Divide@@Lookup[packet,{Columns,Rows} ]]&),
-					Message -> Switch[Lookup[fieldSource, {AspectRatio, Columns, Rows}],
-						{User, User, User}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"},
-						_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Template], "Template option"},
-						_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Field], "database"},
-						{_, _, _}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"}
-					]
-				],
-				Nothing
-			],
-
-			(* Check that the length of Positions and PositionPlotting field is equals NumberOfWells. Allow both fields to be {} if PendingParameterization -> True *)
-			If[pendingParameterizationQ,
-				Test["Length of Positions field, if informed, must be equal to the NumberOfWells:",
-					Or[
-						(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
-						NullQ[Lookup[packet, NumberOfWells, Null]],
-						(* let check pass if Positions is {} *)
-						Length[Lookup[packet, Positions]] == 0,
-						(* actual check *)
-						Length[Lookup[packet, Positions]] == Lookup[packet, NumberOfWells]
+			(* For all plates that are not Irregular Plates *)
+			(* Shared fields *)
+			{
+				NotNullFieldTest[packet,
+					If[MatchQ[Lookup[packet, PendingParameterization], True],
+						commonFields,
+						Join[commonFields, parameterizedFields]
 					],
-					True,
-					Message -> Switch[Lookup[fieldSource, {Positions, NumberOfWells}],
-						{User, User}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Template}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Field}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Resolved}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "set according to database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{_, _}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]}
+					Message -> Automatic,
+					FieldSource -> fieldSource,
+					ParentFunction -> "UploadContainerModel"
+				],
+
+				(* Shared fields shaping *)
+
+				(* Well dimensions: *)
+				If[pendingParameterizationQ,
+					(* If still need parameterization, it's OK that Columns > 1 while HorizontalPitch == Null, but not the opposite *)
+					Test["If HorizontalPitch is informed, Columns must be greater than 1:",
+						Lookup[packet, {Columns, HorizontalPitch}],
+						{GreaterP[1], Except[NullP]} | {_, NullP},
+						Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
+							{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
+							{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
+							{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
+							{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
+							{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
+							{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
+							{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
+							{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
+						]
+					],
+					Test["If and only if Columns is greater than 1, HorizontalPitch is informed:",
+						Lookup[packet, {Columns, HorizontalPitch}],
+						{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+						Message -> Switch[Lookup[fieldSource, {HorizontalPitch, Columns}],
+							{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns},
+							{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "Template option"},
+							{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], HorizontalPitch, Columns, "database"},
+							{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "Template option"},
+							{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], HorizontalPitch, Columns, "database"},
+							{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "Template option"},
+							{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], HorizontalPitch, Columns, "database"},
+							{_, _}, {Hold[Error::InconsistentPitch], HorizontalPitch, Columns}
+						]
 					]
 				],
-				Test["Length of Positions field must be equal to the NumberOfWells:",
-					Or[
-						(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
-						NullQ[Lookup[packet, NumberOfWells, Null]],
-						(* actual check *)
-						Length[Lookup[packet, Positions]] == Lookup[packet, NumberOfWells]
-					],
-					True,
-					Message -> Switch[Lookup[fieldSource, {Positions, NumberOfWells}],
-						{User, User}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Template}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Field}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{User, Resolved}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "set according to database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
-						{_, _}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]}
-					]
-				]
-			],
 
-			If[pendingParameterizationQ,
-				Test["Length of PositionPlotting field, if informed, must be equal to the NumberOfWells:",
-					Or[
-						(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
-						NullQ[Lookup[packet, NumberOfWells, Null]],
-						(* let check pass if PositionPlotting is {} *)
-						Length[Lookup[packet, PositionPlotting]] == 0,
-						(* actual check *)
-						Length[Lookup[packet, PositionPlotting]] == Lookup[packet, NumberOfWells]
+				If[pendingParameterizationQ,
+					(* If still need parameterization, it's OK that Rows > 1 while VerticalPitch == Null, but not the opposite *)
+					Test["If VerticalPitch is informed, Rows must be greater than 1:",
+						Lookup[packet, {Rows, VerticalPitch}],
+						{GreaterP[1], Except[NullP]} | {_, NullP},
+						Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
+							{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
+							{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
+							{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
+							{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
+							{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
+							{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
+							{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
+							{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
+						]
 					],
-					True,
-					Message -> Switch[Lookup[fieldSource, {PositionPlotting, NumberOfWells}],
-						{User, User}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Template}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Field}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Resolved}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "set according to database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{_, _}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]}
+					Test["If and only if Rows is greater than 1, VerticalPitch is informed:",
+						Lookup[packet, {Rows, VerticalPitch}],
+						{GreaterP[1], Except[NullP]} | {Except[GreaterP[1]], NullP},
+						Message -> Switch[Lookup[fieldSource, {VerticalPitch, Rows}],
+							{User, (User | Resolved)}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows},
+							{User, Template}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "Template option"},
+							{User, Field}, {Hold[Error::InconsistentPitchWithExistingField], VerticalPitch, Rows, "database"},
+							{Template, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "Template option"},
+							{Field, (User | Resolved)}, {Hold[Error::InconsistentPitchToExistingField], VerticalPitch, Rows, "database"},
+							{Template, Template}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "Template option"},
+							{Field, Field}, {Hold[Error::InconsistentPitchBetweenExistingField], VerticalPitch, Rows, "database"},
+							{_, _}, {Hold[Error::InconsistentPitch], VerticalPitch, Rows}
+						]
 					]
 				],
-				Test["Length of PositionPlotting field must be equal to the NumberOfWells:",
-					Or[
-						(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
-						NullQ[Lookup[packet, NumberOfWells, Null]],
-						(* actual check *)
-						Length[Lookup[packet, PositionPlotting]] == Lookup[packet, NumberOfWells]
-					],
-					True,
-					Message -> Switch[Lookup[fieldSource, {PositionPlotting, NumberOfWells}],
-						{User, User}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Template}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Field}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{User, Resolved}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "set according to database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
-						{_, _}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]}
+
+				If[pendingParameterizationQ,
+					Nothing,
+					Test["Either the two indexes in WellDimensions are informed, or WellDiameter is informed:",
+						Lookup[packet, {WellDimensions, WellDiameter}],
+						{NullP, Except[NullP]} |
+								{{Except[NullP], Except[NullP]}, NullP}
 					]
-				]
-			],
-
-			Test["If NumberOfWells is >=48, then PreferredCamera should be populated:",
-				Lookup[packet,{NumberOfWells, PreferredCamera}],
-				Alternatives[
-					{GreaterEqualP[48],Plate},
-					{_,_}
 				],
-				Message -> Switch[Lookup[fieldSource, PreferredCamera],
-					User, {Hold[Error::RequiredOptions], PreferredCamera, identifier},
-					External, {Hold[Error::UnableToFindInfo], PreferredCamera, identifier, "supplier webpage", "UploadContainerModel"},
-					Template, {Hold[Error::UnableToFindInfo], PreferredCamera, identifier, "object specified in Template option", "UploadContainerModel"},
-					Resolved, {Hold[Error::UnableToResolveOption], PreferredCamera, identifier},
-					_, {Hold[Error::RequiredOptions], PreferredCamera, identifier}
-				]
-			],
 
-			Test["If LiquidHandlerAdapter is populated, it should have a Plate Slot:",
-				If[MatchQ[Lookup[packet,LiquidHandlerAdapter],ObjectP[]],
-					MemberQ[Lookup[Lookup[liquidHandlerAdapterPacket,Positions],Name],"Plate Slot"],
+				If[pendingParameterizationQ,
+					(* If container is still pending parameterization, allow ConicalWellDepth to be Null in all cases *)
+					Test["If ConicalWellDepth is informed, WellBottom must be VBottom or RoundBottom:",
+						Lookup[packet, {WellBottom, ConicalWellDepth}],
+						{RoundBottom | VBottom, Except[NullP]} | {_, NullP},
+						Message -> Switch[Lookup[fieldSource, {ConicalWellDepth, WellBottom}],
+							{User, User}, {Hold[Error::InternalConicalDepthNotAllowed], ConicalWellDepth, WellBottom},
+							{User, Template}, {Hold[Error::InternalConicalDepthNotAllowedWithExistingField], ConicalWellDepth, WellBottom, "Template option", Lookup[packet, WellBottom]},
+							{User, Field}, {Hold[Error::InternalConicalDepthNotAllowedWithExistingField], ConicalWellDepth, WellBottom, "database", Lookup[packet, WellBottom]},
+							{Template, User}, {Hold[Error::InternalConicalDepthNotAllowedDueToExistingField], ConicalWellDepth, WellBottom, "Template option", Lookup[packet, WellBottom]},
+							{Field, User}, {Hold[Error::InternalConicalDepthNotAllowedDueToExistingField], ConicalWellDepth, WellBottom, "database", Lookup[packet, WellBottom]},
+							{Template, Template}, {Hold[Error::InternalConicalDepthNotAllowedBetweenExistingField], ConicalWellDepth, WellBottom, "Template option"},
+							{Field, Field}, {Hold[Error::InternalConicalDepthNotAllowedBetweenExistingField], ConicalWellDepth, WellBottom, "database"},
+							{_, _}, {Hold[Error::InternalConicalDepthNotAllowed], ConicalWellDepth, WellBottom}
+						]
+					],
+					Test["If and only if WellBottom is RoundBottom or VBottom, ConicalWellDepth is informed:",
+						Lookup[packet, {WellBottom, ConicalWellDepth}],
+						{RoundBottom | VBottom, Except[NullP]} | {Except[RoundBottom | VBottom], NullP}
+					]
+				],
+
+				(* Only do the test if all 3 fields are informed; if any one of them is missing, it should be caught by the previous NotNullFieldTest *)
+				(* Options resolver calculates the third one from the other two if only two of them is informed, so we shouldn't see error from resolver *)
+				If[!MemberQ[Lookup[packet, {Rows, Columns, NumberOfWells}, Null], Null],
+					Test["Columns * Rows equals NumberOfWells:",
+						Times @@ Lookup[packet, {Rows, Columns}],
+						Lookup[packet, NumberOfWells],
+						Message -> Switch[Lookup[fieldSource, {NumberOfWells, Rows, Columns}],
+							{User, User, User}, {Hold[Error::ColumnRowInconsistency], NumberOfWells, Rows, Columns, "product of"},
+							_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfWells, Rows, Columns, "product of", PickList[{NumberOfWells, Rows, Columns}, Lookup[fieldSource, {NumberOfWells, Rows, Columns}], Template], "Template option"},
+							_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], NumberOfWells, Rows, Columns, "product of", PickList[{NumberOfWells, Rows, Columns}, Lookup[fieldSource, {NumberOfWells, Rows, Columns}], Field], "database"},
+							{_, _, _}, {Hold[Error::ColumnRowInconsistency], NumberOfWells, Rows, Columns, "product of"}
+						]
+					],
+					Nothing
+				],
+
+				If[!MemberQ[Lookup[packet, {Columns, Rows, AspectRatio}, Null], Null],
+					Test["Columns/Rows  equals AspectRatio:",
+						Lookup[packet, AspectRatio],
+						_?(Equal[#, Divide @@ Lookup[packet, {Columns, Rows} ]]&),
+						Message -> Switch[Lookup[fieldSource, {AspectRatio, Columns, Rows}],
+							{User, User, User}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"},
+							_?(MemberQ[Template]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Template], "Template option"},
+							_?(MemberQ[Field]), {Hold[Error::ColumnRowInconsistencyWithExistingField], AspectRatio, Columns, Rows, "ratio between", PickList[{AspectRatio, Columns, Rows}, Lookup[fieldSource, {AspectRatio, Columns, Rows}], Field], "database"},
+							{_, _, _}, {Hold[Error::ColumnRowInconsistency], AspectRatio, Columns, Rows, "ratio between"}
+						]
+					],
+					Nothing
+				],
+
+				(* Check that the length of Positions and PositionPlotting field is equals NumberOfWells. Allow both fields to be {} if PendingParameterization -> True *)
+				If[pendingParameterizationQ,
+					Test["Length of Positions field, if informed, must be equal to the NumberOfWells:",
+						Or[
+							(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
+							NullQ[Lookup[packet, NumberOfWells, Null]],
+							(* let check pass if Positions is {} *)
+							Length[Lookup[packet, Positions]] == 0,
+							(* actual check *)
+							Length[Lookup[packet, Positions]] == Lookup[packet, NumberOfWells]
+						],
+						True,
+						Message -> Switch[Lookup[fieldSource, {Positions, NumberOfWells}],
+							{User, User}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Template}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Field}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Resolved}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "set according to database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{_, _}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]}
+						]
+					],
+					Test["Length of Positions field must be equal to the NumberOfWells:",
+						Or[
+							(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
+							NullQ[Lookup[packet, NumberOfWells, Null]],
+							(* actual check *)
+							Length[Lookup[packet, Positions]] == Lookup[packet, NumberOfWells]
+						],
+						True,
+						Message -> Switch[Lookup[fieldSource, {Positions, NumberOfWells}],
+							{User, User}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Template}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Field}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{User, Resolved}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "according to the database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], Positions, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], Positions, NumberOfWells, "set according to database", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]},
+							{_, _}, {Hold[Error::IncorrectPositionLength], Positions, NumberOfWells, "that you have specified", Length[Lookup[packet, Positions]], Lookup[packet, NumberOfWells]}
+						]
+					]
+				],
+
+				If[pendingParameterizationQ,
+					Test["Length of PositionPlotting field, if informed, must be equal to the NumberOfWells:",
+						Or[
+							(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
+							NullQ[Lookup[packet, NumberOfWells, Null]],
+							(* let check pass if PositionPlotting is {} *)
+							Length[Lookup[packet, PositionPlotting]] == 0,
+							(* actual check *)
+							Length[Lookup[packet, PositionPlotting]] == Lookup[packet, NumberOfWells]
+						],
+						True,
+						Message -> Switch[Lookup[fieldSource, {PositionPlotting, NumberOfWells}],
+							{User, User}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Template}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Field}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Resolved}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "set according to database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{_, _}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]}
+						]
+					],
+					Test["Length of PositionPlotting field must be equal to the NumberOfWells:",
+						Or[
+							(* let check pass if NumberOfWells is not informed. The overall VOQ will fail elsewhere anyway *)
+							NullQ[Lookup[packet, NumberOfWells, Null]],
+							(* actual check *)
+							Length[Lookup[packet, PositionPlotting]] == Lookup[packet, NumberOfWells]
+						],
+						True,
+						Message -> Switch[Lookup[fieldSource, {PositionPlotting, NumberOfWells}],
+							{User, User}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Template}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Field}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{User, Resolved}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Resolved, User}, {Hold[Error::IncorrectNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "according to the database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Resolved, Resolved}, {Hold[Error::IncorrectResolvedNumberOfWells], PositionPlotting, NumberOfWells, "that was calculated from Rows and Columns option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Template, Template}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "inherited from the Template option", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{Field, Field}, {Hold[Error::InconsistentPositionAndNumberOfWells], PositionPlotting, NumberOfWells, "set according to database", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]},
+							{_, _}, {Hold[Error::IncorrectPositionLength], PositionPlotting, NumberOfWells, "that you have specified", Length[Lookup[packet, PositionPlotting]], Lookup[packet, NumberOfWells]}
+						]
+					]
+				],
+
+				Test["If NumberOfWells is >=48, then PreferredCamera should be populated:",
+					Lookup[packet, {NumberOfWells, PreferredCamera}],
+					Alternatives[
+						{GreaterEqualP[48], Plate},
+						{_, _}
+					],
+					Message -> Switch[Lookup[fieldSource, PreferredCamera],
+						User, {Hold[Error::RequiredOptions], PreferredCamera, identifier},
+						External, {Hold[Error::UnableToFindInfo], PreferredCamera, identifier, "supplier webpage", "UploadContainerModel"},
+						Template, {Hold[Error::UnableToFindInfo], PreferredCamera, identifier, "object specified in Template option", "UploadContainerModel"},
+						Resolved, {Hold[Error::UnableToResolveOption], PreferredCamera, identifier},
+						_, {Hold[Error::RequiredOptions], PreferredCamera, identifier}
+					]
+				],
+
+				Test["If LiquidHandlerAdapter is populated, it should have a Plate Slot:",
+					If[MatchQ[Lookup[packet, LiquidHandlerAdapter], ObjectP[]],
+						MemberQ[Lookup[Lookup[liquidHandlerAdapterPacket, Positions], Name], "Plate Slot"],
+						True
+					],
 					True
 				],
-				True
-			],
 
-			(*
+				(*
 			TODO turn this on once we have re-parametrized all plates used in the lab
 			Test["The thickness of the well bottom is positive: ",
 				Lookup[packet,Dimensions][[3]] - Lookup[packet,WellDepth] - Lookup[packet,DepthMargin],
 				GreaterP[0Millimeter]
 			],*)
 
-			Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
-				If[MatchQ[Lookup[packet,BottomCavity3D],Except[Null | {}]],
-					Module[{xDim,yDim,zDim},
-						{xDim,yDim,zDim}=Lookup[packet,Dimensions];
-						MatchQ[
-							Lookup[packet,BottomCavity3D],
-							{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
-						]],
+				Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
+					If[MatchQ[Lookup[packet, BottomCavity3D], Except[Null | {}]],
+						Module[{xDim, yDim, zDim},
+							{xDim, yDim, zDim} = Lookup[packet, Dimensions];
+							MatchQ[
+								Lookup[packet, BottomCavity3D],
+								{{RangeP[0Millimeter, xDim], RangeP[0Millimeter, yDim], RangeP[0Millimeter, zDim]}..}
+							]],
+						True
+					],
 					True
 				],
-				True
-			],
 
-			(* Minimums and maximums *)
-			FieldComparisonTest[packet,
-				{MinVolume, RecommendedFillVolume},
-				LessEqual,
-				Message -> Automatic,
-				FieldSource -> fieldSource
-			],
-			FieldComparisonTest[packet,
-				{RecommendedFillVolume,MaxVolume},
-				LessEqual,
-				Message -> Automatic,
-				FieldSource -> fieldSource
-			],
-			FieldComparisonTest[packet,
-				{MinVolume,MaxVolume},
-				LessEqual,
-				Message -> Automatic,
-				FieldSource -> fieldSource
-			]
-		},
-
-		(* For Model[Container,Plate,Irregular] *)
-		{
-			NotNullFieldTest[packet,{
-				ImageFile,
-				PlateColor,
-				WellColor,
-				NumberOfWells,
-				HorizontalMargin,
-				VerticalMargin,
-				DepthMargin,
-				WellDepth,
-				WellBottom,
-				MaxVolume,
-				MinVolume
+				(* Minimums and maximums *)
+				FieldComparisonTest[packet,
+					{MinVolume, RecommendedFillVolume},
+					LessEqual,
+					Message -> Automatic,
+					FieldSource -> fieldSource
+				],
+				FieldComparisonTest[packet,
+					{RecommendedFillVolume, MaxVolume},
+					LessEqual,
+					Message -> Automatic,
+					FieldSource -> fieldSource
+				],
+				FieldComparisonTest[packet,
+					{MinVolume, MaxVolume},
+					LessEqual,
+					Message -> Automatic,
+					FieldSource -> fieldSource
+				]
 			},
-				Message -> {Hold[Error::RequiredOptions], Lookup[packet, Object, Null]}
-			],
 
-			(* Minimums and maximums *)
-			FieldComparisonTest[packet,{MinVolume,MaxVolume},LessEqual],
+			(* For Model[Container,Plate,Irregular] *)
+			{
+				NotNullFieldTest[packet, {
+					ImageFile,
+					PlateColor,
+					WellColor,
+					NumberOfWells,
+					HorizontalMargin,
+					VerticalMargin,
+					DepthMargin,
+					WellDepth,
+					WellBottom,
+					MaxVolume,
+					MinVolume
+				},
+					Message -> {Hold[Error::RequiredOptions], Lookup[packet, Object, Null]}
+				],
 
-			Test["If LiquidHandlerAdapter is populated, it should have a Plate Slot:",
-				If[MatchQ[Lookup[packet,LiquidHandlerAdapter],ObjectP[]],
-					MemberQ[Lookup[Lookup[liquidHandlerAdapterPacket,Positions],Name],"Plate Slot"],
+				(* Minimums and maximums *)
+				FieldComparisonTest[packet, {MinVolume, MaxVolume}, LessEqual],
+
+				Test["If LiquidHandlerAdapter is populated, it should have a Plate Slot:",
+					If[MatchQ[Lookup[packet, LiquidHandlerAdapter], ObjectP[]],
+						MemberQ[Lookup[Lookup[liquidHandlerAdapterPacket, Positions], Name], "Plate Slot"],
+						True
+					],
 					True
 				],
-				True
-			],
 
-			Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
-				If[MatchQ[Lookup[packet,BottomCavity3D],Except[Null | {}]],
-					Module[{xDim,yDim,zDim},
-						{xDim,yDim,zDim}=Lookup[packet,Dimensions];
-						MatchQ[
-							Lookup[packet,BottomCavity3D],
-							{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
-						]],
+				Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
+					If[MatchQ[Lookup[packet, BottomCavity3D], Except[Null | {}]],
+						Module[{xDim, yDim, zDim},
+							{xDim, yDim, zDim} = Lookup[packet, Dimensions];
+							MatchQ[
+								Lookup[packet, BottomCavity3D],
+								{{RangeP[0Millimeter, xDim], RangeP[0Millimeter, yDim], RangeP[0Millimeter, zDim]}..}
+							]],
+						True
+					],
 					True
 				],
-				True
-			],
 
-			(* Require flange-related fields together *)
-			RequiredTogetherTest[packet,{FlangeHeight,FlangeWidth}]
+				(* Require flange-related fields together *)
+				RequiredTogetherTest[packet, {FlangeHeight, FlangeWidth}],
+
+			Test["The plate height (from Dimensions) is equal to the sum of WellDepth and DepthMargin if all are informed:",
+				Module[{height, wellDepth, depthMargin},
+					height = If[MatchQ[Lookup[packet, Dimensions, Null], {_, _, _}],
+						Lookup[packet, Dimensions][[3]],
+						Null
+					];
+					{wellDepth, depthMargin} = Lookup[packet, {WellDepth, DepthMargin}, Null];
+					If[MemberQ[{height, wellDepth, depthMargin}, Null],
+						True,
+						EqualQ[height, wellDepth + depthMargin]
+					]
+				],
+				True
+			]
 		}
-	]
+	]}]
 ];
 
 
@@ -2463,127 +2514,145 @@ validModelContainerPortableHeaterQTests[packet:PacketP[Model[Container,PortableH
 
 (* ::Subsection::Closed:: *)
 (*validModelContainerRackQTests*)
+DefineOptions[
+	validModelContainerRackQTests,
+	Options :> {additionalValidQTestOptions}
+];
 
+validModelContainerRackQTests[packet:PacketP[Model[Container,Rack]], ops:OptionsPattern[]]:=Module[
+	{safeOps, fieldSource, cache, object, identifier, fastAssoc, commonFields, parameterizedFields},
 
-validModelContainerRackQTests[packet:PacketP[Model[Container,Rack]]]:={
-
-	RequiredTogetherTest[packet,{Rows,Columns}],
-	NotNullFieldTest[packet,{
-		NumberOfPositions,
-		HorizontalOffset,
-		VerticalOffset,
-		Footprint
-	},
-		Message -> {Hold[Error::RequiredOptions], Lookup[packet, Object, Null]}
-	],
-	NullFieldTest[packet, {
-		MinVolume,
-		MaxVolume,
-		PreferredBalance,
-		Ampoule,
-		Hermetic
-	}],
-
-(* Well dimensions: *)
-	Test["If and only if Columns is greater than 1, HorizontalPitch and HorizontalMargin are informed:",
-		Lookup[packet,{Columns,HorizontalPitch,HorizontalMargin}],
-		{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
-	],
-
-	Test["If and only if Rows is greater than 1, VerticalPitch and VerticalMargin area informed:",
-		Lookup[packet,{Rows,VerticalPitch,VerticalMargin}],
-		{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
-	],
-
-	Test["Either the two indexes in WellDimensions are informed, or WellDiameter is informed:",
-		Lookup[packet,{WellDimensions,WellDiameter}],
-		{NullP,Except[NullP]}|{{Except[NullP],Except[NullP]},NullP}
-	],
-
-	Test["NumberOfPositions matches the number of positions specified in Positions:",
-		Lookup[packet,NumberOfPositions],
-		Length[Lookup[packet,Positions]]
+	(* read options *)
+	safeOps = SafeOptions[validModelContainerQTests, ToList[ops]];
+	{fieldSource, cache} = Lookup[safeOps, #]& /@ {FieldSource, Cache};
+	object = Lookup[packet, Object];
+	identifier = If[DatabaseMemberQ[object],
+		object,
+		Lookup[packet, Type]
 	];
+	fastAssoc = updateFastAssoc[{{ProductsContained, ProductModel, Packet[SingleUse]}}, packet, cache];
 
-	Test["If both Rows and Columns are non-Null, then AspectRatio must be informed and must be equal to Columns/Rows. Otherwise, AspectRatio cannot be informed:",
-		Lookup[packet,{Rows,Columns,AspectRatio}],
-		Alternatives[
-			{Except[NullP],Except[NullP],_?(Equal[Rationalize[#],Divide @@ Lookup[packet, {Columns, Rows} ]]&)},
-			{NullP,NullP,NullP}
-		]
-	],
+	{
 
-	Test["If both Rows and Columns are non-Null, then NumberOfPositions must be equal to Rows*Columns:",
-		Lookup[packet,{Rows,Columns,NumberOfPositions}],
-		Alternatives[
-			{Except[NullP],Except[NullP],Times@@Lookup[packet, {Rows, Columns}]},
-			{NullP,NullP,Except[NullP]}
-		]
-	],
+		RequiredTogetherTest[packet,{Rows,Columns}],
+		NotNullFieldTest[packet,{
+			NumberOfPositions,
+			HorizontalOffset,
+			VerticalOffset,
+			Footprint
+		},
+			Message -> {Hold[Error::RequiredOptions], Lookup[packet, Object, Null]}
+		],
+		NullFieldTest[packet, {
+			MinVolume,
+			MaxVolume,
+			PreferredBalance,
+			Ampoule,
+			Hermetic
+		}],
 
-	Test["If LiquidHandlerPositionIDs is populated, each member of Positions is represented:",
-		Module[{positionIDs,positions},
-			{positionIDs,positions}=Lookup[packet,{LiquidHandlerPositionIDs,Positions}];
-			If[MatchQ[positionIDs,{}],
-				True,
-				MatchQ[Complement[(Name/.#&)/@positions,positionIDs[[All,1]]],{}]
+		(* Well dimensions: *)
+		Test["If and only if Columns is greater than 1, HorizontalPitch and HorizontalMargin are informed:",
+			Lookup[packet,{Columns,HorizontalPitch,HorizontalMargin}],
+			{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
+		],
+
+		Test["If and only if Rows is greater than 1, VerticalPitch and VerticalMargin area informed:",
+			Lookup[packet,{Rows,VerticalPitch,VerticalMargin}],
+			{GreaterP[1],Except[NullP],Except[NullP]}|{Except[GreaterP[1]],_,_}
+		],
+
+		Test["Either the two indexes in WellDimensions are informed, or WellDiameter is informed:",
+			Lookup[packet,{WellDimensions,WellDiameter}],
+			{NullP,Except[NullP]}|{{Except[NullP],Except[NullP]},NullP}
+		],
+
+		Test["NumberOfPositions matches the number of positions specified in Positions:",
+			Lookup[packet,NumberOfPositions],
+			Length[Lookup[packet,Positions]]
+		];
+
+		Test["If both Rows and Columns are non-Null, then AspectRatio must be informed and must be equal to Columns/Rows. Otherwise, AspectRatio cannot be informed:",
+			Lookup[packet,{Rows,Columns,AspectRatio}],
+			Alternatives[
+				{Except[NullP],Except[NullP],_?(Equal[Rationalize[#],Divide @@ Lookup[packet, {Columns, Rows} ]]&)},
+				{NullP,NullP,NullP}
 			]
 		],
-		True
-	],
 
-	Test["If BottomSupport3D is populated, all members should be in Positions:",
-		If[MatchQ[Lookup[packet,BottomSupport3D],Except[Null | {}]],
-			MatchQ[
-				Complement[
-					Lookup[Lookup[packet,BottomSupport3D],Name],
-					Lookup[Lookup[packet,Positions],Name]
-				],
-				{}
-			],
-			True
+		Test["If both Rows and Columns are non-Null, then NumberOfPositions must be equal to Rows*Columns:",
+			Lookup[packet,{Rows,Columns,NumberOfPositions}],
+			Alternatives[
+				{Except[NullP],Except[NullP],Times@@Lookup[packet, {Rows, Columns}]},
+				{NullP,NullP,Except[NullP]}
+			]
 		],
-		True
-	],
 
-	Test["If BottomSupport3D is populated, all entries lie withing the Dimensions of the Container:",
-		If[MatchQ[Lookup[packet,BottomSupport3D],Except[Null | {}]],
-			Module[{xDim,yDim,zDim},
-				{xDim,yDim,zDim}=Lookup[packet,Dimensions];
-				AllTrue[
-					Lookup[Lookup[packet,BottomSupport3D],Dimensions],
-					MatchQ[{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}]
+		Test["If LiquidHandlerPositionIDs is populated, each member of Positions is represented:",
+			Module[{positionIDs,positions},
+				{positionIDs,positions}=Lookup[packet,{LiquidHandlerPositionIDs,Positions}];
+				If[MatchQ[positionIDs,{}],
+					True,
+					MatchQ[Complement[(Name/.#&)/@positions,positionIDs[[All,1]]],{}]
 				]
 			],
 			True
 		],
-		True
-	],
 
-	Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
-		If[MatchQ[Lookup[packet,BottomCavity3D],Except[Null | {}]],
-			Module[{xDim,yDim,zDim},
-				{xDim,yDim,zDim}=Lookup[packet,Dimensions];
+		Test["If BottomSupport3D is populated, all members should be in Positions:",
+			If[MatchQ[Lookup[packet,BottomSupport3D],Except[Null | {}]],
 				MatchQ[
-					Lookup[packet,BottomCavity3D],
-					{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
-				]],
-			True
-		],
-		True
-	],
-
-	Test["If the rack model has PermanentStorage -> False, any Object[StorageAvailability]s associated with its objects must not have a status that renders them findable:",
-		If[MatchQ[Lookup[packet, PermanentStorage], False],
-			MatchQ[
-				Flatten[Download[Lookup[packet, Objects], StorageAvailability[[All,2]][Status]]],
-				{(Inactive|Discarded|InUse)...}
+					Complement[
+						Lookup[Lookup[packet,BottomSupport3D],Name],
+						Lookup[Lookup[packet,Positions],Name]
+					],
+					{}
+				],
+				True
 			],
 			True
 		],
-		True
-	]
-};
+
+		Test["If BottomSupport3D is populated, all entries lie withing the Dimensions of the Container:",
+			If[MatchQ[Lookup[packet,BottomSupport3D],Except[Null | {}]],
+				Module[{xDim,yDim,zDim},
+					{xDim,yDim,zDim}=Lookup[packet,Dimensions];
+					AllTrue[
+						Lookup[Lookup[packet,BottomSupport3D],Dimensions],
+						MatchQ[{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}]
+					]
+				],
+				True
+			],
+			True
+		],
+
+		Test["If BottomCavity3D is populated, all entries lie withing the Dimensions of the Container:",
+			If[MatchQ[Lookup[packet,BottomCavity3D],Except[Null | {}]],
+				Module[{xDim,yDim,zDim},
+					{xDim,yDim,zDim}=Lookup[packet,Dimensions];
+					MatchQ[
+						Lookup[packet,BottomCavity3D],
+						{{RangeP[0Millimeter,xDim],RangeP[0Millimeter,yDim],RangeP[0Millimeter,zDim]}..}
+					]],
+				True
+			],
+			True
+		],
+
+		Test["If the rack model has PermanentStorage -> False, any Object[StorageAvailability]s associated with its objects must not have a status that renders them findable:",
+			If[MatchQ[Lookup[packet, PermanentStorage], False],
+				MatchQ[
+					Flatten[Download[Lookup[packet, Objects], StorageAvailability[[All,2]][Status]]],
+					{(Inactive|Discarded|InUse)...}
+				],
+				True
+			],
+			True
+		]
+	}
+
+];
 
 
 
@@ -2978,10 +3047,21 @@ validModelContainerVesselQTests[packet:PacketP[Model[Container,Vessel]], ops:Opt
 			{True, Alternatives[False, Null]} | {False | Null, _}
 		],
 
-		Test["InternalDepth is informed unless the vessel is an Ampoule or PermanentlySealed, in which case it may be Null:",
-			Lookup[packet,{Ampoule, PermanentlySealed, InternalDepth}],
-			{True, _, _} | {_, True, _} | {Except[True], Except[True], Except[NullP]}
+		Test["The container height (from Dimensions) is equal to the sum of InternalDepth and DepthMargin if all are informed:",
+			Module[{height, internalDepth, depthMargin},
+				height = If[MatchQ[Lookup[packet, Dimensions, Null], {_, _, _}],
+					Lookup[packet, Dimensions][[3]],
+					Null
+				];
+				{internalDepth, depthMargin} = Lookup[packet, {InternalDepth, DepthMargin}, Null];
+				If[MemberQ[{height, internalDepth, depthMargin}, Null],
+					True,
+					EqualQ[height, internalDepth + depthMargin]
+				]
+			],
+			True
 		],
+
 		If[TrueQ[Lookup[packet, PendingParameterization]],
 			Nothing,
 			Test["InternalDepth is informed unless the vessel is an Ampoule or PermanentlySealed, in which case it may be Null:",
@@ -3119,7 +3199,7 @@ validModelContainerVesselQTests[packet:PacketP[Model[Container,Vessel]], ops:Opt
 				Alternatives[
 					{Circle, {diameter_, diameter_, _}},
 					{Except[Circle], _},
-					{_, ({} | {Null, Null, _})}
+					{_, (Null | {} | {Null, Null, _})}
 				],
 				Message -> Switch[Lookup[fieldSource, {CrossSectionalShape, Dimensions}],
 					{User, User}, {Hold[Error::ConflictingDimensionsEntry], CrossSectionalShape, Dimensions},
@@ -3230,14 +3310,7 @@ DefineOptions[
 validModelContainerBasketQTests[packet:PacketP[Model[Container,Basket]], ops:OptionsPattern[]] := {};
 
 
-(* ::Subsection::Closed:: *)
-(*validModelContainerSinkerQTests*)
-DefineOptions[
-	validModelContainerSinkerQTests,
-	Options :> {additionalValidQTestOptions}
-];
 
-validModelContainerSinkerQTests[packet:PacketP[Model[Container,Sinker]], ops:OptionsPattern[]] := {};
 
 
 (* ::Subsection::Closed:: *)
@@ -3735,6 +3808,8 @@ validModelContainerClampQTests[packet:PacketP[Model[Container,Clamp]]]:={
 };
 
 
+
+
 (* ::Subsection::Closed:: *)
 (*validModelContainerSpillKitQTests*)
 
@@ -3904,6 +3979,7 @@ registerValidQTestFunction[Model[Container, MicrofluidicChip],validModelContaine
 registerValidQTestFunction[Model[Container, MicroscopeSlide],validModelContainerMicroscopeSlideQTests];
 registerValidQTestFunction[Model[Container, NMRSpinner],validModelContainerNMRSpinnerQTests];
 registerValidQTestFunction[Model[Container, OperatorCart],validModelContainerOperatorCartQTests];
+registerValidQTestFunction[Model[Container, UtilityCart],validModelContainerUtilityCartQTests];
 registerValidQTestFunction[Model[Container, Plate],validModelContainerPlateQTests];
 registerValidQTestFunction[Model[Container, Plate, CapillaryStrip],validModelContainerPlateCapillaryStripQTests];
 registerValidQTestFunction[Model[Container, Plate, Dialysis],validModelContainerPlateDialysisQTests];
@@ -3947,7 +4023,6 @@ registerValidQTestFunction[Model[Container, WashBin],validModelContainerWashBinQ
 registerValidQTestFunction[Model[Container, WasteBin],validModelContainerWasteBinQTests];
 registerValidQTestFunction[Model[Container, Waste],validModelContainerWasteQTests];
 registerValidQTestFunction[Model[Container, Site],validModelContainerSiteQTests];
-registerValidQTestFunction[Model[Container, Sinker],validModelContainerSinkerQTests];
 registerValidQTestFunction[Model[Container, DosageDispensingUnit],validModelContainerDosageDispensingUnitQTests];
 registerValidQTestFunction[Model[Container, Box],validModelContainerBoxQTests];
 registerValidQTestFunction[Model[Container, Plate, MALDI],validModelContainerPlateMALDIQTests];

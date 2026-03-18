@@ -692,6 +692,17 @@ DefineObjectType[Object[Protocol, MeasureDensity], {
 			Description -> "The balance used to measure out the amount being transferred (manual fixed volume weight method).",
 			Category -> "General"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the amount being transferred (manual fixed volume weight method) are weighed.",
+			Category -> "General"
+		},
 		AirCheckData->{
 			Format->Multiple,
 			Class->Link,

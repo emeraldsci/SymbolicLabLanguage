@@ -1,13 +1,13 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2026 Emerald Cloud Lab, Inc.*)
 
 
 DefineObjectType[Model[Molecule], {
-	Description->"Model information for a group of atoms held together via covalent and/or ionic bonds.",
-	CreatePrivileges->None,
-	Cache->Session,
+	Description -> "Model information for a group of atoms held together via covalent and/or ionic bonds.",
+	CreatePrivileges -> None,
+	Cache -> Session,
 	Fields -> {
 
 		(* --- Organizational Information --- *)
@@ -75,7 +75,6 @@ DefineObjectType[Model[Molecule], {
 			Category -> "Migration Support",
 			Developer -> True
 		},
-
 
 		(* --- Inventory ---*)
 		DefaultSampleModel -> {
@@ -163,16 +162,16 @@ DefineObjectType[Model[Molecule], {
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through methods that don't require physical binding, such fluorescence (e.g. Alexa Fluor 488). Molecules can be used as DetectionLabels when they have DetectionLabel->True.",
-			Category -> "Physical Properties"
+			Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through methods that don't require physical binding, such as fluorescence (e.g. Alexa Fluor 488). Molecules can be used as DetectionLabels when they have DetectionLabel->True.",
+			Category -> "Molecular Labeling"
 		},
 		AffinityLabels -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> ObjectP[Model[Molecule]],
 			Relation -> Model[Molecule],
-			Description -> "The tags that this molecule contains which enable detection and quantification of the molecule through physical binding (e.g. His tag). Molecules can be used as DetectionLabels when they have AffinityLabel->True.",
-			Category -> "Physical Properties"
+			Description -> "The substructures that are contained within this molecule which enable detection and quantification of the molecule through physical binding (e.g. His tag). Molecules can be used as DetectionLabels when they have AffinityLabel->True.",
+			Category -> "Molecular Labeling"
 		},
 		Targets -> {
 			Format -> Multiple,
@@ -205,34 +204,34 @@ DefineObjectType[Model[Molecule], {
 		},
 		ExtinctionCoefficients -> {
 			Format -> Multiple,
-			Class -> {Wavelength->VariableUnit, ExtinctionCoefficient->VariableUnit},
-			Pattern :> {Wavelength->GreaterP[0*Nanometer], ExtinctionCoefficient->(GreaterP[0 Liter/(Centimeter*Mole)] | GreaterP[0 Milli Liter /(Milli Gram * Centimeter)])},
+			Class -> {Wavelength -> VariableUnit, ExtinctionCoefficient -> VariableUnit},
+			Pattern :> {Wavelength -> GreaterP[0*Nanometer], ExtinctionCoefficient -> (GreaterP[0 Liter/(Centimeter*Mole)] | GreaterP[0 Milli Liter /(Milli Gram * Centimeter)])},
 			Description -> "A measure of how strongly this molecule absorbs light at a particular wavelength.",
 			Category -> "Physical Properties"
 		},
-		Fluorescent ->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if this molecule can re-emit light upon excitation.",
-			Category->"Physical Properties"
+		Fluorescent -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this molecule can re-emit light upon excitation.",
+			Category -> "Physical Properties"
 		},
 		FluorescenceExcitationMaximums -> {
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0*Nanometer],
-			Units->Nanometer,
-			Description->"The wavelengths corresponding to the highest peak of each Fluorescent moiety's excitation spectrum.",
-			Category->"Physical Properties"
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0*Nanometer],
+			Units -> Nanometer,
+			Description -> "The wavelengths corresponding to the highest peak of each Fluorescent moiety's excitation spectrum.",
+			Category -> "Physical Properties"
 		},
 		FluorescenceEmissionMaximums -> {
-			Format->Multiple,
-			Class->Real,
-			Pattern:>GreaterP[0*Nanometer],
-			Units->Nanometer,
-			Description->"For each member of FluorescenceExcitationMaximums, the corresponding highest peak of the fluorescent moiety's emission spectrum.",
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0*Nanometer],
+			Units -> Nanometer,
+			Description -> "For each member of FluorescenceExcitationMaximums, the corresponding highest peak of the fluorescent moiety's emission spectrum.",
 			IndexMatching -> FluorescenceExcitationMaximums,
-			Category->"Physical Properties"
+			Category -> "Physical Properties"
 		},
 		MolecularWeight -> {
 			Format -> Single,
@@ -337,23 +336,40 @@ DefineObjectType[Model[Molecule], {
 			Description -> "The known chemical shift for a given nucleus in this molecule.",
 			Category -> "Physical Properties"
 		},
+		MiscibleLiquids -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
+			Description -> "Solvent or solvent mixtures with which this molecule is able to mix with and form a homogenous solution regardless of the ratio.",
+			Category -> "Physical Properties"
+		},
+		WaterSolubility -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {GreaterP[0 Kelvin], GreaterP[0 Gram/Milliliter]},
+			Units -> {Celsius, Gram/Milliliter},
+			Description -> "The thermodynamic upper-bound for dissolution of this molecule in pure water at the specified temperature.",
+			Category -> "Physical Properties",
+			Headers -> {"Temperature", "Solubility"}
+		},
 
 		(* --- Chiral Properties ---*)
-		Chiral->{
+		Chiral -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this molecule is a enantiomer, that cannot be superposed on its mirror image by any combination of rotations and translations.",
 			Category -> "Stereochemistry"
 		},
-		Racemic->{
+		Racemic -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this molecule represents a mixture of equal amounts of the two enantiomers of a chiral molecule.",
 			Category -> "Stereochemistry"
 		},
-		EnantiomerForms->{(*Only in Racemic->True*)
+		EnantiomerForms -> {(*Only in Racemic->True*)
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
@@ -361,7 +377,7 @@ DefineObjectType[Model[Molecule], {
 			Description -> "If this model molecule is racemic (Racemic -> True), indicates the two models for the enantiomerically pure forms.",
 			Category -> "Stereochemistry"
 		},
-		RacemicForm->{(*Only in Chiral->True*)
+		RacemicForm -> {(*Only in Chiral->True*)
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -369,7 +385,7 @@ DefineObjectType[Model[Molecule], {
 			Description -> "If this molecule represents one of a pair of enantiomers (Chiral -> True), indicates the model for its racemic form.",
 			Category -> "Stereochemistry"
 		},
-		EnantiomerPair->{(*Only one, single field*)
+		EnantiomerPair -> {(*Only one, single field*)
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
@@ -506,12 +522,19 @@ DefineObjectType[Model[Molecule], {
 			Description -> "The Biosafety classification for this molecule.",
 			Category -> "Health & Safety"
 		},
-		AutoclaveUnsafe->{
-			Format->Single,
-			Class->Boolean,
-			Pattern:>BooleanP,
-			Description->"Indicates if this sample cannot be safely autoclaved.",
-			Category->"Health & Safety"
+		OccupationalExposureBanding -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Description -> "Indicates the Occupational Exposure Band for this sample, which requires specific environmental health and safety handling considerations. Ranging from least stringent at OEB1 to most stringent at OEB5.",
+			Category -> "Health & Safety"
+		},
+		AutoclaveUnsafe -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this sample cannot be safely autoclaved.",
+			Category -> "Health & Safety"
 		},
 		DoubleGloveRequired -> {
 			Format -> Single,
@@ -521,7 +544,16 @@ DefineObjectType[Model[Molecule], {
 			Category -> "Health & Safety",
 			Developer -> True
 		},
+		LD50 -> {
+			Format -> Multiple,
+			Class -> {Real, Expression, Expression},
+			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
+			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
+			Category -> "Health & Safety",
+			Headers -> {"Dose", "Animal", "Route"}
+		},
 
+		(* --- Storage Information --- *)
 		LightSensitive -> {
 			Format -> Single,
 			Class -> Expression,
@@ -549,7 +581,7 @@ DefineObjectType[Model[Molecule], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Method,Pipetting],
+			Relation -> Model[Method, Pipetting],
 			Description -> "The parameters describing how pure samples of this molecule should be manipulated by pipette, such as aspiration and dispensing rates.",
 			Category -> "Compatibility"
 		},
@@ -560,12 +592,12 @@ DefineObjectType[Model[Molecule], {
 			Description -> "Indicates if pure samples of this molecule cannot be performed via the ultrasonic distance method due to vapors interfering with the reading.",
 			Category -> "Compatibility"
 		},
-		FluorescenceLabelingTarget ->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>FluorescenceLabelingTargetTypeP,
-			Description->"The types of molecules that cause fluorescence enhancement upon binding to this fluorophore.",
-			Category->"Compatibility"
+		FluorescenceLabelingTarget -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> FluorescenceLabelingTargetTypeP,
+			Description -> "The types of molecules that cause fluorescence enhancement upon binding to this fluorophore.",
+			Category -> "Compatibility"
 		},
 
 		(* -- Reference Data -- *)
@@ -612,31 +644,6 @@ DefineObjectType[Model[Molecule], {
 			Relation -> Object[Report, Literature][References],
 			Description -> "Literature references that discuss this molecule.",
 			Category -> "Analysis & Reports"
-		},
-		MiscibleLiquids -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[Model[Molecule][MiscibleLiquids], Model[Sample][MiscibleLiquids]],
-			Description -> "Solvent or solvent mixtures with which this molecule is able to mix with and form a homogenous solution regardless of the ratio.",
-			Category -> "Physical Properties"
-		},
-		WaterSolubility -> {
-			Format -> Multiple,
-			Class -> {Real, Real},
-			Pattern :> {GreaterP[0 Kelvin], GreaterP[0 Gram/Milliliter]},
-			Units -> {Celsius, Gram/Milliliter},
-			Description -> "The thermodynamic upper-bound for dissolution of this molecule in pure water at the specified temperature.",
-			Category -> "Physical Properties",
-			Headers -> {"Temperature", "Solubility"}
-		},
-		LD50 -> {
-			Format -> Multiple,
-			Class -> {Real, Expression, Expression},
-			Pattern :> {GreaterP[0], AnimalP, DosageRouteP},
-			Description -> "The dose for which a half the members of a given population dies. Dose is recorded as a unitless value but corresponds to dosage mass per animal mass.",
-			Category -> "Health & Safety",
-			Headers -> {"Dose", "Animal", "Route"}
 		}
 	}
 }];

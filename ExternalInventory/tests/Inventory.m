@@ -174,7 +174,7 @@ DefineTests[
 			Module[{},
 				PrintStickers[
 					Object[Sample, "id:kEJ9mqa154dV"],
-					Print -> False
+					Print -> True
 				];
 
 				Download[Object[Sample, "id:kEJ9mqa154dV"], NewStickerPrinted]
@@ -185,7 +185,8 @@ DefineTests[
 			},
 			TearDown :> {
 				NotebookClose /@ Notebooks["Sticker Printing Output"]
-			}
+			},
+			Stubs :> {NotebookPrint[_] := Null}
 		],
 		Test["Print a sticker for all containers and items shipped in a transaction (transaction with items only):",
 			PrintStickers[
@@ -753,6 +754,49 @@ DefineTests[
 			Variables :> {id1, id2, id3}
 		],
 
+		Example[{Options, UpdatedBy, "Log sticker printing in the User object if UpdatedBy is a user:"},
+			Module[{objects,objectsToPrint,user,logs},
+				(*intentionally not scoped for use in deleting and test*)
+				objects = CreateID[{Object[Part], Object[Wiring], Object[Sample], Object[Container], Object[Item], Object[Plumbing], Object[Package], Object[User, Emerald, Operator]}];
+				objectsToPrint = Most[objects];
+				user = Last[objects];
+				Upload[<|Object -> #, Name -> Null|> & /@ objects];
+
+				PrintStickers[objectsToPrint, UpdatedBy-> user, Print-> False];
+
+				logs = Download[objects, PrintStickersLog];
+				EraseObject[objects, Force->True];
+				logs
+			],
+			{
+				Sequence@@ConstantArray[{{_?DateObjectQ, ObjectP[Object[User, Emerald, Operator]]}}, 7],
+				ConstantArray[{_?DateObjectQ, ObjectP[{Object[Part], Object[Wiring], Object[Sample], Object[Container], Object[Item], Object[Plumbing], Object[Package]}]}, 7]
+			},
+			TearDown :> {
+				NotebookClose /@ Notebooks["Sticker Printing Output"]
+			}
+		],
+
+		Example[{Options, UpdatedBy, "Log sticker printing only in the printed object if UpdatedBy is a protocol:"},
+			Module[{objects,objectsToPrint,protocol,logs},
+				(*intentionally not scoped for use in deleting and test*)
+				objects = CreateID[{Object[Part], Object[Wiring], Object[Sample], Object[Container], Object[Item], Object[Plumbing], Object[Package], Object[Protocol, ImageSample]}];
+				objectsToPrint = Most[objects];
+				protocol = Last[objects];
+				Upload[<|Object -> #, Name -> Null|> & /@ objects];
+
+				PrintStickers[objectsToPrint, UpdatedBy-> protocol, Print-> False];
+
+				logs = Download[objectsToPrint, PrintStickersLog];
+				EraseObject[objects, Force-> True];
+				logs
+			],
+			ConstantArray[{{_?DateObjectQ, ObjectP[Object[Protocol, ImageSample]]}}, 7],
+			TearDown :> {
+				NotebookClose /@ Notebooks["Sticker Printing Output"]
+			}
+		],
+
 
 		(* --- Options --- *)
 
@@ -1168,6 +1212,7 @@ DefineTests[
 				FontFamily -> "Bitstream Vera Sans Mono",
 				Output -> Notebook,
 				Interactive -> False,
+				UpdatedBy -> ObjectP[Object[User]],
 				FastTrack -> False,
 				Upload -> True,
 				Cache -> {}

@@ -57,8 +57,21 @@ DefineTests[GenerateExperimentReview,
         ],
 
         Test["Generates a review of a MeasurepH protocol:",
-            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"]];
-            Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"][ExperimentReviewNotebook],
+            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]];
+            Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"][ExperimentReviewNotebook],
+            ObjectP[Object[EmeraldCloudFile]],
+            SetUp :> (
+                $CreatedObjects = {};
+            ),
+            TearDown :> (
+                EraseObject[$CreatedObjects, Force->True];
+            ),
+            TimeConstraint -> 600
+        ],
+
+        Test["Generates a review of a KarlFischerTitration protocol:",
+            GenerateExperimentReview[Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"]];
+            Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"][ExperimentReviewNotebook],
             ObjectP[Object[EmeraldCloudFile]],
             SetUp :> (
                 $CreatedObjects = {};
@@ -166,7 +179,7 @@ DefineTests[GenerateExperimentReview,
             $Failed,
             Messages :> {Error::ObjectDoesNotExist}
         ],
-        Example[{Messages, "IncompleteProtocol", "Does not generate a review notebook if the protocol is Canceled:"},
+        Example[{Messages, "IncompleteProtocol", "Does not generate a review notebook if the protocol is Aborted:"},
             GenerateExperimentReview[
                 Object[Protocol, RoboticSamplePreparation, "id:bq9LA0968Dav"]
             ],
@@ -967,6 +980,10 @@ DefineTests[mspPrimaryData,
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:O81aEB1jDblo"]],
             {_Labeled}
         ],
+        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Centrifuge unit operation:"},
+            mspPrimaryData[Object[Protocol,ManualSamplePreparation,"id:Z1lqpMv0z9a5"]],
+            {_Labeled}
+        ],
         Example[{Basic, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Transfer and FillToVolume unit operations:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:XnlV5jNELD8Z"]],
             {_Labeled}
@@ -981,10 +998,6 @@ DefineTests[mspPrimaryData,
         ],
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Incubate unit operations wherein streams of Object[Instrument, OverheadStirrer]s were recorded (fewer streams than samples case):"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:xRO9n3E5eL1w"]],
-            {_Labeled}
-        ],
-        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Incubate unit operations wherein streams of Object[Instrument, OverheadStirrer]s were recorded (multiple MixTypes case):"},
-            mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:wqW9BPzDEDdM"]],
             {_Labeled}
         ],
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein WeightAppearance images were taken:"},
@@ -1101,6 +1114,77 @@ DefineTests[hplcPrimaryData,
                 _Manipulate
             }
         ],
+        Example[{Basic, "Output only the specified injection Type:"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"], InjectionType -> ColumnPrime],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Pane
+            }
+
+        ],
+        Example[{Basic, "Output only the specified injection Types:"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType -> {ColumnPrime,ColumnFlush}],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Manipulate
+            }
+
+        ],
+        Example[{Messages, "Display all data if none of the given InjectionTypes are present in the protocol"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType ->Blank],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Manipulate
+            },
+            Messages :> {Warning::NoInjectionsOfGivenTypes}
+        ],
+
+        Example[{Messages, "Return a warning and only plot the requested InjectionTypes that are present in the protocol"},
+            output = hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType -> {Blank, ColumnPrime}][[3]];
+            Length[output[[1, 1]]],
+            1,
+            Messages :> {Warning::SomeInjectionsMissing}
+        ],
+
         Example[{Basic, "Output a message to indicate when data is not available:"},
             hplcPrimaryData[Object[Protocol, HPLC, "id:01G6nvD87kMm"]],
             {"This protocol was aborted and does not have chromatograms to display.", "Text"}
@@ -1234,12 +1318,24 @@ DefineTests[measurepHPrimaryData,
             measurepHPrimaryData[Object[Protocol, MeasurepH, "id:7X104v6ajDKd"]],
             {_Column}
         ],
-        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, where no calibration data is provided:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:3em6Zvr3Zz9B"]],
+        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, and for which multiple calibrations were performed:"},
+            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]],
+            {_Column}
+        ]
+    }
+];
+
+(* ::Subsection:: *)
+(*karlFischerTitrationPrimaryData*)
+
+DefineTests[karlFischerTitrationPrimaryData,
+    {
+        Example[{Basic, "Generate data tables for an Object[Protocol, KarlFischerTitration] with Volumetric Technique:"},
+            karlFischerTitrationPrimaryData[Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"]],
             {_Column}
         ],
-        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, and for which multiple calibrations were performed:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:9RdZXvNjz8X9"]],
+        Example[{Basic, "Generate data tables for an Object[Protocol, KarlFischerTitration] with Coulometric Technique:"},
+            karlFischerTitrationPrimaryData[Object[Protocol, KarlFischerTitration, "id:KBL5DvRw1emN"]],
             {_Column}
         ]
     }

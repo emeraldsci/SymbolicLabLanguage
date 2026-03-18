@@ -3049,3 +3049,263 @@ adjustedByteLimit[limit:(_Integer | Infinity), origOps:{(_Rule | _RuleDelayed)..
 
 
 TraceHistory[]:=Web`Private`traceHistory[];
+
+
+(* ::Subsection:: *)
+(*CreatedObjects*)
+
+(* ::Subsubsection:: *)
+(*Variables*)
+
+(* Only set variables if not already set to prevent resetting if this package is reloaded *)
+
+(* Indicate if new objects are logged locally *)
+If[!BooleanQ[$LogCreatedObjects],
+	$LogCreatedObjects = !MatchQ[ECL`$ECLApplication, Alternatives[ECL`Engine, ECL`CommandCenter]]
+];
+
+(* Variable to store created objects and date created *)
+(* Stored by database *)
+If[!AssociationQ[$CreatedObjectsData],
+	$CreatedObjectsData = <|
+		(* constellationDomain -> {{date, object}...} *)
+	|>
+];
+
+(* Variable to store any checkpoint dates *)
+(* tag = Null is special general checkpoint to maintain old behavior *)
+If[!AssociationQ[$CreatedObjectsCheckpoints],
+	$CreatedObjectsCheckpoints = <|
+		(* tag -> date object *)
+	|>
+];
+
+(* ::Subsubsection:: *)
+(*CreatedObjects*)
+
+(* Core function for retrieving objects *)
+CreatedObjects[startDate_?DateObjectQ, endDate_?DateObjectQ] := Module[{createdObjects},
+	ECL`ManifoldEcho[{startDate, endDate}, "Retrieving created objects for date range:"];
+
+	createdObjects = Cases[
+		getCreatedObjects[],
+		{RangeP[startDate, endDate], object_} :> object
+	];
+
+	ECL`ManifoldEcho[createdObjects, "Objects found:"];
+
+	createdObjects
+];
+
+(* Single date overload *)
+CreatedObjects[startDate_?DateObjectQ] := CreatedObjects[startDate, ECL`SafeNow[]];
+
+(* No date overload *)
+CreatedObjects[] := Module[{createdObjects},
+	ECL`ManifoldEcho["Retrieving all-time created objects:"];
+
+	createdObjects = getCreatedObjects[][[All, 2]];
+
+	ECL`ManifoldEcho[createdObjects, "Objects found:"];
+
+	createdObjects
+];
+
+(* Setter - store objects by database *)
+setCreatedObjects[newlyCreatedObjects_] := Module[
+	{sanitizedObjects, databaseDomain, updatedObjectList},
+
+	(* Return early and do nothing if not logging *)
+	If[!TrueQ[$LogCreatedObjects],
+		Return[Null]
+	];
+
+	(* Ensure we just have a list of objects *)
+	(* Can't use an input pattern because of load order *)
+	(* Evaluation of the RHS of the function is delayed so ECL` prefix works here *)
+	sanitizedObjects = Cases[ToList[newlyCreatedObjects], ECL`ObjectReferenceP[]];
+
+	(* Check which database we're on *)
+	databaseDomain = Global`$ConstellationDomain;
+
+	(* Append the new objects to the existing list *)
+	updatedObjectList = With[{now = ECL`SafeNow[]},
+		Join[
+			getCreatedObjects[],
+			Map[
+				{now, #} &,
+				sanitizedObjects
+			]
+		]
+	];
+
+	(* Store the updated objects list *)
+	AssociateTo[
+		$CreatedObjectsData,
+		databaseDomain -> updatedObjectList
+	];
+
+	(* Return just the added objects *)
+	newlyCreatedObjects
+];
+
+(* Getter *)
+getCreatedObjects[] := Module[
+	{databaseDomain},
+
+	(* Check which database we're on *)
+	databaseDomain = Global`$ConstellationDomain;
+
+	(* Return the data for that domain *)
+	Lookup[$CreatedObjectsData, databaseDomain, {}]
+];
+
+(* ::Subsubsection:: *)
+(*CreatedObjects Checkpoints*)
+
+(* Set *)
+SetCreatedObjectsCheckpoint[tag : Alternatives[_String, Null]] := (
+	(* If a checkpoint is being set, intention is for logging to happen, so switch it on *)
+	$LogCreatedObjects = True;
+
+	AppendTo[$CreatedObjectsCheckpoints, tag -> ECL`SafeNow[]];
+
+	ECL`ManifoldEcho[tag, "CreatedObject checkpoint created:"];
+
+	(* Return the tag *)
+	tag
+);
+
+(* Create a unique checkpoint - tag is returned so user can use later *)
+SetCreatedObjectsCheckpoint[Unique] := Module[{newCheckpoint},
+
+	newCheckpoint = ToString[Unique[]];
+
+	ECL`ManifoldEcho[newCheckpoint, "CreatedObject checkpoint identifier generated:"];
+
+	SetCreatedObjectsCheckpoint[newCheckpoint]
+];
+
+(* Special overload to use default checkpoint - mimicking more limited behavior of previous system *)
+SetCreatedObjectsCheckpoint[] := SetCreatedObjectsCheckpoint[Null];
+
+(* Read *)
+CreatedObjectsCheckpoint[tag : Alternatives[_String, Null]] := Module[
+	{startTime, objects},
+
+	ECL`ManifoldEcho[tag, "Retrieving created objects for tag:"];
+
+	startTime = Lookup[$CreatedObjectsCheckpoints, tag, $Failed];
+
+	ECL`ManifoldEcho[startTime, "Checkpoint start time:"];
+
+	(* Return $Failed if tag not defined, otherwise the list of objects since the start date *)
+	objects = If[FailureQ[startTime],
+		$Failed,
+		CreatedObjects[startTime]
+	];
+
+	ECL`ManifoldEcho[objects, "Retrieved created objects for " <> ToString[tag] <> ":"];
+
+	objects
+];
+
+(* Special overload to use default checkpoint - mimicking more limited behavior of previous system *)
+CreatedObjectsCheckpoint[] := CreatedObjectsCheckpoint[Null];
+
+(* Clear *)
+UnsetCreatedObjectsCheckpoint[tag : Alternatives[_String, Null]] := (
+	KeyDropFrom[$CreatedObjectsCheckpoints, tag];
+	ECL`ManifoldEcho[tag, "CreatedObjects checkpoint removed:"];
+	tag
+);
+
+(* Special overload to use default checkpoint - mimicking more limited behavior of previous system *)
+UnsetCreatedObjectsCheckpoint[] := UnsetCreatedObjectsCheckpoint[Null];
+
+
+(* ::Subsubsection:: *)
+(*EraseCreatedObjects*)
+
+DefineOptions[EraseCreatedObjects,
+	Options :> {
+		{Force -> Automatic, BooleanP | Automatic, "Indicates if the EraseObjects confirmation dialog should be overridden. When Automatic, set to False on the production database and True otherwise."}
+	}
+];
+
+(* Function for erasing objects created since a checkpoint *)
+EraseCreatedObjects[tag : Alternatives[_String, Null], ops:OptionsPattern[EraseCreatedObjects]] := Module[
+	{allCreatedObjects, stillExistingObjects, resolvedForceOption, eraseReturn},
+
+	ECL`ManifoldEcho[tag, "Erasing CreatedObjects for tag:"];
+
+	(* Resolve the Force option based on ProductionQ if Automatic *)
+	resolvedForceOption = If[MatchQ[OptionDefault[OptionValue[Force]], Automatic],
+		!TrueQ[ProductionQ[]],
+		OptionDefault[OptionValue[Force]]
+	];
+	
+	(* Get objects created since the checkpoint *)
+	allCreatedObjects = CreatedObjectsCheckpoint[tag];
+	
+	(* Return $Failed if checkpoint tag doesn't exist *)
+	If[FailureQ[allCreatedObjects],
+		Return[$Failed]
+	];
+	
+	(* Filter to only existing objects using DatabaseMemberQ. PickList is not available yet *)
+	stillExistingObjects = MapThread[
+		If[#2, #1, Nothing] &,
+		{allCreatedObjects, DatabaseMemberQ[allCreatedObjects]}
+	];
+
+	ECL`ManifoldEcho[stillExistingObjects, "Objects remaining in database:"];
+	ECL`ManifoldEcho[Complement[allCreatedObjects, stillExistingObjects], "Objects already erased from database:"];
+	
+	(* Erase the existing objects *)
+	eraseReturn = EraseObject[stillExistingObjects, Force -> resolvedForceOption, Verbose -> False];
+
+	ECL`ManifoldEcho[eraseReturn, "EraseObjects return value:"];
+
+	(* Return the erased objects *)
+	stillExistingObjects
+];
+
+(* Special overload to use default checkpoint *)
+EraseCreatedObjects[ops:OptionsPattern[EraseCreatedObjects]] := EraseCreatedObjects[Null, ops];
+
+(* Date range overload - mirrors CreatedObjects[startDate, endDate] *)
+EraseCreatedObjects[startDate_?DateObjectQ, endDate_?DateObjectQ, ops:OptionsPattern[EraseCreatedObjects]] := Module[
+	{allCreatedObjects, stillExistingObjects, resolvedForceOption, eraseReturn},
+
+	ECL`ManifoldEcho[{startDate, endDate}, "Erasing CreatedObjects for date range:"];
+
+	(* Resolve the Force option based on ProductionQ if Automatic *)
+	resolvedForceOption = If[MatchQ[OptionDefault[OptionValue[Force]], Automatic],
+		!TrueQ[ProductionQ[]],
+		OptionDefault[OptionValue[Force]]
+	];
+	
+	(* Get objects created in the date range *)
+	allCreatedObjects = CreatedObjects[startDate, endDate];
+	
+	(* Filter to only existing objects using DatabaseMemberQ. PickList is not available yet *)
+	stillExistingObjects = MapThread[
+		If[#2, #1, Nothing] &,
+		{allCreatedObjects, DatabaseMemberQ[allCreatedObjects]}
+	];
+
+	ECL`ManifoldEcho[stillExistingObjects, "Objects remaining in database:"];
+	ECL`ManifoldEcho[Complement[allCreatedObjects, stillExistingObjects], "Objects already erased from database:"];
+
+	(* Erase the existing objects *)
+	eraseReturn = EraseObject[stillExistingObjects, Force -> resolvedForceOption, Verbose -> False];
+
+	ECL`ManifoldEcho[eraseReturn, "EraseObjects return value:"];
+
+	(* Return the erased objects *)
+	stillExistingObjects
+];
+
+(* Single date overload - mirrors CreatedObjects[startDate] *)
+EraseCreatedObjects[startDate_?DateObjectQ, ops:OptionsPattern[EraseCreatedObjects]] := EraseCreatedObjects[startDate, ECL`SafeNow[], ops];

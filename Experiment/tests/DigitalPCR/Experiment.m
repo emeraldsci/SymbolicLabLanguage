@@ -5288,11 +5288,19 @@ DefineTests[
       TimeConstraint -> 240
     ],
     Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment:"},
-      options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample 1" <> $SessionUUID]}, {{{Object[Sample, "ExperimentDigitalPCR test primer 1 sample forward" <> $SessionUUID], Object[Sample, "ExperimentDigitalPCR test primer 1 sample reverse" <> $SessionUUID]}}}, {{Object[Sample, "ExperimentDigitalPCR test probe 1 sample" <> $SessionUUID]}}, CentrifugeIntensity -> 1000 * RPM, Output -> Options];
+      options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample 1" <> $SessionUUID]}, {{{Object[Sample, "ExperimentDigitalPCR test primer 1 sample forward" <> $SessionUUID], Object[Sample, "ExperimentDigitalPCR test primer 1 sample reverse" <> $SessionUUID]}}}, {{Object[Sample, "ExperimentDigitalPCR test probe 1 sample" <> $SessionUUID]}}, CentrifugeIntensity -> 1000 RPM, Output -> Options];
       Lookup[options, CentrifugeIntensity],
-      1000 * RPM,
+      1000 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample 1" <> $SessionUUID]}, {{{Object[Sample, "ExperimentDigitalPCR test primer 1 sample forward" <> $SessionUUID], Object[Sample, "ExperimentDigitalPCR test primer 1 sample reverse" <> $SessionUUID]}}}, {{Object[Sample, "ExperimentDigitalPCR test probe 1 sample" <> $SessionUUID]}}, CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
     ],
     (*Note: Put your sample in a 2mL tube for the following test*)
     Example[{Options, CentrifugeInstrument, "The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
@@ -5454,6 +5462,14 @@ DefineTests[
       0.15 * Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample 1" <> $SessionUUID]}, {{{Object[Sample, "ExperimentDigitalPCR test primer 1 sample forward" <> $SessionUUID], Object[Sample, "ExperimentDigitalPCR test primer 1 sample reverse" <> $SessionUUID]}}}, {{Object[Sample, "ExperimentDigitalPCR test probe 1 sample" <> $SessionUUID]}}, AliquotAmount -> 0.15001 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      0.15 Milliliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentDigitalPCR[{Object[Sample, "ExperimentDigitalPCR test sample 1" <> $SessionUUID]}, {{{Object[Sample, "ExperimentDigitalPCR test primer 1 sample forward" <> $SessionUUID], Object[Sample, "ExperimentDigitalPCR test primer 1 sample reverse" <> $SessionUUID]}}}, {{Object[Sample, "ExperimentDigitalPCR test probe 1 sample" <> $SessionUUID]}}, AssayVolume -> 0.15 * Milliliter, Output -> Options];
@@ -5955,32 +5971,6 @@ DefineTests[
 
     (*Make some test sample models*)
     UploadSampleModel[
-      {
-        "ExperimentDigitalPCR test probe 1 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 2 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 3 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 4 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe model sample without fluorescence" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe model sample with multiple fluorophores" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 1 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 1 model sample (Deprecated)" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 2 model sample" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 1 model sample (Mass Concentration)" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 2 model sample (Mass Concentration)" <> $SessionUUID,
-        "ExperimentDigitalPCR test target assay model" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer set model" <> $SessionUUID,
-        "ExperimentDigitalPCR test model sample with primers and probes" <> $SessionUUID,
-        "ExperimentDigitalPCR test model sample with primers and probes (Deprecated)" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 2 model sample (Low Concentration)" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 2 model sample (Low Concentration)" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 1 model sample (Mass Conc, No MW)" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 2 model sample (Mass Conc, No MW)" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe 1 model sample (Mass Percent)" <> $SessionUUID,
-        "ExperimentDigitalPCR test primer 2 model sample (Mass Percent)" <> $SessionUUID,
-        "ExperimentDigitalPCR test probe model sample with incompatible fluorophore" <> $SessionUUID,
-        "ExperimentDigitalPCR 1x dilute passive well buffer model" <> $SessionUUID
-      },
-      Composition ->
           {
             {
               {10 Micromolar, Model[Molecule, Oligomer, "ExperimentDigitalPCR test Probe Oligo Molecule 1" <> $SessionUUID]},
@@ -6082,6 +6072,31 @@ DefineTests[
             {
               {100 VolumePercent, Model[Molecule, "Water"]}
             }
+          },
+          Name -> {
+            "ExperimentDigitalPCR test probe 1 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 2 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 3 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 4 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe model sample without fluorescence" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe model sample with multiple fluorophores" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 1 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 1 model sample (Deprecated)" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 2 model sample" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 1 model sample (Mass Concentration)" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 2 model sample (Mass Concentration)" <> $SessionUUID,
+            "ExperimentDigitalPCR test target assay model" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer set model" <> $SessionUUID,
+            "ExperimentDigitalPCR test model sample with primers and probes" <> $SessionUUID,
+            "ExperimentDigitalPCR test model sample with primers and probes (Deprecated)" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 2 model sample (Low Concentration)" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 2 model sample (Low Concentration)" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 1 model sample (Mass Conc, No MW)" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 2 model sample (Mass Conc, No MW)" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe 1 model sample (Mass Percent)" <> $SessionUUID,
+            "ExperimentDigitalPCR test primer 2 model sample (Mass Percent)" <> $SessionUUID,
+            "ExperimentDigitalPCR test probe model sample with incompatible fluorophore" <> $SessionUUID,
+            "ExperimentDigitalPCR 1x dilute passive well buffer model" <> $SessionUUID
           },
       IncompatibleMaterials -> ConstantArray[{None}, 23],
       Expires -> True,
@@ -6999,16 +7014,6 @@ DefineTests[ExperimentDigitalPCROptions,
 
     (*Make some test sample models*)
     UploadSampleModel[
-      {
-        "ExperimentDigitalPCROptions test probe 1 model sample",
-
-        "ExperimentDigitalPCROptions test primer 1 model sample",
-
-        "ExperimentDigitalPCROptions test model sample with primers and probes",
-
-        "ExperimentDigitalPCROptions 1x dilute passive well buffer model"
-      },
-      Composition ->
           {
             {
               {10 Micromolar, Model[Molecule, Oligomer, "ExperimentDigitalPCROptions test Probe Oligo Molecule 1"]},
@@ -7027,6 +7032,15 @@ DefineTests[ExperimentDigitalPCROptions,
             {
               {100 VolumePercent, Model[Molecule, "Water"]}
             }
+          },
+          Name -> {
+            "ExperimentDigitalPCROptions test probe 1 model sample",
+
+            "ExperimentDigitalPCROptions test primer 1 model sample",
+
+            "ExperimentDigitalPCROptions test model sample with primers and probes",
+
+            "ExperimentDigitalPCROptions 1x dilute passive well buffer model"
           },
       IncompatibleMaterials -> ConstantArray[{None}, 4],
       Expires -> True,
@@ -7450,16 +7464,6 @@ DefineTests[ExperimentDigitalPCRPreview,
 
     (*Make some test sample models*)
     UploadSampleModel[
-      {
-        "ExperimentDigitalPCRPreview test probe 1 model sample",
-
-        "ExperimentDigitalPCRPreview test primer 1 model sample",
-
-        "ExperimentDigitalPCRPreview test model sample with primers and probes",
-
-        "ExperimentDigitalPCRPreview 1x dilute passive well buffer model"
-      },
-      Composition ->
           {
             {
               {10 Micromolar, Model[Molecule, Oligomer, "ExperimentDigitalPCRPreview test Probe Oligo Molecule 1"]},
@@ -7478,6 +7482,15 @@ DefineTests[ExperimentDigitalPCRPreview,
             {
               {100 VolumePercent, Model[Molecule, "Water"]}
             }
+          },
+          Name -> {
+            "ExperimentDigitalPCRPreview test probe 1 model sample",
+
+            "ExperimentDigitalPCRPreview test primer 1 model sample",
+
+            "ExperimentDigitalPCRPreview test model sample with primers and probes",
+
+            "ExperimentDigitalPCRPreview 1x dilute passive well buffer model"
           },
       IncompatibleMaterials -> ConstantArray[{None}, 4],
       Expires -> True,
@@ -7910,16 +7923,6 @@ DefineTests[ValidExperimentDigitalPCRQ,
 
     (*Make some test sample models*)
     UploadSampleModel[
-      {
-        "ValidExperimentDigitalPCRQ test probe 1 model sample",
-
-        "ValidExperimentDigitalPCRQ test primer 1 model sample",
-
-        "ValidExperimentDigitalPCRQ test model sample with primers and probes",
-
-        "ValidExperimentDigitalPCRQ 1x dilute passive well buffer model"
-      },
-      Composition ->
           {
             {
               {10 Micromolar, Model[Molecule, Oligomer, "ValidExperimentDigitalPCRQ test Probe Oligo Molecule 1"]},
@@ -7938,6 +7941,15 @@ DefineTests[ValidExperimentDigitalPCRQ,
             {
               {100 VolumePercent, Model[Molecule, "Water"]}
             }
+          },
+          Name -> {
+            "ValidExperimentDigitalPCRQ test probe 1 model sample",
+
+            "ValidExperimentDigitalPCRQ test primer 1 model sample",
+
+            "ValidExperimentDigitalPCRQ test model sample with primers and probes",
+
+            "ValidExperimentDigitalPCRQ 1x dilute passive well buffer model"
           },
       IncompatibleMaterials -> ConstantArray[{None}, 4],
       Expires -> True,

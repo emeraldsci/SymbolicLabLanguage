@@ -1750,7 +1750,7 @@ ExperimentStockSolution[myModelStockSolutions:{ObjectP[stockSolutionModelTypes].
 
 							Autoclave, AutoclaveProgram,
 							PrepareInResuspensionContainer, FillToVolumeParameterized,
-							OrderOfOperations, UnitOperations, PreparationType, Composition, DefaultStorageCondition, HeatSensitiveReagents
+							OrderOfOperations, UnitOperations, PreparationType, Composition, DefaultStorageCondition, HeatSensitiveReagents, MediaPhase
 						],
 						Packet[DefaultStorageCondition[{StorageCondition}]],
 						Packet[Formula[[All, 2]][allComponentFields]],
@@ -4284,7 +4284,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 
 					LightSensitive, Expires, DiscardThreshold, ShelfLife, UnsealedShelfLife, DefaultStorageCondition,
 					TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Sterile, Acid, Base, Fuming, Pyrophoric, IncompatibleMaterials,
-					FillToVolumeParameterized,UltrasonicIncompatible,OrderOfOperations,Autoclave,AutoclaveProgram,PrepareInResuspensionContainer, HeatSensitiveReagents,
+					FillToVolumeParameterized,UltrasonicIncompatible,OrderOfOperations,Autoclave,AutoclaveProgram,PrepareInResuspensionContainer, HeatSensitiveReagents, MediaPhase,
 
 					UnitOperations,PreparationType
 				],
@@ -4311,7 +4311,7 @@ resolveStockSolutionOptions[myModelStockSolutions:{ObjectP[stockSolutionModelTyp
 		},
 		Cache -> cache,
 		Date -> Now
-	], {Download::FieldDoesntExist, Download::NotLinkField}];
+	], {Download::FieldDoesntExist, Download::NotLinkField, Download::MissingField}];
 	{stockSolutionDownloadTuples, containerOutDownloadTuples, preparedResourceDownloadTuples, {parentProtocolDownloadTuple}, volumetricFlaskPackets} = allDownloadValues;
 
 	(* combine what we've Downloaded here to make a new cache *)
@@ -7832,6 +7832,8 @@ stockSolutionPrepContainer[
 			All,
 			LightSensitive -> TrueQ[lightSensitive],
 			MaxTemperature -> If[TrueQ[autoclave], 121Celsius, Automatic],
+			(* If autoclave is to be performed, there is no point requesting a sterile container to combine stuffs before sending to autoclave. Note that in PreferredContainer, if Sterile option is not given, it will look at the input model for sterile requirement. *)
+			Sterile -> If[TrueQ[autoclave], False, Automatic],
 			Type -> Vessel
 		],
 		(* otherwise we have a list of resolved options *)
@@ -8438,6 +8440,7 @@ resolveMixIncubateStockSolutionOptions[
 				MixType->Which[
 					MatchQ[Lookup[options, MixType], Automatic] && Not[mixBool], Null,
 					MatchQ[Lookup[options, MixType], MixTypeP|Null], Lookup[options, MixType],
+					(* Prefer Invert as otherwise we will resolve to Shake *)
 					MatchQ[container, ObjectP[Model[Container,Vessel,VolumetricFlask]]] && Not[TimeQ[modelMixTime]], Invert,
 					passModelValueQ, maybeMixType,
 					True, Automatic
@@ -10143,6 +10146,7 @@ stockSolutionResourcePackets[
 		nominalpHs, minpHs, maxpHs, pHTols, pHVolumeMultipler, pHVolumes, dosingTime, combiningTime, allResourceBlobs, fulfillable, frqTests, previewRule,
 		optionsRule, testsRule, resultRule, outputSpecification, output, gatherTests, messages,volumetricFlaskPackets,compatibleVolumetricFlasksForSSModel,
 		resolvedAutoclaveBools, resolvedAutoclavePrograms, autoclaveSamples,autoclaveSampleContainerOut,autoclavePrograms,
+		resolvedSkipCoolings, autoclaveSkipCoolings,
 		resolvedLightSensitive, resolvedIncompatibleMaterials,
 		autoclaveSamplesWithArea,batchedAutoclaveSamples,autoclaveBatchLengths, fixedAliquotTotalAmounts,
 		fixedAmountComponentAmountResources, singleUseComponentAmountRules,
@@ -10222,7 +10226,7 @@ stockSolutionResourcePackets[
 		},
 		{
 			{
-				Packet[Formula,FillToVolumeSolvent,TotalVolume,LightSensitive,PreferredContainers,State,Sterile, UnitOperations, PreparationType, IncompatibleMaterials],
+				Packet[Formula,FillToVolumeSolvent,TotalVolume,LightSensitive,PreferredContainers,State,Sterile, UnitOperations, PreparationType, IncompatibleMaterials,MediaPhase,TransportTemperature],
 				Packet[Formula[[All,2]][{SingleUse, FixedAmounts, Resuspension}]]
 			},
 			{Packet[SingleUse, FixedAmounts, Resuspension]},
@@ -10231,7 +10235,7 @@ stockSolutionResourcePackets[
 			{Packet[Object, MaxVolume, ContainerMaterials, Opaque]}
 		},
 		Date -> Now
-	],{Download::FieldDoesntExist}];
+	],{Download::FieldDoesntExist, Download::MissingField}];
 
 	(* combine what we've Downloaded here to make a new cache *)
 	newCache = FlattenCachePackets[{existingSolutionDownloadTuples,formulaModelDownloadTuples,containerOutDownloadTuples,preferredContainerPacketLists}];
@@ -10742,7 +10746,9 @@ stockSolutionResourcePackets[
 					Instrument -> Link[filterInstrument],
 					Filter -> Link[filterModel],
 					Syringe -> Link[filterSyringe],
-					FilterHousing -> Link[filterHousing]
+					FilterHousing -> Link[filterHousing],
+					OvenDryGlassware -> False,
+					DepyrogenateGlassware -> False
 				|>,
 				Nothing
 			]
@@ -10969,11 +10975,24 @@ stockSolutionResourcePackets[
 	];
 	{fillToVolumeSolutionPackets, fillToVolumeSolvents, fillToVolumeMethods} = Transpose[groupedFillToVolumeValues];
 
+	(* Determine whether the samples to be autoclaved need to skip cooling and picked into a heater instead *)
+	(*Need to know the TransportTemperature from the sample Object/Model and that it requires skipping cooling *)
+	(* For an autoclave sample, of a Model[Sample, Media], we skip cooling if 1) the model is a Model[Sample, Media], 2) MediaPhase is Solid, 3) State is Liquid *)
+	resolvedSkipCoolings = Map[
+		Function[packet,
+			And[
+				MatchQ[packet, ObjectP[Model[Sample,Media]]],
+				MatchQ[Lookup[packet, {MediaPhase, State, TransportTemperature}], {Solid, Liquid, GreaterP[$AmbientTemperature]}]
+			]
+		],
+		stockSolutionModelPackets
+	];
 
 	(* -- Autoclave Batching -- *)
 	autoclaveSamples=numReplicatesExpander[PickList[stockSolutionModelPackets, resolvedAutoclaveBools, True]];
 	autoclaveSampleContainerOut=numReplicatesExpander[PickList[containerOutPackets, resolvedAutoclaveBools, True]];
 	autoclavePrograms=numReplicatesExpander[PickList[resolvedAutoclavePrograms, resolvedAutoclaveBools, True]];
+	autoclaveSkipCoolings = numReplicatesExpander[PickList[resolvedSkipCoolings, resolvedAutoclaveBools, True]];
 
 	(* Note: I could not find a way to do this functionally in MM so I am doing it imperatively. *)
 
@@ -11164,6 +11183,7 @@ stockSolutionResourcePackets[
 		Replace[AutoclaveSamples] -> Link[autoclaveSamples],
 		Replace[AutoclavePrograms] -> autoclavePrograms,
 		Replace[AutoclaveBatchLengths] -> autoclaveBatchLengths,
+		Replace[AutoclaveSkipCoolings] -> autoclaveSkipCoolings,
 
 		(* filtration stuff *)
 		Replace[FiltrationSamples] -> numReplicatesExpander[Link[filteredSolutionPackets]],

@@ -181,7 +181,8 @@ DefineObjectType[Object[Resource, Sample], {
 				Object[Protocol,SampleManipulation][PreparedResources],
 				Object[Protocol,Transfer][PreparedResources],
 				Object[Protocol,PrepareReferenceElectrode][PreparedResources],
-				Object[Protocol,AssembleCrossFlowFiltrationTubing][PreparedResources]
+				Object[Protocol,AssembleCrossFlowFiltrationTubing][PreparedResources],
+				Object[Protocol,WaterPreparation][PreparedResources]
 			],
 			Description -> "The protocol that prepares a sample meeting the amount and container model requirements of this resource request.",
 			Category -> "Resources"
@@ -270,6 +271,13 @@ DefineObjectType[Object[Resource, Sample], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates that the sample fulfilling this resources should be should be free of microbial contamination. If the sample contains living microbial cell components, it must be free of non-sample microbial contamination. Otherwise, the sample must be either certified by manufactures without microbial life forms, or handled with AsepticHandling which includes sanitization, autoclaving, sterile filtration, or transferring in biosafety cabinet during the course of experiments, as well as during sample storage and handling.",
+			Category -> "Resources"
+		},
+		ApproximateTransfer -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if a liquid transfer can use an estimated volume instead of an exact measured volume. This is appropriate when high precision is not required, such as refilling HPLC buffers using the destination container graduation marks, which saves time and reduces additional glassware and cleaning.",
 			Category -> "Resources"
 		}
 	}

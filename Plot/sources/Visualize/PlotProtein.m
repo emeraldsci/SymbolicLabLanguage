@@ -48,7 +48,10 @@ PlotProtein[pdbID_String,ops:OptionsPattern[]]:=Module[
 	result=If[MatchQ[imported,$Failed],
 		Message[PlotProtein::InvalidPDBID,pdbID];
 		Message[Error::InvalidInput,pdbID];,
-		Show[imported,ImageSize->Lookup[safeOps,ImageSize]]
+		If[GreaterEqualQ[$VersionNumber, 14.2],
+			BioMoleculePlot3D[imported,ImageSize->Lookup[safeOps,ImageSize]],
+			Show[imported,ImageSize->Lookup[safeOps,ImageSize]]
+		]
 	];
 
 	(* Get the actual image dimensions *)

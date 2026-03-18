@@ -62,175 +62,176 @@ openPathsExistQ[myOpenPath:{(ObjectP[Object[Catalog]]|_String)..}]:=Module[
 ];
 
 (* any Object widget that takes in a Model[Sample], Identity models, Model[Item], Model[Container], Object[Product], Model[Instrument], and Model[StorageCondition] *)
-openPathsTypes := Flatten[{Model[Sample],IdentityModelTypes,Model[Item],Model[Container],Object[Product],Model[Instrument],Model[StorageCondition]}];
+openPathsTypes := Flatten[{Model[Sample], IdentityModelTypes, Model[Item], Model[Container], Object[Product], Model[Instrument], Model[StorageCondition]}];
 
 DefineOptions[ValidOpenPathsQ,
-  Options :> {
-    {
-      OutputFormat -> Boolean,
-      Boolean|Options,
-      "Indicates whether the output should be a Boolean for each function, or a list of the options whose OpenPaths are failing."
-    },
-    VerboseOption
-  }
-]
+	Options :> {
+		{
+			OutputFormat -> Boolean,
+			Boolean | Options,
+			"Indicates whether the output should be a Boolean for each function, or a list of the options whose OpenPaths are failing."
+		},
+		VerboseOption
+	}
+];
 
 ValidOpenPathsQ[myFunction_Symbol, ops:OptionsPattern[ValidOpenPathsQ]]:=First[ValidOpenPathsQ[{myFunction}, ops]];
-ValidOpenPathsQ[myFunctions:{__Symbol}, ops:OptionsPattern[ValidOpenPathsQ]]:=Module[
-  {safeOps, verbose, optionDefs, openPathsExistTests, testFunctionForRVQT, openPathsExistAndTestsSingleFunction,
-    allFailingOptions, outputFormat, testResult, usageDefs},
+ValidOpenPathsQ[myFunctions : {__Symbol}, ops : OptionsPattern[ValidOpenPathsQ]] := Module[
+	{safeOps, verbose, optionDefs, openPathsExistTests, testFunctionForRVQT, openPathsExistAndTestsSingleFunction,
+		allFailingOptions, outputFormat, testResult, usageDefs},
 
-  safeOps = SafeOptions[ValidOpenPathsQ, ToList[ops]];
-  {verbose, outputFormat} = Lookup[safeOps, {Verbose, OutputFormat}];
+	safeOps = SafeOptions[ValidOpenPathsQ, ToList[ops]];
+	{verbose, outputFormat} = Lookup[safeOps, {Verbose, OutputFormat}];
 
 
-  optionDefs = OptionDefinition[#]& /@ myFunctions;
+	optionDefs = OptionDefinition[#]& /@ myFunctions;
 
-  (* note that if we've got any unevaluated usage, just allow <||>*)
-  usageDefs = ReplaceAll[
-    Usage[#]& /@ myFunctions,
-    _Usage :> <||>
-  ];
+	(* note that if we've got any unevaluated usage, just allow <||>*)
+	usageDefs = ReplaceAll[
+		Usage[#]& /@ myFunctions,
+		_Usage :> <||>
+	];
 
-  (* make an internal function that makes the tests for whether a given function has all its OpenPaths correct, and which options are good or bad *)
-  openPathsExistAndTestsSingleFunction[optionDefsPerFunction:{___Association}, usageDef_Association, functionName_Symbol]:=Module[
-    {optionOrInputOptions},
+	(* make an internal function that makes the tests for whether a given function has all its OpenPaths correct, and which options are good or bad *)
+	openPathsExistAndTestsSingleFunction[optionDefsPerFunction : {___Association}, usageDef_Association, functionName_Symbol] := Module[
+		{optionOrInputOptions},
 
-    (* combine the option and input definitions *)
-    optionOrInputOptions = Join[
-      optionDefsPerFunction,
-      Lookup[usageDef, "Input", {}]
-    ];
+		(* combine the option and input definitions *)
+		optionOrInputOptions = Join[
+			optionDefsPerFunction,
+			Lookup[usageDef, "Input", {}]
+		];
 
-    If[MatchQ[optionOrInputOptions, {}],
-      {{}, {}, {}},
-      Transpose[Map[
-        Function[{optionOrInputDef},
-          Module[{allWidgets, objectWidgetsWithTypes, noOpenPathsWidgets, openPathsPopulatedTests, openPathsWidgets,
-            openPaths, openPathsExistQs, openPathsRealTest, optionName, openPathsPopulatedBool, openPathsRealBool,
-            optionCategory, nameToUse, inputName},
-            (* note that All here goes from levelspec 0 down to infinite depth, whereas Infinity goes from levelspec 1 *)
-            (* the consequence is if Lookup[optionOrInputDef, "Widget"] is just a widget instead of an Adder or Alternatives or whatever, we will only get it in this Cases if we're using All; Infinity will NOT work *)
-            allWidgets = Flatten[Cases[Lookup[optionOrInputDef, "Widget"], _Widget, All]];
+		If[MatchQ[optionOrInputOptions, {}],
+			{{}, {}, {}},
+			Transpose[Map[
+				Function[{optionOrInputDef},
+					Module[
+						{allWidgets, objectWidgetsWithTypes, noOpenPathsWidgets, openPathsPopulatedTests, openPathsWidgets,
+							openPaths, openPathsExistQs, openPathsRealTest, optionName, openPathsPopulatedBool, openPathsRealBool,
+							optionCategory, nameToUse, inputName},
+						(* note that All here goes from levelspec 0 down to infinite depth, whereas Infinity goes from levelspec 1 *)
+						(* the consequence is if Lookup[optionOrInputDef, "Widget"] is just a widget instead of an Adder or Alternatives or whatever, we will only get it in this Cases if we're using All; Infinity will NOT work *)
+						allWidgets = Flatten[Cases[Lookup[optionOrInputDef, "Widget"], _Widget, All]];
 
-            {optionName, inputName, optionCategory} = Lookup[optionOrInputDef, {"OptionName", "Name", "Category"}];
+						{optionName, inputName, optionCategory} = Lookup[optionOrInputDef, {"OptionName", "Name", "Category"}];
 
-            (* if it's an option vs if it's an input, need to pick the right string *)
-            nameToUse = Which[
-              StringQ[optionName], optionName,
-              StringQ[inputName], inputName,
-              (* null name if we just don't have any usage *)
-              True, Null
-            ];
+						(* if it's an option vs if it's an input, need to pick the right string *)
+						nameToUse = Which[
+							StringQ[optionName], optionName,
+							StringQ[inputName], inputName,
+							(* null name if we just don't have any usage *)
+							True, Null
+						];
 
-            (* if we're a hidden option, we can just end early and not bother checking; these ones don't need to have OpenPaths *)
-            (* also if we flat out don't have usage, also return early here *)
-            If[MatchQ[optionCategory, "Hidden"] || NullQ[nameToUse],
-              Return[{True, {}}, Module]
-            ];
+						(* if we're a hidden option, we can just end early and not bother checking; these ones don't need to have OpenPaths *)
+						(* also if we flat out don't have usage, also return early here *)
+						If[MatchQ[optionCategory, "Hidden"] || NullQ[nameToUse],
+							Return[{True, {}}, Module]
+						];
 
-            (* get the object widgets that match the relevant pattern for which we want open paths *)
-            objectWidgetsWithTypes = Select[allWidgets, MatchQ[First[#], KeyValuePattern[{Type -> Object, ObjectTypes -> _?(MemberQ[#, TypeP[openPathsTypes]]&)}]]&];
+						(* get the object widgets that match the relevant pattern for which we want open paths *)
+						objectWidgetsWithTypes = Select[allWidgets, MatchQ[First[#], KeyValuePattern[{Type -> Object, ObjectTypes -> _?(MemberQ[#, TypeP[openPathsTypes]]&)}]]&];
 
-            (* determine if we have any widgets that take the relevant types but do NOT have OpenPaths populated *)
-            (* also get the ones hwere they do exist too because that's useful below *)
-            noOpenPathsWidgets = Select[objectWidgetsWithTypes, MatchQ[First[#],KeyValuePattern[{OpenPaths -> {}}]]&];
-            openPathsWidgets = DeleteCases[objectWidgetsWithTypes, Alternatives @@ noOpenPathsWidgets];
+						(* determine if we have any widgets that take the relevant types but do NOT have OpenPaths populated *)
+						(* also get the ones hwere they do exist too because that's useful below *)
+						noOpenPathsWidgets = Select[objectWidgetsWithTypes, MatchQ[First[#], KeyValuePattern[{OpenPaths -> {}}]]&];
+						openPathsWidgets = DeleteCases[objectWidgetsWithTypes, Alternatives @@ noOpenPathsWidgets];
 
-            (* make a boolean for the OpenPaths-populated-test *)
-            openPathsPopulatedBool = MatchQ[noOpenPathsWidgets, {}];
+						(* make a boolean for the OpenPaths-populated-test *)
+						openPathsPopulatedBool = MatchQ[noOpenPathsWidgets, {}];
 
-            (* If we don't have any object widgets to begin with, then don't bother returning anything *)
-            openPathsPopulatedTests = If[MatchQ[objectWidgetsWithTypes, {}],
-              Nothing,
-              (* if we do have Object widgets but they all have OpenPaths, then the test passes *)
-              Test[ToString[functionName] <> ": Object widgets for " <> nameToUse <> " have OpenPaths populated:",
-                True,
-                openPathsPopulatedBool
-              ]
-            ];
+						(* If we don't have any object widgets to begin with, then don't bother returning anything *)
+						openPathsPopulatedTests = If[MatchQ[objectWidgetsWithTypes, {}],
+							Nothing,
+							(* if we do have Object widgets but they all have OpenPaths, then the test passes *)
+							Test[ToString[functionName] <> ": Object widgets for " <> nameToUse <> " have OpenPaths populated:",
+								True,
+								openPathsPopulatedBool
+							]
+						];
 
-            (* pull out the open paths of all the object widgets we do have *)
-            (* Join because OpenPaths is a list of lists for each one widget (so we would otherwise have a list of list of lists) *)
-            openPaths = Join @@ Lookup[First /@ openPathsWidgets, OpenPaths, {}];
+						(* pull out the open paths of all the object widgets we do have *)
+						(* Join because OpenPaths is a list of lists for each one widget (so we would otherwise have a list of list of lists) *)
+						openPaths = Join @@ Lookup[First /@ openPathsWidgets, OpenPaths, {}];
 
-            (* get whether each open paths exists at all *)
-            openPathsExistQs = openPathsExistQ[#]& /@ openPaths;
+						(* get whether each open paths exists at all *)
+						openPathsExistQs = openPathsExistQ[#]& /@ openPaths;
 
-            (* make a boolean for the OpenPaths-actually-exists-test *)
-            openPathsRealBool = MatchQ[openPathsExistQs, {True..}];
+						(* make a boolean for the OpenPaths-actually-exists-test *)
+						openPathsRealBool = MatchQ[openPathsExistQs, {True..}];
 
-            (* only need to bother with this test if we actually have open paths to begin with *)
-            openPathsRealTest = If[MatchQ[openPaths, {}],
-              Nothing,
-              Test[ToString[functionName] <> ": OpenPaths for " <> nameToUse <> " actually exist in the catalog:",
-                True,
-                openPathsRealBool
-              ]
-            ];
+						(* only need to bother with this test if we actually have open paths to begin with *)
+						openPathsRealTest = If[MatchQ[openPaths, {}],
+							Nothing,
+							Test[ToString[functionName] <> ": OpenPaths for " <> nameToUse <> " actually exist in the catalog:",
+								True,
+								openPathsRealBool
+							]
+						];
 
-            (* returning two things *)
-            (* first, if the open paths are correct *)
-            (* second, test blobs for this in RunValidQTest below *)
-            {
-              And[
-                openPathsPopulatedBool || MatchQ[objectWidgetsWithTypes, {}],
-                openPathsRealBool || MatchQ[openPaths, {}]
-              ],
-              Flatten[{openPathsPopulatedTests, openPathsRealTest}]
-            }
+						(* returning two things *)
+						(* first, if the open paths are correct *)
+						(* second, test blobs for this in RunValidQTest below *)
+						{
+							And[
+								openPathsPopulatedBool || MatchQ[objectWidgetsWithTypes, {}],
+								openPathsRealBool || MatchQ[openPaths, {}]
+							],
+							Flatten[{openPathsPopulatedTests, openPathsRealTest}]
+						}
 
-          ]
-        ],
-        optionOrInputOptions
-      ]]
-    ]
+					]
+				],
+				optionOrInputOptions
+			]]
+		]
 
-  ];
+	];
 
-  (* make tests determining if the OpenPaths should be populated and isn't for each option for each specified object *)
-  {allFailingOptions, openPathsExistTests} = Transpose[MapThread[
-    Function[{optionDefsPerFunction, usageDef, functionName},
-      Module[{optionAndInputBools,optionTests, failingOptions, failingInputs, optionBools, inputBools},
-        {optionAndInputBools, optionTests} = openPathsExistAndTestsSingleFunction[optionDefsPerFunction, usageDef, functionName];
+	(* make tests determining if the OpenPaths should be populated and isn't for each option for each specified object *)
+	{allFailingOptions, openPathsExistTests} = Transpose[MapThread[
+		Function[{optionDefsPerFunction, usageDef, functionName},
+			Module[{optionAndInputBools, optionTests, failingOptions, failingInputs, optionBools, inputBools},
+				{optionAndInputBools, optionTests} = openPathsExistAndTestsSingleFunction[optionDefsPerFunction, usageDef, functionName];
 
-        (* split the options and inputs based on how many options went in *)
-        {optionBools, inputBools} = TakeDrop[optionAndInputBools, Length[optionDefsPerFunction]];
+				(* split the options and inputs based on how many options went in *)
+				{optionBools, inputBools} = TakeDrop[optionAndInputBools, Length[optionDefsPerFunction]];
 
-        (* get the failing option names and make them expressions *)
-        failingOptions = ToExpression[PickList[Lookup[optionDefsPerFunction, "OptionName", {}], optionBools, False]];
+				(* get the failing option names and make them expressions *)
+				failingOptions = ToExpression[PickList[Lookup[optionDefsPerFunction, "OptionName", {}], optionBools, False]];
 
-        (* get the failing input names and append (input value) to it *)
-        failingInputs = Map[
-          # <> " (input value)" &,
-          Lookup[PickList[Lookup[usageDef, "Input", {}], inputBools, False], "Name", {}]
-        ];
+				(* get the failing input names and append (input value) to it *)
+				failingInputs = Map[
+					# <> " (input value)" &,
+					Lookup[PickList[Lookup[usageDef, "Input", {}], inputBools, False], "Name", {}]
+				];
 
-        {Join[failingOptions, failingInputs], Flatten[optionTests]}
-      ]
-    ],
-    {optionDefs, usageDefs, myFunctions}
-  ]];
+				{Join[failingOptions, failingInputs], Flatten[optionTests]}
+			]
+		],
+		{optionDefs, usageDefs, myFunctions}
+	]];
 
-  (* need to format things right for RunValidQTest.  Which ultimately means it will be very goofy *)
-  (* basically this is the clearest way I can figure out (for now at least) how to run only the index matching tests to myFunctions in RVQT below *)
-  testFunctionForRVQT = ConstantArray[
-    Function[expFunction, openPathsExistTests[[FirstPosition[myFunctions, expFunction][[1]]]]],
-    Length[myFunctions]
-  ];
+	(* need to format things right for RunValidQTest.  Which ultimately means it will be very goofy *)
+	(* basically this is the clearest way I can figure out (for now at least) how to run only the index matching tests to myFunctions in RVQT below *)
+	testFunctionForRVQT = ConstantArray[
+		Function[expFunction, openPathsExistTests[[FirstPosition[myFunctions, expFunction][[1]]]]],
+		Length[myFunctions]
+	];
 
-  testResult = RunValidQTest[
-    myFunctions,
-    testFunctionForRVQT,
-    Verbose -> verbose,
-    SymbolSetUp -> False,
-    OutputFormat -> Boolean
-  ];
+	testResult = RunValidQTest[
+		myFunctions,
+		testFunctionForRVQT,
+		Verbose -> verbose,
+		SymbolSetUp -> False,
+		OutputFormat -> Boolean
+	];
 
-  If[MatchQ[outputFormat, Boolean],
-    testResult,
-    allFailingOptions
-  ]
+	If[MatchQ[outputFormat, Boolean],
+		testResult,
+		allFailingOptions
+	]
 ];
 
 (* ::Subsubsection::Closed:: *)
@@ -301,7 +302,7 @@ LookupLabeledObject[mySimulation:SimulationP, myLabel_String, ops:OptionsPattern
 LookupLabeledObject[mySimulation:SimulationP, myLabels:{_String..}, ops:OptionsPattern[]] := Lookup[Lookup[mySimulation[[1]], Labels], myLabels, Null];
 
 (* CORE overload *)
-LookupLabeledObject[myProtocols:{ObjectP[Object[Protocol]]...}, myLabels:{_String..}, ops:OptionsPattern[]] := Module[
+LookupLabeledObject[myProtocols:{ObjectP[Object[Protocol]]...}, myLabels:{_String..}, ops:OptionsPattern[]] := TraceExpression["LookupLabelObject",Module[
 	{safeOps, scriptQ, cache, types, labeledObjectsRaw, labeledObjectsExistQ, labeledObjects, missingLabels, labeledObjectRulesNested, initialResults, multipleHitsLabels, result},
 
 	(* get safe options *)
@@ -382,7 +383,7 @@ LookupLabeledObject[myProtocols:{ObjectP[Object[Protocol]]...}, myLabels:{_Strin
 
 	(* return the result *)
 	result
-];
+]];
 
 
 
@@ -463,7 +464,7 @@ SimulateResources[
 	myProtocolPacket:PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}, {Object}],
 	myAccessoryPacket:{PacketP[]...}|Null,
 	myOptions:OptionsPattern[SimulateResources]
-]:=Module[
+]:=TraceExpression["SimulateResources",Module[
 	{safeOptions, cache, simulation, parentProtocol, finalProtocolPacket, finalProtocolPacketWithoutNameOption, finalAccessoryPacket, uploadResult, currentSimulation, accessoryObjects},
 
 	(* Get our options. *)
@@ -471,6 +472,9 @@ SimulateResources[
 	cache=Lookup[safeOptions, Cache];
 	simulation=Lookup[safeOptions, Simulation];
 	parentProtocol=Lookup[safeOptions, ParentProtocol];
+
+	(* tag the trace so we know which one we are running in the *)
+	TagTrace["function.overload", 1];
 
 	(* We have to detect and replace any resources that had the same name but different resource parameters. This will cause *)
 	(* UploadProtocol to fail. *)
@@ -552,7 +556,7 @@ SimulateResources[
 		Cache->cache,
 		PooledSamplesIn->Lookup[ToList[myOptions], PooledSamplesIn, Null]
 	]
-];
+]];
 
 SimulateResources[
 	protocol:PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}, {Object}],
@@ -566,7 +570,7 @@ SimulateResources[
 	myProtocol:ObjectReferenceP[{Object[Protocol], Object[Maintenance], Object[Qualification]}],
 	myAccessoryObjects:{(ObjectReferenceP[]|LinkP[])...}|Null,
 	myOptions:OptionsPattern[SimulateResources]
-]:=Module[
+]:=TraceExpression["SimulateResources",Module[
 	{
 		currentSimulation,unavailableObjectPackets,availablePackets, fields,targetlabeledObjectsResourceBlobs,okSamplePositions,
 		resourceFilteredDownload,fulfilledSamplePositions,unfulfilledSamplePositions,requiredResources,resourceData,resourceSampleData,
@@ -581,7 +585,8 @@ SimulateResources[
 		experimentFunction, protocolPacket, accessoryPackets, unavailableInstrumentPackets, resourceInstrumentData, wasteBinData, allInstrumentPackets,
 		protocolFields, accessoryPacketFields, potentialInstrumentObjectsForModelsPackets, notAvailableInstrumentPackets,
 		containerResourcesToFulfill, allResourcePackets, containerResourceUpdatePackets, colonyHandlerHeadCassettePackets,
-		targetlabeledObjectsResourcePacketsWithWaters, ignoreWaterResources, ignoreCoverSimulation, resolvedIgnoreCoverSimulation, protocolSite
+		targetlabeledObjectsResourcePacketsWithWaters, ignoreWaterResources, ignoreCoverSimulation, resolvedIgnoreCoverSimulation, protocolSite,
+		protocolResourceDownloadInitial
 	},
 
 	(* Get our options. *)
@@ -590,6 +595,9 @@ SimulateResources[
 	simulation=Lookup[safeOptions, Simulation];
 	parentProtocol=Lookup[safeOptions, ParentProtocol];
 	{ignoreWaterResources, ignoreCoverSimulation} = Lookup[safeOptions, {IgnoreWaterResources, IgnoreCoverSimulation}];
+
+	(* tag the trace so we know which one we are running in the *)
+	TagTrace["function.overload", 2];
 
 	(* Note: In SimulateResources (in the call of UploadSample), if we are simulating a container from model, the cover of the container will be simulated if IgnoreCoverSimulation->False *)
 	(* When RSP/RCP is performed, a Cover unit operation will be added to the end if the input container is not covered *)
@@ -626,7 +634,7 @@ SimulateResources[
 	(* replace with resources. The alternative way this used to work is to download RequiredResources first, then only download the backlink *)
 	(* fields in the protocol/accessory objects, but since everything is simulated it shouldn't actually hit the database and thus is better *)
 	(* to download everything up front. *)
-	{protocolResourceDownload, protocolPacket, accessoryPackets}=Quiet[
+	{protocolResourceDownloadInitial, protocolPacket, accessoryPackets}=Quiet[
 		Download[
 			{
 				Join[{myProtocol}, accessoryPacketObjects],
@@ -636,7 +644,7 @@ SimulateResources[
 			{
 				{
 					RequiredResources,
-					Packet[RequiredResources[[All,1]][{Sample,Models,ContainerModels,ContainerName,Well,Amount,Instrument,InstrumentModels, ContainerResource}]],
+					Packet[RequiredResources[[All,1]][{Sample,Models,ContainerModels,ContainerName,Well,Amount,Instrument,InstrumentModels, ContainerResource,Status}]],
 					Packet[RequiredResources[[All,1]][Sample][{Composition,Model,Status,CurrentProtocol}]],
 					RequiredResources[[All,1]][Sample][Container][Model][Object],
 					Packet[RequiredResources[[All, 1]][Instrument][{Model, Status, CurrentProtocol}]],
@@ -654,7 +662,16 @@ SimulateResources[
 	protocolSite = Download[Lookup[protocolPacket, Site], Object];
 	accessoryPackets=Flatten[accessoryPackets];
 	(* NOTE: We can get some $Failed results in our download, so we need to transform those into empty lists before we can call Join. *)
-	protocolResourceDownload=(Join@@(#/.{$Failed->{}})&)/@Transpose[protocolResourceDownload];
+	protocolResourceDownloadInitial=(Join@@(#/.{$Failed->{}})&)/@Transpose[protocolResourceDownloadInitial];
+	(*now we need to filter out Cancelled resources, this might happen if we are updating resources for the protocol to request new items and are re-making the resources*)
+	protocolResourceDownload = Module[{resourcePackets,selectionBools},
+		(*[[2]] is the index for the Object[Resource] packets*)
+		resourcePackets = protocolResourceDownloadInitial[[2]];
+		(* we will allow everything that is NOT Canceled*)
+		selectionBools = Map[MatchQ[KeyValuePattern[Status -> Except[Canceled]]],resourcePackets];
+		(*we want to preserve the shape of the downloaded data here, so we will be mapping PickList over every part of the *)
+		Map[PickList[#,selectionBools]&,protocolResourceDownloadInitial]
+	];
 
 	(* NOTE: We have to strip link IDs here because the logic that uses this cache depends on it. *)
 	fieldDownloadCache=Flatten[{protocolPacket, accessoryPackets}]/.link_Link:>RemoveLinkID[link];
@@ -701,7 +718,7 @@ SimulateResources[
 	(* if IgnoreWaterResources -> True, filter out the water resources here *)
 	(* we do this because SimulateProcedure's use of SimulateResources really does not want us to simulate fulfilling water resources because it doesn't replicate how it ever actually happens in the lab and thus messes with the framework *)
 	targetlabeledObjectsResourcePackets = If[TrueQ[ignoreWaterResources],
-		DeleteCases[targetlabeledObjectsResourcePacketsWithWaters, KeyValuePattern[{ContainerResource -> ObjectP[]}]],
+		DeleteCases[targetlabeledObjectsResourcePacketsWithWaters, KeyValuePattern[{Models -> {ObjectP[List @@ WaterModelP] ..}}]],
 		targetlabeledObjectsResourcePacketsWithWaters
 	];
 
@@ -1418,7 +1435,7 @@ SimulateResources[
 
 	(* Return the updated simulation. *)
 	currentSimulation
-];
+]];
 
 SimulateResources[
 	myProtocol:ObjectReferenceP[{Object[Protocol], Object[Maintenance], Object[Qualification]}],

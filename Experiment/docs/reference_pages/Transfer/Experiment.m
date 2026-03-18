@@ -139,7 +139,7 @@ DefineUsage[ExperimentTransfer,
 								],
 								"Count" -> Widget[
 									Type -> Number,
-									Pattern :> GreaterP[0., 1.]
+									Pattern :> RangeP[1., 15., 1.]
 								],
 								"All" -> Widget[
 									Type -> Enumeration,

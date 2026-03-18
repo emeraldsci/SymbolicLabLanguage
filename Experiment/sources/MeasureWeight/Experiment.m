@@ -115,8 +115,8 @@ DefineOptions[ExperimentMeasureWeight,
 (* ::Subsubsection:: *)
 (*Constants*)
 
-(* we hard code a list of shipping and receiving benches, if MeasureWeight is called inside a MaintenanceReceivingInventory, we will try to use a balance on these benches directly, without redirecting them to use a handling station elsewhere since we currently do not have a handling station in SnR room (which we should in the future, thus we should remove these hardcodings when those are online) *)
-$ShippingReceivingBench = {Object[Container, Bench, "id:rea9jlRBejL5"], Object[Container, Bench, "id:dORYzZn0Xwbb"], Object[Container, Bench, "id:O81aEB19w8Wp"]};
+(* we hard code the S&R room in ECL-2, if MeasureWeight is called inside a MaintenanceReceivingInventory, we will try to use a balance on these benches directly, without redirecting them to use a handling station elsewhere since we currently do not have a handling station in SnR room (which we should in the future, thus we should remove these hardcodings when those are online) *)
+$ShippingReceivingRoom = {Object[Container, Room, "id:1ZA60vA4pb7w"]};
 
 receivingBalanceLookup[fakeString_] := receivingBalanceLookup[fakeString] = Module[{downloads, fastAssoc, contents, balances, models},
 	If[!MemberQ[$Memoization, Experiment`Private`receivingBalanceLookup],
@@ -127,8 +127,8 @@ receivingBalanceLookup[fakeString_] := receivingBalanceLookup[fakeString] = Modu
 	downloads = Quiet[
 		Download[
 			{
-				$ShippingReceivingBench,
-				$ShippingReceivingBench
+				$ShippingReceivingRoom,
+				$ShippingReceivingRoom
 			},
 			{
 				{Repeated[Contents[[All, 2]]][Object]},
@@ -486,8 +486,8 @@ ExperimentMeasureWeight[myInputs:ListableP[ObjectP[{Object[Container],Sequence @
 					(* Information about the Micro balance compatible model. *)
 					{microBalanceAllowedContainersPacket},
 					(* the instrument stuff *)
-					{Packet[Mode]},
-					{Packet[Model[Mode]]},
+					{Packet[Mode,Model]},
+					{Packet[Model[Mode,MinWeight,MaxUSPMinWeight]]},
 					(*ParentProtocol stuff*)
 					{Packet[MeasureWeight, ParentProtocol], Packet[Repeated[ParentProtocol][{ParentProtocol}]]},
 					{(* covered container stuff *)
@@ -778,7 +778,8 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 		tareWeightNeededOptions,tareWeightNeededTests,unsuitableBalanceOptions,unsuitableBalanceTests,microBalanceAllowedContainers,containerIncompatibleWithBalanceOptions,
 		containerIncompatibleWithBalanceTests,invalidTransferSamples,invalidTransferSampleTests,invalidInputs,invalidOptions,
 		resolvedAliquotOptions,aliquotTests,name,confirm,template,samplesInStorageCondition,cache,operator,parentProtocol,upload,outputOption,email,
-		numberOfReplicates,resolvedEmail,resolvedPostProcessingOptions,resolvedOptions,allTests,resultRule,testsRule,parentProtocolTree, resolvedWeightStabilityDurations, resolvedMaxWeightVariations
+		numberOfReplicates,resolvedEmail,resolvedPostProcessingOptions,resolvedOptions,allTests,resultRule,testsRule,parentProtocolTree, resolvedWeightStabilityDurations, resolvedMaxWeightVariations,
+		inaccurateBalanceWarnings
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -875,8 +876,8 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 			},(* the transfer container stuff if Model *)
 			{Packet[PreferredBalance,MaxVolume,TareWeight]},
 			(* the instrument stuff *)
-			{Packet[Mode]},
-			{Packet[Model[Mode]]}
+			{Packet[Mode,Model]},
+			{Packet[Model[Mode,MinWeight,MaxUSPMinWeight]]}
 		},
 		Cache->inheritedCache,
 		Simulation->updatedSimulation,
@@ -1650,7 +1651,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 	mapThreadFriendlyOptions=OptionsHandling`Private`mapThreadOptions[ExperimentMeasureWeight,measureWeightOptionsAssociation];
 
 	(* MapThread over each of our samples. *)
-	{transferContainers,calibrateContainers,instruments,sampleLabels,sampleContainerLabels,tareWeightNeededErrors,unsuitableBalanceErrors,inputIncompatibleWithBalanceErrors,preferredBalances,recommendedBalances,handlingEnvironments,resolvedEquivalentHandlingEnvironments,fumeHoodRequestedBools, resolvedWeightStabilityDurations, resolvedMaxWeightVariations}=Transpose[
+	{transferContainers,calibrateContainers,instruments,sampleLabels,sampleContainerLabels,tareWeightNeededErrors,unsuitableBalanceErrors,inputIncompatibleWithBalanceErrors,preferredBalances,recommendedBalances,handlingEnvironments,resolvedEquivalentHandlingEnvironments,fumeHoodRequestedBools, resolvedWeightStabilityDurations, resolvedMaxWeightVariations, inaccurateBalanceWarnings}=Transpose[
 		MapThread[
 			Function[
 				{
@@ -1666,11 +1667,12 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						specifiedSampleContainerLabel,recommendedBalance,sampleLabel,sampleContainerLabel,
 						calibrateContainer,transferContainer,preferredBalance,modelToWeight,instrument,
 						semiResolvedHandlingEnvironment, handlingEnvironment, equivalentHandlingEnvironments,
-						semiResolvedHandlingConditions, fumeHoodRequested, semiResolvedInstrument, weightStabilityDuration, maxWeightVariation
+						semiResolvedHandlingConditions, fumeHoodRequested, semiResolvedInstrument, weightStabilityDuration, maxWeightVariation,
+						inaccurateBalanceWarning
 					},
 
 					(* Setup our error tracking variables *)
-					{tareWeightNeededError,unsuitableBalanceError,inputIncompatibleWithBalanceError}={False,False,False};
+					{tareWeightNeededError,unsuitableBalanceError,inputIncompatibleWithBalanceError,inaccurateBalanceWarning}={False,False,False,False};
 
 					(* grab the TareWeight, Model, and PreferredBalance from the input Container object packets *)
 					tareWeight = If[MatchQ[inputPacket, PacketP[Object[Container]]],
@@ -1744,7 +1746,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 					getSuitableBalance[myContainer : PacketP[{Object[Container], Sequence @@ CoverObjectTypes}], myMode_, myLatestWeight_, myTrustWeightBool_, inSituBool_] := Module[{handlingEnvironmentBalances, modeToHandlingEnvironmentBalanceLookup},
 
 						(* if we have a semi resolved handling environment, get the balance models that are on it
-						 this comes out sorted to have the balance with better/smaller MinWeight first *)
+						 this comes out sorted to have the balance with better/smaller MaxUSPMinWeight first *)
 						handlingEnvironmentBalances = Flatten[Lookup[Lookup[handlingStationBalanceLookup["Memoization"], ToList[semiResolvedHandlingEnvironment], <||>], "Model", {}]];
 						(* create a lookup of balance mode to balance models *)
 						modeToHandlingEnvironmentBalanceLookup = Merge[Thread[
@@ -2008,7 +2010,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 
 						(* from the semi resolved handling conditions, get the potential transfer environments temporarily *)
 						True,
-							UnsortedComplement[DeleteDuplicates[Flatten[Lookup[handlingConditionInstrumentLookup["Memoization"], semiResolvedHandlingConditions, {}]]], $SpecializedHandlingStationModels]
+							UnsortedComplement[DeleteDuplicates[Flatten[Lookup[handlingConditionInstrumentLookup["Memoization"], semiResolvedHandlingConditions, {}]]], specializedHandlingStationModels["Memoization"]]
 					];
 
 					(* Resolve instrument with the help of preferredBalance (remember, this is Mode and not actual Object/Model). *)
@@ -2089,6 +2091,17 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						Null
 					];
 					
+					(* check if the measured mass is smaller than MaxUSPMinWeight of the balance, if so, the measurement is still doable, but not with USP confidence, and we should throw a warning about this *)
+					inaccurateBalanceWarning = And[
+						MassQ[sampleWeight],
+						TrueQ[trustBool],
+						!NullQ[instrument],
+						If[MatchQ[instrument, ObjectP[Object[Instrument, Balance]]],
+							MatchQ[sampleWeight, RangeP[fastAssocLookup[fastAssoc, instrument, {Model, MinWeight}], fastAssocLookup[fastAssoc, instrument, {Model, MaxUSPMinWeight}], Inclusive -> Left]],
+							MatchQ[sampleWeight, RangeP[fastAssocLookup[fastAssoc, instrument, MinWeight], fastAssocLookup[fastAssoc, instrument, MaxUSPMinWeight], Inclusive -> Left]]
+						]
+					];
+					
 					(* once we resolve a balance, use it to fully resolve handling environment *)
 					{handlingEnvironment, equivalentHandlingEnvironments} = If[NullQ[semiResolvedHandlingEnvironment],
 						{Null, {}},
@@ -2153,7 +2166,7 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						(* otherwise, use default setting *)
 						(* Note: unlike Transfer, MeasureWeight for liquid in container should always have a cover *)
 						True,
-						60 Second
+						$DefaultWeightStabilityDuration
 					];
 
 					maxWeightVariation = Which[
@@ -2189,7 +2202,8 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 						equivalentHandlingEnvironments,
 						fumeHoodRequested,
 						weightStabilityDuration,
-						maxWeightVariation
+						maxWeightVariation,
+						inaccurateBalanceWarning
 					}
 				]
 			],
@@ -2365,6 +2379,24 @@ resolveExperimentMeasureWeightOptions[myInputs:{ObjectP[{Object[Container],Seque
 		],
 		(* We aren't gathering tests. No tests to create. *)
 		{}
+	];
+
+	(* 4) throw the inaccurate balance warning if we are given a balance that cannot measure the specified sample weight with USP confidence *)
+	If[MemberQ[inaccurateBalanceWarnings, True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Message[
+			Warning::InaccurateBalance,
+			StringForm[
+				"The sample(s), `1`, at indices, `2`, have a weight of, `3`, whereas the balance(s), `4`, are only capable of measuring weights that are greater than or equal to `5` with USP accuracy (as defined in USP <1251>). The protocol is still executable in lab but please be mindful of the potential weight inaccuracy as a result of using these balances.",
+				ObjectToString[PickList[myInputs, inaccurateBalanceWarnings], Cache -> cacheBall, Simulation -> updatedSimulation],
+				PickList[Range[Length[myInputs]], inaccurateBalanceWarnings],
+				PickList[latestSampleWeights, inaccurateBalanceWarnings],
+				ObjectToString[PickList[instruments, inaccurateBalanceWarnings], Cache -> cacheBall, Simulation -> updatedSimulation],
+				If[MatchQ[#, ObjectP[Object[Instrument, Balance]]],
+					fastAssocLookup[fastAssoc, #, {Model, MaxUSPMinWeight}],
+					fastAssocLookup[fastAssoc, #, MaxUSPMinWeight]
+				]& /@ PickList[instruments, inaccurateBalanceWarnings]
+			]
+		]
 	];
 
 	(*-- UNRESOLVABLE OPTION CHECKS --*)
@@ -2858,7 +2890,7 @@ measureWeightResourcePackets[myInputs:{ObjectP[{Object[Container],Sequence @@ Co
 						];
 
 						(* if the container has a specific holder it's supposed to use to stand, then use that one *)
-						specifiedHolder = Quiet[rackFinder[containerModel]];
+						specifiedHolder = Quiet[RackFinder[containerModel]];
 
 						If[MatchQ[specifiedHolder, ObjectP[]], Return[specifiedHolder, Module]];
 
@@ -3428,7 +3460,7 @@ simulateExperimentMeasureWeight[
 
 (* ==== Helper that deletes indexmatched options for invalid input  *)
 (* Input: input including the invalid stuff, the options that we want to get trimmed, the keys of the options that are indexmatched, and the invalid positions *)
-(* Output: {validSamples, validOptons} -> the list of samples and the corresponding otpions with correctly indexmatching options when applicable *)
+(* Output: {validSamples, validOptons} -> the list of samples and the corresponding options with correctly indexmatching options when applicable *)
 
 
 (* Get the options that were specified for the valid input*)

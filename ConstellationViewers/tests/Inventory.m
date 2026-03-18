@@ -112,7 +112,6 @@ DefineTests[
 				StockingMethod -> TotalAmount,
 				ReorderThreshold -> 100 Kilo Gram,
 				ReorderAmount -> 5 Kilo Gram,
-				Expires -> False,
 				Site -> Link[testSite1],
 				ModelStocked -> Link[Model[Sample, "Sodium Chloride"]],
 				Notebook -> Link[testNotebook, Objects]
@@ -129,7 +128,6 @@ DefineTests[
 				StockingMethod -> TotalAmount,
 				ReorderThreshold -> 100 Kilo Gram,
 				ReorderAmount -> 5 Kilo Gram,
-				Expires -> False,
 				Site -> Link[testSite2],
 				ModelStocked -> Link[Model[Sample, "Sodium Chloride"]],
 				Notebook -> Link[testNotebook, Objects]
@@ -146,7 +144,6 @@ DefineTests[
 				StockingMethod -> TotalAmount,
 				ReorderThreshold -> 100 Kilo Gram,
 				ReorderAmount -> 5 Kilo Gram,
-				Expires -> False,
 				Site -> Link[testSite2],
 				ModelStocked -> Link[Model[Sample, StockSolution, "5M Sodium Hydroxide"]],
 				Notebook -> Link[testNotebook, Objects]

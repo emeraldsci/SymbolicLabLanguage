@@ -211,6 +211,9 @@ barOrPieChart[purity:(ListableP[PacketP[Object[Analysis,Peaks]],2]),displayPatte
 (* --- Function that passes off 2 lists of SLL input to internal helpers depending on requested peaks --- *)
 PlotPeaks[peaksObjA:ListableP[PacketP[Object[Analysis,Peaks]],2],peaksObjB:ListableP[PacketP[Object[Analysis,Peaks]],2],opts:OptionsPattern[PlotPeaks]]:=
 	Module[{passingOptions},
+		TagTrace["sll.function.call", 1];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+
 		passingOptions=ReplaceRule[{opts},{Peaks->{{OptionDefault[OptionValue[Peaks],Verbose->False],OptionDefault[OptionValue[Peaks],Verbose->False]}}}];
 		Switch[OptionDefault[OptionValue[Peaks],Verbose->False],
 			{{All|ListableP[_Integer],All|ListableP[_Integer]}},plotPeaksNormalized[peaksObjA,peaksObjB,opts],
@@ -226,6 +229,8 @@ Plot`Private`$fromPlotPeaks=False;
 (* --- Function that passes off SLL input to internal helpers depending on plot type and requested peaks --- *)
 PlotPeaks[rawPurity:(ListableP[PacketP[Object[Analysis,Peaks]],2]),opts:OptionsPattern[PlotPeaks]]:=Module[
 	{defaultedOptions,purity,display,plotType,resolvedPlotType,peaksOpt,peakType},
+	TagTrace["sll.function.call", 2];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
 
 	(* default all the options first *)
 	defaultedOptions=SafeOptions[PlotPeaks, ToList[opts]];
@@ -285,7 +290,7 @@ PlotPeaks[rawPurity:(ListableP[PacketP[Object[Analysis,Peaks]],2]),opts:OptionsP
 
 (* Return the preview from the peaks analysis function *)
 analyzePeaksPreview[peaksObj:ListableP[PacketP[Object[Analysis,Peaks]]], output_, plotOptions_]:=Module[
-	{referencesAndOptions, references, options, deprecatedPeaksOptions, existingOptions},
+	{analysisVersion, referencesAndOptions, references, options, deprecatedPeaksOptions, existingOptions, result},
 
 	(* batch download or lookup objects *)
 	referencesAndOptions = Download[peaksObj,
@@ -297,6 +302,20 @@ analyzePeaksPreview[peaksObj:ListableP[PacketP[Object[Analysis,Peaks]]], output_
 
 	(* Split the references and options *)
 	{references, options}= referenceOptionSplit[referencesAndOptions];
+
+	(*New suite of Analysis functions (starting with AdvancedAnalyzePeaks) will be producing data that requires an overhaul of PlotPeaks*)
+	(*Object[Analysis, Peaks] objects produced by AdvancedAnalyzePeaks will have the field AnalysisVersion populated with a real number starting with 1.0*)
+	(*If any of the requested objects is being plotted, dispatch everything to PlotChromatography*)
+	analysisVersion = Flatten[Quiet[Download[ToList[peaksObj], AnalysisVersion]]];
+	If[AnyTrue[analysisVersion, MatchQ[#, _Real]&],
+		result = Quiet[PlotChromatography[references]];
+		If[Not[SameQ[Head[result], PlotChromatography]],
+			result = Replace[Flatten[result], {plot_} :> plot];
+			Return[result],
+
+			Return[Null]
+		];
+	];
 
 	(* Unused peaks options that will error if passed to peaks *)
 	deprecatedPeaksOptions = {
@@ -351,19 +370,15 @@ analyzePeaksPreview[peaksObj:ListableP[PacketP[Object[Analysis,Peaks]]], output_
 	(* If output is preview or result show the preview, otherwise return the options and an empty list for test.
 	Here we set $fromPlotPeaks=True to let AnalyzePeaksPreview know that the call is coming from PlotPeaks and
 	that the returned plot should be free in interactive elements.*)
-	Block[{Plot`Private`$fromPlotPeaks=True, pkOpNames = Symbol/@Keys[Options[ECL`AnalyzePeaks]], apkOpNames = Symbol/@Keys[Options[ECL`AdvancedAnalyzePeaks]]},
+	Block[{Plot`Private`$fromPlotPeaks=True},
 
 		(*Instead, try:
 		 result = ECL`AnalyzePeaksPreview[references, existingOptions]*)
 
 		result = MapThread[
-			If[ ContainsAny[Keys[#2], Complement[apkOpNames,pkOpNames]], (* object came from AdvancedAnalyzePeaks *)
-				ECL`AdvancedAnalyzePeaksPreview[#1, FilterRules[Download[#3, ResolvedOptions], {PeakThresholds,UnknownPeakThresholds,ManualPeaks,ExpectedPeaks}]],
-				ECL`AnalyzePeaksPreview[#1, #2]
-			]&,
-			{references, existingOptions, ToList[peaksObj]}
+			ECL`AnalyzePeaksPreview[#1, #2]&,
+			{references, existingOptions}
 		]
-
 	];
 
 	(* If plot length is > 1, use a tabview, otherwise just return the plot *)
@@ -465,10 +480,13 @@ plotPeaksWithSpectra[pkt:PacketP[Object[Analysis,Peaks]],output_]:=Module[
 
 (* --- Function that passes off PurityP input to internal helpers depending on plot type --- *)
 PlotPeaks[purity:PurityP,opts:OptionsPattern[PlotPeaks]]:=
-	Switch[OptionDefault[OptionValue[PlotType],Verbose->False],
+	(
+		TagTrace["sll.function.call", 3];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+		Switch[OptionDefault[OptionValue[PlotType],Verbose->False],
 		(Automatic|PieChart),plotPeaksPieChart[purity,opts],
 		BarChart,plotPeaksBarChart[purity,opts]
-	];
+	]);
 
 (* --- listable PurityP input --- *)
 PlotPeaks[purity:{PurityP..},opts:OptionsPattern[PlotPeaks]]:=
@@ -931,6 +949,9 @@ PlotPeaks[dataObjA:ListableP[PacketP[Object[Data]],2],dataObjB:ListableP[PacketP
 PlotPeaks[dataObjA:ListableP[PacketP[Object[Data]],2],dataObjB:ListableP[PacketP[Object[Data]],2],opts:OptionsPattern[PlotPeaks]]:=Module[
 	{defaultedOptions,peakField,peaksIDA,peaksIDB},
 
+	TagTrace["sll.function.call", 4];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+
 	(* default all the options *)
 	defaultedOptions = SafeOptions[PlotPeaks, ToList[opts]];
 
@@ -952,17 +973,20 @@ PlotPeaks[dataObjA:ListableP[PacketP[Object[Data]],2],dataObjB:ListableP[PacketP
 
 (* --- PacketP[Object[Data]]: plotting all peak purities as a bar chart or pie chart --- *)
 PlotPeaks[dataObj:ListableP[PacketP[Object[Data]],2],opts:OptionsPattern[PlotPeaks]]:=
-	Switch[dataObj,
-		PacketP[Object[Data]],If[MatchQ[getPeaksFromData[dataObj],Null],
-				Message[PlotPeaks::NoPeaks,Flatten[Object/.dataObj]],
-				PlotPeaks[dataToPurity[dataObj],opts]
-			],
-		{PacketP[Object[Data]]..},If[MemberQ[getPeaksFromData[#]&/@dataObj,Null],
-				Message[PlotPeaks::NoPeaks,Flatten[Object/.dataObj]],
-				PlotPeaks[dataToPurity[#]&/@dataObj,opts]
-			],
-		{{PacketP[Object[Data]]..}..},PlotPeaks[#,opts]&/@dataObj
-	]/;And[MatchQ[OptionDefault[OptionValue[Display],Verbose->False],Purity],MatchQ[OptionDefault[OptionValue[Peaks],Verbose->False],All]]
+	(
+		TagTrace["sll.function.call", 5];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+		Switch[dataObj,
+			PacketP[Object[Data]],If[MatchQ[getPeaksFromData[dataObj],Null],
+					Message[PlotPeaks::NoPeaks,Flatten[Object/.dataObj]],
+					PlotPeaks[dataToPurity[dataObj],opts]
+				],
+			{PacketP[Object[Data]]..},If[MemberQ[getPeaksFromData[#]&/@dataObj,Null],
+					Message[PlotPeaks::NoPeaks,Flatten[Object/.dataObj]],
+					PlotPeaks[dataToPurity[#]&/@dataObj,opts]
+				],
+			{{PacketP[Object[Data]]..}..},PlotPeaks[#,opts]&/@dataObj
+		])/;And[MatchQ[OptionDefault[OptionValue[Display],Verbose->False],Purity],MatchQ[OptionDefault[OptionValue[Peaks],Verbose->False],All]]
 
 
 dataToPurity[obj: ObjectP[]] := Module[
@@ -988,6 +1012,9 @@ PlotPeaks[dataObj:ListableP[PacketP[Object[Data]],2],opts:OptionsPattern[PlotPea
 PlotPeaks[dataObj:ListableP[PacketP[Object[Data]],2],opts:OptionsPattern[PlotPeaks]]:=Module[
 	{defaultedOptions,peakField,peaksID},
 
+	TagTrace["sll.function.call", 6];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+
 	(* default all the options *)
 	defaultedOptions = SafeOptions[PlotPeaks, ToList[opts]];
 
@@ -1005,17 +1032,41 @@ PlotPeaks[dataObj:ListableP[PacketP[Object[Data]],2],opts:OptionsPattern[PlotPea
 
 (* --- Objects --- *)
 PlotPeaks[peaksObjA:ListableP[(objectOrLinkP[Object[Analysis,Peaks]]),1],peaksObjB:ListableP[(objectOrLinkP[Object[Analysis,Peaks]]),1],opts:OptionsPattern[PlotPeaks]]:=
+	(
+		TagTrace["sll.function.call", 7];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
 		PlotPeaks[Download[peaksObjA],Download[peaksObjB],opts]
+	);
 PlotPeaks[peaksObjA:ListableP[(objectOrLinkP[Object[Analysis,Peaks]]),{2}],peaksObjB:ListableP[(objectOrLinkP[Object[Analysis,Peaks]]),{2}],opts:OptionsPattern[PlotPeaks]]:=
+	(
+		TagTrace["sll.function.call", 8];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
 		PlotPeaks[Download/@peaksObjA,Download/@peaksObjB,opts]
+	);
 
 PlotPeaks[peaksObjA:ListableP[(objectOrLinkP[Object[Data]]),1],peaksObjB:ListableP[(objectOrLinkP[Object[Data]]),1],opts:OptionsPattern[PlotPeaks]]:=
-	PlotPeaks[Download[peaksObjA],Download[peaksObjB],opts]
+	(
+		TagTrace["sll.function.call", 9];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+		PlotPeaks[Download[peaksObjA],Download[peaksObjB],opts]
+	);
 PlotPeaks[peaksObjA:ListableP[(objectOrLinkP[Object[Data]]),{2}],peaksObjB:ListableP[(objectOrLinkP[Object[Data]]),{2}],opts:OptionsPattern[PlotPeaks]]:=
+	(
+		TagTrace["sll.function.call", 10];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
 		PlotPeaks[Download/@peaksObjA,Download/@peaksObjB,opts]
+	);
 
 
 PlotPeaks[peaksObj:(ListableP[objectOrLinkP[Object[Analysis,Peaks]],1]|ListableP[objectOrLinkP[Object[Data]],1]),opts:OptionsPattern[PlotPeaks]]:=
-	PlotPeaks[Download[peaksObj],opts]
+	(
+		TagTrace["sll.function.call", 11];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
+		PlotPeaks[Download[peaksObj],opts]
+	);
 PlotPeaks[peaksObj:(ListableP[objectOrLinkP[Object[Analysis,Peaks]],{2}]|ListableP[objectOrLinkP[Object[Data]],{2}]),opts:OptionsPattern[PlotPeaks]]:=
+	(
+		TagTrace["sll.function.call", 12];
+		TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{opts}], "{" | "}"], " "->""]];
 		PlotPeaks[Download/@peaksObj,opts]
+	);

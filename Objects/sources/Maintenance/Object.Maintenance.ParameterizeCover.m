@@ -74,7 +74,7 @@ DefineObjectType[Object[Maintenance,ParameterizeCover],{
       Class->Link,
       Pattern:>_Link,
       Relation->Alternatives[Model[Item, Lid],Model[Item, Cap], Model[Item, PlateSeal]],
-      Description->"The specific container vessels that this maintenance is parameterizing. It is continuously updated during the Maintenance based on operator feedback.",
+      Description->"A set of candidate cover models presented for operator verification to identify the correct match for the cover being parameterized. If no match is found, the operator proceeds with parameterizing the cover.",
       Category->"Qualifications & Maintenance",
       Developer -> True
     },

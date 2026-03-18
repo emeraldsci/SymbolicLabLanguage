@@ -27,7 +27,8 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> AbsorbanceMethodP
-			]
+			],
+			Category->"General"
 		},
 		{
 			OptionName -> Instrument,
@@ -38,14 +39,27 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Instrument, PlateReader], Object[Instrument, PlateReader], Object[Instrument,Spectrophotometer], Model[Instrument,Spectrophotometer]}]
+			],
+			Category->"General"
+		},
+		{
+			OptionName->MaxLoadingRetries,
+			Default->Automatic,
+			Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to 2. Otherwise set to Null.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,10]
 			]
 		},
 		{
 			OptionName->MicrofluidicChipLoading,
 			Default->Automatic,
 			AllowNull->True,
-			Description->"When using Lunatic, indicates if Lunatic Microfluidic Chips are loaded by a robotic liquid handler or manually.",
-			ResolutionDescription -> "When using the Lunatic plate readers, automatically set to Robotic. When using the BMG plate reader, automatically set to Null.",
+			Description->"When using the Microfluidic plate readers, indicates if the Microfluidic Chips are loaded by a robotic liquid handler or manually.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic. Otherwise set to Null.",
 			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[Robotic, Manual]],
 			Category->"Sample Handling"
 		},
@@ -208,7 +222,16 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			IndexMatchingInput -> "experiment samples"
 		],
 		AbsorbanceSharedOptions,
-		SamplesOutStorageOptions
+		SamplesOutStorageOptions,
+		{
+			OptionName->ImageMicrofluidicPlate,
+			Default->Automatic,
+			AllowNull->True,
+			Description->"When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to PostRead. Otherwise set to Null.",
+			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[PreRead, PostRead, All]],
+			Category->"Post Processing"
+		}
 	}
 ];
 

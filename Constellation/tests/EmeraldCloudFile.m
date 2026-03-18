@@ -18,12 +18,12 @@ DefineTests[uploadCloudFile,
 		],
 
 		Example[{Basic, "Upload an Image as a cloud file:"},
-			uploadCloudFile[Import["ExampleData/rose.gif"]],
+			uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]],
 			EmeraldCloudFileP
 		],
 
 		Example[{Basic, "Upload a list of images as new cloud files:"},
-			uploadCloudFile[{Import["ExampleData/rose.gif"], Import["ExampleData/rose.gif"]}],
+			uploadCloudFile[{ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]], ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]}],
 			{EmeraldCloudFileP, EmeraldCloudFileP}
 		],
 
@@ -52,12 +52,12 @@ DefineTests[uploadCloudFile,
 
 		Test["File extensions are normalized so, e.g., uppercase image file extensions do not cause erroneous mismatches of MIME type:",
 			Module[
-				{turtle, t1, t2, t3, t4},
-				turtle=FindFile["ExampleData/turtle.jpg"];
-				t1=turtle;
-				t2=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.jpeg"}, OverwriteTarget -> True];
-				t3=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.JPG"}, OverwriteTarget -> True];
-				t4=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.JPEG"}, OverwriteTarget -> True];
+				{ocelotPath, t1, t2, t3, t4},
+				ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory];
+				t1=ocelotPath;
+				t2=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.jpeg"}, OverwriteTarget -> True];
+				t3=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.JPG"}, OverwriteTarget -> True];
+				t4=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.JPEG"}, OverwriteTarget -> True];
 
 				uploadCloudFile[{t1, t2, t3, t4}]
 			],
@@ -125,7 +125,9 @@ DefineTests[uploadCloudFile,
 		],
 
 		Example[{Messages, "NotLoggedIn", "Returns $Failed and throws a message if not logged in:"},
-			uploadCloudFile[Import["ExampleData/rose.gif"]],
+			With[{file=Export[FileNameJoin[{$TemporaryDirectory, "text.txt"}], "Hello World!", "Text"]},
+				uploadCloudFile[file]
+			],
 			$Failed,
 			Messages :> {
 				uploadCloudFile::NotLoggedIn
@@ -318,15 +320,15 @@ DefineTests[EmeraldCloudFileQ, {
 DefineTests[emeraldFileFormatP, {
 	Example[{Basic, "Pattern emeraldFileFormatP matches an image's _File:"},
 		With[
-			{turtlepath=FindFile["ExampleData/turtle.jpg"]},
-			MatchQ[File[turtlepath], emeraldFileFormatP["JPEG"]]
+			{ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory]},
+			MatchQ[File[ocelotPath], emeraldFileFormatP["JPEG"]]
 		],
 		True
 	],
 	Example[{Basic, "Pattern emeraldFileFormatP matches an image's _EmeraldCloudFile:"},
 		With[
-			{turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]]},
-			MatchQ[turtle, emeraldFileFormatP["JPEG" | "PNG"]]
+			{ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]]},
+			MatchQ[ocelot, emeraldFileFormatP["JPEG" | "PNG"]]
 		],
 		True
 	],
@@ -339,8 +341,8 @@ DefineTests[emeraldFileFormatP, {
 	],
 	Example[{Basic, "Pattern emeraldFileFormatP doesn't match an _EmeraldCloudFile with a different type specified:"},
 		With[
-			{turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]]},
-			MatchQ[turtle, emeraldFileFormatP["PDF"]]
+			{ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]]},
+			MatchQ[ocelot, emeraldFileFormatP["PDF"]]
 		],
 		False
 	],
@@ -371,10 +373,10 @@ DefineTests[emeraldFileFormatP, {
 	],
 	Test["Pattern emeraldFileFormatP is not defined for un-supported file types (when given directly, not as Indeterminate):",
 		Module[
-			{turtlepath, turtle, actuallyGXL, uploadedGXL},
+			{ocelotPath, ocelot, actuallyGXL, uploadedGXL},
 
-			turtlepath=FindFile["ExampleData/turtle.jpg"];
-			turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]];
+			ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory];
+			ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]];
 
 			(* the contents of an GXL are easy to write as text *)
 			actuallyGXL=Export[FileNameJoin[{$TemporaryDirectory, "just-an-empty.gxl"}], "<gxl></gxl>", "Text"];
@@ -384,8 +386,8 @@ DefineTests[emeraldFileFormatP, {
 
 			{
 				(* emeraldFileFormatP works for supported types *)
-				MatchQ[turtle, emeraldFileFormatP["JPEG"]],
-				MatchQ[File[turtlepath], emeraldFileFormatP["PDF"]],
+				MatchQ[ocelot, emeraldFileFormatP["JPEG"]],
+				MatchQ[File[ocelotPath], emeraldFileFormatP["PDF"]],
 				MatchQ[File[actuallyGXL], emeraldFileFormatP[Indeterminate]],
 				MatchQ[uploadedGXL, emeraldFileFormatP[Indeterminate]],
 
@@ -403,16 +405,16 @@ DefineTests[emeraldFileFormatP, {
 	],
 	Test["FileFormat (used by emeraldFileFormatP) does resolve unsupported file types of _File, but not of _EmeraldCloudFile:",
 		Module[
-			{turtlepath, turtle, actuallyGXL, uploadedGXL},
+			{ocelotPath, ocelot, actuallyGXL, uploadedGXL},
 
-			turtlepath=FindFile["ExampleData/turtle.jpg"];
-			turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]];
+			ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory];
+			ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]];
 			actuallyGXL=Export[FileNameJoin[{$TemporaryDirectory, "just-an-empty.gxl"}], "<gxl></gxl>", "Text"];
 			uploadedGXL=uploadCloudFile[actuallyGXL];
 
 			{
-				FileFormat[File[turtlepath]],
-				FileFormat[turtle],
+				FileFormat[File[ocelotPath]],
+				FileFormat[ocelot],
 				FileFormat[File[actuallyGXL]],
 				FileFormat[uploadedGXL]
 			}
@@ -442,29 +444,29 @@ DefineTests[emeraldFileFormatP, {
 DefineTests[emeraldFileFormatQ, {
 	Example[{Basic, "Function emeraldFileFormatQ matches an image's _File:"},
 		With[
-			{turtlepath=FindFile["ExampleData/turtle.jpg"]},
-			emeraldFileFormatQ[File[turtlepath], "JPEG"]
+			{ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory]},
+			emeraldFileFormatQ[File[ocelotPath], "JPEG"]
 		],
 		True
 	],
 	Example[{Basic, "Function emeraldFileFormatQ matches an image's _EmeraldCloudFile:"},
 		With[
-			{turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]]},
-			emeraldFileFormatQ[turtle, "JPEG" | "PNG"]
+			{ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]]},
+			emeraldFileFormatQ[ocelot, "JPEG" | "PNG"]
 		],
 		True
 	],
 	Example[{Basic, "Function emeraldFileFormatQ doesn't match a _File with a different type specified:"},
 		With[
-			{turtlepath=FindFile["ExampleData/turtle.jpg"]},
-			emeraldFileFormatQ[turtlepath, "PDF"]
+			{ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory]},
+			emeraldFileFormatQ[ocelotPath, "PDF"]
 		],
 		False
 	],
 	Example[{Basic, "Function emeraldFileFormatQ doesn't match an _EmeraldCloudFile with a different type specified:"},
 		With[
-			{turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]]},
-			emeraldFileFormatQ[turtle, "PDF"]
+			{ocelot=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]]},
+			emeraldFileFormatQ[ocelot, "PDF"]
 		],
 		False
 	],
@@ -573,14 +575,14 @@ DefineTests["ImageFileP",
 DefineTests[ImageFileQ, {
 	Example[{Basic, "ImageFileQ matches an image's File[path]:"},
 		With[
-			{turtlepath=FindFile["ExampleData/turtle.jpg"]},
-			ImageFileQ[File[turtlepath]]
+			{ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory]},
+			ImageFileQ[File[ocelotPath]]
 		],
 		True
 	],
 	Example[{Basic, "ImageFileQ matches an image's EmeraldCloudFile:"},
 		With[
-			{turtle=uploadCloudFile[Import["ExampleData/turtle.jpg"]]},
+			{turtle=uploadCloudFile[ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]]},
 			ImageFileQ[turtle]
 		],
 		True

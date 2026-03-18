@@ -73,6 +73,7 @@ sensorDataTypeP={
 	Object[Data, BubbleLog],
 	Object[Data, FlowRate],
 	Object[Data,Volume],
+	Object[Data,Vibration],
 	Object[Data,ReedSwitch]
 };
 
@@ -324,6 +325,8 @@ sensorObjectToMeasurand[sensorObject:ObjectP[Object[Sensor]]]:=Module[{FamilyNam
 		    "Status of Door",
 		  Weight,
 		    "Mass",
+		  Vibration,
+		    "Vibration",
 			_,
 				"Sensor Reading"
 	];

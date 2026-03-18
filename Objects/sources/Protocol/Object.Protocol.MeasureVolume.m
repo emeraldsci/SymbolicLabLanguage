@@ -148,6 +148,7 @@ DefineObjectType[Object[Protocol, MeasureVolume], {
 				TubeRack -> Link,
 				PlatePlatform -> Link,
 				PlateLayoutFileName -> String,
+				PlateLayoutFilePath -> String,
 				DataFileName -> String,
 				BatchNumber -> Integer
 			},
@@ -157,6 +158,7 @@ DefineObjectType[Object[Protocol, MeasureVolume], {
 				TubeRack -> _Link,
 				PlatePlatform -> _Link,
 				PlateLayoutFileName -> _String,
+				PlateLayoutFilePath -> _String,
 				DataFileName -> _String,
 				BatchNumber -> GreaterP[0,1]
 			},
@@ -166,6 +168,7 @@ DefineObjectType[Object[Protocol, MeasureVolume], {
 				TubeRack -> Alternatives[Model[Container,Rack],Object[Container,Rack]],
 				PlatePlatform -> Alternatives[Model[Container,Rack],Object[Container,Rack]],
 				PlateLayoutFileName -> Null,
+				PlateLayoutFilePath -> Null,
 				DataFileName -> Null,
 				BatchNumber -> Null
 			},
@@ -175,6 +178,7 @@ DefineObjectType[Object[Protocol, MeasureVolume], {
 				TubeRack -> None,
 				PlatePlatform -> None,
 				PlateLayoutFileName -> None,
+				PlateLayoutFilePath -> None,
 				DataFileName -> None,
 				BatchNumber -> None
 			},
@@ -184,6 +188,7 @@ DefineObjectType[Object[Protocol, MeasureVolume], {
 				TubeRack -> "TubeRack",
 				PlatePlatform -> "PlatePlatform",
 				PlateLayoutFileName -> "PlateLayoutFileName",
+				PlateLayoutFilePath -> "PlateLayoutFilePath",
 				DataFileName -> "DataFileName",
 				BatchNumber -> "BatchNumber"
 			},

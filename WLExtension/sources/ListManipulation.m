@@ -136,3 +136,16 @@ LookupPath::InnerPathDataError="Encountered 'non-lookable' data typed element `1
 
 ToList[list_List]:=list;
 ToList[expr___]:={expr};
+
+(* ::Subsubsection::Closed:: *)
+(*TransposeOrEmpty*)
+
+(* Handle empty list by assigning out empty lists to the requested length *)
+TransposeOrEmpty[{}, assignmentLength : _Integer?NonNegative] := ConstantArray[{}, assignmentLength];
+
+(* Catch-all case where we can just use the transpose result *)
+TransposeOrEmpty[list_, assignmentLength : _Integer?NonNegative] := Transpose[list];
+
+(* Operator form of expressions for convenience *)
+TransposeOrEmpty[assignmentLength : _Integer?NonNegative][{}] := TransposeOrEmpty[{}, assignmentLength];
+TransposeOrEmpty[assignmentLength : _Integer?NonNegative][list_] := TransposeOrEmpty[list, assignmentLength];

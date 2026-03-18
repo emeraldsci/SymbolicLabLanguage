@@ -716,6 +716,13 @@ validItemBlankQTests[packet:PacketP[Model[Item, Blank]]]:={
 
 
 (* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Model[Item, Cannula]]]:={};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelItemCrossFlowFilterQTests*)
 
 
@@ -1084,6 +1091,107 @@ validModelItemLidSpacerQTests[packet:PacketP[Model[Item, LidSpacer]]]:={
 		True
 	]
 };
+
+
+(* ::Subsection::Closed:: *)
+(*validModelItemLinerQTests*)
+
+
+validModelItemLinerQTests[packet:PacketP[Model[Item, Liner]]]:=Module[
+	{sourceLinerPacket, customCut, sourceLiner, materialDimensions, sourceMaterialDimensions, minTemp, maxTemp},
+
+	(* Extract relevant fields *)
+	{customCut, sourceLiner, materialDimensions, minTemp, maxTemp} = Lookup[packet, {CustomCut, SourceLiner, MaterialDimensions, MinTemperature, MaxTemperature}];
+
+	(* Download the source liner packet if it exists *)
+	sourceLinerPacket = If[!NullQ[Lookup[packet, SourceLiner]],
+		Download[sourceLiner, Packet[MaterialDimensions]],
+		Null
+	];
+
+	sourceMaterialDimensions = If[!NullQ[sourceLinerPacket],
+		Lookup[sourceLinerPacket, MaterialDimensions],
+		Null
+	];
+
+	{
+		(* If CustomCut -> True, SourceLiner must be populated *)
+		Test["If CustomCut is True, SourceLiner must be populated:",
+			{customCut, sourceLiner},
+			{True, Except[Null]} | {Except[True], _}
+		],
+
+		(* If CustomCut != True, SourceLiner must not be populated *)
+		Test["If CustomCut is not True, SourceLiner must not be populated:",
+			{customCut, sourceLiner},
+			{Except[True], Null} | {True, _}
+		],
+
+		(* SourceLiner must not reference itself *)
+		Test["SourceLiner must not reference itself:",
+			Or[
+				NullQ[sourceLiner],
+				!MatchQ[Download[sourceLiner, Object], Lookup[packet, Object]]
+			],
+			True
+		],
+
+		(* Check liner and source have dimensions if custom cut *)
+		Test["If CustomCut is True, both the liner and the source liner have material dimensions:",
+			Or[
+				!TrueQ[customCut],
+				!MatchQ[materialDimensions, Null | {}] && !MatchQ[sourceMaterialDimensions, Null | {}]
+			],
+			True
+		],
+
+		(* Dimension compatibility if CustomCut is True and both have Dimensions *)
+		(* Material dimensions are xy only *)
+		Test["If CustomCut is True, prepared liner material dimensions must be compatible with source liner material dimensions:",
+			Which[
+				(* Pass and skip if not custom cut *)
+				!TrueQ[customCut],
+				True,
+
+				(* Fail if custom cut and no dimensions *)
+				TrueQ[customCut] && Or[MatchQ[materialDimensions, Null | {}], MatchQ[sourceMaterialDimensions, Null | {}]],
+				False,
+
+				(* Fail if the dimensions are incomplete *)
+				MemberQ[materialDimensions, Null],
+				False,
+
+				(* Otherwise perform the check *)
+				True,
+				Module[
+					{
+						sourceXYSorted, prepXYSorted
+					},
+
+					(* Sort the XY dimensions *)
+					sourceXYSorted = ReverseSort[sourceMaterialDimensions];
+					prepXYSorted = ReverseSort[materialDimensions];
+
+					And[
+						(* Prep liner dimensions must fit within the source *)
+						LessEqualQ[prepXYSorted[[1]], sourceXYSorted[[1]]],
+						LessEqualQ[prepXYSorted[[2]], sourceXYSorted[[2]]]
+					]
+				]
+			],
+			True
+		],
+
+		(* Check Valid Temperature range *)
+		Test["If both MinTemperature and MaxTemperature are populated, MinTemperature must be less than MaxTemperature:",
+			Or[
+				!(UnitsQ[minTemp, Kelvin] || UnitsQ[maxTemp, Kelvin]),
+				LessEqualQ[minTemp, maxTemp]
+			],
+			True
+		]
+	}
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -2314,7 +2422,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, NullP, NullP},
 			{BottleTop,_,_},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2328,7 +2436,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP], Except[NullP]},
 			{BottleTop,Except[NullP],Except[NullP]},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2342,7 +2450,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP]},
 			{BottleTop,Except[NullP]},
 			{CrossFlowFiltration,_},
-			{G2InLine|G2ProbeTip,_}
+			{G2InLine|QLADVInnerFilter,_}
 		]
 	]
 };
@@ -3790,6 +3898,16 @@ validModelItemSpatulaQTests[packet:PacketP[Model[Item,Spatula]]]:={
 	}]
 };
 
+(* ::Subsection:: *)
+(*validModelItemSinkerQTests*)
+
+DefineOptions[
+	validModelItemSinkerQTests,
+	Options :> {additionalValidQTestOptions}
+];
+
+validModelItemSinkerQTests[packet:PacketP[Model[Item,Sinker]], ops:OptionsPattern[]] := {};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -3803,6 +3921,7 @@ registerValidQTestFunction[Model[Item, Consumable, Blade],validModelItemConsumab
 registerValidQTestFunction[Model[Item, Consumable, Sandpaper],validModelItemConsumableSandpaperQTests];
 registerValidQTestFunction[Model[Item, CrossFlowFilter],validModelItemCrossFlowFilterQTests];
 registerValidQTestFunction[Model[Item, Blank],validItemBlankQTests];
+registerValidQTestFunction[Model[Item, Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Model[Item, Plunger],validModelItemPlungerQTests];
 registerValidQTestFunction[Model[Item, Cap],validModelItemCapQTests];
 registerValidQTestFunction[Model[Item, PlateSeal],validModelItemPlateSealQTests];
@@ -3869,4 +3988,6 @@ registerValidQTestFunction[Model[Item, WasteLabel], validModelItemWasteLabelQTes
 registerValidQTestFunction[Model[Item, WilhelmyPlate],validModelItemWilhelmyPlateQTests];
 registerValidQTestFunction[Model[Item, WeighBoat], validModelItemWeighBoatQTests];
 registerValidQTestFunction[Model[Item, WeighBoat, WeighingFunnel], validModelItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Model[Item, Sinker],validModelItemSinkerQTests];
 registerValidQTestFunction[Model[Item, Spatula], validModelItemSpatulaQTests];
+registerValidQTestFunction[Model[Item, Liner], validModelItemLinerQTests];

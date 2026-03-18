@@ -2987,7 +2987,7 @@ experimentQuantifyCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, my
 		safeOps, outputSpecification, output, gatherTests, messages, cache, simulation, fastCache, samplePackets,
 		sampleLabels, sampleContainerLabels, multiMethodAliquots, methods, instruments, numberOfReplicates, samplesInStorageCondition,
 		recoupSamples, resolvedMethodPrimitiveOptions, preparation, sharedAliquotQ, allAliquottedSampleLabels,
-		labelSamplePrimitive, samplesInputString, methodPrimitives, recoupSamplePrimitive, allPrimitives, samplesInResources, containersInResources, instrumentResources,
+		labelSamplePrimitive, samplesInputString, methodPrimitives, recoupSamplePrimitive, allPrimitives, samplesInResources, containersInResources, instrumentResourceRules,
 		checkpoints, resolvedOptionsNoHidden, protocolPacket, unitOperationPackets, simulationWithRoboticUOs, runTime, allResourceBlobs, fulfillable, frqTests, testsRule, resultRule
 	},
 
@@ -3200,7 +3200,7 @@ experimentQuantifyCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, my
 	];
 
 	(* create resources for instrument just so we can at least check resource availability with frq *)
-	instrumentResources = Resource[Instrument -> #, Time -> 1 * Hour, Name -> "cell quantification instrument "<>ToString[Unique[]]]& /@ instruments;
+	instrumentResourceRules = AssociationMap[Resource[Instrument -> #, Time -> 1 * Hour, Name -> "cell quantification instrument "<>ToString[Unique[]]]&, DeleteDuplicates[instruments]];
 
 	(* estimate checkpoints *)
 	checkpoints = Module[{quantificationTime},
@@ -3232,7 +3232,7 @@ experimentQuantifyCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, my
 				(* general *)
 				Replace[SamplesIn] -> (Link[#, Protocols]& /@ samplesInResources),
 				Replace[ContainersIn] -> (Link[#, Protocols]& /@ containersInResources),
-				Replace[Instruments] -> instrumentResources,
+				Replace[Instruments] -> Link /@ (instruments /. instrumentResourceRules),
 				Replace[Methods] -> methods,
 				Replace[QuantificationUnits] -> Lookup[myResolvedOptions, QuantificationUnit] /. x: CellQuantificationUnitStringP :> ToExpression[x],
 				UnresolvedOptions -> myUnresolvedOptions,
@@ -3439,7 +3439,7 @@ experimentQuantifyCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, my
 
 			(* get the unit operation packet for quantify cells *)
 			quantifyCellUOPacket = UploadUnitOperation[
-				quantifyCellsPrimitive,
+				quantifyCellsPrimitive /. instrumentResourceRules,
 				Preparation -> Robotic,
 				UnitOperationType -> Output,
 				Upload -> False
@@ -3740,7 +3740,20 @@ checkConvertible[
 				];
 				(* Short circuit if user already provided a XXXStandardCoefficient AND quantification unit for that sample is specified *)
 				specifiedStandardCoefficient = Lookup[options, ToExpression[ToString[myMethod]<>"StandardCoefficient"]];
-				If[MatchQ[specifiedStandardCoefficient, _?NumericQ] && CompatibleUnitQ[specifiedQuantificationUnit, quantificationUnit], Return[{True, specifiedStandardCoefficient}, Module]];
+				(* Short circuit should also consider whether to return message, although empty, so that Transpose still works *)
+				If[And[
+					TrueQ[generateMessageClauses],
+					NumericQ[specifiedStandardCoefficient],
+					CompatibleUnitQ[specifiedQuantificationUnit, quantificationUnit]
+					],
+					Return[{True, specifiedStandardCoefficient, {}}, Module]
+				];
+				If[And[
+					MatchQ[specifiedStandardCoefficient, _?NumericQ],
+					CompatibleUnitQ[specifiedQuantificationUnit, quantificationUnit]
+				],
+					Return[{True, specifiedStandardCoefficient}, Module]
+				];
 
 				(* find all analytes from my given sample *)
 				allAnalytes = selectAllAnalytesFromSample[samplePacket, Cache -> myCache, AnalyteTypePattern -> ObjectP[Model[Cell]]];
@@ -3853,16 +3866,16 @@ checkConvertible[
 						joinClauses[
 							{
 								(* If there's unit incompatible unit *)
-								If[!TrueQ[unitCompatibleQs[[1]]],
+								If[MemberQ[unitCompatibleQs, False],
 								"the StandardDataUnits do not match the raw experimental unit and quantification unit",
 								Nothing
 								],
 								(* If the absorbance instruments are not the same *)
-								If[!TrueQ[absorbanceSameInstrumentQs[[1]]],
+								If[MemberQ[absorbanceSameInstrumentQs, False],
 									"the Instrument of the protocol that obtained this standard curve is not the same object or model as the one used in this ExperimentQuantifyCells call",
 									Nothing
 								],
-								If[!TrueQ[absorbanceSameWavelengthQs[[1]]],
+								If[MemberQ[absorbanceSameWavelengthQs, False],
 									"the Wavelength used in the protocol that obtained this standard curve is not the same as the wavelength used in this ExperimentQuantifyCells call",
 									Nothing
 								]

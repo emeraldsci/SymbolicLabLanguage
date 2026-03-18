@@ -34,6 +34,14 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Category -> "General",
 			IndexMatching -> ReferenceDataSliceDimension
 		},
+		AbsorbanceWavelength -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Meter],
+			Units -> Meter Nano,
+			Description -> "For absorbance chromatography data, the wavelength at which this analysis was performed.",
+			Category -> "General"
+		},
 		PeakSamples -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -89,6 +97,22 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Pattern :> _Function,
 			Description -> "A pure function describing the baseline for the data.",
 			Category -> "General"
+		},
+		SignalToNoiseMethod -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> USP5x | USP20x,
+			Description -> "The strategy used for determining where the noise sample is taken from for comparison against the peak size.",
+			Category -> "General"
+		},
+		SignalToNoiseRange -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {NumericP, NumericP},
+			Description -> "For each member of Position, the range used for sampling the noise used in calculating the signal to noise ratio.",
+			Category -> "General",
+			Headers -> {"Min", "Max"},
+			IndexMatching -> Position
 		},
 		Position -> {
 			Format -> Multiple,
@@ -347,6 +371,14 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Pattern :> PurityP,
 			Description -> "The purity of the peaks as defined by the total and relative area of each peak with respect to one another and the background, in the form: {Area->{values..},RelativeArea->{percentages..},PeakLabels->{strings..}}.",
 			Category -> "Analysis & Reports"
+		},
+		SignalToNoise -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> NumericP,
+			Description -> "For each member of Position, the ratio between the amplitude of the sampled noise and the peak's height.",
+			Category -> "Analysis & Reports",
+			IndexMatching -> Position
 		},
 		SequenceAnalysis -> {
 			Format -> Single,

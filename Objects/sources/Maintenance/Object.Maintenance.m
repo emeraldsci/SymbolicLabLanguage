@@ -364,7 +364,8 @@ With[
 					Object[Item][Maintenance],
 					Object[Plumbing],
 					Object[Wiring],
-					Object[Product]
+					Object[Product],
+					Object[User]
 				],
 				Description -> "The designated object that this maintenance is intended to service.",
 				Category -> "General",
@@ -1214,6 +1215,31 @@ With[
 				Category -> "Sample Storage",
 				Developer -> True
 			},
+			LinedContainers -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container, Rack] | Model[Container, Rack],
+				Description -> "Indicates the racks used to transport samples that require lined surface during this protocol.",
+				Category -> "Sample Storage",
+				Developer -> True
+			},
+			CurrentTransporters -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container][CurrentTransporterProtocol],
+					Model[Container],
+					Object[Instrument, PortableCooler][CurrentTransporterProtocol],
+					Object[Instrument, PortableHeater][CurrentTransporterProtocol],
+					Model[Instrument, PortableCooler],
+					Model[Instrument, PortableHeater]
+				],
+				Description -> "Indicates the instruments and/or containers used to transport samples that require special transport conditions during this protocol.",
+				Category -> "Sample Storage",
+				Developer -> True
+			},
 
 			(* --- Waste Handling --- *)
 			WasteWeightTare -> {
@@ -1634,6 +1660,14 @@ With[
 				Category -> "General",
 				Developer -> True
 			},
+			StreamTroubleshootRetryNumber -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "Number of attempts operator tried to troubleshoot the stream-related issues. When this exceeds certain limit, an error messsage will be thrown to request sci ops intervention.",
+				Category -> "General",
+				Developer -> True
+			},
 			Movements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String, String, Integer, Integer},
@@ -1802,12 +1836,13 @@ With[
 				Developer -> True,
 				Category -> "Placements"
 			},
-			ErrorRecoveryLog -> {
+			GuidedCorrectionLog -> {
 				Format -> Multiple,
 				Class -> {
 					Date -> Date,
 					Procedure -> String,
 					TaskID -> String,
+					CorrectionCategory -> Expression,
 					Subprotocol -> Link,
 					ResponsibleOperator -> Link
 				},
@@ -1815,6 +1850,7 @@ With[
 					Date -> _?DateObjectQ,
 					Procedure -> _String,
 					TaskID -> _String,
+					CorrectionCategory -> GuidedCorrectionCategoryP,
 					Subprotocol -> _Link,
 					ResponsibleOperator -> _Link
 				},
@@ -1822,10 +1858,11 @@ With[
 					Date -> Null,
 					Procedure -> Null,
 					TaskID -> Null,
+					CorrectionCategory -> Null,
 					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+					ResponsibleOperator -> Object[User, Emerald][GuidedCorrectionEvents, RootProtocol]
 				},
-				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Description -> "The guided correction procedures triggered during execution of this protocol.",
 				Category -> "Organizational Information"
 			},
 			GloveChangeLog -> {
@@ -1835,6 +1872,53 @@ With[
 				Relation -> {None, Object[Item, Consumable], Object[User]},
 				Description -> "The history of glove replacements during this protocol in the form: {Date, Glove Box, Operator}. This field records when gloves were replaced, which gloves  were used, and who performed the replacement.",
 				Headers -> {"Date", "Glove Box", "Operator"},
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			AsanaTaskID -> {
+				Format -> Single,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "ID number of the Asana task created for the Scientific Instrumentation team to track this maintenance.",
+				Category -> "Organizational Information",
+				Developer -> True
+			},
+			OEBCompoundHandling -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the operator of this maintenance is currently handling a OccupationalExposureBanding 4/5 compound, which poses exposure hazard and requires additional PPE.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			OEBCompoundHandlingLog -> {
+				Format -> Multiple,
+				Class -> {
+					Date,
+					Expression,
+					Link
+				},
+				Pattern :> {
+					_?DateObjectQ,
+					BooleanP,
+					_Link
+				},
+				Relation -> {
+					Null,
+					Null,
+					Object[User]
+				},
+				Headers -> {"Date", "Status", "Responsible Party"},
+				Description -> "The historical record of a maintenance entering and exiting OEBCompoundHandling.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			OEBCompounds -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Sample],
+				Description -> "Indicates what OccupationalExposureBanding 4/5 compounds are being handled within this maintenance.",
 				Category -> "Health & Safety",
 				Developer -> True
 			},

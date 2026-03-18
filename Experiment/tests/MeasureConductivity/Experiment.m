@@ -368,6 +368,14 @@ DefineTests[ExperimentMeasureConductivity,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureConductivity[Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -510,11 +518,19 @@ DefineTests[ExperimentMeasureConductivity,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], AliquotAmount -> 15*Milliliter,AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			options = ExperimentMeasureConductivity[Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], AliquotAmount -> 15 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, AliquotAmount],
 			15*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureConductivity[Object[Sample, "Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], AliquotAmount -> 15.001 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			15 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentMeasureConductivity[Object[Sample,"Test water sample for ExperimentMeasureConductivity" <> $SessionUUID], AssayVolume -> 15*Milliliter, Output -> Options];

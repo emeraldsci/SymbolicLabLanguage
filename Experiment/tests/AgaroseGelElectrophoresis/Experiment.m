@@ -17,50 +17,18 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 		(* -- Basic Examples -- *)
 		Example[{Basic,"Accepts a sample object:"},
 			ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID]],
-			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];
-			),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			)
+			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]]
 		],
 		Example[{Basic,"Accepts a non-empty container object:"},
 			ExperimentAgaroseGelElectrophoresis[Object[Container,Vessel,"Container 1 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID]],
-			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];
-			),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			)
+			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]]
 		],
 		Example[{Basic,"Accepts a mixture of sample objects and non-empty container objects:"},
 			ExperimentAgaroseGelElectrophoresis[
 				{Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],Object[Container,Vessel,"Container 3 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID]},
 				CollectionSize->1600*BasePair
 			],
-			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			)
+			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]]
 		],
 
 		(* -- Additional -- *)
@@ -193,17 +161,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 				PeakDetectionRange->500*BasePair;;800*BasePair
 			],
 			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];
-			),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			),
 			Messages :> {
 				Warning::AgaroseLoadingDyeRangeCollectionOptionMismatch
 			}
@@ -213,16 +170,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 				LoadingDye->{Model[Sample, "1000 bp dyed loading buffer for agarose gel electrophoresis"],Model[Sample, "5000 bp dyed loading buffer for agarose gel electrophoresis"]}
 			],
 			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			),
 			Messages :> {
 				Warning::InputContainsTemporalLinks
 			}
@@ -232,17 +179,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 				LoadingDye->{Model[Sample, "200 bp dyed loading buffer for agarose gel electrophoresis"]}
 			],
 			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];
-			),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			),
 			Messages :> {
 				Warning::OnlyOneAgaroseLoadingDye
 			}
@@ -268,7 +204,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			}
 		],
 		Example[{Messages,"UnableToDetermineAgaroseCollectionSize","The Components field of the input sample must contain an Oligomer with a Strand or Structure in order to determine the CollectionSize option:"},
-			ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->False
 			],
 			$Failed,
@@ -289,7 +225,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			}
 		],
 		Example[{Messages,"UnableToDetermineAgarosePeakDetectionRange","The Components field of the input sample must contain an Oligomer with a Strand or Structure in order to determine the PeakDetectionRange option:"},
-			ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->True
 			],
 			$Failed,
@@ -299,7 +235,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			}
 		],
 		Example[{Messages,"UnableToDetermineAgaroseCollectionRange","The Components field of the input sample must contain a Structure in order to determine the CollectionRange option:"},
-			ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->False,CollectionSize->Null
 			],
 			$Failed,
@@ -516,17 +452,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 				Scale->Preparative,LadderStorageCondition->AmbientStorage
 			],
 			ObjectP[Object[Protocol,AgaroseGelElectrophoresis]],
-			SetUp:>(
-				$CreatedObjects={};
-				Off[Warning::SamplesOutOfStock];
-				Off[Warning::InstrumentUndergoingMaintenance];
-			),
-			TearDown:>(
-				EraseObject[$CreatedObjects,Force->True,Verbose->False];
-				Unset[$CreatedObjects];
-				On[Warning::SamplesOutOfStock];
-				On[Warning::InstrumentUndergoingMaintenance];
-			),
 			Messages :> {
 				Warning::OverwriteLadderStorageCondition
 			}
@@ -1109,7 +1034,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables :> {options}
 		],
 		Example[{Options,CollectionSize,"The CollectionSize option defaults to Null if the Scale is Preparative, the AutomaticPeakDetection option is False, and the Molecule field of all of Objects present in the sample's Composition do not contain a Strand or Structure:"},
-			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->False,Output->Options];
 			Lookup[options,CollectionSize],
 			Null,
@@ -1142,7 +1067,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables :> {options}
 		],
 		Example[{Options,CollectionRange,"The CollectionRange option defaults to Null if the Scale is Preparative, the AutomaticPeakDetection option is False, the CollectionSize is Null, and the Molecule field of all of Objects present in the sample's Composition do not contain a Strand or Structure:"},
-			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->False,CollectionSize->Null,Output->Options];
 			Lookup[options,CollectionRange],
 			Null,
@@ -1182,7 +1107,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables :> {options}
 		],
 		Example[{Options,PeakDetectionRange,"The PeakDetectionRange option defaults to Null if the Scale is Preparative, the AutomaticPeakDetection is True, but there are no Strands in the Composition of the input sample:"},
-			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+			options=ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
 				Scale->Preparative,AutomaticPeakDetection->True,Output->Options];
 			Lookup[options,PeakDetectionRange],
 			Null,
@@ -1373,6 +1298,14 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], CentrifugeIntensity -> 1001RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables:>{options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -1440,7 +1373,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],PrefilterMaterial -> GxF,CollectionSize->2000*BasePair, Output -> Options];
+			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],PrefilterMaterial -> GxF,CollectionSize->2000*BasePair, Output -> Options];
 			Lookup[options, PrefilterMaterial],
 			GxF,
 			Variables :> {options}
@@ -1455,7 +1388,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			}
 		],
 		Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE,CollectionSize->2000*BasePair, Output -> Options];
+			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE,CollectionSize->2000*BasePair, Output -> Options];
 			Lookup[options, PrefilterPoreSize],
 			1.*Micrometer,
 			Variables :> {options}
@@ -1467,7 +1400,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"],CollectionSize->2000*BasePair, Output -> Options];
+			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"],CollectionSize->2000*BasePair, Output -> Options];
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
 			Variables :> {options}
@@ -1544,13 +1477,22 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 			Lookup[options,AliquotSampleLabel],
 			{"Test Label for ExperimentAgaroseGelElectrophoresis sample 1"},
 			Variables :> {options}
-		],	
+		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
 			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], AliquotAmount -> 0.5*Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
 			0.5*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAgaroseGelElectrophoresis[Object[Sample, "1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			TimeConstraint -> 500,
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentAgaroseGelElectrophoresis[Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID], AssayVolume -> 0.5*Milliliter, Output -> Options];
@@ -1683,77 +1625,61 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 		$PersonID = Object[User, Emerald, Developer, "id:Y0lXejMmX69l"]
 	},
 	SetUp :> (
-		$CreatedObjects = {};
 		ClearMemoization[];
-		(* Turn off the lab state warning for unit tests, since parallel is True, warnings should be turned off in SetUp as well *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-	),
-	TearDown:>(
-		EraseObject[$CreatedObjects,Force->True,Verbose->False];
-		Unset[$CreatedObjects];
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
 	),
 
 	Parallel -> True,
 
+	NamedObjects -> {
+		Object[Container, Bench, "Bench for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+
+		Object[Container,Vessel,"Container 1 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 2 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 3 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 4 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 5 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 6 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Vessel,"Container 7 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Container,Plate,"Container 8 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+
+		Object[Instrument, Electrophoresis, "Test Ranger Electrophoresis Instrument for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+
+		Object[Item,Gel,"Preparative 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Preparative 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Preparative 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Preparative 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Preparative 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Analytical 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Analytical 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Analytical 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Analytical 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Item,Gel,"Analytical 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+
+		Model[Molecule,Oligomer,"100mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Model[Molecule,Oligomer,"200mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Model[Molecule,Oligomer,"800mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Model[Molecule,Oligomer,"1600mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Model[Molecule,Oligomer,"6000mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+
+		Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"Discarded 1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"100mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"200 and 800mer DNA oligomer mixture with 200mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"200 and 800mer DNA oligomer mixture with 800mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"100 and 6000mer DNA oligomer mixture for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
+		Object[Sample,"Test 1600mer DNA oligomer 1 for plate storage condition tests" <> $SessionUUID],
+		Object[Sample,"Test 1600mer DNA oligomer 2 for plate storage condition tests" <> $SessionUUID],
+
+		Object[Protocol,AgaroseGelElectrophoresis,"Test AgaroseGelElectrophoresis option template protocol" <> $SessionUUID]
+	},
+
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock,
+		Warning::InstrumentUndergoingMaintenance
+	},
+
 	SymbolSetUp:>(
-
-		(* Turn off the lab state warning for unit tests *)
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-
-		Module[{objects,existingObjects},
-			objects=Quiet[Cases[
-				Flatten[{
-					Object[Container, Bench, "Bench for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Container,Vessel,"Container 1 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 2 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 3 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 4 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 5 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 6 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 7 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Plate,"Container 8 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Instrument, Electrophoresis, "Test Ranger Electrophoresis Instrument for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Item,Gel,"Preparative 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Model[Molecule,Oligomer,"100mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"200mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"800mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"1600mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"6000mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"Discarded 1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"100mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"200 and 800mer DNA oligomer mixture with 200mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"200 and 800mer DNA oligomer mixture with 800mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"100 and 6000mer DNA oligomer mixture for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"Test 1600mer DNA oligomer 1 for plate storage condition tests" <> $SessionUUID],
-					Object[Sample,"Test 1600mer DNA oligomer 2 for plate storage condition tests" <> $SessionUUID],
-
-					Object[Protocol,AgaroseGelElectrophoresis,"Test AgaroseGelElectrophoresis option template protocol" <> $SessionUUID]
-				}],
-				ObjectP[]
-			]];
-			existingObjects = PickList[objects, DatabaseMemberQ[objects]];
-			EraseObject[existingObjects, Force -> True, Verbose -> False]
-		];
 
 		Block[{$AllowSystemsProtocols = True, $DeveloperUpload = True},
 			Module[
@@ -1961,7 +1887,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 					InitialAmount->{
 						1*Milliliter,
 						1*Milliliter,
-						25*Milliliter,
+						50*Milliliter,
 						1*Milliliter,
 						1*Milliliter,
 						1*Milliliter,
@@ -1972,7 +1898,7 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 					Name->{
 						"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
 						"Discarded 1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
-						"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
+						"50 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
 						"100mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
 						"200 and 800mer DNA oligomer mixture with 200mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
 						"200 and 800mer DNA oligomer mixture with 800mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID,
@@ -2010,60 +1936,6 @@ DefineTests[ExperimentAgaroseGelElectrophoresis,
 					}
 				]
 			]
-		]
-	),
-	SymbolTearDown:>(
-
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
-
-		Module[{objects,existingObjects},
-			objects=Quiet[Cases[
-				Flatten[{
-					Object[Container, Bench, "Bench for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Container,Vessel,"Container 1 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 2 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 3 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 4 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 5 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 6 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Vessel,"Container 7 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Container,Plate,"Container 8 for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Instrument, Electrophoresis, "Test Ranger Electrophoresis Instrument for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Item,Gel,"Preparative 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Preparative 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 0.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 1% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 1.5% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 2% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Item,Gel,"Analytical 3% Gel ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Model[Molecule,Oligomer,"100mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"200mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"800mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"1600mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Model[Molecule,Oligomer,"6000mer DNA Model Molecule for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Sample,"1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"Discarded 1600mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"25 mL water sample in 50mL Tube for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"100mer DNA oligomer for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"200 and 800mer DNA oligomer mixture with 200mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"200 and 800mer DNA oligomer mixture with 800mer Analyte for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-					Object[Sample,"100 and 6000mer DNA oligomer mixture for ExperimentAgaroseGelElectrophoresis tests" <> $SessionUUID],
-
-					Object[Protocol,AgaroseGelElectrophoresis,"Test AgaroseGelElectrophoresis option template protocol" <> $SessionUUID]
-				}],
-				ObjectP[]
-			]];
-			existingObjects = PickList[objects, DatabaseMemberQ[objects]];
-			EraseObject[existingObjects, Force -> True, Verbose -> False]
 		]
 	)
 ]

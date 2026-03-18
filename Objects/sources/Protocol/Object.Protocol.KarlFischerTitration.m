@@ -43,6 +43,23 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			IndexMatching -> SamplesIn,
 			Category -> "Sampling"
 		},
+		SampleTareTolerance -> {
+			Format -> Multiple,
+			Class -> VariableUnit,
+			Pattern :> GreaterP[0 Gram],
+			Description -> "The acceptable mass variation of the measured SampleTareWeight (either of an empty weighing funnel or an empty syringe and needle).",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SampleTolerance -> {
+			Format -> Multiple,
+			Class -> VariableUnit,
+			Pattern :> GreaterP[0 Gram],
+			Description -> "For each member of SampleAmount, the acceptable mass variation of the measured sample before it is added to the reaction vessel for titration.",
+			Category -> "Sampling",
+			IndexMatching -> SampleAmount,
+			Developer -> True
+		},
 		SamplingMethod -> {
 			Format -> Single,
 			Class -> Expression,
@@ -53,35 +70,8 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 		Temperatures -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> GreaterP[0 Kelvin] | Ambient | Auto,
+			Pattern :> GreaterP[0 Kelvin] | Ambient,
 			Description -> "For each member of SamplesIn, indicates the temperature to which the sample is heated in order to release its water in headspace gas that is bubbled into the Karl Fischer reagent.",
-			IndexMatching -> SamplesIn,
-			Category -> "Sampling"
-		},
-		MinRampTemperatures -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Kelvin],
-			Units -> Celsius,
-			Description -> "For each member of SamplesIn, indicates the start temperature when using constant heating to determine the temperature at which the sample's water is released.",
-			IndexMatching -> SamplesIn,
-			Category -> "Sampling"
-		},
-		MaxRampTemperatures -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Kelvin],
-			Units -> Celsius,
-			Description -> "For each member of SamplesIn, indicates the end temperature when using constant heating to determine the temperature at which the sample's water is released.",
-			IndexMatching -> SamplesIn,
-			Category -> "Sampling"
-		},
-		TemperatureRampRates -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Celsius / Minute],
-			Units -> Celsius / Minute,
-			Description -> "For each member of SamplesIn, indicates the rate at which the samples are heated when determining the temperature at which the sample's water is released.",
 			IndexMatching -> SamplesIn,
 			Category -> "Sampling"
 		},
@@ -94,15 +84,6 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 				Object[Sample]
 			],
 			Description -> "For each member of SamplesIn, indicates the solvent in which the sample is dissolved for the Karl Fischer reaction to occur.",
-			IndexMatching -> SamplesIn,
-			Category -> "Sampling"
-		},
-		MediumVolume -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Milliliter],
-			Units -> Milliliter,
-			Description -> "For each member of SamplesIn, the amount of medium that is added to the reaction vessel or headspace vial in addition to the sample.",
 			IndexMatching -> SamplesIn,
 			Category -> "Sampling"
 		},
@@ -122,6 +103,38 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Class -> VariableUnit,
 			Pattern :> GreaterP[0 Gram] | GreaterP[0 Milliliter],
 			Description -> "The amount of standard to use to validate the instrument as a whole by measuring the Karl Fischer reagent's rate of reaction, and water content drift.",
+			Category -> "Standards"
+		},
+		StandardTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Kelvin],
+			Units -> Celsius,
+			Description -> "Indicates the temperature to which the standard is heated in order to release its water in headspace gas that is bubbled into the Karl Fischer reagent.",
+			Category -> "Standards"
+		},
+		StandardTareTolerance -> {
+			Format -> Single,
+			Class -> VariableUnit,
+			Pattern :> GreaterP[0 Gram],
+			Description -> "The acceptable mass variation of the measured StandardTareWeight (either of an empty weighing funnel or an empty syringe and needle).",
+			Category -> "Standards",
+			Developer -> True
+		},
+		StandardTolerance -> {
+			Format -> Single,
+			Class -> VariableUnit,
+			Pattern :> GreaterP[0 Gram],
+			Description -> "The acceptable mass variation of the measured StandardAmount.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		StandardWaterContent -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> RangeP[0 MassPercent, 100 MassPercent],
+			Units -> MassPercent,
+			Description -> "The measured water content for the standard used in this protocol.",
 			Category -> "Standards"
 		},
 		GasFlowRate -> {
@@ -167,6 +180,78 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
+		ConditioningHeadspaceVial -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Vessel],
+				Object[Container, Vessel]
+			],
+			Description -> "The empty container used to condition the reaction vessel and remove any residual water prior to every blank, standard, and sample to be titrated while running a Coulometric protocol.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepHeadspaceVial -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Vessel],
+				Object[Container, Vessel]
+			],
+			Description -> "The empty container that is dried prior to any blanks, standards, or samples, in a headspace-sampling protocol.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Syringe],
+				Object[Container, Syringe]
+			],
+			Description -> "The syringe used to inject liquid standard into the Karl Fischer reaction vessel prior to the titer calculation standard injections.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepNeedle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Needle],
+				Object[Item, Needle]
+			],
+			Description -> "The needle used to inject liquid standard into the Karl Fischer reaction vessel prior to the titer calculation standard injections.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepWeighingFunnel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, WeighBoat, WeighingFunnel],
+				Object[Item, WeighBoat, WeighingFunnel]
+			],
+			Description -> "The weighing funnel used to measure and transfer solid standard into the Karl Fischer reaction vessel prior to the titer calculation standard additions.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepSpatula -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Spatula],
+				Object[Item, Spatula]
+			],
+			Description -> "The spatula used to measure the solid standard into the weighing funnel to add to the Karl Fischer reaction vessel prior to the titer calculation standard additions.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
 		BlankHeadspaceVials -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -176,19 +261,6 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 				Object[Container, Vessel]
 			],
 			Description -> "The empty containers that are tested to determine the water content of the surroundings.",
-			Category -> "Operations Information",
-			Developer -> True
-		},
-		TemperatureRampVials -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Model[Container, Vessel],
-				Object[Container, Vessel]
-			],
-			IndexMatching -> SamplesIn,
-			Description -> "For each member of SamplesIn, the container in which a portion of that sample is heated according to TemperatureRampRates to determine the Temperature at which the sample releases its water.",
 			Category -> "Operations Information",
 			Developer -> True
 		},
@@ -308,7 +380,105 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
-
+		AmpouleOpener -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part, AmpouleOpener],
+				Object[Part, AmpouleOpener]
+			],
+			Description -> "The part used to open any ampoules used during the course of this experiment, either in samples or standards.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		ExpectedSystemPrepTareWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "The expected value of the weighing step prior to measurment of system prep standard when Technique is set to Volumetric.  For syringes, this value is the weight of the syringe (and needle, if applicable) being used.  For weighing funnels, this value is the TareWeight of the model of the StandardWeighingFunnel.  Note that after obtaining the tare, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedSystemPrepWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "The expected value of the weight of the dispensing container with system prep standard in it when Technique is set to Volumetric.  For syringes and weighing funnels, this value is always the TareWeight of the loading container plus the StandardAmount (converted to units of mass if necessary).  Note that after obtaining the weight of the weighing container, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedSystemPrepEmptyWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "The expected value of the empty dispensing container after system prep standard has been added to the ReactionVessel when Technique is set to Volumetric.  For both syringes and weighing funnels, this is the always the TareWeight of the model of the dispensing container. Note that after obtaining the weight of the weighing container containing the standard, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedStandardTareWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			IndexMatching -> StandardWeighingFunnels,
+			Description -> "For each member of StandardWeighingFunnels, the expected value of the weighing step prior to measurment of standard when Technique is set to Volumetric.  For syringes, this value is the weight of the syringe (and needle, if applicable) being used.  For weighing funnels, this value is the TareWeight of the model of the StandardWeighingFunnel.  Note that after obtaining the tare, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedStandardWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			IndexMatching -> StandardWeighingFunnels,
+			Description -> "For each member of StandardWeighingFunnels, the expected value of the weight of the dispensing container with standard in it when Technique is set to Volumetric.  For syringes and weighing funnels, this value is always the TareWeight of the loading container plus the StandardAmount (converted to units of mass if necessary).  Note that after obtaining the weight of the weighing container, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedStandardEmptyWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			IndexMatching -> StandardWeighingFunnels,
+			Description -> "For each member of StandardWeighingFunnels, the expected value of the empty dispensing container after standard has been added to the ReactionVessel when Technique is set to Volumetric.  For both syringes and weighing funnels, this is the always the TareWeight of the model of the dispensing container. Note that after obtaining the weight of the weighing container containing the standard, this field value is updated by updateExpectedSampleTareWeight.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedSampleTareWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "For each member of SamplesIn, the expected value of the weighing step prior to measurment of sample when Technique is set to Volumetric.  For syringes, this value is the weight of the syringe (and needle, if applicable) being used.  For weighing funnels, this value is the TareWeight of the model of the SampleWeighingFunnel.  Note that after obtaining the tare, this field value is updated by updateExpectedSampleTareWeight.",
+			IndexMatching -> SamplesIn,
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedSampleWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "For each member of SamplesIn, the expected value of the weight of the dispensing container with sample in it when Technique is set to Volumetric.  For syringes and weighing funnels, this value is always the TareWeight of the loading container plus the SampleAmount (converted to units of mass if necessary).  Note that after obtaining the weight of the weighing container, this field value is updated by updateExpectedSampleTareWeight.",
+			IndexMatching -> SamplesIn,
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ExpectedSampleEmptyWeight -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> UnitsP[0 Gram],
+			Units -> Gram,
+			Description -> "For each member of SamplesIn, the expected value of the empty dispensing container after sample has been added to the ReactionVessel when Technique is set to Volumetric.  For both syringes and weighing funnels, this is the always the TareWeight of the model of the dispensing container. Note that after obtaining the weight of the weighing container containing the sample, this field value is updated by updateExpectedSampleTareWeight.",
+			IndexMatching -> SamplesIn,
+			Category -> "Experimental Results",
+			Developer -> True
+		},
 		(*Grind*)
 		Grind -> {
 			Format -> Multiple,
@@ -464,12 +634,21 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
+		StandardEmptyBalanceData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight data of the balance prior to the presence of any syringe or weighing funnel during the standard titration step.  Note that for syringe weighing, the syringe rack will be on the balance for this step.",
+			Category -> "Standards",
+			Developer -> True
+		},
 		StandardTareData -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data, Weight],
-			Description -> "The weight data of the empty balance prior to measuring the weight of the standards.",
+			Description -> "The weight data of the standard transfer device prior to measuring the weight of the standards. If using weighing funnels, this is the weight of the empty weighing funnel prior to measurement of solid weight.  If using syringes, this is the weight of the empty syringe on the syringe rack.",
 			Category -> "Standards",
 			Developer -> True
 		},
@@ -478,7 +657,7 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data, Weight],
-			Description -> "The weight deta of the full standard syringe or weighing container when it is filled with StandardAmount of Standard prior to addition to the reaction vessel.",
+			Description -> "The weight deta of the full standard syringe or weighing container when it is filled with StandardAmount of Standard prior to addition to the reaction vessel. If using weighing funnels, this value refers to the weight only of the solid because the balance is tared prior to filling the weighing funnel.  If using syringes, this value refers to the weight of the syringe plus the weight of the syringe contents.",
 			Category -> "Standards",
 			Developer -> True
 		},
@@ -495,9 +674,17 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Gram],
-			(* NOTE: the Units here being Gram is actually rather important, because this value will be pasted into software where it always assumes grams of sample *)
 			Units -> Gram,
 			Description -> "For each member of StandardWeightData, the weight of standard that was actually added into the reaction vessel to be titrated.  This value is measured by weighing the container, syringe, or weighing funnel holding the standard before and after addition into the reaction vessel.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SampleEmptyBalanceData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight data of the balance prior to the presence of any syringe or weighing funnel during the sample titration step.  Note that for syringe weighing, the syringe rack will be on the balance for this step.",
 			Category -> "Standards",
 			Developer -> True
 		},
@@ -506,7 +693,7 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data, Weight],
-			Description -> "The weight data of the empty balance prior to measuring the weight of the samples.",
+			Description -> "The weight data of the sample transfer device prior to measuring the weight of the samples. If using weighing funnels, this is the weight of the empty weighing funnel prior to measurement of solid weight.  If using syringes, this is the weight of the empty syringe on the syringe rack.",
 			Category -> "Experimental Results",
 			Developer -> True
 		},
@@ -515,7 +702,7 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data, Weight],
-			Description -> "The weight deta of the full sample syringe or weighing container when it is filled with SampleAmount of Sample prior to addition to the reaction vessel.",
+			Description -> "The weight deta of the full sample syringe or weighing container when it is filled with SampleAmount of Sample prior to addition to the reaction vessel. This value refers to the weight of the syringe and needle or the weighing funnel plus the weight of their contents.",
 			Category -> "Experimental Results",
 			Developer -> True
 		},
@@ -532,7 +719,6 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Gram],
-			(* NOTE: the Units here being Gram is actually rather important, because this value will be pasted into software where it always assumes grams of sample *)
 			Units -> Gram,
 			Description -> "For each member of SampleWeightData, the weight of sample that was actually added into the reaction vessel to be titrated.  This value is measured by weighing the container, syringe, or weighing funnel holding the sample before and after addition into the reaction vessel.",
 			Category -> "Experimental Results",
@@ -567,11 +753,23 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Category -> "Desiccation",
 			Developer -> True
 		},
+		ReplacementMolecularSievesSpatula -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Spatula],
+				Object[Item, Spatula]
+			],
+			Description -> "The spatula that is used to scoop replacement molecular sieves into their containers.",
+			Category -> "Desiccation",
+			Developer -> True
+		},
 		MolecularSieveConnections -> {
 			Format -> Multiple,
 			Class -> {Link,String,Link,String},
 			Pattern :> {_Link,ConnectorNameP,_Link,ConnectorNameP},
-			Relation -> {Object[Container],Null,Object[Container] | Object[Instrument],Null},
+			Relation -> {Object[Container],Null,Object[Container] | Object[Instrument] | Object[Item],Null},
 			Description -> "The connection information for attaching tubes containing new molecular sieves to the instrument.",
 			Headers -> {"Molecular Sieve Tube","Molecular Sieve Tube Connector Name","Instrument","Instrument Connector Name"},
 			Category -> "Desiccation",
@@ -601,12 +799,46 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Category -> "General",
 			Developer -> True
 		},
+		ScreenCaptureFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The file path for the directory containing the screen captures of the instrument computer while it was being accessed with VNC during this experimental run.",
+			Category -> "General",
+			Developer -> True
+		},
+		RawDataFiles -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The raw experiment data generated by the titration instrument.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		DataFiles -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The paths to the raw data and videos of activity on the instrument computer on the shared drive prior to being uploaded to cloud files.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
 		BlankData -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Data][Protocol],
 			Description -> "The conditioning and titration data of the headspace of all empty vials run in this protocol prior to the titration of standards and samples.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+		SystemPrepData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "The conditioning and titration data of the system prep injection prior to the titration of standards and samples.",
 			Category -> "Experimental Results",
 			Developer -> True
 		},
@@ -653,6 +885,72 @@ DefineObjectType[Object[Protocol, KarlFischerTitration], {
 			Relation -> Object[Data, Weight],
 			Description -> "The weight data of the Medium after the titration is completed for each sample.  If SamplingMethod is set to Liquid, once the protocol is completed, this field should have the same length as SamplesIn.",
 			Category -> "Sensor Information",
+			Developer -> True
+		},
+		Ampoules -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The samples and standards used in this protocol that are in ampoules and thus must be disposed of at the end of the protocol.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		ReplacementSeptum -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Septum],
+				Object[Item, Septum]
+			],
+			Description -> "The silicon rubber seal used to replace the existing seal on the Instrument if it has been pierced enough times to no longer be airtight.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		SystemPrepEmptyBalanceData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight data of the balance prior to the presence of any syringe or weighing system prep standard.  Note that for syringe weighing, the syringe rack will be on the balance for this step.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SystemPrepTareData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight data of the standard transfer device prior to measuring the weight of the system prep standard. If using weighing funnels, this is the weight of the empty weighing funnel prior to measurement of solid weight.  If using syringes, this is the weight of the empty syringe on the syringe rack.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SystemPrepWeightData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight deta of the full standard syringe or weighing container when it is filled system prep standard StandardAmount of Standard prior to addition to the reaction vessel. If using weighing funnels, this value refers to the weight only of the solid because the balance is tared prior to filling the weighing funnel.  If using syringes, this value refers to the weight of the syringe plus the weight of the syringe contents.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SystemPrepEmptyContainerWeightData -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Weight],
+			Description -> "The weight deta of the empty standard syringe or weighing container after its contents have system prep standard added to the reaction vessel.",
+			Category -> "Standards",
+			Developer -> True
+		},
+		SystemPrepWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Gram],
+			Units -> Gram,
+			Description -> "The weight of standard that was actually added into the reaction vessel to be titrated for the system prep injection.  This value is measured by weighing the container, syringe, or weighing funnel holding the standard before and after addition into the reaction vessel.",
+			Category -> "Standards",
 			Developer -> True
 		}
 	}

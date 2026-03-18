@@ -186,6 +186,38 @@ handleLoginResponse[response_Association, remember:True | False, email_String]:=
 		ConnectToTrace["Production"];
 	];
 
+	(* If it has not already been loaded into the kernel, install and load DVA team's compiled libraries
+	  containing advanced analysis and plotting functionality. *)
+	If[Not[TrueQ[MemberQ[$Packages, "DVA`"]]],
+		(*
+			If the download or extraction fails, do so silently.
+			At the moment, the advanced analysis apps are not critical for SLL functionality.
+			Todo: Log failures to Honeycomb
+		*)
+		Quiet[
+			ExtractArchive[
+				ECL`DownloadCloudFile[ECL`Object[ECL`EmeraldCloudFile, "id:XnlV5jOOqG4M"],
+				$TemporaryDirectory
+			],
+				FileNameJoin[{$UserBaseDirectory, "Applications"}],
+				OverwriteTarget -> True
+			];
+			Get["DVA`"];
+		]
+	];
+	(* If the DVA team's compiled libraries have been loaded, register login information into the library *)
+	If[TrueQ[MemberQ[$Packages, "DVA`"]],
+		$ContextPath = DeleteCases[$ContextPath, "DVA`"];
+		Quiet[
+			DVA`RegisterConstellationSession[
+				Global`$ConstellationDomain,
+				GoLink`Private`stashedJwt,
+				ECL`$PersonID,
+				Constellation`Private`$ECLFinancingTeamName
+			]
+		]
+	];
+
 	(* 
 		log some details about loading and building (if it happened)
 		these use TraceExpression so can't run it until logged in
@@ -501,7 +533,9 @@ productionObjStoreURLs={
 testObjStoreURLs={
 	defaultTestURL,
 	"https://cc-stage.emeraldcloudlab.com",
-	"https://engine-stage.emeraldcloudlab.com"
+	"https://engine-stage.emeraldcloudlab.com",
+	"https://engine-smoke0.emeraldcloudlab.com",
+	"https://engine-smoke1.emeraldcloudlab.com"
 };
 
 ProductionQ[]:=MemberQ[Constellation`Private`productionObjStoreURLs, Global`$ConstellationDomain];

@@ -143,6 +143,77 @@ DefineObjectType[Object[Timesheet], {
 			Category -> "Organizational Information",
 			Developer -> True,
 			AdminWriteOnly -> True
-		}
+		},
+	    EffectiveShiftTime -> {
+    	    Format -> Single,
+    	    Class -> Real,
+    	    Pattern :> GreaterEqualP[0*Second],
+  			Units -> Hour,
+      		Description -> "The portion of a scheduled shift an operator is expected to be actively engaged in procedures after accounting for breaks, administrative tasks, and transitions.",
+      		Category -> "Operations Statistics",
+      		Developer -> True
+    	},
+        EventsCompleted -> {
+    		Format -> Single,
+    		Class -> Integer,
+    		Pattern :> GreaterEqualP[0],
+    		Description -> "The total number of operator tasks completed by an operator during a given shift (OperatorEnd procedure events).",
+    		Category -> "Operations Statistics",
+     		Developer -> True
+    	},
+    	ShiftPosition -> {
+    		Format -> Single,
+    	    Class -> String,
+    	    Pattern :> EmeraldPositionP,
+    		Description -> "The position the operator held at the time of the scheduled shift.",
+    		Category -> "Company Information",
+    		Abstract -> True,
+    	    Developer -> True
+    	},
+    	ProcedureTime -> {
+    		Format -> Single,
+    	    Class -> Real,
+    	    Pattern :> GreaterEqualP[0*Second],
+    		Units -> Hour,
+    		Description -> "The amount of time an operator is actively working in procedures during their shift.",
+    		Category -> "Operations Statistics",
+    	    Developer -> True
+    	},
+    	ShiftOperatorErrors -> {
+    		Format -> Multiple,
+     		Class -> Link,
+    		Pattern :> _Link,
+    		Relation -> Object[SupportTicket],
+    		Description -> "Errors attributed to the operator that occurred during the given shift.",
+    		Category -> "Operations Statistics",
+    		Developer -> True
+    	},
+    	ShiftProtocolLog -> {
+     		Format -> Multiple,
+    		Class -> {Date, Expression, Link},
+    		Pattern :> {_?DateObjectQ, Enter|Exit, _Link},
+    		Relation -> {Null, Null, Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+    		Description -> "The times at which an operator entered or exited a top level protocol during the given shift.",
+    		Headers -> {"Date","Event","Protocol"},
+     		Category -> "Operations Statistics",
+    		Developer -> True
+    	},
+     	ShiftSupportTickets -> {
+    		Format -> Multiple,
+    		Class -> Link,
+    		Pattern :> _Link,
+    		Relation -> Object[SupportTicket],
+    		Description -> "The set of support tickets submitted by the operator during the given shift.",
+    		Category -> "Operations Statistics",
+    		Developer -> True
+    	},
+    	Trainee -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicates whether the operator was a trainee at the time of the scheduled shift.",
+            Category -> "Organizational Information",
+            Developer -> True
+        }
 	}
 }];

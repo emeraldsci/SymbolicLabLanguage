@@ -541,7 +541,7 @@ DefineObjectType[Model[Instrument, MassSpectrometer], {
 			Description -> "Maximum flow rate of argon gas to deliver and aerosolize liquid input sample.",
 			Category -> "Operating Limits"
 		},
-		MinAuxillaryGasFlowRate -> {
+		MinAuxiliaryGasFlowRate -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Liter/Minute],
@@ -549,7 +549,7 @@ DefineObjectType[Model[Instrument, MassSpectrometer], {
 			Description -> "Minimum flow rate of argon gas to generate plasma.",
 			Category -> "Operating Limits"
 		},
-		MaxAuxillaryGasFlowRate -> {
+		MaxAuxiliaryGasFlowRate -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Liter/Minute],

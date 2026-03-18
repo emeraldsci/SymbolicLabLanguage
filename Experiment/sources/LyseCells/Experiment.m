@@ -3079,6 +3079,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 					MatchQ[preLysisPelletBool,False],
 						Null,
 					(* Otherwise, resolve to match the default $Constant for the resolved cellType *)
+					(* todo:Robotic bio experiments should resolve to GravitationalAcceleration instead of resolving to RPM, see task https://app.asana.com/1/84467620246/project/1207576828798322/task/1211555576550140?focus=true *)
 					MatchQ[cellType, Yeast],
 						2850 RPM, (* $LivingYeastCentrifugeIntensity *)
 					MatchQ[cellType, Bacterial],
@@ -4470,6 +4471,7 @@ resolveExperimentLyseCellsOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 					methodSpecifiedQ && KeyExistsQ[methodPacket, ClarifyLysateIntensity] && MatchQ[Lookup[methodPacket, ClarifyLysateIntensity], Except[Null]],
 						Lookup[methodPacket,ClarifyLysateIntensity],
 					(* Default to the max force of the default HiG4 centrifuge if PreLysisPellet is True *)
+					(* todo:Robotic bio experiments should resolve to GravitationalAcceleration instead of resolving to RPM *)
 					MatchQ[clarifyLysateBool,True],
 						5700 RPM,
 					(* Otherwise, there is no lysate clarification; set intensity to Null *)
@@ -9174,7 +9176,7 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 		expandedResolvedOptionsWithLabels = $ExpandedOptionsForNumReplicates /. simulatedObjectsToLabel;
 
 		(* Get our robotic unit operation packets. *)
-		{{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} =
+		{{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
 			ExperimentRoboticCellPreparation[
 				primitives,
 				UnitOperationPackets -> True,
@@ -9192,7 +9194,11 @@ lyseCellsResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTemplate
 				HoldOrder -> Lookup[myResolvedOptions, HoldOrder],
 				QueuePosition -> Lookup[myResolvedOptions, QueuePosition],
 				CoverAtEnd -> False
-			];
+			],
+			(* We also quiet centrifuge precision warning since robotic centrifuge always trigger the warning to show both RCF and RPM if the specified value is RPM. *)
+			(* Robotic bio experiments should resolve to GravitationalAcceleration instead of resolving to RPM *)
+			{Warning::CentrifugePrecision}
+		];
 
 		(* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)
 		outputUnitOperationPacket = UploadUnitOperation[

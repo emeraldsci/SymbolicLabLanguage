@@ -146,7 +146,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script],
+			Relation -> Object[Protocol, SampleManipulation] | Object[Protocol, RoboticSamplePreparation] | Object[Protocol, ManualSamplePreparation] | Object[Notebook, Script] | Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
 			Description -> "The robotic sample manipulation protocol generated as a result of the execution of ArrayCardPreparatoryPrimitives.",
 			Category -> "Sample Loading"
 		},
@@ -219,8 +219,8 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Description->"For each member of SamplesIn, the portion of the reaction that is made up of any additional buffer not already part of the master mix.",
 			Category->"Sample Loading",
 			IndexMatching->SamplesIn
-		},	
-		
+		},
+
 		MoatVolume->{
 			Format->Single,
 			Class->Real,
@@ -245,7 +245,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Description->"The depth the moat extends into the assay plate.",
 			Category->"Sample Loading"
 		},
-		
+
 		DuplexStainingDye->{
 			Format->Single,
 			Class->Link,
@@ -278,7 +278,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			Description-> "The wavelength of light collected from the excited duplex staining dye.",
 			Category->"Dye Assay"
 		},
-		
+
 		ForwardPrimers->{
 			Format->Multiple,
 			Class->Expression,
@@ -940,7 +940,7 @@ DefineObjectType[Object[Protocol,qPCR],{
 			IndexMatching->Standards
 		},
 
-		
+
 		StandardData->{
 			Format->Multiple,
 			Class->Link,
@@ -991,4 +991,4 @@ DefineObjectType[Object[Protocol,qPCR],{
 		}
 
 	}
-}]
+}];

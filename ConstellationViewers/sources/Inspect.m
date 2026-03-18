@@ -60,11 +60,11 @@ linkButton[link:Link[obj_, ___]]:=
 					Row[{Mouseover[obj, Style[obj, Underlined], ImageSize -> All]}, Alignment -> {Left, Bottom}]
 				],
 				{
-					"Inspect object in page" :> If[date===None,
+					"Inspect object inline" :> If[date===None,
 						printFullOpacity[Inspect[link]],
 						printFullOpacity[Inspect[link, Date -> date]]
 					],
-					"Inspect object in new tab" :> inspectInNewWindow[obj, date],
+					"Inspect object in new page" :> inspectInNewWindow[obj, date],
 					"Copy object ID" :> CopyToClipboard[obj]
 				},
 				Appearance -> None,
@@ -1138,6 +1138,10 @@ formatValue[value_, key_Symbol, packet_, type:TypeP[], nameCache:{_Association..
 	]
 ]/;FieldQ[type[(IndexMatching /. (key /. (ECL`Fields /. LookupTypeDefinition[type])))]] && Not[MatchQ[(Headers /. (key /. (ECL`Fields /. LookupTypeDefinition[type]))), {String__}]] && SameLengthQ[Lookup[packet, key], Lookup[packet, (IndexMatching /. (key /. (ECL`Fields /. LookupTypeDefinition[type])))]] && Length[value] <= 5;
 
+(* Sample Compositions *)
+ECL`$CompositionBlob = True;
+formatValue[value_, Composition, packet_, (ECL`Object|ECL`Model)[ECL`Sample, ___],	nameCache:{_Association...}] /; ECL`$CompositionBlob := LayoutCompGrid[value];
+
 (* Index matched field that does have headers and the indexed and indexing field values are the same length, and the number of table entries is <=5  *)
 formatValue[value_, key_Symbol, packet_, type:TypeP[], nameCache:{_Association...}]:=Module[{indexingKey, headerItems, indexingValues, valueItems,
 	indexingValueItems, gridItems, grid, estimatedTableWidth, horizontalScrollBool, fieldHeaders, nullRowsRemovedValue, nullRowsRemovedIndexingValues
@@ -1459,6 +1463,7 @@ formatValue[value_?QuantityQ, key_Symbol, packet_, type:TypeP[], nameCache:{_Ass
 (* Everything else *)
 formatValue[value_, key_Symbol, packet_, type:TypeP[], nameCache:{_Association...}]:=Style[value /. {x_Association :> x, x:ObjectP[Object[Program, ProcedureEvent]] :> x, x:ObjectReferenceP[] :> Evaluate[replaceNameObject[x, nameCache]], x:LinkP[] :> replaceNameLink[x, nameCache], x:_Symbol[_Association] :> replacePrimitive[x, nameCache]}, FontSize -> 11, ContextMenu -> {MenuItem["Copy to clipboard", KernelExecute@CopyToClipboard[value], MenuEvaluator -> Automatic]}];
 
+
 (* Helper function to make a button graphic for Inspect action buttons *)
 actionButtonGraphic[myText_String]:=Module[{stylizedText},
 	(* Stylize the text*)
@@ -1557,102 +1562,12 @@ getFieldHeadersWithDefault[value_, key_Symbol, type:TypeP[]]:=Module[{},
 
 getHeaderItems[columnKeys_List] := Style[#, Bold, LineBreakWithin -> False, FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#4A4A4A"]]& /@ columnKeys;
 
-(* --- Type Inspect --- *)
-(* Listable version *)
-Inspect[myTypes:{TypeP[]..}, ops:OptionsPattern[Inspect]]:=Module[{safeOps},
 
-	(* Safely extract the options so they fit to pattern definitions *)
-	safeOps=SafeOptions[Inspect, ToList[ops]];
-
-	(* Map with perserved options over all the types *)
-	Inspect[#, safeOps]& /@ myTypes
-];
-
-Inspect[myType:TypeP[], ops:OptionsPattern[Inspect]]:=Module[
-	{
-		safeOps, output, abstractFields, myFields, typeDescription, groupedFields, categoryList, allKeyGroups, allDecriptionsGroups, allPatternGroups,
-		formatedCategories, formattedKeys, formatKeyDescriptionPairs, gridItems, gridDisplay, formatedTitle, developerOption, resolvedOps
-	},
-
-	(* Safely extract the options so they fit to pattern definitions *)
-	safeOps=SafeOptions[Inspect, ToList[ops]];
-
-	(* Requested output, either a single value or list of Alternatives[Result,Options,Preview,Tests] *)
-	output=Lookup[safeOps, Output];
-
-	(* Extract the description of the type from the stored structure of the database *)
-	typeDescription=(Description /. LookupTypeDefinition[myType]);
-
-	(* If Abstract is true remove non-abstract fields from database definitions *)
-	abstractFields=If[(Abstract /. safeOps),
-		Select[ECL`Fields /. LookupTypeDefinition[myType], MemberQ[Last[#], Abstract -> True]&],
-		ECL`Fields /. LookupTypeDefinition[myType]
-	];
-
-	(* Resolve the Developer option. If an option is specified, use that option, otherwise resolve based on $PersonID. *)
-	developerOption=If[BooleanQ[Developer /. safeOps],
-		Developer /. safeOps,
-		MatchQ[$PersonID, ObjectP[Object[User, Emerald, Developer]]]
-	];
-
-	(* If Developer is false remove developer fields from database definitions *)
-	myFields=If[!developerOption,
-		Select[abstractFields, !MemberQ[Last[#], Developer -> True]&],
-		abstractFields
-	];
-
-	(* Break up the field definitions by Category *)
-	groupedFields=GatherBy[myFields, (Category /. Last[#])&];
-
-	(* Extract the list of all of the categories *)
-	categoryList=Category /. (groupedFields[[All, 1, 2]]);
-
-	(* Put togeather a list of lists of keys for field in each category *)
-	allKeyGroups=groupedFields[[All, All, 1]];
-
-	(* Put togeather a list of list of descriptions for field in each category *)
-	allDecriptionsGroups=Description /. groupedFields[[All, All, 2]];
-
-	(* Put togeather a list of lists of all the patterns *)
-	allPatternGroups=Pattern /. groupedFields[[All, All, 2]];
-
-	(* Format the categories displays for each category *)
-	formatedCategories=formatCategory /@ categoryList;
-
-	(* Format the keys with pattern mouse overs *)
-	formattedKeys=MapThread[Function[{keyGroup, patternGroup}, MapThread[formatKey[#1, #2]&, {keyGroup, patternGroup}]], {allKeyGroups, allPatternGroups}];
-
-	(* format the key with the descriptions *)
-	formatKeyDescriptionPairs=MapThread[Function[{keyGroup, descriptionGroup}, MapThread[{#1, Item[Style[ToString[#2], FontFamily -> "Helvetica", FontSize -> 11, RGBColor["#4A4A4A"]]]}&, {keyGroup, descriptionGroup}]], {formattedKeys, allDecriptionsGroups}];
-
-	(* Generate a formated title for the display that includes the type and its description *)
-	formatedTitle=formatTypeTitle[myType, typeDescription];
-
-	(* Shuffle the categories back on top of each gathered packet and flatten out the bunch to generate the final list of stuff that goes in the grid *)
-	gridItems=Join[formatedTitle, Flatten[Riffle[formatedCategories, formatKeyDescriptionPairs], 1]];
-
-	(* Update the resolved options *)
-	resolvedOps=ReplaceRule[safeOps,
-		{
-			Date -> None,
-			Developer -> developerOption
-		}
-	];
-
-	(* Return Formated Grid of information *)
-	gridDisplay=Grid[gridItems,
-		Alignment -> {{Left, Left}},
-		Background -> {None, {{RGBColor["#E2E2E2"], None}}},
-		Frame -> solidFrame
-	];
-
-	(* Return the result according to the output specification *)
-	output /. {
-		Result -> gridDisplay,
-		Preview -> Pane[gridDisplay /. {Rule[ItemSize, _] :> Rule[ItemSize, Scaled[0.5]]}, ImageSize -> {Full, 300}, Scrollbars -> {False, True}, Alignment -> Center],
-		Tests -> {},
-		Options -> resolvedOps
-	}
+Inspect[TypeP[], OptionsPattern[Inspect]]:=NotebookOpen[
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:dORYzZmRr6DE"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:dORYzZmRr6xp"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:eGakldDaO9E4"], $TemporaryDirectory];
+	DownloadCloudFile[Object[EmeraldCloudFile, "id:BYDOjveDp5rm"], $TemporaryDirectory]
 ];
 
 
@@ -1718,7 +1633,7 @@ evaluationButton[expr_, ops:OptionsPattern[]]:=DynamicModule[{bool, out},
 ];
 
 SetAttributes[evaluationButton, HoldFirst];
-
+(* ::Subsubsection::Closed:: *)
 TwelveHourDateString[date:_?DateObjectQ]:=DateString[date, {"Date", " ", "Hour12", ":", "Minute",
 	":", "Second", " ", "AMPMLowerCase"}];
 
@@ -1755,3 +1670,310 @@ generateFavoriteLinkForFrontEnd[link:ObjectP[], originalObjectID_String]:=With[{
 		]
 	]
 ];
+
+(* Composition blob helper code *)
+
+HeightPtsToXs[h_Real] := N[h / CurrentValue["FontXHeight"]];
+WidthPtsToMs[w_Real] := N[w/CurrentValue["FontMWidth"]];
+HeightXsToPts[h_Real] := N[h*CurrentValue["FontXHeight"]];
+WidthMsToPts[w_Real] := N[w*CurrentValue["FontMWidth"]];
+
+HeaderedArea[header_, body_, opts : OptionsPattern[]] :=
+		Module[{ headerOpts, paneOpts},
+			headerOpts =
+					FilterRules[{opts},
+						Except[Scrollbars | ScrollPosition | ImageSizeAction,
+							Options[PaneBox]]];
+			paneOpts =
+					FilterRules[{opts},
+						Except[ScrollPosition | ImageSizeAction, Options[PaneBox]]];
+			DynamicModule[{hScrollPos = 0., vScrollPos = 0.},
+				GridBox[
+					{
+						{PaneBox[header, Scrollbars -> False,
+							ScrollPosition -> Dynamic[{hScrollPos, 0}],
+							ImageSizeAction -> "Scrollable", headerOpts ]},
+						{PaneBox[body,
+							ScrollPosition -> Dynamic[{hScrollPos, vScrollPos}],
+							ImageSizeAction -> "Scrollable", paneOpts]}
+					},
+					ColumnSpacings -> 0, RowSpacings -> 0,
+					ColumnAlignments -> Left, GridFrameMargins -> 0
+				]
+			]
+		];
+
+getBoxSize[c_Cell] := {#[[1]], Total@#[[2 ;;]]} &@
+		First@FrontEndExecute@FrontEnd`GetBoundingBoxSizePacket[c];
+getBoxSize[c_CellObject] := getBoxSize[NotebookRead[c]];
+getBoxSize[b_BoxObject] :=
+		getBoxSize[
+			Cell[BoxData@NotebookRead[b], "Output", PageWidth -> Infinity,
+				ShowCellBracket -> False, CellMargins -> {{0, 0}, {0, 0}},
+				ImageSize -> All]];
+getBoxSize[e_] :=
+		getBoxSize[
+			Cell[BoxData@ToBoxes[e], "Output", PageWidth -> Infinity,
+				ShowCellBracket -> False, CellMargins -> {{0, 0}, {0, 0}},
+				ImageSize -> All]];
+
+
+getFormattedQuantity[q_Quantity] := Module[{mag, ustr, unit},
+	mag = QuantityMagnitude[q];
+	ustr = ToString[QuantityForm[QuantityUnit[q], "Abbreviation"]];
+	unit =
+     Switch[UnitDimensions[q],
+			 (*Maybe we should have better rules for this, but for now:*)
+			 {{IndependentUnitDimension[_],1}}, StringReplace[ustr, "Percent" -> "%"], (* Replace the word Percent with the symbol '%', don't bracket the unit.*)
+			 {{"AmountUnit", 1}, {"LengthUnit", -3}}, ustr, (* Molarities get no brackets *)
+			 {{_,_}, {_,_}}, "[" <> ustr <> "]", (*Other multiple-units get brackets (I'm guessing this is to offset mg/ml and the like)*)
+			 {{_,_}}, ustr, (*non-multiple units get no brackets*)
+			 _, ustr (* Anything else, we're not processing further until it comes up*)
+		 ];
+	{mag, unit}
+];
+getFormattedQuantity[Null] := {"",""};
+
+
+LayoutCompGrid[compList : {({_Quantity|Null, _ECL`Link, _DateObject}|{_Quantity|Null, _ECL`Link}) ..}] :=
+		(* The With values are supplied by the design team,
+    through the Figma design for this table *)
+		With[{
+			fontName = "Helvetica", fontSize = 11, hSpacing = 10.,
+			smallMolSize = 36., largeMolSize = 130., sortIndiSize = 16.,
+			headerPadding = {{10., 10.}, {7., 7.}}, headerHeight = 30.,
+			headerBackground = RGBColor["#E8E9EB"],
+			cellPadding = {{10., 10.}, {12., 12.}}, rowHeight = 40.,
+			linkColor = RGBColor["#2AA4E6"], frameColor = RGBColor["#D3D6D8"]},
+			With[{
+				(* Set up formatting shortcuts using the measured and design-
+        supplied values *)
+				headerPane :=
+						FrameBox[PaneBox[#, ImageSizeAction -> "Clip" ],
+							Background -> headerBackground,
+							FrameMargins -> headerPadding,
+							ImageSize -> {Full, headerHeight}, ImageMargins -> 0,
+							FrameStyle -> None] &,
+				cellPane :=
+						PaneBox[#, FrameMargins -> cellPadding,
+							ImageSize -> {Automatic, rowHeight},
+							ImageSizeAction -> "Clip"] &,
+				fontStyled :=
+						StyleBox[#, FontFamily -> fontName, FontSize -> fontSize] &,
+				paneNoBreak := PaneBox[StyleBox[#, LineBreakWithin->False], FrameMargins -> 0, ImageMargins-> 0, ImageSize -> All] &
+			},
+				With[{
+					minConcWidth =
+							(getBoxSize@RawBoxes@fontStyled["Concentration \[EmptySquare]"])[[1]] * 2.,
+					minCompWidth = (getBoxSize@RawBoxes@fontStyled["Component"])[[1]],
+					molMethod =
+							Method -> {"DoubleBondOffset" -> 0.15,
+								"DoubleBondOffsetInRing" -> 0.15, "AtomLabelPadding" -> 0.3,
+								"DashSpacing" -> 0.1, "FontScaleFactor" -> 1.50*10/10,
+								"ShowHydrogens" -> False},
+					printFullOpacity :=
+							CellPrint[
+								ExpressionCell[#, "Print",
+									PrivateCellOptions -> {"ContentsOpacity" -> 1.}]] &
+				},
+					Module[{
+						quantities, nameds, mols, mags, units, qcells,
+						objWidths, maxMagWidth, maxUnitWidth, maxQWidth, maxObjWidth,
+						concSpacerWidth,
+						quantLayout, formatObject, formatMolecule, makeRow},
+						(* TODO: make the displayed objects behave like links (can't use links directly because of
+            styling issues) *)
+						(* to do this, we need to set underline on mouseover,
+            and provide the same action menu (see the stylesheet) *)
+						formatObject[obj_] := Interpretation[
+							ActionMenu[
+								StyleBox[Mouseover[obj, StyleBox[obj, Underlined]],
+									FontColor -> linkColor],
+								{"Inspect object inline" :> printFullOpacity[Inspect[obj]],
+									"Inspect object in new page" :> inspectInNewWindow[obj,date],
+									"Copy object ID" :> CopyToClipboard[obj]},
+								Appearance -> None, Method -> "Queued",
+								ContentPadding -> False, FrameMargins -> None,
+								BaseStyle -> {FontFamily -> fontName, FontSize -> fontSize}
+							],
+							Link[obj]
+						];
+						formatMolecule[mol_] := PaneBox[mol /. {
+
+							Null -> PaneBox["",
+								ImageSize -> {smallMolSize, smallMolSize},
+								ImageMargins -> {{10, 0}, {0, 0}}
+							],
+							m_ :> Tooltip[
+
+								Overlay[{MoleculePlot[m,
+									IncludeHydrogens -> None,
+									ColorRules -> {_ -> Black},
+									ImageSize -> {smallMolSize, smallMolSize}, molMethod,
+									ImageMargins -> {{10, 0}, {0, 0}}]}],
+
+								MoleculePlot[m,
+									IncludeHydrogens -> None,
+									ColorRules -> {_ -> Black},
+									ImageSize -> {largeMolSize, largeMolSize}, molMethod,
+									ImageMargins -> 10],
+								TooltipStyle -> {Background -> White}
+							]},
+							ImageMargins -> 0
+						];
+
+						(*
+            Extract the different parts for processing as homogeneous lists,
+            instead of a list of {quantity, link, date}
+            *)
+						quantities = compList[[All, 1]];
+						nameds = formatObject /@ NamedObject[compList[[All, 2]]];
+						mols = (#[Molecule]) & /@ compList[[All, 2]];
+						(*
+            Constrain the list of quads so we only have to hold on to the \
+      lists of separate components *)
+						Module[{qts},
+							(* returns {magnitude, abbreviated unit, width of magnitude,
+              width of unit} *)
+							qts = getFormattedQuantity /@ compList[[All, 1]];
+							mags  = paneNoBreak /@ fontStyled /@ qts[[All, 1]];
+							units = paneNoBreak /@ fontStyled /@ qts[[All, 2]];
+						];
+						(* measured width seems to be 1/2 the needed number *)
+						maxMagWidth = Max[First /@ getBoxSize /@ RawBoxes /@ mags] * 2.;
+						maxUnitWidth = Max[getBoxSize /@ RawBoxes /@ units] * 2.;
+
+						(* Measure the necessary widths for layout *)
+						(*Measuring the objects, the RasterSize is twice the size of the bounding box - is there a why?*)
+						(*Module[{objs, rasterObjSizes, rasterBbObjSizes, bbObjSizes},
+							objs = DisplayForm/@paneNoBreak/@nameds;
+							rasterObjSizes = (Rasterize[#, "RasterSize"]&)/@objs;
+							rasterBbObjSizes = (Rasterize[#, "BoundingBox"]&)/@objs;
+							bbObjSizes = getBoxSize/@objs;
+							Print[TableForm[{rasterObjSizes, rasterBbObjSizes, bbObjSizes, rasterObjSizes/bbObjSizes}]];
+						];*)
+						objWidths = First /@ getBoxSize /@ DisplayForm /@ paneNoBreak /@ nameds;
+						(*seems like 2 is the actual rastersize <-> bounding box ratio (at least on my machine), but let's try 1.7 for fitting generally*)
+						maxObjWidth = Max[objWidths] * 1.7;
+
+
+						quantLayout[mag_, unit_] := PaneBox[GridBox[
+							{{mag, unit}},
+							GridBoxSpacings -> {0, WidthPtsToMs[4.], 0},
+							GridFrameMargins-> 0,
+							ColumnAlignments -> {Right, Left},
+							(* TODO: figure out/ask WRI how to measure what will actually be rendered here, and plug in that size
+								Until then, adding to these numbers generously until they fit.
+							*)
+							ColumnWidths->{WidthPtsToMs[maxMagWidth + 6.], WidthPtsToMs[maxUnitWidth]}
+						], ImageMargins -> 0, FrameMargins -> 0, ImageSize -> All];
+
+						qcells = MapThread[quantLayout, {mags, units}];
+						maxQWidth = Max[First/@ getBoxSize /@ RawBoxes /@ qcells];
+						(* And then the function to set up each row *)
+						makeRow[qCell_, mol_,  obj_] :=
+                    Module[{comp},
+							comp = GridBox[{{formatMolecule[mol], cellPane[obj]}},
+								GridFrameMargins -> 0,
+								ColumnSpacings -> WidthPtsToMs[hSpacing]];
+							{
+								cellPane[qCell],
+								comp
+							}];
+
+						DynamicModule[{
+							sortDirection = "Ascending", sortByMagnitude, sortByUnits,
+							concHeader, rows, sortedRows,
+							header, body,
+							finalCompWidth, finalConcWidth,
+							cmWDisp, ccWDisp
+						},
+							(* Now that we've measured we can make final size determinations *)
+
+							finalConcWidth =
+									Max[
+										maxQWidth,
+										minConcWidth
+									] + Total[(*left+right*)cellPadding[[1]]];
+							concSpacerWidth =
+									Max[0, finalConcWidth - minConcWidth - Total[(*left+right*)cellPadding[[1]]]];
+							finalCompWidth =
+           				Max[
+										maxObjWidth + smallMolSize + hSpacing  + Total[(*left+right*)cellPadding[[1]]],
+										minCompWidth
+									];
+							cmWDisp = WidthPtsToMs[finalCompWidth];
+							ccWDisp = WidthPtsToMs[finalConcWidth];
+							(* Set up {quantity, {row}} pairs, so we can sort as needed *)
+							rows =
+									MapThread[
+										List,
+										{quantities, MapThread[makeRow, {qcells, mols, nameds}]}
+									];
+
+							concHeader = EventHandler[
+								headerPane[fontStyled[GridBox[{{
+									Style["Concentration", FontWeight->Bold],
+
+									PaneBox[PaneSelector[{
+										"Ascending" -> "\[UpArrow]",
+										"Descending" -> "\[DownArrow]"
+									}, Dynamic[sortDirection]],
+										ImageSize -> {sortIndiSize, sortIndiSize},
+										ImageSizeAction -> "ResizeToFit"]
+								}},
+									GridBoxItemSize -> {"Columns" -> {Automatic, Fit}},
+									GridBoxAlignment -> {"Columns" -> {Left, Right}}
+								]]],
+								{"MouseDown" :>
+										If[sortDirection == "Ascending",
+											sortDirection = "Descending", sortDirection = "Ascending"]}
+							]//DisplayForm;
+
+							header := GridBox[{{concHeader, headerPane[Style["Component", FontWeight->Bold]]}},
+								ColumnSpacings -> 0, ColumnWidths -> {ccWDisp, cmWDisp},
+								RowSpacings -> 0,
+
+								GridBoxDividers -> {"Columns" -> {{frameColor}},
+									"Rows" -> {{frameColor}}}, GridFrameMargins -> 0
+							];
+							sortByUnits[{q_Quantity,_}] := Switch[Echo@UnitDimensions[q],
+								{{IndependentUnitDimension[_],1}},
+									Switch[ToString@QuantityForm[QuantityUnit[q], "Abbreviation"],
+										"VolumePercent", 4,
+										"MassPercent", 3],
+								{{"AmountUnit", 1}, {"LengthUnit", -3}}, 2, (* Molarities fall under this category *)
+								{{"MassUnit", 1}, {"LengthUnit", -3}}, 1, (* mass per volume - mg/ml is typical*)
+								_, 0 (* push anything not on the typical list to the end*)
+							];
+							sortByUnits[{Null, _}] := -1 (*Push null beyond unexpected units - null may be trace, or unable to measure, or...*);
+							sortByMagnitude[{q_Quantity,_}] := QuantityMagnitude[q];
+							sortByMagnitude[{Null,_}]:= 0;
+							sortedRows[direction_] := Which[
+								direction == "Ascending" , SortBy[rows,  {sortByUnits[#]&, sortByMagnitude[#]&}],
+								direction == "Descending", ReverseSortBy[rows, {sortByUnits[#]&, sortByMagnitude[#]&}]
+							];
+
+							(* sortedRows returns the rows with the quantities being sorted as {{quantity, row}..}*)
+							(* So, [[All, 2]] extracts the rows for display*)
+							body[direction_] := GridBox[sortedRows[direction][[All, 2]],
+								ColumnSpacings -> 0, ColumnWidths -> {ccWDisp, cmWDisp},
+								ColumnAlignments -> {Right, Left},
+
+								GridBoxDividers -> {"Rows" -> {{frameColor}},
+									"Columns" -> {{frameColor}}}, GridFrameMargins -> 0
+							]//DisplayForm;
+							HeaderedArea[
+								header,
+								Dynamic[body[sortDirection], TrackedSymbols :> {sortDirection}],
+								BaseStyle -> {FontFamily -> fontName, FontSize -> fontSize},
+								FrameMargins -> 0,
+								Alignment -> Left,
+								ImageSize -> {Automatic, UpTo[450]}, ImageMargins -> 0,
+								Scrollbars -> {Automatic, Automatic}, AppearanceElements -> None
+							]//DisplayForm//Deploy
+						]
+					]
+				]
+			]
+		];

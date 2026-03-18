@@ -210,6 +210,14 @@ DefineObjectType[Object[Analysis], {
 			Category -> "General",
 			Abstract -> True
 		},
+		AnalysisVersion -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> ECL`GreaterP[0],
+			Description -> "The version of the SLL analysis function that generated this analysis.",
+			Category -> "General",
+			Developer -> True
+		},
 		LegacyID -> {
 			Format -> Single,
 			Class -> String,

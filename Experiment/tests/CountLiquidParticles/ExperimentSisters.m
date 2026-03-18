@@ -403,6 +403,18 @@ DefineTests[
 				Verbose->True
 			],
 			True
+		],
+		Test["Use Incubate resolver to check on invalid Mix-related options:",
+			ValidExperimentCountLiquidParticlesQ[
+				{
+					Object[Sample, "Test water sample 1 for ValidExperimentCountLiquidParticlesQ"<> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ValidExperimentCountLiquidParticlesQ"<> $SessionUUID],
+					Object[Sample, "Test 10 micro meter particle sample 1 for ValidExperimentCountLiquidParticlesQ"<> $SessionUUID]
+				},
+				AcquisitionMixType -> Nutate,
+				AcquisitionMixRate -> 3000 RPM
+			],
+			False
 		]
 	},
 	Stubs:>{

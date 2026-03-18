@@ -23,7 +23,8 @@ DefineTests[
 			],
 			ObjectP[Object[Protocol,AdjustpH]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Basic,"Adjust the pH of multiple samples to a same pH:"},
 			ExperimentAdjustpH[
@@ -32,7 +33,8 @@ DefineTests[
 				,8],
 			ObjectP[Object[Protocol,AdjustpH]],
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Basic,"Input a container:"},
 			ExperimentAdjustpH[Object[Container,Vessel,"Test container 2 for ExperimentAdjustpH" <> $SessionUUID],5.5,Aliquot->True,AliquotAmount->25Milliliter],
@@ -70,7 +72,11 @@ DefineTests[
 					Lookup[FirstCase[output[[1]][Packets],KeyValuePattern[Object->ObjectP[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID]]]], {Volume, pH}],
 					output[[1]][Labels]
 				},
-			{{EqualP[35010Microliter],8}, {"test adjph water sample 1"->ObjectP[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID]]}},
+			{
+				{EqualP[35010Microliter],8},
+				{"test adjph water sample 1"->ObjectP[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID]],
+					_ -> ObjectP[Object[Container, Vessel, "Test container 2 for ExperimentAdjustpH" <> $SessionUUID]]}
+			},
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
 			TimeConstraint->1000
 		],
@@ -128,7 +134,8 @@ DefineTests[
 			True,
 			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
 			TimeConstraint->1000,
-			Variables:>{options}
+			Variables:>{options},
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 
 
@@ -234,7 +241,8 @@ DefineTests[
 				EqualP[0.9 Milliliter]
 			},
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 
 		Example[{Options,TitrationInstrument,"If we have multiple samples to do robotic titration and at least one of them has TitrationInstrument specified, the rest robotic titration will use the same pHTitrator:"},
@@ -252,7 +260,8 @@ DefineTests[
 				LinkP[Object[Instrument, pHTitrator, "TitrationInstrument for ExperimentAdjustpH robotic titration testing " <> $SessionUUID]]
 			},
 			Variables :> {protocol},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 
 		Example[{Options, MaxNumberOfCycles, "If MaxAcidAmountPerCycle or MaxBaseAmountPerCycle is specified, the resolution of MaxNumberOfCycles will be 10 even if TitrationMethod is Robotic:"},
@@ -260,7 +269,8 @@ DefineTests[
 			Lookup[options, {MaxNumberOfCycles, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle}],
 			{10, EqualP[1 Milliliter], EqualP[4.5 Milliliter]},
 			Variables :> {options},
-			TimeConstraint -> 1000
+			TimeConstraint -> 1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		(* Commenting out TemperatureCorrection as the option needs reworked. *)
 		Example[{Options,AcquisitionTime,"Adjust the pH of a single liquid sample with a custom acquisition time (time over which to read pH):"},
@@ -343,7 +353,8 @@ DefineTests[
 			Lookup[options, {pHMixType,NumberOfpHMixes}],
 			{Invert,NumberP},
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,pHMixType,"Resolve options for mixing during pH adjustment-- Stir for large container:"},
 			options=ExperimentAdjustpH[Object[Sample,"Test sample 29 in 10L Carboy with enough liquid for ExperimentAdjustpH" <> $SessionUUID],8,Output->Options];
@@ -360,7 +371,8 @@ DefineTests[
 			Lookup[options, {pHMixType,pHMixInstrument,pHMixTime,pHMixRate}],
 			{Stir,ObjectP[Model[Instrument,OverheadStirrer]],TimeP,GreaterP[0*RPM]},
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 
 		Example[{Options,pHMixTime,"Resolve to an appropriate mix time based on pHMixType and the state of sample to mix:"},
@@ -477,9 +489,10 @@ DefineTests[
 			Lookup[options, MaxAdditionVolume],
 			VolumeP,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
-		Example[{Options,MaxNumberOfCycles,"Resolve the maximum volume that can be added to the SamplesIn based on the samplesIn volume, container MaxVolume and NumberOfReplicates:"},
+		Example[{Options,MaxNumberOfCycles,"Resolve the maximum number of cycles that can be added to the SamplesIn based on the samplesIn volume, container MaxVolume and NumberOfReplicates:"},
 			options=ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8,MaxNumberOfCycles->15,Output->Options];
 			Lookup[options, MaxNumberOfCycles],
 			15,
@@ -507,7 +520,8 @@ DefineTests[
 			Lookup[options, {NumberOfReplicates,Aliquot,AliquotAmount, AliquotContainer,ContainerOut}],
 			{2,True,LessP[35Milliliter],{{1,ObjectP[]},{2,ObjectP[]}},ObjectP[Model[Container, Vessel, "id:bq9LA0dBGGR6"]]},
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,ContainerOut,"Returns specified ContainerOut:"},
 			options=ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8,ContainerOut->Model[Container, Vessel, "id:jLq9jXvA8ewR"],Output->Options];
@@ -528,7 +542,8 @@ DefineTests[
 			Lookup[options, ContainerOut],
 			ObjectP[PreferredContainer[65Milliliter]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,SamplesOutStorageCondition, "Specify SamplesOutStorageCondition:"},
 			options = ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, SamplesOutStorageCondition->Refrigerator, Output->Options];
@@ -788,6 +803,14 @@ DefineTests[
 			Variables :> {options},
 			TimeConstraint->1000
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, CentrifugeIntensity->1001RPM, Output->Options];
+			Lookup[options,CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction->Equal,
+			Variables:>{options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, CentrifugeTime->5*Minute, Output->Options];
 			Lookup[options, CentrifugeTime],
@@ -888,7 +911,8 @@ DefineTests[
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,FilterIntensity, "The rotational speed or force at which the samples will be centrifuged during filtration:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, FiltrationType -> Centrifuge, FilterIntensity -> 1000*RPM, FilterAliquot -> 25 Milliliter, Output->Options];
@@ -896,15 +920,17 @@ DefineTests[
 			1000*RPM,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,FilterTime, "The amount of time for which the samples will be centrifuged during filtration:"},
-			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8,FiltrationType->PeristalticPump, FilterTime->20*Minute, Output->Options];
+			options = ExperimentAdjustpH[Object[Sample,"Large test water sample for ExperimentAdjustpH" <> $SessionUUID],8,FiltrationType->PeristalticPump, FilterTime->20*Minute, Output->Options];
 			Lookup[options, FilterTime],
 			20*Minute,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,FilterTemperature, "The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, FilterAliquot->25 Milliliter,FiltrationType->Centrifuge, FilterTemperature->22*Celsius, Output->Options];
@@ -912,8 +938,10 @@ DefineTests[
 			22*Celsius,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
-		], (* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
+		],
+		(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options,FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, FilterSterile->True, Output->Options];
 			Lookup[options, FilterSterile],
@@ -960,13 +988,35 @@ DefineTests[
 			Variables :> {options},
 			TimeConstraint->1000
 		],
+		Example[{Options,HighCalibrationWashSolution,"Resolve calibation wash solution based on given calibration buffer Model:"},
+			options=ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8,HighCalibrationBuffer->Model[Sample,"Reference Buffer - pH 11.00"],Output->Options];
+			Lookup[options,HighCalibrationWashSolution],
+			ObjectP[Model[Sample,"Reference Buffer - pH 11.00"]],
+			Variables :> {options}
+		],
+		Example[{Options,HighCalibrationWashSolution,"If calibration buffer or wash solution is not in sachet, resource sample in 15 mL tube:"},
+			protocol=ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8,HighCalibrationBuffer->Model[Sample,"Reference Buffer - pH 11.00"]];
+			Download[Cases[Download[protocol, RequiredResources], {_, HighCalibrationWashSolution, _, _}][[1, 1]], Amount],
+			EqualP[4 Milliliter],
+			Variables :> {protocol}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentAdjustpH" <> $SessionUUID], 8, AliquotAmount -> 15.11 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			15.2 Milliliter,
+			EquivalenceFunction->Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint->1000
+		],
 		Example[{Options,AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, AssayVolume->45*Milliliter, TitrationMethod -> Manual, Output->Options];
 			Lookup[options, AssayVolume],
 			45*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,TargetConcentration, "The desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, TargetConcentration->5*Micromolar, Output->Options];
@@ -974,21 +1024,24 @@ DefineTests[
 			5*Micromolar,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,TargetConcentrationAnalyte, "The analyte whose desired final concentration is specified:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, TargetConcentration->5 Micromolar, TargetConcentrationAnalyte->Model[Molecule, "Uracil"], Output->Options];
 			Lookup[options, TargetConcentrationAnalyte],
 			ObjectP[Model[Molecule, "Uracil"]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,ConcentratedBuffer, "The concentrated buffer which should be diluted by the BufferDilutionFactor with the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, ConcentratedBuffer->Model[Sample, StockSolution, "10x UV buffer"],AliquotAmount->15*Milliliter,AssayVolume->30*Milliliter,AliquotContainer->Model[Container, Vessel, "50mL Tube"], Output->Options];
 			Lookup[options, ConcentratedBuffer],
 			ObjectP[Model[Sample, StockSolution, "10x UV buffer"]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,BufferDilutionFactor, "The dilution factor by which the concentrated buffer should be diluted by the BufferDiluent; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options = ExperimentAdjustpH[Object[Sample,"Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, BufferDilutionFactor->10, ConcentratedBuffer->Model[Sample, StockSolution, "10x UV buffer"],AliquotAmount->15*Milliliter,AssayVolume->30*Milliliter,AliquotContainer->Model[Container, Vessel, "50mL Tube"], Output->Options];
@@ -996,21 +1049,24 @@ DefineTests[
 			10,
 			EquivalenceFunction->Equal,
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,BufferDiluent, "The buffer used to dilute the concentration of the ConcentratedBuffer by BufferDilutionFactor; the diluted version of the ConcentratedBuffer will then be added to any aliquot samples that require dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options = ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, BufferDiluent->Model[Sample, "Milli-Q water"], BufferDilutionFactor->10, ConcentratedBuffer->Model[Sample, StockSolution, "10x UV buffer"],AliquotAmount->15*Milliliter,AssayVolume->30*Milliliter,AliquotContainer->Model[Container,Vessel,"50mL Tube"], Output->Options];
 			Lookup[options, BufferDiluent],
 			ObjectP[Model[Sample, "Milli-Q water"]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,AssayBuffer, "The buffer that should be added to any aliquots requiring dilution, where the volume of this buffer added is the difference between the AliquotAmount and the total AssayVolume:"},
 			options = ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, AssayBuffer->Model[Sample, StockSolution, "10x UV buffer"],AliquotAmount->5*Milliliter,AssayVolume->20*Milliliter, AliquotContainer->Model[Container, Vessel, "50mL Tube"], Output->Options];
 			Lookup[options, AssayBuffer],
 			ObjectP[Model[Sample, StockSolution, "10x UV buffer"]],
 			Variables :> {options},
-			TimeConstraint->1000
+			TimeConstraint->1000,
+			Messages :> {Warning::AliquotContainerOutWarning}
 		],
 		Example[{Options,AliquotSampleStorageCondition, "The non-default conditions under which any aliquot samples generated by this experiment should be stored after the protocol is completed:"},
 			options = ExperimentAdjustpH[Object[Sample, "Test water sample for ExperimentAdjustpH" <> $SessionUUID],8, AliquotSampleStorageCondition->Refrigerator, Output->Options];
@@ -1223,6 +1279,7 @@ DefineTests[
 			$Failed,
 			Messages:>{
 				Error::MaxVolumeExceeded,
+				Warning::AliquotContainerOutWarning,
 				Error::InvalidOption
 			},
 			TimeConstraint->1000
@@ -1285,6 +1342,7 @@ DefineTests[
 			$Failed,
 			Messages:>{
 				Error::ConflictingTitrationMethod,
+				Warning::AliquotContainerOutWarning,
 				Error::InvalidOption
 			},
 			TimeConstraint->1000
@@ -1311,7 +1369,7 @@ DefineTests[
 				pHMixRate -> 750 RPM
 			],
 			$Failed,
-			Messages :> {Error::SafeMixRateMismatch,Error::InvalidOption}
+			Messages :> {Error::SafeMixRateMismatch,Error::InvalidOption, Warning::AliquotContainerOutWarning}
 		],
 		Example[{Messages, "SafeMixRateNotFound", "Throw an error message if field MaxOverheadMixRate is not populated for the sample container and we do not want ot use StirBar:"},
 			ExperimentAdjustpH[
@@ -1322,7 +1380,7 @@ DefineTests[
 				AliquotContainer -> Model[Container, Vessel, "Test 1 L container model with no MaxOverheadMixRate populated for ExperimentAdjustpH"<>$SessionUUID]
 			],
 			$Failed,
-			Messages :> {Error::SafeMixRateNotFound, Error::InvalidInput}
+			Messages :> {Error::SafeMixRateNotFound, Error::InvalidInput, Warning::AliquotContainerOutWarning}
 		],
 
 
@@ -1411,6 +1469,14 @@ DefineTests[
 				Error::IncompatibleInstrument,
 				Error::InvalidOption,
 				Error::InvalidInput
+			},
+			TimeConstraint->1000
+		],
+		Example[{Messages,"AliquotContainerOutWarning","Give a warning if the sample needs to be aliquoted for pH adjustment:"},
+			ExperimentAdjustpH[Object[Sample, "Test sample in a beaker for ExperimentAdjustpH" <> $SessionUUID], 8, TitrationMethod -> Robotic],
+			ObjectP[Object[Protocol, AdjustpH]],
+			Messages:>{
+				Warning::AliquotContainerOutWarning
 			},
 			TimeConstraint->1000
 		],

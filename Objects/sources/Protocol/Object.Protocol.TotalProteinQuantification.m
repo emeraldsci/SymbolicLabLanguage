@@ -269,6 +269,7 @@ DefineObjectType[Object[Protocol, TotalProteinQuantification], {
 				Object[Protocol, AbsorbanceSpectroscopy],
 				Object[Protocol, FluorescenceSpectroscopy],
 				Object[Protocol, RoboticSamplePreparation],
+				Object[Protocol, RoboticCellPreparation],
 				Object[Notebook, Script]
 			],
 			Description->"The Absorbance- or Fluorescence-Spectroscopy protocol performed on the QuantificationPlate.",

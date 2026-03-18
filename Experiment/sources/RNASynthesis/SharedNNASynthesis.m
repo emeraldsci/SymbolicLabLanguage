@@ -1989,8 +1989,8 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 
 			(* make packets for samples we are making *)
 			UploadSampleModel[
-				names,
-				Composition -> Map[{{100 MassPercent, #}}&, identityModels],
+				Map[{{100 MassPercent, #}}&, identityModels],
+				Name -> names,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"], (* Model[StorageCondition, "Refrigerator"] *)
 				Expires -> False,
 				ShelfLife -> Null,
@@ -2044,8 +2044,8 @@ experimentNNASynthesis[myPolymer:(DNA|RNA), myStrands : ListableP[Alternatives[O
 
 			newPackets = If[Length[newOligomers] > 0,
 				UploadSampleModel[
-					newNames,
-					Composition -> Map[{{100 MassPercent, #}}&, newOligomers],
+					Map[{{100 MassPercent, #}}&, newOligomers],
+					Name -> newNames,
 					DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"], (*Model[StorageCondition, "Refrigerator"]*)
 					Expires -> False,
 					ShelfLife -> Null,

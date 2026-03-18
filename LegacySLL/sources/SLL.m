@@ -120,22 +120,24 @@ printFullOpacity[expr_]:=CellPrint[ExpressionCell[expr,"Print",PrivateCellOption
 (* ::Subsubsection::Closed:: *)
 (*PDBIDExistsQ*)
 
+PDBIDExistsQ::UnexpectedError="Contacting the protein data bank returned unexpected response (`1`: `2`)";
 
 PDBIDExistsQ[pdbID_String] := Module[
-	{importPath,imported},
+	{expectedURL, response, statusCode, idExists, body},
 
-	(* string join the pdb id to the importing file path *)
-	importPath = "https://files.rcsb.org/download/"<>pdbID<>".pdb";
+	expectedURL = "https://files.rcsb.org/download/"<>pdbID<>".pdb";
 
-	(* import as pdb *)
-	imported = Quiet[Import[importPath,"PDB"]];
+	response = URLRead[expectedURL,{"StatusCode","Body"}];
+	{statusCode,body} = Lookup[response, {"StatusCode","Body"}];
 
-	(* if the import failed, return an error message, otherwise return the graphic *)
-	If[
-	MatchQ[imported,$Failed],
-	False,
-	True
-	]
+	(* We assume protein exists unless we get a 'client error' code (typically 404) *)
+	idExists = !MatchQ[statusCode, RangeP[400,499]];
+
+	If[idExists && !MatchQ[statusCode, RangeP[200,299]],
+		Message[PDBIDExistsQ::UnexpectedError, statusCode, body]
+	];
+
+	idExists
 ];
 
 
@@ -286,6 +288,21 @@ MeasureWeightModelContainerP:=ObjectP[MeasureWeightModelContainerTypes];
 
 PlateAndWellP:={ObjectP[Object[Container,Plate]],WellPositionP};
 
+(* This variable defines protocol types that happens before an item is released into lab for other protocols. *)
+(* Items InUse by these protocols should still count as Stocked inventory *)
+(* TODO once the GXP things are in place, these protocols needs to be added too *)
+$InventoryManagementTypes := Types[{
+	Object[Maintenance, BarcodeInventory],
+	Object[Maintenance, ReceiveInventory],
+    Object[Maintenance, ConsolidateInventory],
+    Object[Maintenance, AuditInventory],
+    Object[Maintenance, StorageUpdate],
+    Object[Maintenance, Dishwash],
+    Object[Maintenance, Autoclave]
+}];
+
+InventoryManagementTypesP := Alternatives @@ $InventoryManagementTypes;
+
 
 (* ::Subsubsection:: *)
 (*NamedObject*)
@@ -325,10 +342,10 @@ NamedObject[packets : {PacketP[{Object[], Model[]}, {Object, Name}]..}, myOption
 			(* Extract the object name *)
 			objectName = Lookup[#, Name];
 
-			(* If the name is a string, use it otherwise return the packet *)
+			(* If the name is a string, use it otherwise return the ID form (we know for sure that the object has no name, rather than it's missing) *)
 			If[MatchQ[objectName, _String],
 				Append[Most[Lookup[#, Object]], objectName],
-				#
+				Lookup[#, Object]
 			]
 		]&,
 		packets
@@ -337,8 +354,11 @@ NamedObject[packets : {PacketP[{Object[], Model[]}, {Object, Name}]..}, myOption
 
 NamedObject[packet : PacketP[{Object[], Model[]}, {Object, Name}], myOptions:OptionsPattern[]] := First[NamedObject[{packet}, myOptions]];
 
+(*An auxiliary overload to force using the general expr overload*)
+NamedObject[expr_, myOptions:OptionsPattern[]] := NamedObject[expr, Null, myOptions];
+
 (* Overload to get names of all links in a nested expression (e.g., in a Composition field) *)
-NamedObject[expr_, myOptions:OptionsPattern[]] := Module[
+NamedObject[expr_, Null, myOptions:OptionsPattern[]] := Module[
 	{safeOptions, convertToObjectReferenceQ, maxNumberOfObjects, listedExpression, objectPositions, extractedObjects, convertedObjects, replacementRules, cacheOption},
 
 	safeOptions=SafeOptions[NamedObject, ToList[myOptions]];
@@ -505,7 +525,8 @@ convertToNamedForm[extractedObjects_List,convertToObjectReferenceQ:BooleanP,cach
 DefineOptions[AchievableResolution,
 	Options:>{
 		{RoundingFunction->SafeRound,Round|Ceiling|Floor,"The function used to change the amount to the appropriate resolution."},
-		{Messages->True,BooleanP,"Indicates if the function should print a message if any rounding occurred.",Category->Hidden}
+		{Messages->True,BooleanP,"Indicates if the function should print a message if any rounding occurred.",Category->Hidden},
+		{Ratio -> 1, GreaterP[0], "Indicate if the function should apply a ratio to the device's resolution."}
 	}
 ];
 
@@ -523,19 +544,35 @@ AchievableResolution[myRawAmount:(VolumeP|MassP),myOptions:OptionsPattern[]]:=Ac
 (* Core Function: takes amount and device(s) or All keyword *)
 AchievableResolution[
 	myRawAmount:(VolumeP|MassP),
-	myDeviceType:(All|ListableP[TypeP[{Model[Instrument,Balance],Model[Item,Tips],Model[Container,Syringe],Model[Container,GraduatedCylinder],Model[Instrument,BottleTopDispenser]}]]),
+	myDeviceType:(All|ListableP[TypeP[{Model[Instrument,Balance],Model[Item,Tips],Model[Container,Syringe],Model[Container,GraduatedCylinder],Model[Instrument,BottleTopDispenser],Model[Container,Vessel]}]]),
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{safeOptions,messages,possibleDeviceTuples,validDeviceTuples,minAmount,maxAmount,amountToConsider,
-		scaledAmount, resolutionForAmountInTargetUnit, resolutionForAmount,amountToRound,roundedAmount, roundingFunction},
+		scaledAmount, resolutionForAmountInTargetUnit, resolutionForAmount,amountToRound,roundedAmount, roundingFunction, ratio, rawDeviceTuples},
 
 	(* default any unspecified or incorrectly-specified options; assign Messages option value *)
 	safeOptions=SafeOptions[AchievableResolution, ToList[myOptions]];
 	messages=Lookup[safeOptions,Messages];
 	roundingFunction=Lookup[safeOptions,RoundingFunction];
+	ratio = Lookup[safeOptions, Ratio];
 
 	(* call TransferDevices to get the full device list; do not send Amount, because we want to be permissive to situations where amount is outside device type range *)
-	possibleDeviceTuples=TransferDevices[myDeviceType,All];
+	rawDeviceTuples=If[MemberQ[ToList[myDeviceType], Model[Container, Vessel]],
+		Module[{beakerTuples, otherDeviceTuples},
+			(* EngineDefault is set to All here in case there is user specified un-default beaker used *)
+			beakerTuples = Lookup[PreferredBeaker[All, EngineDefault -> All], {Object, MinVolume, MaxVolume, Resolution}];
+			(* add other devices' tuples*)
+			otherDeviceTuples = If[Length[myDeviceType]>1,
+				TransferDevices[DeleteCases[myDeviceType, Model[Container,Vessel]],All],
+				{}
+			];
+			Join[otherDeviceTuples, beakerTuples]
+		],
+		TransferDevices[myDeviceType,All]
+	];
+
+	(* apply ratio to the device resolution *)
+	possibleDeviceTuples = If[NullQ[#[[4]]], #, Append[#[[1 ;; 3]], (#[[4]]) * ratio]] & /@rawDeviceTuples;
 
 	(* initially make sure we remove tuples that are in the wrong units *)
 	validDeviceTuples=Select[possibleDeviceTuples,CompatibleUnitQ[myRawAmount,#[[2]]]&];
@@ -560,7 +597,7 @@ AchievableResolution[
 
 	(* use the amount to consider to determine the tuple from which to get resolution; take the FIRST one for which the amount is in range; TransferDevices returns overlapping
 	 	amount ranges, but they are in priority order *)
-	resolutionForAmount=Last[SelectFirst[validDeviceTuples,MatchQ[amountToConsider,RangeP@@#[[{2,3}]]]&]];
+	resolutionForAmount=SelectFirst[validDeviceTuples,MatchQ[amountToConsider,RangeP@@#[[{2,3}]]]&][[4]];
 
 	(* use the resolution to round the input amount; handle the fact that we are permissive to amounts greater than a max (assume repeat transfers, and want to round the raw amount in that case) *)
 	amountToRound=If[myRawAmount>maxAmount,
@@ -603,7 +640,7 @@ DefineOptions[TransferDevices,
 		{PipetteType->{Micropipette, Serological},All|ListableP[PipetteTypeP],"Indicates which types of tips should be returned."},
 		{TipConnectionType->All,All|ListableP[TipConnectionTypeP],"Indicates the connection types for the tips that will be returned."},
 		{TipMaterial->All,All|ListableP[MaterialP],"The material of the pipette tips used to aspirate and dispense the requested volume during the transfer."},
-		{IncompatibleMaterials->Null,ListableP[None|MaterialP],"The incompatible materials of the sample that the transfer device cannot be made of."},
+		{IncompatibleMaterials->Null,Null|ListableP[{}|None|MaterialP],"The incompatible materials of the sample that the transfer device cannot be made of."},
 		{TipType->All,All|ListableP[TipTypeP],"Indicates which types of tips should be returned."},
 		{Sterile->All,All|BooleanP,"Indicates if sterile/non-sterile transfer devices should be returned."},
 		{CultureHandling->All,All|CultureHandlingP,"Indicates if specialized Mammalian/Microbial transfer devices should be returned."},
@@ -621,7 +658,7 @@ cacheTransferDevicePackets[string_]:=cacheTransferDevicePackets[string]=Module[{
 		Search[{{Model[Item, Tips]}, {Model[Instrument, Balance]}, {Model[Container, Syringe]}, {Model[Container, GraduatedCylinder]}}, Deprecated != True && DeveloperObject != True],
 		{
 			{Packet[Object, Material, PipetteType, TipConnectionType, MinVolume, MaxVolume, Resolution, Sterile, WideBore, Filtered, GelLoading, Aspirator, EngineDefault]},
-			{Packet[MinWeight, MaxWeight, Resolution, Sterile, EngineDefault]},
+			{Packet[MinWeight, MaxUSPMinWeight, MaxWeight, Resolution, Sterile, EngineDefault]},
 			{Packet[MinVolume, MaxVolume, Resolution, ContainerMaterials, ConnectionType, Sterile, EngineDefault]},
 			{Packet[MinVolume, MaxVolume, Resolution, ContainerMaterials, Sterile, EngineDefault]}
 		}
@@ -652,7 +689,7 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 	pipetteType=Lookup[safeOps,PipetteType];
 	tipConnectionType=Lookup[safeOps,TipConnectionType];
 	tipMaterial=Lookup[safeOps,TipMaterial];
-	incompatibleMaterials=Lookup[safeOps,IncompatibleMaterials];
+	incompatibleMaterials=Lookup[safeOps,IncompatibleMaterials]/.{ListableP[({}|None)]->Null};
 	tipType=Lookup[safeOps,TipType];
 	sterile=Lookup[safeOps,Sterile];
 	cultureHandling=Lookup[safeOps,CultureHandling];
@@ -726,7 +763,7 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 
 					connectionTypeFilteredSyringes=Cases[
 						materialFilteredSyringes,
-						KeyValuePattern[ConnectionType->LuerLock|SlipLuer]
+						KeyValuePattern[ConnectionType->LuerLock|SlipLuer|Fused]
 					];
 
 					If[MatchQ[sterile, Except[All]],
@@ -739,30 +776,29 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 
 			(* Filter our graduated cylinders. *)
 			filteredGraduatedCylinders=If[MemberQ[ToList[myAllowedTypes], Model[Container,GraduatedCylinder]] || MatchQ[myAllowedTypes, All],
-				Module[{allGraduatedCylinders,materialFilteredGraduatedCylinders, sterileFilteredGraduatedCylinders, glassVolumes},
+				Module[{allGraduatedCylinders, materialFilteredGraduatedCylinders, glassCompatibleQ},
 					allGraduatedCylinders=Values[KeySelect[transferDeviceFastCache, MatchQ[ObjectReferenceP[Model[Container,GraduatedCylinder]]]]];
 
+					glassCompatibleQ = !MemberQ[ToList[incompatibleMaterials], Glass];
+
 					(* filter for material compatibility *)
-					materialFilteredGraduatedCylinders=If[MatchQ[incompatibleMaterials, Except[Null]],
+					materialFilteredGraduatedCylinders=Which[
+						(* As long as we are compatible with Glass, only use Glass GraduatedCylinder, even if that means we may use a smaller GC to do multiple transfers *)
+						glassCompatibleQ,
+						Cases[allGraduatedCylinders, KeyValuePattern[ContainerMaterials->{Glass}]],
+						(* Otherwise consider IncompatibleMaterials *)
+						MatchQ[incompatibleMaterials, Except[Null]],
 						Cases[allGraduatedCylinders, KeyValuePattern[ContainerMaterials->_?(!MemberQ[#, Alternatives@@ToList[incompatibleMaterials]]&)]],
+						(* We should never get here, but this is the final Catch-All for all graduated cylinders *)
+						True,
 						allGraduatedCylinders
 					];
 
 					(* filter if we need it to be sterile *)
-					sterileFilteredGraduatedCylinders = If[MatchQ[sterile, Except[All]],
+					If[MatchQ[sterile, Except[All]],
 						Cases[materialFilteredGraduatedCylinders, KeyValuePattern[Sterile->sterile]],
 						materialFilteredGraduatedCylinders
-					];
-
-					(* pull out all the volumes for our glass gcs *)
-					glassVolumes = Lookup[
-						Cases[sterileFilteredGraduatedCylinders, KeyValuePattern[ContainerMaterials -> {Glass}]],
-						MaxVolume,
-						{}
-					];
-
-					(* in cases where a gc of equal volume is returned, remove the Polypropylene one *)
-					DeleteCases[sterileFilteredGraduatedCylinders, KeyValuePattern[{ContainerMaterials -> {Polypropylene}, MaxVolume -> Alternatives@@glassVolumes}]]
+					]
 				],
 				{}
 			];
@@ -789,7 +825,7 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 				(* Need to delete the cases where all the values are Nulls because if some bad husk object gets created it can mess this stuff up *)
 				Which[
 					KeyExistsQ[#, MinWeight] && MatchQ[#, KeyValuePattern[{MinWeight -> Null, MaxWeight -> Null, Resolution -> Null}]], Nothing,
-					KeyExistsQ[#, MinWeight], Lookup[#, {Object, MinWeight, MaxWeight, Resolution}],
+					KeyExistsQ[#, MinWeight], Append[Lookup[#, {Object, MinWeight, MaxWeight, Resolution}], "MinWeight"],
 					KeyExistsQ[#, MinVolume] && MatchQ[#, KeyValuePattern[{MinVolume -> Null, MaxVolume -> Null, Resolution -> Null}]], Nothing,
 					KeyExistsQ[#, MinVolume], Lookup[#, {Object, MinVolume, MaxVolume, Resolution}]
 				]
@@ -811,9 +847,19 @@ TransferDevices[myAllowedTypes:(ListableP[TypeP[]]|All),myAmount:(MassP|VolumeP|
 				}&/@Select[extractedInfo,And[MatchQ[#[[2]],pat1],MatchQ[#[[3]],pat2]]&]
 			],
 		MassP,
-			(
-				Lookup[#, {Object, MinWeight, MaxWeight, Resolution}]
-			&)/@Cases[volumeAndMassPackets,KeyValuePattern[{MinWeight->LessEqualP[myAmount], MaxWeight->GreaterEqualP[myAmount]}]]
+			(* MaxUSPMinWeight describes the "minimum weight" that a balance can measure with confidence as defined by USP <1251> *)
+			(* MinWeight describes the literal minimum weight the a balance can measure, which is usually smaller than MaxUSPMinWeight *)
+			(* i.e. a balance of the following spec *)
+			(* MinWeight of 0.2 mg: any weight that is below 0.2 mg cannot be measured at all by this balance *)
+			(* MaxUSPMinWeight of 5 mg: any weight that is below 5 mg cannot be measured "confidently" so user can still use it, but use it with caution (transfer and any balance-involved experiment would throw a warning about this) *)
+			(* We always prefer the balance that can measure the weight "confidently" at the top of the list, even if that balance might have a smaller MinWeight balance, delete duplicates so we do not return the same balance model twice in the output *)
+			DeleteDuplicatesBy[
+				Join[
+					Append[Lookup[#, {Object, MinWeight, MaxWeight, Resolution}], "MaxUSPMinWeight"]& /@ Cases[volumeAndMassPackets, KeyValuePattern[{MaxUSPMinWeight -> LessEqualP[myAmount], MaxWeight -> GreaterEqualP[myAmount]}]],
+					Append[Lookup[#, {Object, MinWeight, MaxWeight, Resolution}], "MinWeight"]& /@ Cases[volumeAndMassPackets, KeyValuePattern[{MinWeight -> LessEqualP[myAmount], MaxWeight -> GreaterEqualP[myAmount]}]]
+				],
+				First
+			]
 	];
 
 	(* construct a secondary list of packets, which the MaxVolume of tips are lower than what we request *)
@@ -1158,8 +1204,138 @@ optionsToTable[myOptionsList:{_Rule..},myFunction_Symbol]:=Module[{optionDefinit
 
 
 (* ::Subsection::Closed:: *)
+(*UploadValidPackets*)
+
+
+UploadValidPackets::InvalidPackets = "The following packets are invalid and will not be uploaded: `1`.";
+
+
+(* ::Subsubsection::Closed:: *)
+(*UploadValidPackets*)
+
+
+(* Empty list case *)
+UploadValidPackets[{}, OptionsPattern[]] := {};
+
+UploadValidPackets[myPacket:Except[{__}], ops:OptionsPattern[UploadValidPackets]]:=First[
+	UploadValidPackets[ToList[myPacket]],
+	Null
+];
+
+(* Main implementation *)
+UploadValidPackets[myPackets:{__}, ops:OptionsPattern[UploadValidPackets]] := Module[
+	{safePackets, validityCheck, validPackets, invalidPackets, uploadResult},
+
+	(* ValidUploadQ returns True when given {}. Filter this out to avoid confusion *)
+	safePackets = DeleteCases[myPackets, {}];
+
+	(* Check which packets are valid for upload *)
+	validityCheck = ValidUploadQ/@safePackets;
+
+	(* Split into valid and invalid packets. Handle case where ValidUploadQ didn't even evaluate *)
+	validPackets = PickList[safePackets, validityCheck];
+	invalidPackets = PickList[safePackets, validityCheck, Except[True]];
+
+	(* Message if there are invalid packets *)
+	If[Length[invalidPackets] > 0,
+		Message[UploadValidPackets::InvalidPackets, invalidPackets]
+	];
+
+	(* Upload valid packets if any exist *)
+	uploadResult = If[Length[validPackets] > 0,
+		Upload[validPackets],
+		{}
+	];
+
+	(* Return upload result *)
+	uploadResult
+];
+
+
+(* ::Subsection::Closed:: *)
 (*Bond syntax error fix*)
 
 (* The below code prevents mathematica from registering a syntax error for the Bond function*)
 Unprotect[Bond];
 SyntaxInformation[Bond] = {"ArgumentsPattern" -> {__, __}};
+
+
+(* ::Subsubsection:: *)
+(*PreferredBeaker*)
+
+DefineOptions[PreferredBeaker,
+	Options:>{
+		{EngineDefault->True,All|True,"Indicates if only beakers with EngineDefault->True or all transfer devices should be returned."},
+		{Messages->True,BooleanP,"Indicates if messages should be thrown."},
+		{All->False,ListableP[BooleanP],"Indicates if all possible preferred beakers should be returned, or just the beaker that is closest to the volume of the sample."}
+	}
+];
+
+PreferredBeaker::BeakerNotFound="For the given combination of options, the current range of volumes for which compatible beakers exist is `2` to `3`; the requested volume `1` falls outside this range. Please consider removing some specific options, or requesting a volume in the possible range for the current options.";
+
+
+(* need to set DeveloperObject != True here directly because if someone happens to call PreferredBeaker with $DeveloperSearch = True the first time in their kernel, then this will memoize to {} and fail for all subsequent uses of this function *)
+cachePreferredBeakerPackets[string_]:=cachePreferredBeakerPackets[string]=Module[{},
+	If[!MemberQ[ECL`$Memoization, LegacySLL`Private`cachePreferredBeakerPackets],
+		AppendTo[ECL`$Memoization, LegacySLL`Private`cachePreferredBeakerPackets]
+	];
+
+	Flatten@Download[
+		Search[Model[Container, Vessel], Deprecated != True && DeveloperObject != True && Spout == True],
+		{Packet[MinVolume, MaxVolume, Resolution, ContainerMaterials, EngineDefault]}
+	]];
+
+PreferredBeaker[myVolume:(VolumeP|All),ops:OptionsPattern[PreferredBeaker]]:=Module[
+	{
+		safeOps,engineDefault,preferredBeakerPackets,materialFilteredBeakers, engineDefaultFilteredBeakers, sortedMaterialBeakers, possibleBeakers, minPossibleVolume,maxPossibleVolume
+	},
+
+	safeOps=SafeOptions[PreferredBeaker,ToList[ops]];
+
+	(* Download our transfer device packets. *)
+	preferredBeakerPackets=cachePreferredBeakerPackets["Memoization"];
+
+	(* Fetch options needed *)
+	engineDefault=Lookup[safeOps,EngineDefault];
+
+	(* filter to use Glass beakers only *)
+	materialFilteredBeakers = Cases[preferredBeakerPackets, KeyValuePattern[ContainerMaterials->{Glass}]];
+
+	(* filter if we need it to be EngineDefault *)
+	engineDefaultFilteredBeakers = If[MatchQ[engineDefault, Except[All]],
+		Cases[materialFilteredBeakers, KeyValuePattern[EngineDefault->engineDefault]],
+		materialFilteredBeakers
+	];
+
+	sortedMaterialBeakers = SortBy[engineDefaultFilteredBeakers, {Lookup[#, MaxVolume]&}];
+
+	(* select all entries in the lookup that match the volume/options provided *)
+	possibleBeakers=If[MatchQ[myVolume,All],
+		sortedMaterialBeakers,
+		(* Should we compute all possible containers that can hold our volume? *)
+		If[Quiet[OptionValue[All]],
+			Cases[sortedMaterialBeakers, KeyValuePattern[MaxVolume -> GreaterEqualP[myVolume]]],
+			Cases[sortedMaterialBeakers, KeyValuePattern[{MaxVolume -> GreaterEqualP[myVolume], Resolution -> LessEqualP[myVolume]}]]
+		]
+	];
+
+	(* determine the min/max volume for the lookup we used; these will be helpful to report if we could not find a beaker with the given parameters *)
+	{minPossibleVolume,maxPossibleVolume}= {Min[Lookup[sortedMaterialBeakers, Resolution]], Max[Lookup[sortedMaterialBeakers, MaxVolume]]};
+
+	(* if we were looking for a single beaker, but didn't get one, return a failure; otherwise, return a list for All input, and a singleton for volume input *)
+	Which[
+		VolumeQ[myVolume]&&MatchQ[possibleBeakers,{}],
+		If[Lookup[safeOps,Messages],
+			Message[PreferredBeaker::BeakerNotFound,myVolume,minPossibleVolume,maxPossibleVolume];
+		];
+		Return[$Failed],
+		VolumeQ[myVolume],
+		(* Should we return all possible beakers, or just the first? *)
+		If[Quiet[OptionValue[All]],
+			possibleBeakers,
+			First[possibleBeakers]
+		],
+		True,
+		possibleBeakers
+	]
+];

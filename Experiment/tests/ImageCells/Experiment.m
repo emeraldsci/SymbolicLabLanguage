@@ -1913,6 +1913,14 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options=ExperimentImageCells[Object[Sample, "Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeInstrument,"The centrifuge that will be used to spin the provided samples prior to starting the experiment:"},
 			options=ExperimentImageCells[Object[Sample,"Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],CentrifugeInstrument->Model[Instrument,Centrifuge,"Avanti J-15R"],Output->Options];
 			Lookup[options,CentrifugeInstrument],
@@ -2195,6 +2203,18 @@ DefineTests[
 			50*Microliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentImageCells[
+				Object[Sample, "Test cell sample 9 for ExperimentImageCells tests"<> $SessionUUID],
+				AliquotAmount -> 50.01 Microliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			50 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentImageCells[

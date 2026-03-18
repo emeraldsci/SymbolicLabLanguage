@@ -142,6 +142,16 @@ DefineOptions[ExperimentUncover,
 				Category->"General"
 			]
 		],
+		ModifyOptions[
+			EquivalentTransferEnvironmentsOption,
+			EquivalentTransferEnvironments,
+			{
+				OptionName -> EquivalentEnvironments,
+				Widget -> Widget[Type -> Expression, Pattern :> {(ObjectP[] | Null)...}, Size -> Line],
+				Description -> "A list of environments in which the covering should be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option will be set to Null when Preparation->Robotic (the covering will be performed inside of the Liquid Handler enclosure).",
+				Category -> "Hidden"
+			}
+		],
 		(*===Shared Options===*)
 		PreparationOption,
 		ProtocolOptions,
@@ -740,7 +750,7 @@ resolveExperimentUncoverOptions[
 		unsafeDiscardTest, sterileTechniqueErrors, sterileTechniqueTest, decrimperTest, decrimperErrors, specifiedCapPrierInstrumentObjectPackets,
 		objectContainerRepeatedContainerList, alreadyUncoveredTest, alreadyUncoveredErrors, invalidInputs, invalidOptions,
 		capPrierInstrumentModelPackets, capPrierErrors, capPrierTest, activeCart, resolvedCrimpingPressures, resolvedDecrimpingHeads,
-		defaultAmpouleOpenerModelPackets, ampouleBooleans, defaultCrimperPartModelPackets
+		defaultAmpouleOpenerModelPackets, ampouleBooleans, defaultCrimperPartModelPackets, rootResourcePackets, parentProtocolPackets, resolvedEquivalentEnvironments
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -800,7 +810,7 @@ resolveExperimentUncoverOptions[
 		specifiedCapPrierInstrumentObjectPackets,
 		currentCoverPackets,
 		currentCoverModelPackets,
-		activeCartPackets
+		{parentProtocolPackets}
 	}=Quiet[
 		Download[
 			{
@@ -825,12 +835,13 @@ resolveExperimentUncoverOptions[
 				List@Packet[Model[{CoverFootprint, Name}]],
 				List@Packet[Cover[{Reusable}]],
 				List@Packet[Cover[Model][{Name, Reusable, CleaningMethod, CoverType, Barcode, CrimpingPressure, Products, CoverFootprint}]],
-				{Packet[ActiveCart]}
+				(* need to have the model of all the RootProtocol's InUse things so that we can decide what we want to do with the decrimper resolution *)
+				{Packet[ActiveCart, RootProtocol], Packet[RootProtocol[Resources][Model]]}
 			},
 			Cache->cache,
 			Simulation->currentSimulation
 		],
-		{Download::FieldDoesntExist, Download::NotLinkField}
+		{Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField}
 	];
 
 	{
@@ -885,10 +896,16 @@ resolveExperimentUncoverOptions[
 		currentCoverModelPackets
 	};
 
-	(* We've had to download with extra lists, clean this up *)
-	activeCart=If[MatchQ[activeCartPackets,{Null}],
-		Null,
-		Lookup[activeCartPackets[[1,1]],ActiveCart]
+	(* We've had to download with extra lists, clean this up. *)
+	{
+		activeCart,
+		rootResourcePackets
+	}=If[MatchQ[parentProtocolPackets, Null],
+		{Null, {}},
+		{
+			Lookup[parentProtocolPackets[[1]], ActiveCart],
+			parentProtocolPackets[[2]]
+		}
 	];
 
 	cacheBall=FlattenCachePackets[{
@@ -982,12 +999,13 @@ resolveExperimentUncoverOptions[
 		resolvedEnvironments,
 		resolvedSterileTechniques,
 		resolvedDecrimpingHeads,
-		resolvedCrimpingPressures
+		resolvedCrimpingPressures,
+		resolvedEquivalentEnvironments
 	}=Transpose@MapThread[
 		Function[{originalInputObject, objectSamplePackets, containerPacket, coverPacket, coverModelPacket, containerRepeatedContainers, discardSafe, options},
 			Module[
 				{sampleLabel, sampleContainerLabel, uncappedTime, discardCover, instrument, environment, sterileTechnique, containerContainer, cleanableQ,
-					decrimpingHead, crimpingPressure, specifiedDecrimpingHead, specifiedCrimpingPressure, coverModelFootprint},
+					decrimpingHead, crimpingPressure, specifiedDecrimpingHead, specifiedCrimpingPressure, coverModelFootprint, semiResolvedInstrument, equivalentEnvironments},
 
 				uncappedTime=Lookup[options, UncappedTime];
 
@@ -1043,7 +1061,8 @@ resolveExperimentUncoverOptions[
 				coverModelFootprint = Lookup[coverModelPacket, CoverFootprint];
 
 				(* Resolve the instrument option. *)
-				instrument=Which[
+				(* calling this semi-resolved because we do need to do one extra check to make sure the decrimper we're reserving isn't already InUse by the same protocol since we only have one *)
+				semiResolvedInstrument=Which[
 					MatchQ[Lookup[options, Instrument], Except[Automatic]],
 						Lookup[options, Instrument],
 
@@ -1106,6 +1125,14 @@ resolveExperimentUncoverOptions[
 						Null
 				];
 
+				instrument = If[MatchQ[semiResolvedInstrument, ObjectP[Model[Part, Decrimper]]],
+					FirstCase[
+						rootResourcePackets,
+						packet:KeyValuePattern[{Model -> ObjectP[semiResolvedInstrument]}] :> Lookup[packet, Object],
+						semiResolvedInstrument
+					],
+					semiResolvedInstrument
+				];
 
 				(* Resolve the decrimping head option. *)
 				decrimpingHead=Which[
@@ -1157,10 +1184,17 @@ resolveExperimentUncoverOptions[
 
 				(* Resolve the environment option - outsource to helper shared by Cover and Uncover *)
 				(* Send in updated Prep value for proper environment determination *)
-				environment=calculateCoverEnvironment[
-					objectSamplePackets,
-					containerRepeatedContainers,
-					Join[options, <|Preparation -> resolvedPreparation, ActiveCart -> activeCart|>]
+				{environment, equivalentEnvironments}= Module[{calculatedEnvironments},
+					calculatedEnvironments = Sort[ToList[calculateCoverEnvironment[
+						objectSamplePackets,
+						containerRepeatedContainers,
+						Join[options, <|Preparation -> resolvedPreparation, ActiveCart -> activeCart|>]
+					]]];
+
+					{
+						First[calculatedEnvironments],
+						calculatedEnvironments
+					}
 				];
 
 				(* Resolve the SterileTechnique option to True if we have cells in our sample. *)
@@ -1211,7 +1245,8 @@ resolveExperimentUncoverOptions[
 					environment,
 					sterileTechnique,
 					decrimpingHead,
-					crimpingPressure
+					crimpingPressure,
+					equivalentEnvironments
 				}
 			]
 		],
@@ -1231,6 +1266,7 @@ resolveExperimentUncoverOptions[
 			DiscardCover->resolvedDiscardCovers,
 			Instrument->resolvedInstruments,
 			Environment->resolvedEnvironments,
+			EquivalentEnvironments->resolvedEquivalentEnvironments,
 			SterileTechnique->resolvedSterileTechniques,
 			DecrimpingHead->resolvedDecrimpingHeads,
 			CrimpingPressure->resolvedCrimpingPressures,
@@ -1588,18 +1624,17 @@ uncoverResourcePackets[
 
 			(* Create resources for each of our environments. *)
 			uniqueEnvironmentResources=(#->Which[
-				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
-				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
-					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
-						Resource[Instrument -> currentFumeHoodModels]
-					],
-				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
-					Resource[Sample->#],
-				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
+				MatchQ[#, {ObjectP[Object[Instrument]]}],
+					Resource[Instrument->First[#]],
+				MatchQ[#, {ObjectP[Model[Instrument]]..}],
 					Resource[Instrument->#],
+				MatchQ[#, {ObjectP[Object[Container]]}],
+					Resource[Sample->First[#]],
+				MatchQ[#, {ObjectP[Model[Container]]..}],
+					Resource[Sample->#],
 				True,
 					Null
-			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Environment]];
+			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, EquivalentEnvironments]];
 
 			(* Create a resource for a cap rack if the cover we're taking off is a cap that has Barcode->False|Null and
 			if the cover is not being discarded *)
@@ -1637,7 +1672,8 @@ uncoverResourcePackets[
 						sampleResources,
 						capRackResources,
 						(Lookup[uniqueInstrumentResources, #]&)/@Lookup[myResolvedOptions, Instrument],
-						(Lookup[uniqueEnvironmentResources, #]&)/@Lookup[myResolvedOptions, Environment],
+						(* the resolved EquivalentEnvironments is a list of lists, wrapping Key here treats the input as a single key, rather than a list of keys which was the Lookup's default behavior *)
+						(Lookup[uniqueEnvironmentResources, Key[#]]&)/@Lookup[myResolvedOptions, EquivalentEnvironments],
 						(Lookup[uniqueDecrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, DecrimpingHead]
 					}]
 				}
@@ -1718,7 +1754,8 @@ uncoverResourcePackets[
 				Replace[BatchedUnitOperations]->(Link[#, Protocol]&)/@Lookup[uncoverManualUnitOperationPackets, Object],
 
 				Replace[Instruments]->(Lookup[uniqueInstrumentResources, #]&)/@Lookup[myResolvedOptions, Instrument],
-				Replace[Environment]->Link/@((Lookup[uniqueEnvironmentResources,#]&)/@Lookup[myResolvedOptions,Environment]),
+				(* the resolved EquivalentEnvironments is a list of lists, wrapping Key here treats the input as a single key, rather than a list of keys which was the Lookup's default behavior *)
+				Replace[Environment]->Link/@((Lookup[uniqueEnvironmentResources,Key[#]]&)/@Lookup[myResolvedOptions,EquivalentEnvironments]),
 				Replace[SterileTechnique]->Lookup[myResolvedOptions, SterileTechnique],
 				Replace[DecrimpingHeads]->(Lookup[uniqueDecrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, DecrimpingHead],
 				Replace[CrimpingPressures]->Lookup[myResolvedOptions, CrimpingPressure],
@@ -2070,17 +2107,17 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 
 	(* Put the container in a BSC if SterileTechnique->True. *)
 	MemberQ[Lookup[objectSamplePackets, CellType, Null], MicrobialCellTypeP] && MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"], (*Biosafety Cabinet Handling Station for Microbiology*)
+		microbialBSCModels["Memoization"], (*Biosafety Cabinet Handling Station for Microbiology*)
 
 	MemberQ[Lookup[objectSamplePackets, CellType, Null], NonMicrobialCellTypeP] && MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
+		nonMicrobialBSCModels["Memoization"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
 
 	MatchQ[Lookup[options, SterileTechnique], True],
-		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"], (*Biosafety Cabinet Handling Station for Microbiology*)
+		asepticTransferBSCModels["Memoization"], (* general aseptic transfer *)
 
 	(* BSC is required for crimping (right now). *)
 	MatchQ[Lookup[options, Instrument], ObjectP[{Model[Instrument, Crimper], Object[Instrument, Crimper]}]],
-		Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"], (*Biosafety Cabinet Handling Station for Tissue Culture*)
+		asepticTransferBSCModels["Memoization"], (* general aseptic transfer *)
 
 	(* Is our container already in a suitable environment (and not SterileTechnique or crimping)? *)
 	And[
@@ -2111,7 +2148,7 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 	(* This will only get hit if it container isn't already in any of the allowed $CoverEnvironmentTypes *)
 	(* we set to this model for now, we will replace it with a list of fumehood models in the resource packets *)
 	AnyTrue[Join@@{Lookup[objectSamplePackets,Ventilated, Null], Lookup[objectSamplePackets,Pungent, Null]},TrueQ],
-		Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"],
+		commonFumeHoodHandlingStationModels["Memoization"],
 
 	(* If we are called by ExperimentTransfer during option resolving stage (FastTrack->True), do not worry about missing ActiveCart because we haven't started anything yet *)
 	MatchQ[Lookup[options,FastTrack],True],
@@ -2120,4 +2157,30 @@ calculateCoverEnvironment[objectSamplePackets_,containerRepeatedContainers_,opti
 	(* if we are in engine and cant find anywhere to do the uncover, error *)
 	True,
 		Message[Error::NoActiveCartForCover, Lookup[options,ActiveCart]];$Failed
+];
+
+(* ::Subsection::Closed:: *)
+(*pickAmpouleOpener*)
+
+(*memoize our search and download of the ampoule packet*)
+ampouleOpenerPackets[string_]:=ampouleOpenerPackets[string]=Module[{models},
+	If[!MemberQ[$Memoization, Experiment`Private`ampouleOpenerPackets],
+		AppendTo[$Memoization, Experiment`Private`ampouleOpenerPackets]
+	];
+	models = Search[Model[Part,AmpouleOpener],Deprecated != True && DeveloperObject != True && MinVolume != Null && MaxVolume != Null];
+	Download[models,Packet[MinVolume,MaxVolume]]
+];
+
+pickAmpouleOpener[containerModel:ObjectP[Model[Container,Vessel]]]:=Module[{ampouleOpenerModelPackets},
+	ampouleOpenerModelPackets = ampouleOpenerPackets["Memoization"];
+	Lookup[
+		FirstCase[
+			ampouleOpenerModelPackets,
+			KeyValuePattern[{
+				MinVolume -> LessEqualP[Lookup[containerModel, MaxVolume]],
+				MaxVolume -> GreaterEqualP[Lookup[containerModel, MaxVolume]]}],
+			<|Object -> Null|>
+		],
+		Object
+	]
 ];

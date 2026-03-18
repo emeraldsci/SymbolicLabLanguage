@@ -1146,7 +1146,7 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
-		(* This isnt a great test.   make a fake protocol in the symbol setup with some unique option value we can test *)
+		(* This isnt a great test.   make a test protocol in the symbol setup with some unique option value we can test *)
 		Example[{Options,Template,"Inherit options from a previously run protocol:"},
 			Lookup[ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 				Template->Object[Protocol,PAGE,"Test Option Template protocol for ExperimentPAGE" <> $SessionUUID],
@@ -1187,7 +1187,7 @@ DefineTests[
 		],
 	(* THIS TEST IS BRUTAL BUT DO NOT REMOVE IT. MAKE SURE YOUR FUNCTION DOESNT BUG ON THIS. *)
 		Example[{Additional,"Use the sample preparation options to prepare samples before the main experiment:"},
-			options=ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options=ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				Incubate->True,
 				Centrifuge->True,
 				Filtration->True,
@@ -1346,7 +1346,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, MixType, "Indicates the style of motion used to mix the sample, prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				MixType -> Shake,
 				Output -> Options
 			];
@@ -1396,6 +1396,18 @@ DefineTests[
 			Variables :> {options},
 			TimeConstraint->240
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
+			TimeConstraint -> 40
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 				CentrifugeTime -> 5*Minute,
@@ -1444,7 +1456,7 @@ DefineTests[
 
 		(* filter options *)
 		Example[{Options, Filtration, "Indicates if the SamplesIn should be filtered prior to starting the experiment or any aliquoting: Sample Preparation occurs in the order of Incubation, Centrifugation, Filtration, and then Aliquoting (if specified):"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				Filtration -> True,
 				Output -> Options
 			];
@@ -1453,7 +1465,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FiltrationType, "The type of filtration method that should be used to perform the filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FiltrationType -> Syringe,
 				Output -> Options
 			];
@@ -1462,7 +1474,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterInstrument, "The instrument that should be used to perform the filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"],
 				Output -> Options
 			];
@@ -1471,7 +1483,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, Filter, "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],
 				Output -> Options
 			];
@@ -1481,7 +1493,7 @@ DefineTests[
 			TimeConstraint->300
 		],
 		Example[{Options, FilterMaterial, "The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterMaterial -> PES,
 				Output -> Options
 			];
@@ -1490,7 +1502,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				PrefilterMaterial -> GxF,
 				FilterMaterial->PTFE,
 				Output -> Options
@@ -1500,7 +1512,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterPoreSize, "The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterPoreSize -> 0.22*Micrometer,
 				Output -> Options
 			];
@@ -1509,7 +1521,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				PrefilterPoreSize -> 1.*Micrometer,
 				FilterMaterial -> PTFE,
 				Output -> Options
@@ -1529,7 +1541,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FiltrationType -> PeristalticPump,
 				FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"],
 				Output -> Options
@@ -1539,7 +1551,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterIntensity, "The rotational speed or force at which the samples will be centrifuged during filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
 				FilterIntensity -> 1000*RPM,
 				Output -> Options
@@ -1547,13 +1559,10 @@ DefineTests[
 			Lookup[options, FilterIntensity],
 			1000*RPM,
 			EquivalenceFunction -> Equal,
-			Variables :> {options},
-			Messages:>{
-				Warning::AliquotRequired
-			}
+			Variables :> {options}
 		],
 		Example[{Options, FilterTime, "The amount of time for which the samples will be centrifuged during filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
 				FilterTime -> 20*Minute,
 				Output -> Options
@@ -1561,13 +1570,10 @@ DefineTests[
 			Lookup[options, FilterTime],
 			20*Minute,
 			EquivalenceFunction -> Equal,
-			Variables :> {options},
-			Messages:>{
-				Warning::AliquotRequired
-			}
+			Variables :> {options}
 		],
 		Example[{Options, FilterTemperature, "The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 				FiltrationType -> Centrifuge,
 				FilterTemperature -> 22*Celsius,
 				Output -> Options
@@ -1575,13 +1581,10 @@ DefineTests[
 			Lookup[options, FilterTemperature],
 			22*Celsius,
 			EquivalenceFunction -> Equal,
-			Variables :> {options},
-			Messages:>{
-				Warning::AliquotRequired
-			}
+			Variables :> {options}
 		],(* we will revisit this and change FilterSterile to make better sense with this task https://app.asana.com/1/84467620246/task/1209775340905665?focus=true
 		Example[{Options, FilterSterile, "Indicates if the filtration of the samples should be done in a sterile environment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterSterile -> True,
 				Output -> Options
 			];
@@ -1590,7 +1593,7 @@ DefineTests[
 			Variables :> {options}
 		],*)
 		Example[{Options, FilterAliquot, "The amount of each sample that should be transferred from the SamplesIn into the FilterAliquotContainer when performing an aliquot before filtration:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterAliquot -> 0.05*Milliliter,
 				Output -> Options
 			];
@@ -1599,7 +1602,7 @@ DefineTests[
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, FilterAliquotContainer, "The desired type of container that should be used to prepare and house the filter samples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentPAGE[Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+			options = ExperimentPAGE[Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 				FilterAliquotContainer -> Model[Container, Vessel, "2mL Tube"],
 				Output -> Options
 			];
@@ -1639,6 +1642,18 @@ DefineTests[
 			0.05*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPAGE[
+				Object[Sample, "40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
+				AliquotAmount -> 0.05001 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.05 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentPAGE[Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
@@ -1863,7 +1878,7 @@ DefineTests[
 
 					Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 					Object[Sample,"Discarded 40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
-					Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+					Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 					Object[Sample,"Non-denaturing loading buffer for ExperimentPAGETests" <> $SessionUUID],
 
 					Object[Protocol,PAGE,"Test Option Template protocol for ExperimentPAGE" <> $SessionUUID]
@@ -1874,10 +1889,10 @@ DefineTests[
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 		];
 
-		Block[{$AllowSystemsProtocols=True},
+		Block[{$AllowSystemsProtocols=True, $AllowPublicObjects = True},
 			Module[
 				{
-					fakeBench,
+					testBench,
 
 					gelModel1,
 
@@ -1890,10 +1905,9 @@ DefineTests[
 					sample1,sample2,sample3,sample4
 				},
 
-				fakeBench = Upload[<|Type -> Object[Container, Bench], Site -> Link[$Site], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Bench for ExperimentPAGE tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
+				testBench = Upload[<|Type -> Object[Container, Bench], Site -> Link[$Site], Model -> Link[Model[Container, Bench, "The Bench of Testing"], Objects], Name -> "Bench for ExperimentPAGE tests" <> $SessionUUID, DeveloperObject -> True, StorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]|>];
 
-
-				(* Upload a fake gel Model that has 40 lanes *)
+				(* Upload a test gel Model that has 40 lanes *)
 				gelModel1=Upload[
 					<|
 						Type->Model[Item,Gel],
@@ -1906,8 +1920,7 @@ DefineTests[
 					|>
 				];
 
-
-				(* Upload test Containers and fake instrument *)
+				(* Upload test Containers and test instrument *)
 				{
 					container1,container2,container3,container4,
 					gel1,gel2,gel3,gel4,gel5
@@ -1924,15 +1937,15 @@ DefineTests[
 						Model[Item, Gel, "10% polyacrylamide TBE cassette, 20 channel"]
 					},
 					{
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench},
-						{"Work Surface", fakeBench}
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench},
+						{"Work Surface", testBench}
 					},
 					Status -> Available,
 					Name->{
@@ -1969,7 +1982,7 @@ DefineTests[
 					}
 				];
 
-			sampleModel=UploadSampleModel[
+			sampleModel=First@UploadSampleModel[
 				{"40mer DNA oligomer sample model for ExperimentPAGE tests" <> $SessionUUID},
 				Composition -> {{
 					{20*Micromolar,Model[Molecule, Oligomer,"40mer DNA Model Molecule for ExperimentPAGE tests" <> $SessionUUID]}
@@ -2006,12 +2019,12 @@ DefineTests[
 					InitialAmount-> {
 						1 * Milliliter,
 						1 * Milliliter,
-						25 * Milliliter
+						50 * Milliliter
 					},
 					Name->{
 						"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID,
 						"Discarded 40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID,
-						"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID
+						"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID
 					}
 				];
 
@@ -2083,7 +2096,7 @@ DefineTests[
 
 					Object[Sample,"40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
 					Object[Sample,"Discarded 40mer DNA oligomer for ExperimentPAGE tests" <> $SessionUUID],
-					Object[Sample,"25 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
+					Object[Sample,"50 mL water sample in 50mL Tube for ExperimentPAGE tests" <> $SessionUUID],
 					Object[Sample,"Non-denaturing loading buffer for ExperimentPAGETests" <> $SessionUUID],
 
 					Object[Protocol,PAGE,"Test Option Template protocol for ExperimentPAGE" <> $SessionUUID]

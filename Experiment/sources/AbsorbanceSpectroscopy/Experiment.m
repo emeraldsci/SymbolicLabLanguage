@@ -46,13 +46,24 @@ DefineOptions[ExperimentAbsorbanceSpectroscopy,
 				}
 			]
 		},
-
+		{
+			OptionName->MaxLoadingRetries,
+			Default->Automatic,
+			Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to 2. Otherwise set to Null.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,10]
+			]
+		},
 		{
 			OptionName->MicrofluidicChipLoading,
 			Default->Automatic,
 			AllowNull->True,
-			Description->"Indicates whether the SamplesIn are loaded by a robotic liquid handler or manually.",
-			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic.",
+			Description->"When using the Microfluidic plate readers, indicates if the Microfluidic Chips are loaded by a robotic liquid handler or manually.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic. Otherwise set to Null.",
 			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[Robotic, Manual]],
 			Category->"General"
 		},
@@ -215,7 +226,16 @@ DefineOptions[ExperimentAbsorbanceSpectroscopy,
 				IndexMatchingInput -> "experiment samples"
 		],
 		AbsorbanceSharedOptions,
-		SamplesOutStorageOptions
+		SamplesOutStorageOptions,
+		{
+			OptionName->ImageMicrofluidicPlate,
+			Default->Automatic,
+			AllowNull->True,
+			Description->"When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to PostRead. Otherwise set to Null.",
+			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[PreRead, PostRead, All]],
+			Category->"Post Processing"
+		}
 	}
 ];
 
@@ -276,6 +296,8 @@ Error::TooManyWavelength="The number of discrete `1` (`2`) cannot exceed the ins
 Warning::SpanWavelengthOrder="The span wavelength (`1`) is specified from high-wavelength to low-wavelength. The instrument will automatically adjust and scan the samples from low-wavelength to high-wavelength.";
 
 Error::MicrofluidicChipLoading="The specified MicrofluidicChipLoading (`1`) must be set to Robotic or Manual when using Lunatic or, otherwise, to Null. Please make sure this option is set accordingly or consider setting it to Automatic.";
+Error::InvalidImageMicrofluidicPlate="The specified ImageMicrofluidicPlate (`1`) must be Null when Lunatic plate reader is not used. Please make sure this option is set accordingly or consider setting it to Automatic.";
+Error::InvalidMaxLoadingRetries="The specified MaxLoadingRetries (`1`) must be Null when Lunatic plate reader is not used. Please make sure this option is set accordingly or consider setting it to Automatic.";
 Warning::TemperatureNoEquilibration = "The Temperature option is specified as `1` while EquilibrationTime is specified as `2`. The instrument might not reach the set temperature before starting the temperature-controlled assay, potentially leading to inaccurate results";
 
 (* these are the currently supported plates and plate reader models; using ObjectP below, but not making these patterns themselves because then the error messages will look ugly *)
@@ -1180,7 +1202,7 @@ resolveAbsorbanceOptions[
 		specifiedPlateReaderMixSchedule,specifiedEquilibrationTime,specifiedMoatBuffer,specifiedMoatVolume,specifiedMoatSize,
 		specifiedReadDirection,injectionOptionNames,injectionOptions,bmgRequired,instrument,uniqueInjectionSamples,uniqueBlankSamples,
 		preresolvedInstrument,potentialAnalytesToUse,possibleAliquotContainers,listedSampleContainerPackets,listedContainerInPackets,listedInjectionSamplePackets,listedBlankPackets,
-		parentProt,specifiedQuantifyConcentration,specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel,
+		parentProt,specifiedQuantifyConcentration,specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel, specifiedImageMicrofluidicPlate, specifiedMaxLoadingRetries,
 		listedInstrumentPackets,listedAliquotContainerPackets,samplePackets,containerPackets,
 		sampleContainerModelPackets,containerInPackets,injectionSamplePackets,blankSamplePackets,blankContainerPackets,suppliedInstrumentPacket,suppliedModelInstrumentPacket,instrumentPacket,
 		modelInstrumentPacket,allInstrumentPacketLists,allPlateReaderModelPackets,aliquotContainerModelPacket,discardedSamplePackets,discardedInvalidInputs,discardedTest,
@@ -1228,6 +1250,8 @@ resolveAbsorbanceOptions[
 		plateWells,moatWells,suppliedDestinationWellsNoAutomatic,duplicateDestinationWells,duplicateDestinationWellError,duplicateDestinationWellOption,duplicateDestinationWellTest,invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,resolvedDestinationWells,requiredAliquotAmounts,aliquotWarningMessage,preresolvedAliquotOptions,
 		resolvedSamplingDistance,resolvedSamplingDimension,resolvedAliquotOptions,resolveAliquotOptionsTests,assayContainerModelPacket,invalidInjectionOptions,validInjectionTests,
 		resolvedMicrofluidicChipLoading,microfluidicChipLoadingErrorQ,microfluidicChipLoadingErrorTest,microfluidicChipLoadingInvalidOptions,
+		resolvedImageMicrofluidicPlate,imageMicrofluidicPlateErrorQ,imageMicrofluidicPlateTest,imageMicrofluidicPlateInvalidOptions,
+		resolvedMaxLoadingRetries, maxLoadingRetriesErrorQ, maxLoadingRetriesTest, maxLoadingRetriesInvalidOptions,
 		resolvedPostProcessingOptions,email,invalidOptions,invalidInputs,roundedWavelengths,resolvedWavelengths,resolvedOptions,allTests,testsRule,resultRule,
 		sampleVolumesTooSmallQ,tooSmallSampleVolumes,sampleVolumesTest,tooSmallSamples,liquidHandlerRequiredDefault,
 		resolvedSampleLabels,resolvedSampleContainerLabels,
@@ -1324,7 +1348,9 @@ resolveAbsorbanceOptions[
 		specifiedMicrofluidicChipLoading,
 		specifiedQuantifyConcentration,
 		specifiedTargetCarbonDioxideLevel,
-		specifiedTargetOxygenLevel
+		specifiedTargetOxygenLevel,
+		specifiedImageMicrofluidicPlate,
+		specifiedMaxLoadingRetries
 	} = Lookup[
 		absSpecOptionsAssoc,
 		{
@@ -1365,7 +1391,9 @@ resolveAbsorbanceOptions[
 			MicrofluidicChipLoading,
 			QuantifyConcentration,
 			TargetCarbonDioxideLevel,
-			TargetOxygenLevel
+			TargetOxygenLevel,
+			ImageMicrofluidicPlate,
+			MaxLoadingRetries
 		},
 		Automatic
 	];
@@ -1471,14 +1499,15 @@ resolveAbsorbanceOptions[
 	(* If StirBar/AcquisitionMixRate/AdjustMixRate/MinAcquisitionMixRate/MaxAcquisitionMixRate/AcquisitionMixRateIncrements/MaxStirAttempts is set for any sample, Cuvette *)
 	(* If ReadDirection/SamplingPattern/SamplingDistance/SamplingDimension/any PlateReaderMixOptions is set, PlateReader *)
 	(* If PrimaryInjectionSample/PrimaryInjectionVolume/SecondaryInjectionSample/SecondaryInjectionVolume/PrimaryInjectionFlowRate/SecondaryInjectionFlowRate/InjectionSampleStorageCondition is set for any sample, PlateReader *)
+	(* If ImageMicrofluidicPlate or ImageMicrofluidicPlate is set, Microfluidic *)
 	(* Otherwise, Lunatic since it is the safest option *)
 	resolvedMethods = Which[
 		Not[MatchQ[specifiedMethods, Automatic]], specifiedMethods,
 		(* set to Lunatic if instrument is Lunatic model or object *)
 		MatchQ[specifiedInstrumentModel, ObjectP[Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)]], Microfluidic,
 		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, PlateReader], Model[Instrument, PlateReader]}]], PlateReader,
-		Not[MatchQ[specifiedMicrofluidicChipLoading, Automatic | Null]], Microfluidic,
 		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer]}]], Cuvette,
+		Not[MatchQ[specifiedMicrofluidicChipLoading, Automatic | Null]], Microfluidic,
 		Not[MatchQ[specifiedSpectralBandwidth, Automatic | Null]], Cuvette,
 		Not[ContainsOnly[Flatten[{specifiedAcquisitionMix}], {Automatic, Null}]], Cuvette,
 		MemberQ[
@@ -1498,6 +1527,9 @@ resolveAbsorbanceOptions[
 		MatchQ[resolvedPreparation, Robotic], PlateReader,
 		Not[MatchQ[specifiedEquilibrationTime, Automatic | Null]] || Not[MatchQ[specifiedTemp, Automatic | Null]], If[MemberQ[Map[(# >= 400 Microliter)&, Download[simulatedSamples, Volume, Simulation -> updatedSimulation]], True], Cuvette, PlateReader],
 		bmgRequired, PlateReader,
+		(* These are low-priority options *)
+		Not[MatchQ[specifiedImageMicrofluidicPlate, Automatic | Null]], Microfluidic,
+		Not[MatchQ[specifiedMaxLoadingRetries, Automatic | Null]], Microfluidic,
 		True, Microfluidic
 	];
 
@@ -3364,6 +3396,13 @@ resolveAbsorbanceOptions[
 						{
 							Lookup[cuvetteMixPackets[[1]],RecommendedFillVolume],
 							Lookup[cuvetteMixPackets[[1]],Object]
+						},
+
+						(* we will not aliquot the samples, take the Volume of the Sample and null for cuvetteContainerModel *)
+						MatchQ[Lookup[options,Aliquot],False],
+						{
+							Lookup[samplePacket,Volume],
+							Null
 						}
 					]];
 
@@ -4662,11 +4701,78 @@ resolveAbsorbanceOptions[
 
 	(* Create test *)
 	microfluidicChipLoadingErrorTest = If[gatherTests,
-		Test["The MicrofluidicChipLoading option setting complies with the plate reader used in this experiment:",{lunaticQ,microfluidicChipLoadingErrorQ},Except[{True,Null}|{False,Alternatives[Robotic,Manual]}]]
+		Test["The MicrofluidicChipLoading option setting complies with the plate reader used in this experiment:",microfluidicChipLoadingErrorQ,False]
 	];
 
 	(* Track invalid option *)
 	microfluidicChipLoadingInvalidOptions = If[microfluidicChipLoadingErrorQ,MicrofluidicChipLoading];
+
+
+	(* - Resolve ImageMicrofluidicPlate - *)
+
+	(* Resolve the ImageMicrofluidicPlate based on which instrument we're using *)
+	resolvedImageMicrofluidicPlate = If[lunaticQ,
+		(* if using lunatic, we resolve to PostRead *)
+		If[MatchQ[specifiedImageMicrofluidicPlate, Automatic],
+			PostRead,
+			specifiedImageMicrofluidicPlate
+		],
+		(* if not using lunatic, we resolve to Null *)
+		If[MatchQ[specifiedImageMicrofluidicPlate, Automatic],
+			Null,
+			specifiedImageMicrofluidicPlate
+		]
+	];
+
+	(* Error if we're not using the lunatic and Null is specified for *)
+	imageMicrofluidicPlateErrorQ = And[!lunaticQ,MatchQ[resolvedImageMicrofluidicPlate,Except[Null]]];
+
+	If[imageMicrofluidicPlateErrorQ&&messages,
+		Message[Error::InvalidImageMicrofluidicPlate,resolvedImageMicrofluidicPlate]
+	];
+
+	(* Create test *)
+	imageMicrofluidicPlateTest = If[gatherTests,
+		Test["The ImageMicrofluidicPlate option setting complies with the plate reader used in this experiment:",imageMicrofluidicPlateErrorQ,False]
+	];
+
+	(* Track invalid option *)
+	imageMicrofluidicPlateInvalidOptions = If[imageMicrofluidicPlateErrorQ,ImageMicrofluidicPlate];
+
+
+	(* - Resolve MaxLoadingRetries - *)
+
+	(* Resolve the MaxLoadingRetries based on which instrument we're using *)
+	resolvedMaxLoadingRetries = If[lunaticQ,
+		(* if using lunatic, we resolve to 6 for quals and 2 for user protocols *)
+		If[MatchQ[specifiedMaxLoadingRetries, Automatic],
+			If[MatchQ[parentProt, ObjectP[Object[Qualification]]],
+				6,
+				2
+			],
+			specifiedMaxLoadingRetries
+		],
+		(* if not using lunatic, we resolve to Null *)
+		If[MatchQ[specifiedMaxLoadingRetries, Automatic],
+			Null,
+			specifiedMaxLoadingRetries
+		]
+	];
+
+	(* Error if we're not using the lunatic and Null is specified for *)
+	maxLoadingRetriesErrorQ = And[!lunaticQ,MatchQ[resolvedMaxLoadingRetries,Except[Null]]];
+
+	If[maxLoadingRetriesErrorQ&&messages,
+		Message[Error::InvalidMaxLoadingRetries,resolvedMaxLoadingRetries]
+	];
+
+	(* Create test *)
+	maxLoadingRetriesTest = If[gatherTests,
+		Test["The axLoadingRetries option setting complies with the plate reader used in this experiment:",maxLoadingRetriesErrorQ,False]
+	];
+
+	(* Track invalid option *)
+	maxLoadingRetriesInvalidOptions = If[maxLoadingRetriesErrorQ,MaxLoadingRetries];
 
 	(* -- Resolve label options -- *)
 	resolvedSampleLabels=Module[{suppliedSampleObjects, uniqueSamples, preResolvedSampleLabels, preResolvedSampleLabelRules},
@@ -4813,6 +4919,8 @@ resolveAbsorbanceOptions[
 			missingExtinctionCoefficientOptions,
 			concInvalidOptions,
 			microfluidicChipLoadingInvalidOptions,
+			imageMicrofluidicPlateInvalidOptions,
+			maxLoadingRetriesInvalidOptions,
 			missingExtinctionCoefficientOptions,
 			duplicateDestinationWellOption,
 			invalidDestinationWellLengthOption,
@@ -4944,6 +5052,8 @@ resolveAbsorbanceOptions[
 				SamplingDimension -> resolvedSamplingDimension,
 				NumberOfReadings -> resolvedNumberOfReadings,
 				MicrofluidicChipLoading -> resolvedMicrofluidicChipLoading,
+				ImageMicrofluidicPlate -> resolvedImageMicrofluidicPlate,
+				MaxLoadingRetries -> resolvedMaxLoadingRetries,
 				SampleLabel->resolvedSampleLabels,
 				SampleContainerLabel->resolvedSampleContainerLabels,
 				BlankLabel->resolvedBlankLabels,
@@ -5024,6 +5134,8 @@ resolveAbsorbanceOptions[
 			validInjectionTests,
 			sampleVolumesTest,
 			microfluidicChipLoadingErrorTest,
+			imageMicrofluidicPlateTest,
+			maxLoadingRetriesTest,
 			resolvedACUTests
 		}],
 		_EmeraldTest
@@ -6103,6 +6215,8 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				Replace[MicrofluidicChips] -> (Link[#]& /@ microfluidicChipResources),
 		        MicrofluidicChipRack -> Link[microfluidicChipRackResource],
 		        MicrofluidicChipLoading->Lookup[expandedResolvedOptions,MicrofluidicChipLoading],
+				ImageMicrofluidicPlate->Lookup[expandedResolvedOptions,ImageMicrofluidicPlate],
+				MaxLoadingRetries->Lookup[expandedResolvedOptions,MaxLoadingRetries],
 		        MicrofluidicChipManualLoadingPipette -> Link[manualLoadingPipetteResource],
 		        MicrofluidicChipManualLoadingTips -> Link[manualLoadingTipsResource],
 				MagnifyingGlass -> Link[magnifyingGlassResource],

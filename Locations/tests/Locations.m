@@ -1427,7 +1427,7 @@ DefineTests[
 
 		ECL`InternalUpload`UploadSample[
 			{
-				Model[Container, Room, "Chemistry Lab"],
+				Model[Container, Room, "ECL-2 Lab"],
 				Model[Container, Room, "PlotLocation test room model"<>$SessionUUID]
 			},
 			{
@@ -1448,9 +1448,9 @@ DefineTests[
 				3
 			],
 			{
-				{"Bench Slot 4", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]},
-				{"Bench Slot 5", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]},
-				{"Bench Slot 6", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]}
+				{"A7-Bench1 Slot", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]},
+				{"A7-Bench2 Slot", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]},
+				{"A7-Bench3 Slot", Object[Container,Room,"PlotLocation test room"<>$SessionUUID]}
 			},
 			Name->{
 				"PlotLocation test bench 1"<>$SessionUUID,
@@ -2065,7 +2065,7 @@ DefineTests[
 						Replace[CoverFootprints] -> {Lid1WellDish, LidSBSUniversal, SealSBS},
 						CrossSectionalShape -> Rectangle,
 						DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]],
-						DepthMargin -> Quantity[1.7, "Millimeters"],
+						DepthMargin -> Quantity[5, "Millimeters"],
 						Dimensions -> {Quantity[0.1272, "Meters"], Quantity[0.085, "Meters"],Quantity[0.014, "Meters"]},
 						Expires -> False,
 						Footprint -> Plate,
@@ -2115,7 +2115,8 @@ DefineTests[
 						Replace[WellTreatments] -> {NonTreated},
 						Replace[Authors] -> {Link[Object[User, Emerald, Developer, "dima"]]},
 						Replace[Synonyms] -> {"PlotContents test plate model 1"<>$SessionUUID},
-						Name -> "PlotContents test plate model 1"<>$SessionUUID
+						Name -> "PlotContents test plate model 1"<>$SessionUUID,
+						MaxCentrifugationForce -> 2000 GravitationalAcceleration
 					|>
 				}];
 

@@ -14,7 +14,7 @@ DefineObjectType[Object[Container, DissolutionShaft], {
 			Pattern :> GreaterP[0 Milli Meter],
 			Description -> "The overall length of the stirrer stem.",
 			Category -> "Dimensions & Positions"
-		},		
+		},
 		ShaftDiameter -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]},Download[Field[Model],ShaftDiameter]],

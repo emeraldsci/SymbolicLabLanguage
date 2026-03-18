@@ -902,6 +902,58 @@ DefineObjectType[Object[Instrument, IonChromatography], {
 			Relation->Object[Sensor, Volume],
 			Description->"The ultrasonic liquid level sensor used to assess needle wash solution volumes in bottles.",
 			Category->"Sensor Information"
+		},
+		IdleFlush -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the system should be kept under a continual flush while not actively running a protocol.",
+			Category -> "Cleaning"
+		},
+		StorageBufferA -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line A is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferB -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line B is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line C is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		StorageBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument buffer line D is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
+		},
+		EluentGeneratorStorageBuffer  -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The solution in which the instrument eluent generator line is stored in when the instrument is not in use.",
+			Developer -> True,
+			Category -> "Cleaning"
 		}
 	}
 }];

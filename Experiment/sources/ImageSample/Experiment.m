@@ -12,6 +12,73 @@
 (*Experiment*)
 
 
+
+(* ::Subsubsection::Closed:: *)
+(*Color Reference Standard Sets *)
+
+
+(* These are the reference sets we currently have:*)
+referenceStandardSetsToModels[] := {
+	ColorReferencesY -> {
+		Model[Sample, "Color Calibration Standard Y1 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y2 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y3 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y4 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y5 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y6 (yellow)"],
+		Model[Sample, "Color Calibration Standard Y7 (yellow)"],
+		Model[Sample, "1% Aqueous HCl (Color Reference Standard)"]
+	},
+	ColorReferencesR -> {
+		Model[Sample, "Color Calibration Standard R1 (red)"],
+		Model[Sample, "Color Calibration Standard R2 (red)"],
+		Model[Sample, "Color Calibration Standard R3 (red)"],
+		Model[Sample, "Color Calibration Standard R4 (red)"],
+		Model[Sample, "Color Calibration Standard R5 (red)"],
+		Model[Sample, "Color Calibration Standard R6 (red)"],
+		Model[Sample, "Color Calibration Standard R7 (red)"],
+		Model[Sample, "1% Aqueous HCl (Color Reference Standard)"]
+	},
+	ColorReferencesB -> {
+		Model[Sample, "Color Calibration Standard B1 (brown)"],
+		Model[Sample, "Color Calibration Standard B2 (brown)"],
+		Model[Sample, "Color Calibration Standard B3 (brown)"],
+		Model[Sample, "Color Calibration Standard B4 (brown)"],
+		Model[Sample, "Color Calibration Standard B5 (brown)"],
+		Model[Sample, "Color Calibration Standard B6 (brown)"],
+		Model[Sample, "Color Calibration Standard B7 (brown)"],
+		Model[Sample, "Color Calibration Standard B8 (brown)"],
+		Model[Sample, "Color Calibration Standard B9 (brown)"],
+		Model[Sample, "1% Aqueous HCl (Color Reference Standard)"]
+	},
+	ColorReferencesBY -> {
+		Model[Sample, "Color Calibration Standard BY1 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY2 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY3 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY4 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY5 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY6 (brownish-yellow)"],
+		Model[Sample, "Color Calibration Standard BY7 (brownish-yellow)"],
+		Model[Sample, "1% Aqueous HCl (Color Reference Standard)"]
+	},
+	ColorReferencesGY -> {
+		Model[Sample, "Color Calibration Standard GY1 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY2 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY3 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY4 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY5 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY6 (greenish-yellow)"],
+		Model[Sample, "Color Calibration Standard GY7 (greenish-yellow)"],
+		Model[Sample, "1% Aqueous HCl (Color Reference Standard)"]
+	}
+};
+
+(* This is the model that we must use for color comparison *)
+$ColorComparisonContainer = Model[Container, Vessel, "id:qdkmxz1JDmKx"]; (* Model[Container, Vessel, "16mm Photometric Cell"] *)
+
+(* This is the rack where color comparison occurs *)
+$ColorComparisonRack = Model[Container, Rack, "id:P5ZnEjrNaKqn"]; (* Model[Container, Rack, "Color Comparison Rack"] *)
+
 (* ::Subsubsection:: *)
 (*ExperimentImageSample*)
 
@@ -91,6 +158,15 @@ DefineOptions[
 				Description->"The source(s) of illumination that will be used for imaging, where All implies all available light sources will be active simultaneously.",
 				ResolutionDescription->"Automatically resolves based on the Type and/or specific model parameters of the sample's container.",
 				Category->"Protocol"
+			},
+			{
+				OptionName -> ColorReference,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Enumeration, Pattern :> ColorReferencesP],
+				Description -> "The color reference set that is imaged together with the input sample in order to obtain data concerning the color of the input sample relative to the standards.",
+				ResolutionDescription -> "If the input sample is in a Model[Container, Vessel, \"16mm Photometric Cell\"], then ColorReference is automatically set to ColorReferencesY.",
+				Category -> "Protocol"
 			}
 		],
 
@@ -286,7 +362,7 @@ ExperimentImageSample[mySamples:ListableP[ObjectP[{Object[Sample],Model[Sample]}
 						(* {Packet[Container[Model][PlateImagerRack][{NumberOfPositions, AspectRatio}]]}, *)
 						{preferredContainerModelsFieldSpec},
 						{preferredContainerModelsFieldSpec},
-						{Packet[Model]},
+						{Packet[Model, Site]},
 						{Packet[ParticularlyHazardousSubstance,HazardousBan,WaterReactive,Pyrophoric,NFPA]},(* Fields for hazard check *)
 						(*Specified or resolved value in parent protocol*)
 						{Packet[ImageSample, ParentProtocol]}
@@ -788,7 +864,8 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 		sampleImagerModel, instrumentOptionObjects, updatedSimulatedCache, instrumentModelLookup,
 
 		(* Resolved options from MapThread *)
-		instruments, alternateInstruments, imageContainers, imagingDirections, illuminationDirections,sampleLabels, sampleContainerLabels,
+		instruments, alternateInstruments, imageContainers, imagingDirections, illuminationDirections,sampleLabels,
+		sampleContainerLabels, colorReferences,
 
 		(* Errors from MapThread *)
 		preferredIlluminationIncompatibleErrors, unimageableContainerErrors, preferredIlluminationIncompatibleTests,
@@ -834,7 +911,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	imageSampleOptionsAssociation = Association[imageSampleOptions];
 
 	(* Get all of our preferred vessels. *)
-	preferredVessels = Join[PreferredContainer[All, Type->Vessel], PreferredContainer[All, Type->Vessel, LightSensitive->True]];
+	preferredVessels = Join[PreferredContainer[All, Type->Vessel], PreferredContainer[All, Type->Vessel, LightSensitive->True], {$ColorComparisonContainer}];
 	preferredPlates = Join[PreferredContainer[All, Type->Plate], PreferredContainer[All, Type->Plate, LightSensitive->True]];
 
 	(* Specify usable models of plate and sample imager *)
@@ -1089,18 +1166,19 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 	];
 
 	{
-		instruments,
-		alternateInstruments,
-		imageContainers,
-		imagingDirections,
-		illuminationDirections,
-		sampleLabels,
-		sampleContainerLabels,
-		preferredIlluminationIncompatibleErrors,
-		unimageableContainerErrors,
-		imageContainerInstIncompatibleErrors,
-		invalidAlternateInstrumentErrors,
-		potentialAliquotContainersList
+		(*1*)instruments,
+		(*2*)alternateInstruments,
+		(*3*)imageContainers,
+		(*4*)imagingDirections,
+		(*5*)illuminationDirections,
+		(*6*)sampleLabels,
+		(*7*)sampleContainerLabels,
+		(*8*)colorReferences,
+		(*9*)preferredIlluminationIncompatibleErrors,
+		(*0*)unimageableContainerErrors,
+		(*11*)imageContainerInstIncompatibleErrors,
+		(*12*)invalidAlternateInstrumentErrors,
+		(*13*)potentialAliquotContainersList
 	} = Transpose[MapThread[
 		Function[{mySample, myMapThreadOptions},
 			Module[
@@ -1112,11 +1190,11 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 					samplePacket, sampleContainer, containerPacket, sampleContainerModel, containerModelPacket, errorVariables, finalContainerModel, finalContainerModelPacket,
 					(* Unresolved options *)
 					unresolvedInstrument, unresolvedAlternateInstrumentList, unresolvedImagingDirection, unresolvedIlluminationDirection,
-					unresolvedSampleLabel,unresolvedSampleContainerLabel,
+					unresolvedSampleLabel,unresolvedSampleContainerLabel, unresolvedColorReference,
 					(* Model fields relevant to options resolution *)
 					preferredCamera, compatibleCameras,	defaultCamera,
 					(* Resolved options *)
-					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection, sampleLabel, sampleContainerLabel
+					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection, sampleLabel, sampleContainerLabel, colorReference
 				},
 
 				(* Initialize error-tracking variable to False *)
@@ -1151,7 +1229,8 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 					unresolvedImagingDirection,
 					unresolvedIlluminationDirection,
 					unresolvedSampleLabel,
-					unresolvedSampleContainerLabel
+					unresolvedSampleContainerLabel,
+					unresolvedColorReference
 				} = Lookup[
 					myMapThreadOptions,
 					{
@@ -1161,7 +1240,8 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 						ImagingDirection,
 						IlluminationDirection,
 						SampleLabel,
-						SampleContainerLabel
+						SampleContainerLabel,
+						ColorReference
 					}
 				]/.link_Link:>Download[link,Object];
 
@@ -1187,6 +1267,18 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 					(* We were given a value so use that *)
 					unResImageContainer
+				];
+
+				(* resolve the ColorReference option *)
+				colorReference = Which[
+					(* if they specified it, great *)
+					Not[MatchQ[unresolvedColorReference, Automatic]], unresolvedColorReference,
+					(* if the sample is currently in $ColorComparisonContainer, then assume that means we meant to color compare *)
+					(* without any more information, we default to ColorReferencesY because those are the most likely to work *)
+					(* with all that said, usually the user will specify this directly *)
+					MatchQ[containerModelPacket, ObjectP[$ColorComparisonContainer]], ColorReferencesY,
+					(* otherwise, Null *)
+					True, Null
 				];
 
 				(* Figure out which containers would be compatible for aliquoting if needed below *)
@@ -1295,13 +1387,20 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 					because we don't want to do any transferring in a sub. If we're in a standalone protocol,
 					we'll throw a warning and do the transferring.
 					TODO: catch subtler errors (e.g. plate imager requested for imaging a bottle) in the instrument resolution block below. *)
-				unimageableContainerError = MatchQ[Lookup[containerModelPacket, Unimageable, Null], True];
+				unimageableContainerError = Or[
+					MatchQ[Lookup[containerModelPacket, Unimageable, Null], True],
+					(* note also that we're transferring if we're doing color comparison but not in color comparison vials *)
+					Not[NullQ[colorReference]] && Not[MatchQ[containerModelPacket, ObjectP[$ColorComparisonContainer]]]
+				];
 
+				(* if we're doing color comparison, we ned it to be the color comparison tube *)
 				(* If container model is unimageable, populate potentialAliquotContainers with the list of compatible containers above *)
-				potentialAliquotContainers = If[unimageableContainerError,
-					compatibleAliquotContainers,
+				(* the exception is if we're doing color comparison, in which case we have one compatible aliquot container *)
+				potentialAliquotContainers = Which[
+					unimageableContainerError && Not[NullQ[colorReference]], {$ColorComparisonContainer},
+					unimageableContainerError, compatibleAliquotContainers,
 					(* If container is imageable, do not set error flag and do not populate potentialAliquotContainers *)
-					{}
+					True, {}
 				];
 
 				(* Decide what container model we'll use for options resolution moving forward.
@@ -1573,11 +1672,21 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				(* Return our options and errors *)
 				{
 					(* Resolved options *)
-					instrument, alternateInstrumentList, resImageContainer, imagingDirection, illuminationDirection,sampleLabel,sampleContainerLabel,
+					(*1*)instrument,
+					(*2*)alternateInstrumentList,
+					(*3*)resImageContainer,
+					(*4*)imagingDirection,
+					(*5*)illuminationDirection,
+					(*6*)sampleLabel,
+					(*7*)sampleContainerLabel,
+					(*8*)colorReference,
 					(* Errors *)
-					preferredIlluminationIncompatibleError, unimageableContainerError, imageContainerInstIncompatibleError, invalidAlternateInstrumentError,
+					(*9*)preferredIlluminationIncompatibleError,
+					(*10*)unimageableContainerError,
+					(*11*)imageContainerInstIncompatibleError,
+					(*12*)invalidAlternateInstrumentError,
 					(* Aliquot containers *)
-					potentialAliquotContainers
+					(*13*)potentialAliquotContainers
 				}
 			]
 		],
@@ -1586,7 +1695,6 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 
 
 	(* === UNRESOLVABLE OPTION CHECKS === *)
-	(* TODO: Generate Tests for these warnings? *)
 
 	(* Check for cases where a container's PreferredIllumination field is incompatible with the instrument they've specified *)
 	If[Or@@preferredIlluminationIncompatibleErrors && !gatherTestsQ && !engineQ,
@@ -1804,6 +1912,7 @@ resolveExperimentImageSampleOptions[mySamples:ListableP[ObjectP[Object[Sample]]]
 				ImageContainer->imageContainers,
 				ImagingDirection->imagingDirections,
 				IlluminationDirection->illuminationDirections,
+				ColorReference -> colorReferences,
 				SampleLabel->sampleLabels,
 				SampleContainerLabel->sampleContainerLabels,
 				(* General options *)
@@ -1926,16 +2035,18 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		(* Generation of resources *)
 		pairedInstrumentsAndImagingTimes, groupedImagingTimesByInstrument, instrumentResourceLookup, uniqueRacks, rackResourceLookup,
 		aliquotVolumes, pairedSamplesInAndVolumes, sampleVolumeRules,sampleResourceReplaceRules, samplesInResources, containersIn, imagingTimeEstimate,
-		containerResources, plateImagerResources, sampleImagerResources,
+		containerResources, plateImagerResources, sampleImagerResources, colorReferenceResourceRules, filteredResolvedColorReference,
+		nestedColorReferenceSamples, flatColorReferenceResources,
 
 		(* Generation of batching fields *)
 		allBatchedSamplesAssocs, batchLengths, workingContainers, plateImagerPlateBatchedContainerIndexes, plateImagerTubeBatchedContainerIndexes,
 		sampleImagerBatchedContainerIndexes, batchedContainerIndexes, protocolID, protocolIDString, batchedImagingParameters,
+		tubeRackPlacementBatchLengths, moreIntenseColorReferences, batchedColorReferences,
 
 		(* Generation of packet *)
 		protocolPacket, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule,
 
-		imageContainerAssocs,sampleImagingAssocs, containerGatheredSampleImagerAssocs, updatedSampleImagerAssocs
+		imageContainerAssocs,sampleImagingAssocs, containerGatheredSampleImagerAssocs, updatedSampleImagerAssocs, updatedFastAssoc
 	},
 
 	(* expand the resolved options if they weren't expanded already *)
@@ -1995,6 +2106,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		{expandedInputs, expandedResolvedOptions}
 	];
 
+	(* using this several times below so pulling it out here *)
+	filteredResolvedColorReference = Lookup[filteredExpandedOptions, ColorReference];
 
 	(* --- Further expand any ImagingDirection or IlluminationDirection options that aren't already lists --- *)
 	(* Expand / list ImagingDirection option where necessary *)
@@ -2070,21 +2183,28 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
 
 	(* make a Download call to get all relevant information we need, being sure to download from SIMULATED SAMPLES *)
-	{samplePackets, containerPackets, containerModelPackets, secondaryContainerPackets, secondaryContainerModelPackets,
-	plateImagerRackModelPackets, instrumentPackets} = Flatten /@ Quiet[
+	{
+		(*1*)samplePackets,
+		(*2*)containerPackets,
+		(*3*)containerModelPackets,
+		(*4*)secondaryContainerPackets,
+		(*5*)secondaryContainerModelPackets,
+		(*6*)plateImagerRackModelPackets,
+		(*7*)instrumentPackets
+	} = Flatten /@ Quiet[
 		Download[
 			{
 				Sequence@@ConstantArray[simulatedSamples, 6],
 				instrumentOpt
 			},
 			{
-				{sampleFields},
-				{Packet[Container[{Model, Container, Position}]]},
-				{Packet[Container[Model][{PlateImagerRack, SampleImagerRack, PreferredCamera, Dimensions, AspectRatio, NumberOfWells}]]},
-				{Packet[Container[Container][{Object, Model}]]},
-				{Packet[Container[Container][Model][{NumberOfPositions, Positions, AspectRatio}]]},
-				{Packet[Container[Model][PlateImagerRack][{NumberOfPositions, AspectRatio}]]},
-				{Packet[Object, Model, Site]}
+				(*1*){sampleFields},
+				(*2*){Packet[Container[{Model, Container, Position}]]},
+				(*3*){Packet[Container[Model][{PlateImagerRack, SampleImagerRack, PreferredCamera, Dimensions, AspectRatio, NumberOfWells}]]},
+				(*4*){Packet[Container[Container][{Object, Model}]]},
+				(*5*){Packet[Container[Container][Model][{NumberOfPositions, Positions, AspectRatio}]]},
+				(*6*){Packet[Container[Model][PlateImagerRack][{NumberOfPositions, AspectRatio}]]},
+				(*7*){Packet[Object, Model, Site]}
 			},
 			Cache->cache,
 			Simulation -> updatedSimulation
@@ -2169,6 +2289,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 			- IlluminationDirection -> Illumination direction from options
 			- Distance -> Imaging distance for sample imager samples
 			- Pedestals -> Pedestals to be used for sample imager samples
+			- ColorRefernce -> Symbol for the color reference sets if doing color comparison
 	*)
 	sampleInformationAssocs = MapThread[
 		Association[
@@ -2185,7 +2306,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 			ImagingDirection->#11,
 			IlluminationDirection->#12,
 			Distance -> #13,
-			Pedestals -> #14
+			Pedestals -> #14,
+			ColorReference -> #15
 		]&,
 		{
 			(*1*)Lookup[samplePackets, Object],
@@ -2201,7 +2323,8 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 			(*11*)Lookup[imagingExpandedResolvedOptions, ImagingDirection],
 			(*12*)Lookup[imagingExpandedResolvedOptions, IlluminationDirection],
 			(*13*)Lookup[containerModelImagingDistanceLookup, Lookup[containerModelPackets, Object], Null],
-			(*14*)Lookup[containerModelPedestalLookup, Lookup[containerModelPackets, Object], Null]
+			(*14*)Lookup[containerModelPedestalLookup, Lookup[containerModelPackets, Object], Null],
+			(*15*)filteredResolvedColorReference
 		}
 	];
 
@@ -2291,7 +2414,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 
 	(* --- Sample imager sorting: Just get containers into an order that will optimize for operational efficiency --- *)
 
-	(* If ImageContainer is Ture, gather all samples that are in the same physical container/plate *)
+	(* If ImageContainer is True, gather all samples that are in the same physical container/plate *)
 	containerGatheredSampleImagerAssocs = GatherBy[sampleImagerAssocs, Lookup[#, {ImageContainer, Container}] &];
 	(* We only keep the first in the gathered sub list if ImagerContainer -> True so that the batching will be over the unique container, rather than wells of each sample *)
 	updatedSampleImagerAssocs =If[MatchQ[Lookup[First[#], ImageContainer], True],
@@ -2321,6 +2444,12 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* Generate a list of lists of sample associations
 		Inner lists of associations correspond to imaging batches *)
 	allBatchedSamplesAssocs = Join[containerGatheredPlateImagerPlateAssocs, partitionedGatheredPlateImagerTubeAssocs, sideImagingGatheredAssocs];
+
+
+	(* need to construct the skeleton of the more-intense-than-the-sample list of lists *)
+	(* this is just all Nulls for now and we'll replace them as needed  *)
+	batchedColorReferences = Lookup[First[#], ColorReference] & /@ allBatchedSamplesAssocs;
+	moreIntenseColorReferences = ConstantArray[Null, Length[batchedColorReferences]];
 
 	(* === Generate instrument, rack, and sample resources === *)
 
@@ -2415,6 +2544,28 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 	(* use the replace rules to get the sample resources *)
 	samplesInResources = Replace[Flatten@Download[filteredExpandedInputs, Object], sampleResourceReplaceRules, {1}];
 
+	(* make the list of list field with just the models (and then we'll fix them in the compiler when we've resource picked them) *)
+	nestedColorReferenceSamples = filteredResolvedColorReference /. referenceStandardSetsToModels[];
+
+	(* make resources for the relevant color references *)
+	colorReferenceResourceRules = With[{selectedColorReferences = DeleteDuplicates[Cases[filteredResolvedColorReference, ColorReferencesP]]},
+		Map[
+			Function[{colorRef},
+				colorRef -> Map[
+					Function[{individualStandard},
+						(* note that we are making a unique name because we're already deleted duplicates above *)
+						(* it's certainly weird that Amount is set to 0 mL but we're not actually consuming anything here, and ValidResourceQ requires us to specify a volume if we're requesting a Model[Sample] *)
+						Resource[Sample -> individualStandard, Name -> ToString[Unique[]], Amount -> 0 Milliliter]
+					],
+					Lookup[referenceStandardSetsToModels[], colorRef]
+				]
+			],
+			selectedColorReferences
+		]
+	];
+
+	(* make the flattened resource field for the color references *)
+	flatColorReferenceResources = Flatten[filteredResolvedColorReference /. colorReferenceResourceRules];
 
 	(* === Build batching field entries for each group of samples === *)
 
@@ -2423,6 +2574,17 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		ConstantArray[1, Length[containerGatheredPlateImagerPlateAssocs]],
 		Length /@ partitionedGatheredPlateImagerTubeAssocs,
 		ConstantArray[1, Length[sideImagingGatheredAssocs]]
+	];
+
+	(* also need a TubeRackPlacements batch lengths field *)
+	(* if we're not doing color comparison this is going to be identical to BatchLengths *)
+	(* if we are doing color comparison though, it's going to be the number of samples being imaged (i.e., 1) plus the number of color comparison tubes being used *)
+	tubeRackPlacementBatchLengths = MapThread[
+		If[MatchQ[Lookup[#1, ColorReference], {ColorReferencesP}],
+			1 + Length[Lookup[First[#1], ColorReference] /. referenceStandardSetsToModels[]],
+			#2
+		]&,
+		{allBatchedSamplesAssocs, batchLengths}
 	];
 
 	(* --- Build BatchedContainerIndexes --- *)
@@ -2604,11 +2766,13 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 				];
 
 				(* Resolve ambientExposureTime based on site because ambient lighting conditions may vary *)
-				ambientExposureTime = Switch[Lookup[myResolvedOptions,Site],
+				(* note that for color referencing, the ambient exposure time is quite a bit lower because the white rack requires it *)
+				ambientExposureTime = Switch[{Lookup[myResolvedOptions, Site], Lookup[sampleGroup, ColorReference]},
+					{_, {ColorReferencesP..}}, 150 Millisecond,
 					(* CMU *)
-					ObjectP[Object[Container, Site, "id:P5ZnEjZpRlK4"]], 200 Millisecond,
+					{ObjectP[Object[Container, Site, "id:P5ZnEjZpRlK4"]], _}, 200 Millisecond,
 					(* ECL-2 *)
-					ObjectP[Object[Container, Site, "ECL-2"]], 500 Millisecond,
+					{ObjectP[Object[Container, Site, "ECL-2"]], _}, 500 Millisecond,
 					(* Default *)
 					_, 500 Millisecond
 				];
@@ -2662,6 +2826,7 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		allBatchedSamplesAssocs
 	];
 
+
 	(* Estimate imaging time -- total up instrument resource time estimates, which include set-up and tear-down *)
 	imagingTimeEstimate = Total[#[Time]& /@ Values[instrumentResourceLookup]];
 
@@ -2697,13 +2862,19 @@ imageSampleResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOp
 		Replace[ImageContainers] -> Lookup[batchedImagingParameters, ImageContainer],(* Needs to be index matched to containers *)
 		Replace[ImagingDirections] -> Lookup[imagingExpandedResolvedOptions, ImagingDirection],
 		Replace[IlluminationDirections]->Lookup[imagingExpandedResolvedOptions, IlluminationDirection],
+		Replace[ColorReferences] -> filteredResolvedColorReference,
+		Replace[ColorReferenceSamples] -> nestedColorReferenceSamples,
+		Replace[ColorReferenceSampleResources] -> (Link /@ flatColorReferenceResources),
+		Replace[MoreIntenseColorReferences] -> moreIntenseColorReferences,
 
 		(* Batching fields *)
 		(* BatchedContainers, TubeRackPlacements, and DeckPlacements will get populated at compile time *)
 		Replace[BatchedImagingParameters] -> batchedImagingParameters,
 		Replace[BatchLengths] -> batchLengths,
+		Replace[TubeRackPlacementBatchLengths] -> tubeRackPlacementBatchLengths,
 		Replace[BatchedContainerIndexes] -> batchedContainerIndexes,
-		Replace[SamplesInStorage] -> Lookup[imagingExpandedResolvedOptions, SamplesInStorageCondition]
+		Replace[SamplesInStorage] -> Lookup[imagingExpandedResolvedOptions, SamplesInStorageCondition],
+		Replace[BatchedColorReferences] -> batchedColorReferences
 	|>;
 
 	(* generate a packet with the shared fields *)

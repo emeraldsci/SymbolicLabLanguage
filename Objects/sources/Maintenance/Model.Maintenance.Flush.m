@@ -53,13 +53,30 @@ DefineObjectType[Model[Maintenance, Flush], {
 			Category -> "General",
 			Abstract -> True
 		},
+		EluentGeneratorInletSolution -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The solvent pumped through the eluent generator flow path.",
+			Category -> "General",
+			Abstract -> True
+		},
 		SystemFlushGradient -> {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Method],
 			Description -> "The composition of solvents over time used to purge the instrument.",
-			Category -> "General",
+			Category -> "Gradient",
+			Developer -> True
+		},
+		EluentGradient -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ({{GreaterEqualP[0 Minute], GreaterEqualP[0 Millimolar], GreaterEqualP[0 Milliliter/Minute]}..}),
+			Description -> "The eluent concentration from an eluent generator over time, in the form: {Time, eluent concentration in Millimolar, flow rate in Milliliter/Minute}.",
+			Category -> "Gradient",
 			Developer -> True
 		}
 	}

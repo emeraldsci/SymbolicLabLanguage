@@ -60,6 +60,7 @@ DefineOptionSet[TransferInstrumentOption :> {
 					Model[Item, TransferTube],
 					Model[Item, ChippingHammer],
 					Model[Item, Scissors],
+					Model[Container, Vessel],
 
 					Object[Container, Syringe],
 					Object[Container, GraduatedCylinder],
@@ -69,7 +70,8 @@ DefineOptionSet[TransferInstrumentOption :> {
 					Object[Item, Tweezer],
 					Object[Item, TransferTube],
 					Object[Item, ChippingHammer],
-					Object[Item, Scissors]
+					Object[Item, Scissors],
+					Object[Container, Vessel]
 				}],
 				OpenPaths -> {
 					{
@@ -212,7 +214,7 @@ DefineOptionSet[TransferCoverOptions :> {
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Description->"Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
 			Category->"Container Covering"
 		},
 		{
@@ -295,7 +297,7 @@ DefineOptionSet[TransferCoverOptions :> {
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Description->"Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
 			Category->"Container Covering"
 		},
 		{
@@ -411,7 +413,6 @@ DefineOptionSet[TransferEnvironmentOption :> {
 					Model[Instrument, BiosafetyCabinet],
 					Model[Instrument, FumeHood],
 					Model[Instrument, GloveBox],
-					Model[Container, Bench],
 					Model[Container, Enclosure],
 					Model[Instrument, HandlingStation],
 					Object[Instrument, BiosafetyCabinet],
@@ -1458,7 +1459,7 @@ DefineOptionSet[AspirationMixOptions :> {
 				Type->Enumeration,
 				Pattern:>BooleanP
 			],
-			Description->"Indicates if mixing will occur during aspiration from the source sample.",
+			Description->"Indicates if mixing will occur immediately prior to or during aspiration from the source sample.",
 			Category->"Mixing"
 		},
 		{
@@ -1470,7 +1471,7 @@ DefineOptionSet[AspirationMixOptions :> {
 				Type->Enumeration,
 				Pattern:>Swirl|Pipette|Tilt
 			],
-			Description->"The type of mixing that will occur immediately before aspiration from the source container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfAspirationMixes clockwise rotations of the container. Pipette performs NumberOfAspirationMixes aspiration/dispense cycle(s) of AspirationMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfAspirationMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic.",
+			Description -> "The type of mixing that will occur immediately before or during aspiration from the source container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfAspirationMixes clockwise rotations of the container. Pipette performs NumberOfAspirationMixes aspiration/dispense cycle(s) of AspirationMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfAspirationMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic. Other mix types are accomplished via a Mix subprotocol. See ExperimentMix for more information.",
 			Category->"Mixing"
 		},
 		{
@@ -1482,7 +1483,7 @@ DefineOptionSet[AspirationMixOptions :> {
 				Type->Number,
 				Pattern:>RangeP[0, 50, 1]
 			],
-			Description->"The number of times that the source sample will be mixed during aspiration.",
+			Description->"The number of times that the source sample will be mixed immediately prior to or during aspiration.",
 			Category->"Mixing"
 		}
 	]
@@ -1516,7 +1517,7 @@ DefineOptionSet[DispenseMixOptions :> {
 				Type->Enumeration,
 				Pattern:>Swirl|Pipette|Tilt
 			],
-			Description->"The type of mixing that will occur immediately after the sample is dispensed into the destination container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfDispenseMixes clockwise rotations of the container. Pipette performs NumberOfDispenseMixes aspiration/dispense cycle(s) of DispenseMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfDispenseMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic.",
+			Description->"The type of mixing that will occur immediately after the sample is dispensed into the destination container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfDispenseMixes clockwise rotations of the container. Pipette performs NumberOfDispenseMixes aspiration/dispense cycle(s) of DispenseMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfDispenseMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic. Other mix types are accomplished via a Mix subprotocol. See ExperimentMix for more information.",
 			Category->"Mixing"
 		},
 		{
@@ -1528,7 +1529,7 @@ DefineOptionSet[DispenseMixOptions :> {
 				Type->Number,
 				Pattern:>RangeP[0, 50, 1]
 			],
-			Description->"The number of times that the destination sample will be mixed after the sample is dispensed into the destination container.",
+			Description->"The number of times that the destination sample will be mixed after the source sample is dispensed into the destination container.",
 			Category->"Mixing"
 		}
 	]
@@ -1981,6 +1982,224 @@ DefineOptionSet[CountAsPassageOptions :> {
 			],
 			Description -> "Indicates if cell models found in the Composition of the destination Object[Sample] are recorded to have an increase of 1 in passage number in CellPassageLog. CountAsPassage flag should only be set to True when the transfer is used to inoculate a cell sample for initiating a subculture.",
 			Category->"General"
+		}
+	]
+}];
+
+(* ::Subsection::Closed:: *)
+(* RinseOptions *)
+
+DefineOptionSet[PreRinseLabwareOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName->PreRinseLabware,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to True if any of the other PreRinseLabware options are set. Otherwise, is set to False.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Enumeration,
+				Pattern:>BooleanP
+			],
+			Description->"Indicates if labware used with the Source sample is rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			Category->"PreRinse Labware"
+		},
+		{
+			OptionName->NumberOfPreRinses,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to 2 if any of the other PreRinseLabware options are set. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Number,
+				Pattern:>GreaterP[0, 1]
+			],
+			Description->"The number of times labware used with source sample is rinsed with PreRinseSolution before use with the source sample.",
+			Category->"PreRinse Labware"
+		},
+		{
+			OptionName->PreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to the calculated total of volume times NumberOfPreRinses required to rinse all relevant labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips) that are used with the Source sample.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The total volume of the PreRinseSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"PreRinse Labware"
+		},
+		{
+			OptionName->PreRinseSolution,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to source sample if PreRinseLabware is True and source State is Liquid. If source sample State is Solid and there is a succeeding FillToVolume of same destination in a ManualSamplePreparation or ManualCellPreparation protocol, use the Solvent in FillToVolume. If source sample State is Solid and there is a succeeding transfer to the same destination in an ManualSamplePreparation or ManualCellPreparation protocol with a liquid Source, use the liquid Source. Otherwise, set to Null",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Sample],
+					Object[Sample]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
+			],
+			Description->"The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"PreRinse Labware"
+		},
+    {
+      OptionName->PreRinseIntermediateContainer,
+      Default->Automatic,
+      ResolutionDescription -> "Automatically set to a beaker based on the largest individual prerinse volume if PreRinseLabware is True. Otherwise, is set to Null.",
+      AllowNull->True,
+      Widget->Widget[
+        Type->Object,
+        Pattern:>ObjectP[{
+          Model[Container, Vessel],
+          Object[Container, Vessel]
+        }]
+      ],
+      Description -> "The container that is used to hold the PreRinseSolution prior to rinsing of labware, NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+      Category->"Hidden"
+    },
+		{
+			OptionName->PreRinseIntermediateContainerVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the PreRinseIntermediateContainer if PreRinseLabware is True. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse destination container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->DestinationPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the destination container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse destination container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->InstrumentPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the instrument (GraduatedCylinder, Syringe) (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True and Instrument is either a GraduatedCylinder or a Syringe. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->IntermediateContainerPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the intermediate container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True and IntermediateContainer is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse the intermediate container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->HandPumpPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to 20 Milliliter (estimated amount dispensed in a single pump) if PreRinseLabware is True and HandPump is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse HandPump, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->FunnelPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PreRinseLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse Funnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->IntermediateFunnelPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PreRinseLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->TipsPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of Tips, whichever is smaller, if PreRinseLabware is True and Tips is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse tips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		},
+		{
+			OptionName->QuantitativeTransferTipsPreRinseVolume,
+			Default->Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of QuantitativeTransferWashTips, whichever is smaller, if PreRinseLabware is True and QuantitativeTransferWashTips is an object. Otherwise, is set to Null.",
+			AllowNull->True,
+			Widget->Widget[
+				Type->Quantity,
+				Pattern:>GreaterP[0 Liter],
+				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			],
+			Description->"The volume of the PreRinseSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category->"Hidden"
+		}
+	]
+}];
+
+
+(* ::Subsection::Closed:: *)
+(* TransferTechniqueOption *)
+
+DefineOptionSet[TransferTechniqueOption :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> TransferTechnique,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> TransferTechniqueP],
+			Description -> "The type of instrument used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
+			ResolutionDescription -> "Automatically set to an instrument type that can move the amount being transferred and the source and destination containers of the transfer. For more information, please refer to the function TransferDevices[].",
+			Category -> "General"
 		}
 	]
 }];

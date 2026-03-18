@@ -21,6 +21,7 @@ PerSecond=Quantity[1, "Seconds"^(-1)];
 
 MolarGasConstant=Quantity[1, "MolarGasConstant"];
 AvogadroConstant=Quantity[UnitConvert[Quantity[1, "AvogadroNumber"]], 1 / "Moles"];
+ElementaryCharge=Quantity[1, "ElementaryCharge"];
 
 
 ByteUnit=Quantity[1, "Bytes"];

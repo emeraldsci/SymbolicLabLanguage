@@ -589,7 +589,7 @@ ExperimentFreezeCells[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 	objectContainerFields = Union[{Notebook, NumberOfPositions}, SamplePreparationCacheFields[Object[Container]]];
 	modelContainerFields = Union[{NumberOfPositions}, SamplePreparationCacheFields[Model[Container]]];
 	modelInstrumentFields = Union[{Name, Deprecated}, modelFreezerFields, modelControlledRateFreezerFields, modelCentrifugeFields];
-	cellModelFields = {CellType, CultureAdhesion};
+	cellModelFields = {CellType, CultureAdhesion, BiosafetyLevel};
 
 	(* Combine our simulated cache and download cache. *)
 	downloadedCache = Quiet[
@@ -896,7 +896,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	{
 		(* Setup and pre-resolve options *)
 		outputSpecification, output, gatherTests, messages, notInEngine, cacheBall, simulation, fastAssoc, samplePackets,
-		sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets, sampleVolumeQuantities, inputContainerMaxVolumes,
+		componentModelPackets, sampleModelPackets, sampleContainerPackets, sampleContainerModelPackets, sampleVolumeQuantities, inputContainerMaxVolumes,
 		fastAssocKeysIDOnly, staticFreezerModelPackets, controlledRateFreezerPackets, controlledRateFreezerModelPackets,
 		centrifugeModelPackets, freezingRackModelPackets, allPossibleFreezingRacks, whyCantThisModelBeCryogenicVial, expandedSuppliedOptions,
 		resolvedNumberOfReplicates, numericNumberOfReplicates, resolvedCryogenicSampleContainerLabels, expandedSuppliedAliquot,
@@ -946,7 +946,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 		possibleCentrifugesWithoutSpeed, specifiedCentrifugesForChangeMedia, incompatibleCentrifugeIndices, noCompatibleCentrifugeIndices,
 		centrifugesRankedByPreference, updatedCentrifugeForOptions, preResolvedCellPelletCentrifuges, resolvedCellPelletCentrifuges,
 		resolvedCellPelletCentrifugeModels, template, fastTrack, operator, outputOption, email, resolvedOptions, resolvedMapThreadOptions,
-		talliedSampleWithVolume, uniqueSampleToUsedVolLookup,
+		talliedSampleWithVolume, uniqueSampleToUsedVolLookup, centrifugeBiohazardSampleQs,
 
 		(* Conflicting Options Checks II *)
 		replicatesQ, replicateLabelWarningString, replicatesWithoutAliquotCases, replicatesWithoutAliquotTest, cellTypeNotSpecifiedTests,
@@ -995,6 +995,23 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	sampleModelPackets = Replace[fastAssocPacketLookup[fastAssoc, #, Model]& /@ mySamples, NullP -> <||>, {1}];
 	sampleContainerPackets = Replace[fastAssocPacketLookup[fastAssoc, #, Container]& /@ mySamples, NullP -> <||>, {1}];
 	sampleContainerModelPackets = Replace[(fastAssocPacketLookup[fastAssoc, #, {Container, Model}]& /@ mySamples)/.$Failed -> Null, NullP -> <||>, {1}];
+	componentModelPackets  = With[
+		{
+			components = Map[
+				If[MatchQ[fastAssocLookup[fastAssoc, #, Composition],$Failed],
+					{#},
+					fastAssocLookup[fastAssoc, #, Composition][[All,2]]
+				]&,
+				mySamples
+			]
+		},
+		Map[
+			fetchPacketFromFastAssoc[#, fastAssoc]&,
+			components,
+			{2}
+		]
+	];
+
 	(* Extract volume from samplePackets and set the volume of a sample to 0 Microliters if it is not informed. This will allow us to error out in a predictable way instead of breaking everything. *)
 	sampleVolumeQuantities = Map[
 		Function[{samplePacket},
@@ -3894,6 +3911,12 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 	(* Get the container model at each of these indices to use as input for CentrifugeDevices. *)
 	containerModelsAtCentrifugeIndices = Download[Extract[sampleContainerModelPackets, ToList[#]& /@centrifugeIndices], Object];
 
+	(* Call the helper function to determine, for each sample, if it should be handled as biohazardous sample for centrifugation, i.e. buckets are treated as covered secondary containers, with sample loading and unloading happening in biosafety cabinets. *)
+	centrifugeBiohazardSampleQs = evaluateSamplesBiohazard[
+		Extract[samplePackets, ToList[#]& /@centrifugeIndices],
+		Extract[componentModelPackets, ToList[#]& /@centrifugeIndices]
+	];
+
 	(* Get the specified values of CellPelletCentrifuge at each of these indices, too. *)
 	specifiedCentrifugesForChangeMedia = Lookup[mapThreadFriendlyOptions, CellPelletCentrifuge][[centrifugeIndices]];
 
@@ -3904,6 +3927,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			containerModelsAtCentrifugeIndices,
 			Intensity -> resolvedCellPelletIntensities[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
 			Time -> resolvedCellPelletTimes[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
+			Biohazard -> centrifugeBiohazardSampleQs,
 			Preparation -> Manual,
 			Cache -> cacheBall,
 			Simulation -> simulation
@@ -3915,6 +3939,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 			containerModelsAtCentrifugeIndices,
 			Intensity -> Automatic,
 			Time -> resolvedCellPelletTimes[[centrifugeIndices]] /. {Null -> Automatic}, (* Need to remove Nulls so this doesn't break *)
+			Biohazard -> centrifugeBiohazardSampleQs,
 			Preparation -> Manual,
 			Cache -> cacheBall,
 			Simulation -> simulation
@@ -6334,6 +6359,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 							containerModel,
 							Intensity -> Automatic,
 							Time -> Automatic,
+							Biohazard -> centrifugeBiohazardSampleQs,
 							Preparation -> Manual,
 							Cache -> cacheBall,
 							Simulation -> simulation
@@ -6400,6 +6426,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 													groupedContainerModels[#][[All, 3]][[1]],
 													Intensity -> Automatic,
 													Time -> Automatic,
+													Biohazard -> centrifugeBiohazardSampleQs,
 													Preparation -> Manual,
 													Cache -> cacheBall,
 													Simulation -> simulation
@@ -6483,6 +6510,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 						containerModel,
 						Intensity -> Automatic,
 						Time -> Automatic,
+						Biohazard -> centrifugeBiohazardSampleQs,
 						Preparation -> Manual,
 						Cache -> cacheBall,
 						Simulation -> simulation
@@ -6491,6 +6519,7 @@ resolveExperimentFreezeCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, myO
 						containerModel,
 						Intensity -> intensity,
 						Time -> Automatic,
+						Biohazard -> centrifugeBiohazardSampleQs,
 						Preparation -> Manual,
 						Cache -> cacheBall,
 						Simulation -> simulation

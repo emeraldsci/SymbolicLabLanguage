@@ -99,15 +99,20 @@ DefineOptions[EmeraldSmoothHistogram,
 ];
 
 
-EmeraldSmoothHistogram[in:ListableP[oneChartDataSetP]|QuantityArrayP[2],ops:OptionsPattern[]]:=
-	EmeraldSmoothHistogram[in,Automatic,ops];
+EmeraldSmoothHistogram[in:ListableP[oneChartDataSetP]|QuantityArrayP[2],ops:OptionsPattern[]]:= EmeraldSmoothHistogram[in,Automatic,ops];
 EmeraldSmoothHistogram[in:ListableP[oneChartDataSetP]|QuantityArrayP[2],bspec:Except[_Rule|{_Rule..}],ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,chart,dataToPlot,debug=False,targetUnit,oneDataSetBool,errorValues,dists,plotRange,
-		chartOps,tooltips=True,chartType=SmoothHistogram,oneTraceP = oneChartDataSetP,
+		safeOps,chart,dataToPlot,debug,targetUnit,oneDataSetBool,errorValues,dists,plotRange,
+		chartOps,tooltips,chartType,oneTraceP,
 		originalOps,output,finalChart,mostlyResolvedOps,unresolveableOps,optionsRule,
 		distributionFunction,distFuncLabel,updatedFrameLabel
 	},
+
+	(* variables that used to be in the Module definition: *)
+	debug = False;
+	tooltips = True;
+	chartType = SmoothHistogram;
+	oneTraceP = oneChartDataSetP;
 
 	(* Convert the original option into a list *)
 	originalOps=ToList[ops];
@@ -152,7 +157,9 @@ EmeraldSmoothHistogram[in:ListableP[oneChartDataSetP]|QuantityArrayP[2],bspec:Ex
 
 	(* Update the default frame label to match the distribution function *)
 	updatedFrameLabel=If[MatchQ[distributionFunction,Except["Intensity"]]&&MatchQ[Lookup[originalOps,FrameLabel],_Missing|Automatic],
-		FrameLabel->{{distFuncLabel,None},{Automatic,None}},
+		(* this used to be {{distFuncLabel, None}, {Automatic, None}}, but the MM 14.2 upgrade broke it for a reason unrelated to SLL. *)
+		(* having None instead of Automatic will not be missed; if the users really want to label it they can specify something *)
+		FrameLabel->{{distFuncLabel,None},{None,None}},
 		FrameLabel->Lookup[internalMMPlotOps,FrameLabel]
 	];
 

@@ -1124,6 +1124,35 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			IndexMatching -> SampleLink
 		},
 
+		(* Oven drying fields *)
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are oven dried before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are depyrogenated in an oven before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		OvenGlassware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, Vessel],
+				Object[Part, Funnel]
+			],
+			Description -> "The glassware that is oven dried or depyrogenated before filtration.",
+			Category -> "Filtration"
+		},
+
 		(* pipetting fields *)
 		Tips -> {
 			Format -> Multiple,
@@ -1636,6 +1665,27 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Units -> Microliter,
 			Description->"The estimated amount of liquid before the dispense of the resuspension solution occurred, as calculated from the detected liquid level height and container geometry. This can only be estimated if DispensePosition is set to LiquidLevel and is a very coarse estimate that should only be used qualitatively.",
 			Category->"Pipetting Parameters"
+		},
+
+		(* Syringe Pump python control *)
+		SyringePumpMethod -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the text string passed to the python script through snaptext that indicates the method file to run. Includes the protocol folder and iteration number separated by a ;.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
+		},
+		SyringePumpMethodFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each member of SampleLink, the path to the location of the method text that is read by the python script.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
 		}
+
 	}
 }];

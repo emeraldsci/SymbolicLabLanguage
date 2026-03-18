@@ -56,16 +56,6 @@ DefineTests[ExperimentCoverOptions,
 			],
 			{Screw, Screw, Screw, Screw, Seal}
 		],
-		Example[{Basic, "Resolve options to cover an uncovered container that's already on a bench:"},
-			ExperimentCoverOptions[
-				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCoverOptions Testing" <> $SessionUUID],
-				OutputFormat -> List
-			],
-			KeyValuePattern[{
-				Cover -> _?(MatchQ[Download[#, {Model[CoverType], Model[CoverFootprint]}], {Crimp, Crimped13mmCap}]&),
-				Environment -> ObjectP[Object[Container, Bench, "Test bench for ExperimentCoverOptions tests" <> $SessionUUID]]
-			}]
-		],
 		Example[{Additional, "Environment resolves to a BSC if SterileTechnique->True:"},
 			ExperimentCoverOptions[
 				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCoverOptions Testing" <> $SessionUUID],

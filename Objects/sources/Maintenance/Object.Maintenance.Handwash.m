@@ -51,7 +51,7 @@ DefineObjectType[Object[Maintenance, Handwash], {
 				Object[Instrument],
 				Model[Instrument]
 			],
-			Description -> "Source of purified water used to rinse the labware.",
+			Description -> "Source of purified water used to clean the labware.",
 			Category -> "Cleaning Setup"
 		},
 		BlowGun -> {
@@ -100,6 +100,39 @@ DefineObjectType[Object[Maintenance, Handwash], {
 			Description -> "A malleable thermoplastic wrap that is used to temporarily seal containers while cleaning.",
 			Category -> "Cleaning"
 		},
+		PrimaryWashContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container into which hand pumps are immersed in PrimaryCleaningSolvent during cleaning.",
+			Category -> "Cleaning"
+		},
+		SecondaryWashContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container into which hand pumps are immersed in SecondaryCleaningSolvent during cleaning.",
+			Category -> "Cleaning"
+		},
+		PrimaryCleaningContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "The container holding the primary solvent with which to wash the dirty labware.",
+			Category -> "Cleaning"
+		},
 		PrimaryCleaningSolvent -> {
 			Format -> Single,
 			Class -> Link,
@@ -121,6 +154,15 @@ DefineObjectType[Object[Maintenance, Handwash], {
 			],
 			Description -> "The secondary solvent with which to wash the dirty labware.",
 			Category -> "Cleaning"
+		},
+		SecondaryCleaningSolventVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milliliter],
+			Units -> Milliliter,
+			Description -> "The amount of the secondary cleaning solvent to dispense.",
+			Category -> "General",
+			Abstract -> True
 		},
 		PrimaryCleaningSyringe -> {
 			Format -> Single,
