@@ -779,6 +779,14 @@ DefineTests[ExperimentIRSpectroscopy,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
+    ],
     (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
     Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
       options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -928,6 +936,14 @@ DefineTests[ExperimentIRSpectroscopy,
       0.08*Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      81 Microliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentIRSpectroscopy[Object[Sample, "Test sample 2 (red food dye) for ExperimentIRSpectroscopy" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];

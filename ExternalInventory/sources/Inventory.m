@@ -55,6 +55,7 @@ DefineOptions[
 		{FontFamily -> "Bitstream Vera Sans Mono", _String, "The font family that will be used for description text on printed stickers.", Category -> Hidden},
 		{Output -> Notebook, Notebook | Graphics, "Specifies whether to return a notebook object or a list of graphics objects of the created stickers.", Category -> Hidden},
 		{Interactive -> False, BooleanP,"Specifies whether the interactive printer selection pop up should appear.", Category -> Hidden},
+		{UpdatedBy -> $PersonID, ObjectP[{Object[User], Object[Protocol], Object[Qualification], Object[Maintenance]}], "Specifies the person or protocol that printed stickers"},
 		FastTrackOption,
 		UploadOption,
 		CacheOption
@@ -162,7 +163,7 @@ PrintStickers[myTransaction:ObjectP[Object[Transaction, ShipToECL]], ops:Options
 (* --- SLL Object/Packet/Link input, for printing Object stickers --- *)
 PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Object[Instrument], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring], Object[Item], Object[Package]}]], ops:OptionsPattern[]]:=Module[
 	{safeOps, resolvedOps, incomingCache, updatedCache, updatedOps, barcodeTexts, stickerTexts, objectsList,
-		stickerModels, stickerModelPackets, modelPackets, objectPackets, modelObjects, uploadPacket},
+		stickerModels, stickerModelPackets, modelPackets, objectPackets, modelObjects, uploadPacket, updatedBy, safeObjectsList},
 
 	safeOps=SafeOptions[PrintStickers, ToList[ops]];
 
@@ -171,6 +172,7 @@ PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Obje
 
 	(* Make sure that singleton input is wrapped in a list before continuing *)
 	objectsList=ToList[objects];
+	safeObjectsList = Download[objectsList, Object];
 
 	(* If any of the input objects are not in the database, throw an error and return Failed. *)
 	With[{databaseMembers=DatabaseMemberQ[objectsList]},
@@ -219,15 +221,21 @@ PrintStickers[objects:ListableP[ObjectP[{Object[Sample], Object[Container], Obje
 		modelPackets
 	];
 
-	uploadPacket=If[MatchQ[$PersonID, ObjectP[]],
-		Association[
-			Object -> $PersonID,
-			Append[PrintStickersLog] -> Map[
-				{Now, Link[#]}&,
-				objectsList
-			]
-		],
-		Null
+	(* log who printed the stickers, and for which objects *)
+	updatedBy = Lookup[resolvedOps, UpdatedBy];
+	uploadPacket=Which[
+
+		MatchQ[updatedBy, ObjectP[Object[User]]],
+		Flatten[{
+			<|Object -> updatedBy, Append[PrintStickersLog] -> Map[{Now, Link[#]}&, safeObjectsList]|>,
+			<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList]
+		}],
+
+		MatchQ[updatedBy, ObjectP[]],
+		<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList],
+
+		True,
+		{}
 	];
 
 	If[OptionValue[Upload] && !NullQ[uploadPacket],
@@ -248,7 +256,7 @@ PrintStickers[
 
 	{safeOps, resolvedOps, modelObjects, incomingCache, updatedCache, updatedOps,
 		barcodeTexts, stickerTexts, uploadPacket, objectsList, stickerModels, expandedAndFlattenedObjects,
-		stickerModelPackets, modelPackets, objectPackets, expandedPositions, badObjs, badDestRequests},
+		stickerModelPackets, modelPackets, objectPackets, expandedPositions, badObjs, badDestRequests,updatedBy, safeObjectsList},
 
 	safeOps=SafeOptions[PrintStickers, ToList[ops]];
 
@@ -257,6 +265,7 @@ PrintStickers[
 
 	(* Make sure that singleton input is wrapped in a list before continuing *)
 	objectsList=ToList[objects];
+	safeObjectsList = Download[objectsList, Object];
 
 	(* If any of the input objects are not in the database, throw an error and return Failed. *)
 	With[{databaseMembers=DatabaseMemberQ[objectsList]},
@@ -396,15 +405,21 @@ PrintStickers[
 		expandedPositions
 	];
 
-	uploadPacket=If[MatchQ[$PersonID, ObjectP[]],
-		Association[
-			Object -> $PersonID,
-			Append[PrintStickersLog] -> Map[
-				{Now, Link[#]}&,
-				objectsList
-			]
-		],
-		Null
+	(* log who printed the stickers, and what stickers they printed *)
+	updatedBy = Lookup[resolvedOps, UpdatedBy];
+	uploadPacket=Which[
+
+		MatchQ[updatedBy, ObjectP[Object[User]]],
+		Flatten[{
+			<|Object -> updatedBy, Append[PrintStickersLog] -> Map[{Now, Link[#]}&, safeObjectsList]|>,
+			<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList]
+		}],
+
+		MatchQ[updatedBy, ObjectP[]],
+		<|Object-> #, Append[PrintStickersLog]-> {Now, Link[updatedBy]}|>&/@DeleteDuplicates[safeObjectsList],
+
+		True,
+		{}
 	];
 
 	If[OptionValue[Upload] && !NullQ[uploadPacket],
@@ -431,10 +446,13 @@ DefineOptions[
 
 Authors[printStickersCore]:={"ben", "olatunde.olademehin"};
 
-printStickersCore[object:(ObjectP[]|BarcodeP), barcodeText_String?(StringLength[#1] > 0 &), stickerText:{Repeated[_String, {3}]}, ops:OptionsPattern[]]:=
-	printStickersCore[{object}, {barcodeText}, {stickerText}, ops];
-printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(StringLength[#1] > 0 &)..}, stickerTexts:{{Repeated[_String, {3}]}..}, ops:OptionsPattern[]]:=Module[
-	{stickerGraphics,stickerSheets,opsList,stickersPerSheet,optionsToPass,interactiveQ,containerModels,return},
+printStickersCore[object : (ObjectP[] | BarcodeP), barcodeText_String?(StringLength[#1] > 0 &), stickerText : {Repeated[_String, {3}]}, ops : OptionsPattern[]] := printStickersCore[{object}, {barcodeText}, {stickerText}, ops];
+
+printStickersCore[objects : {(ObjectP[] | BarcodeP)..}, barcodeTexts : {_String?(StringLength[#1] > 0 &)..}, stickerTexts : {{Repeated[_String, {3}]}..}, ops : OptionsPattern[]] := Module[
+	{
+		stickerGraphics, stickerSheets, opsList, stickersPerSheet, optionsToPass, interactiveQ, containerModels,
+		return, safeOps, cache, updatePackets, upload, print, output
+	},
 
 	opsList=ToList[ops];
 
@@ -445,6 +463,13 @@ printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(Strin
 	(* Pull out the interactive option *)
 	interactiveQ = OptionValue[Interactive];
 
+	(* look up options *)
+	safeOps = SafeOptions[printStickersCore, ToList[ops]];
+
+	(* look up cache form options *)
+	{cache, upload, print, output} = Lookup[safeOps, {Cache, Upload, Print, Output}];
+
+	(* do a download from cache *)
 	(* Get the models of these objects, if they are an Object[Container]. This is because for Model[Container, Vessel, "2mL Tube"] we have to *)
 	(* move the right aligned text to the left since operators cut off the ends of the stickers to make them fit on the tube. *)
 	containerModels=Download[Replace[objects, {Except[ObjectP[Object[Container]]] -> Null}, {1}], Model[Object]];
@@ -456,36 +481,49 @@ printStickersCore[objects:{(ObjectP[]|BarcodeP)..}, barcodeTexts:{_String?(Strin
 	];
 
 	(* Assemble sticker Graphics into sheets if Print\[Rule]True or we want Output\[Rule]Notebook *)
-	stickerSheets=If[OptionValue[Print] || SameQ[OptionValue[Output], Notebook],
+	stickerSheets=If[TrueQ[print] || SameQ[output, Notebook],
 		assembleStickerSheets[stickerGraphics, stickersPerSheet, PassOptions[printStickersCore, assembleStickerSheets, opsList]],
 		Null
 	];
 
-	(* Set the NewStickerPrinted field in the objects. This field lets engine know that it should show the hashcode when *)
-	(* displaying the scan tile in engine. *)
-	Upload[If[MatchQ[#, ObjectP[]], <|Object->#, NewStickerPrinted->True|>, Nothing]&/@Download[objects, Object]];
+	(* Set the NewStickerPrinted field in the objects. This field lets engine know that it should show the hashcode when displaying the scan tile in engine. *)
+	(* set PermanentSticker to True as well *)
+	updatePackets = If[MatchQ[#, ObjectP[]] && TrueQ[print],
+
+		<|Object -> #, NewStickerPrinted -> True, PermanentSticker -> True|>,
+
+		Nothing
+
+	]& /@ Download[objects, Object];
+
+	(* upload the packets if upload is True *)
+	If[TrueQ[upload], Upload[updatePackets]];
 
 	(* Print and close sticker sheets and return Null if Print->True; otherwise, leave sheets open for examination *)
-	return = If[TrueQ[OptionValue[Print]],
+	return = Which[
+		TrueQ[print],
 			(
 				NotebookPrint[#,Interactive -> interactiveQ]& /@ stickerSheets;
 				NotebookClose /@ stickerSheets;
-			)
-		,
+			),
+
 		(* If Output\[Rule]Graphics, return the sticker graphics instead of the notebook. *)
-		If[SameQ[OptionValue[Output], Graphics],
+		SameQ[output, Graphics],
 			stickerGraphics,
 
+		True,
 			(* Otherwise, return the notebook. *)
 			stickerSheets
-		]
 	];
 
 	(* we want to kill JLink` from the context path since it shadows some sother symbols used in SLL *)
 	Experiment`Private`deleteJLink[];
 
 	(* output whatever we were going to return *)
-	return
+	If[TrueQ[upload],
+		return,
+		{return, updatePackets}
+	]
 ];
 
 

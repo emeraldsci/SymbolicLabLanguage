@@ -7,7 +7,7 @@
 
 
 (* Authors definition for Core`Private`AddTracingDefinition *)
-Authors[Core`Private`AddTracingDefinition]:={"xu.yi"};
+Authors[Core`Private`AddTracingDefinition]:={"hiren.patel"};
 
 AddTracingDefinition[f_String, rest___] := AddTracingDefinition[Symbol[f],rest];
 AddTracingDefinition[f_Symbol, tagRules_Association] := AddTracingDefinition[f,tagRules,Null];
@@ -48,7 +48,6 @@ AddTracingDefinition[f_Symbol, tagRules_Association, optionsPosition:(_Integer|N
 							generic tags for all function calls
 						*)
                         TagTrace["sll.function.name",fstring];
-	                    TagTrace["sll.function.context",Context[f]];
 						(* TraceExpression fails if values are too large, so shorten the call if necessary *)
 	                    TagTrace["sll.function.call", shrunkenStringExpression[Hold[f[args]]]];
 	                    TagTrace["sll.function.user", ToString[$PersonID,InputForm]];
@@ -179,7 +178,7 @@ addAnalysisLogging[] := Module[{parentAnalysisFunctions},
 	Add logging to all command builder Experiment functions.
 	Explicitly constructs companion functions in order to get companion-specific tags on them
 *)
-addExperimentLogging[] := Module[{parentExperimentFunctions},
+addExperimentLogging[] := Module[{parentExperimentFunctions, extraInputsFunction},
 	parentExperimentFunctions = DeleteDuplicates@Flatten[Values[$CommandBuilderFunctions["Experiment"]]];
 	Map[
 		(
@@ -193,6 +192,15 @@ addExperimentLogging[] := Module[{parentExperimentFunctions},
 			AddTracingDefinition["Valid"<>#<>"Q", <|"sll.function.category"->"Experiment", "sll.companion.type"->"ValidQ","sll.companion"->"True"|>];
 		)&,
 		parentExperimentFunctions
+	];
+
+	(* primitive framework has some functions that have *Inputs, trace them as well *)
+	extraInputsFunction = {"ExperimentCellPreparationInputs", "ExperimentInputs", "ExperimentManualCellPreparationInputs", "ExperimentManualSamplePreparationInputs", "ExperimentRoboticCellPreparationInputs", "ExperimentRoboticSamplePreparationInputs", "ExperimentSamplePreparationInputs"};
+	Map[
+		(
+			AddTracingDefinition[#, <|"sll.function.category"->"Experiment", "sll.companion.type"->"Inputs","sll.companion"->"True"|>]
+		)&,
+		extraInputsFunction
 	];
 ];
 

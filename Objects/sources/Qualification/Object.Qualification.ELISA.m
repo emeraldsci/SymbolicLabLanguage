@@ -256,6 +256,17 @@ DefineObjectType[Object[Qualification,ELISA],{
 			Description -> "The balance instrument used to weigh the WasherQualificationPlate before and after wash.",
 			Category -> "Plate Washer Test"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the WasherQualificationPlate is weighed before and after wash.",
+			Category -> "General"
+		},
 		WasherQualificationPlatePreWashWeight -> {
 			Format -> Single,
 			Class -> Link,

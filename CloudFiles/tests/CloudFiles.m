@@ -309,12 +309,12 @@ DefineTests[UploadCloudFile,
 
 		Test["File extensions are normalized so, e.g., uppercase image file extensions do not cause erroneous mismatches of MIME type:",
 			Module[
-				{turtle, t1, t2, t3, t4},
-				turtle=FindFile["ExampleData/turtle.jpg"];
-				t1=turtle;
-				t2=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.jpeg"}, OverwriteTarget -> True];
-				t3=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.JPG"}, OverwriteTarget -> True];
-				t4=CopyFile[turtle, FileNameJoin@{$TemporaryDirectory, "turtle.JPEG"}, OverwriteTarget -> True];
+				{ocelotPath, t1, t2, t3, t4},
+				ocelotPath=DownloadCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"], $TemporaryDirectory];
+				t1=ocelotPath;
+				t2=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.jpeg"}, OverwriteTarget -> True];
+				t3=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.JPG"}, OverwriteTarget -> True];
+				t4=CopyFile[ocelotPath, FileNameJoin@{$TemporaryDirectory, "ocelot.JPEG"}, OverwriteTarget -> True];
 
 				UploadCloudFile[{t1, t2, t3, t4}]
 			],

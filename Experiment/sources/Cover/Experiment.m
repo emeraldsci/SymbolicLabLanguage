@@ -169,7 +169,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> Instrument,
 				Default -> Automatic,
 				Description -> "The device used to help secure the cover to the top of the container.",
-				ResolutionDescription -> "Automatically set to a Model[Part, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp (if one exists), or a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp.  Otherwise, set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
+				ResolutionDescription -> "Automatically set to a Model[Part, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType->Crimp (if one exists and the Septum option is Null), or a Model[Instrument, Crimper] that has the same CoverFootprint as the calculated Cover if CoverType -> Crimp.  Otherwise, set to a Model[Instrument, PlateSealer] that has the same CoverFootprint as the calculated Cover if CoverType->Seal. Otherwise, is set to Null.",
 				AllowNull -> True,
 				Category -> "General",
 				Widget -> Widget[
@@ -248,7 +248,7 @@ DefineOptions[ExperimentCover,
 				OptionName -> Temperature,
 				Default -> Automatic,
 				Description -> "The temperature that will be used to heat the seal for sealing a plate when using heat-activated adhesive seal.",
-				ResolutionDescription -> "Automatically set to 180 Celsius or 185 Celsius if the Cover option resolves to a heat-activated adhesive plate seal .",
+				ResolutionDescription -> "If the Cover option resolves to a heat-activated adhesive plate seal, automatically set to 180 Celsius for a clear seal or 185 Celsius for a foil seal.",
 				AllowNull -> True,
 				Widget -> Widget[Type->Quantity,
 					Pattern :> RangeP[100 Celsius,190 Celsius],
@@ -358,6 +358,16 @@ DefineOptions[ExperimentCover,
 				Category->"General"
 			]
 		],
+		ModifyOptions[
+			EquivalentTransferEnvironmentsOption,
+			EquivalentTransferEnvironments,
+			{
+				OptionName -> EquivalentEnvironments,
+				Widget -> Widget[Type -> Expression, Pattern :> {(ObjectP[] | Null)...}, Size -> Line],
+				Description -> "A list of environments in which the covering should be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option will be set to Null when Preparation->Robotic (the covering will be performed inside of the Liquid Handler enclosure).",
+				Category -> "Hidden"
+			}
+		],
 		{
 			OptionName -> AluminumFoilRoll,
 			Default -> Automatic,
@@ -370,8 +380,18 @@ DefineOptions[ExperimentCover,
 				Pattern :> ObjectP[{Model[Item, Consumable], Object[Item, Consumable]}]
 			]
 		},
-		(*===Shared Options===*)
-		FastTrackOption,
+		{
+			OptionName -> Force,
+			Default -> False,
+			Description -> "Indicates if already covered inputs should be uncovered and recovered without triggering an error.",
+			AllowNull -> False,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			]
+		},
+        FastTrackOption,
 		PreparationOption,
 		ProtocolOptions,
 		ModifyOptions[WorkCellOption,
@@ -1347,7 +1367,7 @@ resolveExperimentCoverOptions[
 		plateSealModelPackets,defaultCapPrierInstrumentModelPackets,builtInCoverErrors,builtInCoverTest,conflictingStopperErrors, defaultCrimperPartModelPackets,
 		conflictingStopperTest,conflictingKeckClampErrors, conflictingKeckClampTest,coverContainerTest,containerLidCompatibleTests,containerLidCompatibleInvalidOptions,coverContainerErrors,resolvedCrimpingHeads,resolvedDecrimpingHeads,resolvedCrimpingPressures,
 		parentProtocolPackets,activeCart,defaultDecrimpingHeadPartModelPackets, defaultAmpuoleOpenerPackets, roboticPrimitiveQ,allowedWorkCells,resolvedWorkCell,
-		resolvedDecrimper, rootResourcePackets
+		resolvedDecrimper, rootResourcePackets, resolvedEquivalentEnvironments
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -1697,15 +1717,16 @@ resolveExperimentCoverOptions[
 		(*24*)resolvedPlateSealPaddles,
 		(*25*)containerLidCompatibleErrors,
 		(*26*)containsLiveCellsQs,
-		(*27*)plateSealSafeUseQs
+		(*27*)plateSealSafeUseQs,
+		(*28*)resolvedEquivalentEnvironments
 	}=Transpose@MapThread[
 		Function[{originalInputObject, containerPacket, containerModelPacket, objectSamplePackets, modelSamplePackets, containerRepeatedContainers, options},
 			Module[
 				{containerLidCompatibleQ,usePreviousCover, preResolvedCover, coverType, opaque, cover, coverModelPacket, coverLabel, septum,
 					instrument, instrumentModel, temperature, time, plateSealPaddle, parafilm, aluminumFoil, keckClamp, keepCovered, environment, sterileTechnique, sampleLabel,
 					sampleContainerLabel, crimpingHead, decrimpingHead, crimpingPressure, containerContainer, plateSealAdapter, decrimper,
-					previousCover, previousCoverModel, containerLidCompatibleError, containsLiveCellsQ, plateSealSafeUseQ,
-					semiResolvedDecrimper, semiResolvedInstrument},
+					previousCover, previousCoverModel, containerLidCompatibleError, containsLiveCellsQ, plateSealSafeUseQ, previousCoverModelPacket,
+					semiResolvedDecrimper, semiResolvedInstrument, equivalentEnvironments},
 
 				(* Pre-check the container's size to determine if it can fit our default black lid *)
 				containerLidCompatibleQ=If[MatchQ[containerModelPacket,PacketP[Model[Container,Plate]]]&&MatchQ[Lookup[containerModelPacket,Footprint],Plate],
@@ -1755,10 +1776,16 @@ resolveExperimentCoverOptions[
 				previousCover = Download[Lookup[containerPacket, PreviousCover], Object];
 				previousCoverModel = Download[
 					If[MatchQ[previousCover, ObjectP[]],
-						cacheLookup[previousCoverObjectPackets, previousCover, Model],
+						Download[fastAssocLookup[fastCacheBall, previousCover, Model], Object],
 						Null
 					],
 					Object
+				];
+
+				(* get the previous cover model packet once here so we don't have to many times below *)
+				previousCoverModelPacket = If[NullQ[previousCoverModel],
+					Null,
+					fetchPacketFromFastAssoc[previousCoverModel, fastCacheBall]
 				];
 
 				(* Resolve the UsePreviousCover option. *)
@@ -2051,18 +2078,39 @@ resolveExperimentCoverOptions[
 						Model[Item, Lid, "id:7X104v1N35pw"], (* "Aluminum Foil Cover" *)
 					(* Find a compatible cover based on CoverType/Opaque and the container's CoverFootprints. *)
 					True,
-						Module[{compatibleCoverFootprints,allCovers,engineDefaultCovers,nonHeatCovers,heatCovers},
+						Module[{compatibleCoverFootprints,allCovers,engineDefaultCovers,nonHeatCovers,heatCovers,
+							handCrimperExistsQ, allCoversUnsorted},
 							(* Get the container's compatible cover footprints. *)
 							compatibleCoverFootprints=Lookup[containerModelPacket, CoverFootprints];
 
+							(* determine if a hand crimper exists *)
+							handCrimperExistsQ = And[
+								MatchQ[coverType, Crimp],
+								MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Alternatives @@ compatibleCoverFootprints]
+							];
+
+
 							(* First, get all of our compatible covers. *)
-							allCovers=Cases[
+							allCoversUnsorted=Cases[
 								Flatten[{capModelPackets, lidModelPackets,plateSealModelPackets}],
 								KeyValuePattern[{
 									CoverType->coverType,
 									CoverFootprint->Alternatives@@compatibleCoverFootprints,
 									Opaque->If[MatchQ[Lookup[options, Opaque], BooleanP], Lookup[options, Opaque], _]
 								}]
+							];
+
+							(* this part is admittedly pretty weird *)
+							(* For crimped covers, I want to _prefer_ covers that can be hand crimped if that's an option, but if it's not then go with any other one that fits the container *)
+							(* I am saying (at least for now) that hand crimpers don't work very well with SeptumRequired caps (note also that this logic is also used below with instrument resolution)*)
+							(* Thus, of the covers, I want the SeptumRequired -> False | Null ones to be preferred over the SeptumRequired ones -> True, and they go first in the list since we go FirstOrDefault later on *)
+							(* theoretically, I _could_ just use SortBy here because alphabetically, False and Null come before True, but that feels too cute and implicit for my tastes, hence the double Cases *)
+							allCovers = If[handCrimperExistsQ,
+								Flatten[{
+									Cases[allCoversUnsorted, KeyValuePattern[{SeptumRequired -> False | Null}]],
+									Cases[allCoversUnsorted, KeyValuePattern[{SeptumRequired -> True}]]
+								}],
+								allCoversUnsorted
 							];
 
 							(* In case we have to use a heat-activated cover, if possible we prefer to use EngineDefault cover. *)
@@ -2073,7 +2121,7 @@ resolveExperimentCoverOptions[
 									Cases[allCovers, KeyValuePattern[{SealType->TemperatureActivatedAdhesive}]],
 									temporaryHeatCovers
 								]
-								];
+							];
 
 							(* We first prefer to use EngineDefault covers. *)
 							engineDefaultCovers=Module[{temporaryEngineDefaultCovers},
@@ -2170,8 +2218,14 @@ resolveExperimentCoverOptions[
 					MatchQ[resolvedPreparation, Robotic] && MatchQ[coverType, Place],
 						Null,
 
-					(* If we're using a crimp cap, we need to get a crimper. If a hand crimper exists for the chosen footprint, use that.  Otherwise, use the pneumatic one *)
-					MatchQ[coverType, Crimp] && MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Lookup[coverModelPacket, CoverFootprint]],
+					(* If we're using a crimp cap, we need to get a crimper. If a hand crimper exists for the chosen footprint AND we don't need a septum, use that.  Otherwise, use the pneumatic one *)
+					(* Septum exception is because using a septum can make the process a lot more problematic and we only tested the caps-already-have-a-built-in-septum case for the hand crimper *)
+					(* if we empirically find that using a septum with a hand crimper is fine then we can update this code and the procedure accordingly, but that's not where we are now *)
+					And[
+						MatchQ[coverType, Crimp],
+						MemberQ[Lookup[crimperPartModelPackets, CoverFootprint], Lookup[coverModelPacket, CoverFootprint]],
+						NullQ[septum]
+					],
 						FirstCase[crimperPartModelPackets, packet:KeyValuePattern[{CoverFootprint -> Lookup[coverModelPacket, CoverFootprint]}] :> Lookup[packet, Object]],
 					MatchQ[coverType, Crimp],
 						Lookup[
@@ -2323,20 +2377,25 @@ resolveExperimentCoverOptions[
 				];
 
 
-				(* If we use BioRad platesealer, resolve Temperature to 180 C. *)
-				temperature=Which[
+				(* Resolve the Temperature option *)
+				temperature = Which[
+					(* If we have a specified temperature, use it *)
 					MatchQ[Lookup[options, Temperature], Except[Automatic]],
-						Lookup[options, Temperature],
+					Lookup[options, Temperature],
+
+					(* If we are using the BioRad platesealer, resolve Temperature to 180 C for clear seals and 185 C for foil (opaque) seals *)
 					Or[
-						MatchQ[instrument, ObjectP[Model[Instrument, PlateSealer, "id:AEqRl9KEXbkd"]]],(* BioRad PlateSealer *)
+						MatchQ[instrument, ObjectP[Model[Instrument, PlateSealer, "id:AEqRl9KEXbkd"]]], (* BioRad PlateSealer *)
 						MatchQ[instrumentModel, ObjectP[Model[Instrument, PlateSealer, "id:AEqRl9KEXbkd"]]]
-						],
-						If[MatchQ[opaque,True],
-							180 Celsius,
-							185 Celsius
-							],
+					],
+					If[MatchQ[opaque, True],
+						185 Celsius,
+						180 Celsius
+					],
+
+					(* Otherwise use Null *)
 					True,
-						Null
+					Null
 				];
 
 				(* If we use biorad platesealer, resolve Time to 3.5 Second for SBS plates and 5 Second for digital PCR cartridge. *)
@@ -2443,7 +2502,7 @@ resolveExperimentCoverOptions[
 
 				(* Resolve the environment option. *)
 				(* Send in updated Prep value for proper environment determination. *)
-				environment = Module[{calculateCoverEnvironmentOptions},
+				{environment, equivalentEnvironments} = Module[{calculateCoverEnvironmentOptions, calculatedEnvironments},
 					(* Pass SterileTechnique->True for containers with live cells, since calculateCoverEnvironment relies on SterileTechnique->True to resolve to BSCs *)
 					calculateCoverEnvironmentOptions = If[
 						And[
@@ -2454,11 +2513,26 @@ resolveExperimentCoverOptions[
 						options
 					];
 
-					calculateCoverEnvironment[
-						objectSamplePackets,
-						containerRepeatedContainers,
-						Join[calculateCoverEnvironmentOptions, <|Preparation -> resolvedPreparation, ActiveCart -> activeCart|>]
-					]
+					calculatedEnvironments = Sort[ToList[
+						calculateCoverEnvironment[
+							objectSamplePackets,
+							containerRepeatedContainers,
+							(* it's important to pass in any relevant resolved options here; previoulsy we didn't do this and the resolved Instrument option wasn't being followed because this function only knew about the unresolved value *)
+							Join[
+								calculateCoverEnvironmentOptions,
+								<|
+									Preparation -> resolvedPreparation,
+									ActiveCart -> activeCart,
+									Instrument -> instrument
+								|>
+							]
+						]
+					]];
+
+					{
+						First[calculatedEnvironments],
+						calculatedEnvironments
+					}
 				];
 
 				(* Resolve the SterileTechnique option to True if we have cells in our sample. *)
@@ -2552,7 +2626,8 @@ resolveExperimentCoverOptions[
 					(*24*)plateSealPaddle,
 					(*25*)containerLidCompatibleError,
 					(*26*)containsLiveCellsQ,
-					(*27*)plateSealSafeUseQ
+					(*27*)plateSealSafeUseQ,
+					(*28*)equivalentEnvironments
 				}
 			]
 		],
@@ -2620,6 +2695,7 @@ resolveExperimentCoverOptions[
 			PlateSealPaddle->resolvedPlateSealPaddles,
 			KeepCovered->resolvedKeepCovereds,
 			Environment->resolvedEnvironments,
+			EquivalentEnvironments->resolvedEquivalentEnvironments,
 			SterileTechnique->resolvedSterileTechniques,
 
 			Name->Lookup[myOptions, Name],
@@ -3276,8 +3352,8 @@ resolveExperimentCoverOptions[
 	];
 
 	(* If the Cover field is already set in the Object[Container], it already has a cover and cannot be re-covered. *)
-	(* NOTE: ExperimentTransfer sets FastTrack->True which indicates that Cover shouldn't look at the current cover state. *)
-	alreadyCoveredErrors=If[MatchQ[Lookup[ToList[myOptions], FastTrack, False], True],
+	(* NOTE: ExperimentTransfer sets Force->True which indicates that Cover shouldn't look at the current cover state. *)
+	alreadyCoveredErrors=If[TrueQ[Lookup[ToList[myOptions], Force]] || TrueQ[Lookup[ToList[myOptions], FastTrack]],
 		{},
 		Flatten[{
 			MapThread[
@@ -3612,18 +3688,17 @@ coverResourcePackets[
 
 			(* Create resources for each of our environments. *)
 			uniqueEnvironmentResources=(#->Which[
-				(* special treatment for fumehood, we do not really care which model to use for uncovering if we are really going to use a fumehood, so just allow all models *)
-				MatchQ[#, ObjectP[Model[Instrument, HandlingStation, FumeHood, "id:1ZA60vzEmYv0"]]],
-					With[{currentFumeHoodModels= UnsortedComplement[Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, FumeHood]]], $SpecializedHandlingStationModels]},
-						Resource[Instrument -> currentFumeHoodModels]
-					],
-				MatchQ[#, ObjectP[{Model[Container], Object[Container]}]],
-					Resource[Sample->#],
-				MatchQ[#, ObjectP[{Model[Instrument], Object[Instrument]}]],
+				MatchQ[#, {ObjectP[Object[Instrument]]}],
+					Resource[Instrument->First[#]],
+				MatchQ[#, {ObjectP[Model[Instrument]]..}],
 					Resource[Instrument->#],
+				MatchQ[#, {ObjectP[Object[Container]]}],
+					Resource[Sample->First[#]],
+				MatchQ[#, {ObjectP[Model[Container]]..}],
+					Resource[Sample->#],
 				True,
 					Null
-			]&)/@DeleteDuplicates[Lookup[myResolvedOptions, Environment]];
+			]&)/@ DeleteDuplicates[Lookup[myResolvedOptions, EquivalentEnvironments]];
 
 			(* Create PlateSealAdapter resources. *)
 			uniquePlateSealAdapterResources=(#->Which[
@@ -3725,7 +3800,8 @@ coverResourcePackets[
 						septumResources,
 						stopperResources,
 						Lookup[uniqueInstrumentResources, #]&/@Lookup[myResolvedOptions, Instrument],
-						Lookup[uniqueEnvironmentResources, #]&/@Lookup[myResolvedOptions, Environment],
+						(* the resolved EquivalentEnvironments is a list of lists, wrapping Key here treats the input as a single key, rather than a list of keys which was the Lookup's default behavior *)
+						Lookup[uniqueEnvironmentResources, Key[#]]&/@Lookup[myResolvedOptions, EquivalentEnvironments],
 						Lookup[uniquePlateSealAdapterResources, #]&/@Lookup[myResolvedOptions, PlateSealAdapter],
 						Lookup[uniquePlateSealPaddleResources, #]&/@Lookup[myResolvedOptions, PlateSealPaddle],
 						capRacks,
@@ -3781,7 +3857,15 @@ coverResourcePackets[
 					Function[{options},
 						(* NOTE: Our options are still a list of map thread friendly options at this point, we need to merge them into *)
 						(* a single unit operation. *)
-						Cover@Cases[Normal@Merge[options, Join], Verbatim[Rule][Alternatives@@nonHiddenCoverOptions, _]]
+						With[{rawOptions = Normal[Merge[options, Join], Association]},
+							Cover[
+								Cases[
+									(* Force is a singleton option, so need to correct that *)
+									ReplaceRule[rawOptions, {Force -> First[Lookup[rawOptions, Force, {False}]]}],
+									Verbatim[Rule][Alternatives@@nonHiddenCoverOptions, _]
+								]
+							]
+						]
 					],
 					groupedMapThreadOptionsWithResources
 				],
@@ -3814,7 +3898,8 @@ coverResourcePackets[
 				Replace[DecrimpingHeads]->(Lookup[uniqueDecrimpingHeadResources, #]&)/@Lookup[myResolvedOptions, DecrimpingHead],
 				Replace[Decrimpers] -> (Lookup[uniqueDecrimperResources, #]&) /@ Lookup[myResolvedOptions, Decrimper],
 				Replace[CrimpingPressures]->Lookup[myResolvedOptions, CrimpingPressure],
-				Replace[Environment]->Link/@((Lookup[uniqueEnvironmentResources,#]&)/@Lookup[myResolvedOptions,Environment]),
+				(* the resolved EquivalentEnvironments is a list of lists, wrapping Key here treats the input as a single key, rather than a list of keys which was the Lookup's default behavior *)
+				Replace[Environment]->Link/@((Lookup[uniqueEnvironmentResources,Key[#]]&)/@Lookup[myResolvedOptions,EquivalentEnvironments]),
 				Replace[Temperatures]->Lookup[myResolvedOptions, Temperature],
 				Replace[Times]->Lookup[myResolvedOptions, Time],
 				Replace[Parafilm]->Lookup[myResolvedOptions, Parafilm],

@@ -1196,6 +1196,8 @@ Warning::ItemsContainerless="The DiscardContainer option will be ignored for the
 (* Singleton Input Overload *)
 DiscardSamples[mySample:ObjectP[{Object[Sample],Object[Item], Object[Container], Object[Part]}],myOptions:OptionsPattern[]]:=DiscardSamples[{mySample},myOptions];
 
+(* empty list gets an empty list *)
+DiscardSamples[{}, myOptions:OptionsPattern[]]:={};
 
 (* Core Overload: Listed Input - Pass to UploadStorageCondition for Disposal *)
 DiscardSamples[mySamples:{ObjectP[{Object[Sample],Object[Item], Object[Container],Object[Part]}]..},myOptions:OptionsPattern[]]:=Module[
@@ -12949,6 +12951,17 @@ DefineOptions[RestrictSamples,
 				Pattern :> ObjectP[{Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]}]
 			]
 		},
+		{
+			OptionName -> Reason,
+			Default -> Null,
+			Description -> "The reason for restricting these samples. This will be stored in the RestrictedLog field.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			]
+		},
 		OutputOption,
 		UploadOption
 	}
@@ -12961,7 +12974,7 @@ RestrictSamples[mySample:ObjectP[{Object[Sample], Object[Container],Object[Item]
 RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]...}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
 		optionsRule, previewRule, testsRule, resultRule,safeOptionsMinusHiddenOptions, updatedBy,
-		resolvedUpdatedBy, resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
+		resolvedUpdatedBy, reason, resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
 
 	(* make sure we're working with a list of options *)
 	listedOptions = ToList[ops];
@@ -13010,6 +13023,9 @@ RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Ite
 		updatedBy
 	], Object];
 
+	(* pull out the Reason option *)
+	reason = Lookup[safeOptionsMinusHiddenOptions, Reason, Null];
+
 	(* get the resolved options *)
 	resolvedOptionsNoHidden = ReplaceRule[safeOptionsMinusHiddenOptions, {UpdatedBy -> resolvedUpdatedBy}];
 
@@ -13035,7 +13051,7 @@ RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Ite
 		<|
 			Object->#,
 			Restricted->True,
-			Append[RestrictedLog] -> {{Now, True, Link[resolvedUpdatedBy]}},
+			Append[RestrictedLog] -> {{Now, True, Link[resolvedUpdatedBy], reason}},
 
 			If[MatchQ[#,ObjectP[Object[Sample]]],
 				Append[SampleHistory]->{
@@ -13221,6 +13237,17 @@ DefineOptions[UnrestrictSamples,
 				Pattern :> ObjectP[{Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]}]
 			]
 		},
+		{
+			OptionName -> Reason,
+			Default -> Null,
+			Description -> "The reason for unrestricting these samples. This will be stored in the RestrictedLog field.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			]
+		},
 		OutputOption,
 		UploadOption
 	}
@@ -13232,7 +13259,7 @@ UnrestrictSamples[mySample:ObjectP[{Object[Sample], Object[Container], Object[It
 (* Core Overload: Listed Input - Populate Restricted *)
 UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]...}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
-		optionsRule, previewRule, testsRule, resultRule, safeOptionsMinusHiddenOptions, updatedBy, resolvedUpdatedBy,
+		optionsRule, previewRule, testsRule, resultRule, safeOptionsMinusHiddenOptions, updatedBy, resolvedUpdatedBy, reason,
 		resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
 
 	(* make sure we're working with a list of options *)
@@ -13282,6 +13309,9 @@ UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[
 		updatedBy
 	];
 
+	(* pull out the Reason option *)
+	reason = Lookup[safeOptionsMinusHiddenOptions, Reason, Null];
+
 	(* get the resolved options *)
 	resolvedOptionsNoHidden = ReplaceRule[safeOptionsMinusHiddenOptions, {UpdatedBy -> resolvedUpdatedBy}];
 
@@ -13307,7 +13337,7 @@ UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[
 		<|
 			Object -> #,
 			Restricted -> False,
-			Append[RestrictedLog] -> {{Now, False, Link[resolvedUpdatedBy]}},
+			Append[RestrictedLog] -> {{Now, False, Link[resolvedUpdatedBy], reason}},
 
 			If[MatchQ[#,ObjectP[Object[Sample]]],
 				Append[SampleHistory]->{

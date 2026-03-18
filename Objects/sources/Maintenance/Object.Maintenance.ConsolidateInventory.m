@@ -232,6 +232,33 @@ DefineObjectType[Object[Maintenance, ConsolidateInventory], {
 			Category -> "General",
 			Developer->True,
 			IndexMatching -> RacksToEmpty
+		},
+		DestinationRackFull -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of DestinationRacks, indicate if the destination is full and can't accept any further items.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
+		},
+		ExpectedDestinationItemCounts -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of DestinationRacks, indicate the number of items of model ModelsToConsolidate in the rack before the consolidation movement.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
+		},
+		ExpectedDestinationAvailableCapacity -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of DestinationRacks, indicate the number of items of model ModelsToConsolidate it can fit before the consolidation movement.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
 		}
 
 	}

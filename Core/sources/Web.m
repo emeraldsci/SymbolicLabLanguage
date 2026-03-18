@@ -122,7 +122,7 @@ decodeSectionJSON[pages:{(ObjectReferenceP[{Object[Notebook, Page], Object[Noteb
 					(* Decode each of the (possibly multiple) sections *)
 					rawDecoded=decodeBase64StringToAssociation[#]& /@ encodedSectionJSON;
 
-					If[MemberQ[rawDecoded, $Failed] || MemberQ[rawDecoded, _ImportByteArray],
+					If[MemberQ[rawDecoded, $Failed] || MemberQ[rawDecoded, _ImportJSONToAssociation],
 						(* If decoding of any sections failed, display an error message and return Null *)
 						(
 							Message[PageSections::InvalidJSONSections, page];
@@ -142,9 +142,14 @@ decodeSectionJSON[pages:{(ObjectReferenceP[{Object[Notebook, Page], Object[Noteb
 
 (* Import/Export of Base64 encoded/decoded json data to usable associations, primarily with SectionsJSON *)
 (* Note: When possible these functions should be used over ExportJSON/ExportString/ImportString *)
-decodeBase64StringToAssociation[string_String]:=Module[{},
+decodeBase64StringToAssociation[string_String]:=Module[{byteArray, nonAssociationJSON},
 	If[MatchQ[string, ""], Return[$Failed]];
-	ImportByteArray[decodeBase64StringToByteArray[string], "RawJSON"]
+	byteArray = decodeBase64StringToByteArray[string];
+
+	(* convert the byte array to regular json with [ and ] and is not yet an association *)
+	(* doing this because ImportByteArray to RawJSON doesn't handle special characters well, but ImportJSONToAssociation DOES do this well *)
+	nonAssociationJSON = ImportByteArray[byteArray, "Text"];
+	ImportJSONToAssociation[nonAssociationJSON]
 ];
 
 encodeAssociationToBase64String[association_Association]:=Module[{byteArray},

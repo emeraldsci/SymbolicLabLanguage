@@ -454,6 +454,40 @@ DefineObjectType[Model[Instrument, PlateReader], {
 			Units -> RFU,
 			Description -> "The maximum relative fluorescence value which this instrument is detector capable of recording (any signal stronger then this simply maxes out by recording this value).",
 			Category -> "Operating Limits"
+		},
+		LoadingRetryLog -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				Protocol -> Link,
+				PlateReader -> Link,
+				LiquidHandler -> Link,
+				NumberOfSuccessfulLoadings -> Integer,
+				NumberOfFailedLoadings -> Integer,
+				FractionFailed -> Real
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				Protocol -> ObjectP[Object[Protocol]],
+				PlateReader -> ObjectP[Object[Instrument, PlateReader]],
+				LiquidHandler -> ObjectP[Object[Instrument, LiquidHandler]],
+				NumberOfSuccessfulLoadings -> GreaterEqualP[0, 1],
+				NumberOfFailedLoadings -> GreaterEqualP[0, 1],
+				FractionFailed -> GreaterEqualP[0]
+			},
+			Relation -> {
+				Date -> Null,
+				Protocol -> Object[Protocol],
+				PlateReader -> Object[Instrument, PlateReader],
+				LiquidHandler -> Object[Instrument, LiquidHandler],
+				NumberOfSuccessfulLoadings -> Null,
+				NumberOfFailedLoadings -> Null,
+				FractionFailed -> Null
+			},
+			(* No units for anything *)
+			Description -> "Performance tracking of the success rate for microfluidic chip sample loading and detection on all the instruments of this model. This applies only to the \"Lunatic\" plate reader model.",
+			Category -> "Experimental Results",
+			Developer -> True
 		}
 	}
 }];

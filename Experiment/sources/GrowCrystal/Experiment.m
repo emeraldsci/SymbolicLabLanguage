@@ -1147,31 +1147,7 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 	};
 
 	(* Get a list of all the possible CrystallizationScreeningMethod we may resolve to using memoized search. *)
-	(*
 	{allCrystallizationScreeningMethods, allCrystallizationScreeningPlates} = crystallizationMethodsSearch["Memoization"];
-	*)
-
-	(* As of Jan 02 2024, Search might not return all the plates. Hard code here until Search is fixed. *)
-	allCrystallizationScreeningMethods = {
-		Object[Method, CrystallizationScreening, "id:n0k9mGkmxKnk"],(*"Hampton Research GRAS Screen 2"*)
-		Object[Method, CrystallizationScreening, "id:Z1lqpMl96G50"],(*"Hampton Research SaltRx HT Screen"*)
-		Object[Method, CrystallizationScreening, "id:Vrbp1jbPEJ7m"],(*"Hampton Research SaltRx 1 Screen"*)
-		Object[Method, CrystallizationScreening, "id:8qZ1VWZ3bKBA"],(*"Hampton Research SaltRx 2 Screen"*)
-		Object[Method, CrystallizationScreening, "id:D8KAEvKJrW3l"],(*"Hampton Research MembFac HT Screen"*)
-		Object[Method, CrystallizationScreening, "id:Vrbp1jbPl7Lq"],(*"Hampton Research MembFac Screen"*)
-		Object[Method, CrystallizationScreening, "id:rea9jlaDMNap"](*"Hampton Research Crystal Screen Lite"*)
-	};
-	allCrystallizationScreeningPlates = {
-		Model[Container, Plate, Irregular, Crystallization, "id:E8zoYvzbBO1w"],(*"MRC Maxi 48 Well Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:01G6nvG865ad"],(*"48 Intelli 3 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:GmzlKjzbj4wM"],(*"96 MRC 2 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:4pO6dMO8A6lM"],(*"96 Intelli 3 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:O81aEB1ezmDx"],(*"96 MRC Under Oil Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:L8kPEjkEmXzw"],(*"MiTeGen 1 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:qdkmxzkxmWJp"],(*"MiTeGen 2 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:M8n3rxnr3x3m"],(*"MiTeGen 4 Drop Plate"*)
-		Model[Container, Plate, Irregular, Crystallization, "id:aXRlGnRGlnNj"](*"MiTeGen 6 Drop Plate"*)
-	};
 
 	(* Expose any objects whose values are embedded in the method file. *)
 	methodObjects = DeleteDuplicates@Join[Cases[Lookup[expandedSafeOps, CrystallizationScreeningMethod], ObjectP[]], allCrystallizationScreeningMethods];
@@ -1193,8 +1169,8 @@ ExperimentGrowCrystal[mySamples:ListableP[ObjectP[Object[Sample]]], myOptions:Op
 
 	(* Default instrument models from resolver. *)
 	defaultInstrumentObjects = {
-		Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Super STAR"*)
-		Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"],(*"Labcyte Echo 650"*)
+		Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Labcyte Echo 650"*)
+		Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"],(*"Super STAR"*)
 		Model[Instrument, CrystalIncubator, "id:6V0npvmnzzGG"](*"Formulatrix Rock Imager"*)
 	};
 
@@ -1756,13 +1732,13 @@ resolveExperimentGrowCrystalOptions[
 				(* Download the default instruments as well as supplied instruments to the same packets *)
 				Union[
 					Cases[ToList[suppliedReservoirDispensingInstrument], ObjectP[]],
-					{Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"]}(*Super STAR*)
+					{Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"]}(*Super STAR*)
 				],
 				Union[
 					Cases[ToList[suppliedDropSetterInstrument], ObjectP[]],
 					{
-						Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"], (*Super STAR*)
-						Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"](*Labcyte Echo 650*)
+						Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*"Labcyte Echo 650"*)
+						Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"](*"Super STAR"*)
 					}
 				],
 				Union[
@@ -2295,7 +2271,7 @@ resolveExperimentGrowCrystalOptions[
 			Model[Instrument, LiquidHandler, AcousticLiquidHandler, "id:o1k9jAGrz9MG"],(*Labcyte Echo 650*)
 		(* Otherwise, we use Hamilton Super Star to dispense microliter range of samples. *)
 		True,
-			Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"](*Super STAR*)
+			Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"](*"Super STAR"*)
 	];
 
 	(* Put the model information in a packet. *)
@@ -2325,7 +2301,7 @@ resolveExperimentGrowCrystalOptions[
 			resolvedDropSetterInstrument,
 		(* If not, pick Super STAR. *)
 		MatchQ[resolvedCrystallizationTechnique, SittingDropVaporDiffusion],
-			Model[Instrument, LiquidHandler, "id:7X104vnRbRXd"], (*Super STAR*)
+			Model[Instrument, LiquidHandler, "id:N80DNjkzez5W"],(*"Super STAR"*)
 		(* ReservoirDispensingInstrument should be Null when we are using MicrobatchUnderOil or MicrobatchWithoutOil technique. *)
 		True,
 			Null
@@ -6950,7 +6926,7 @@ growCrystalResourcePackets[
 		updatedDilutionBuffers, updatedAdditives, updatedSeedingSolutions, updatedCoCrystallizationReagents, updatedOils,
 		updatedTransferTable, updatedBufferPreparationTable, crystallizationPlateResource, crystallizationCoverResource,
 		crystallizationCoverPaddleResource, uniqueAssayPlates, uniqueAssayPlateReplacements, uniqueAssayPlateResources, imagerResource,
-		runTime, updatedDropCompositionTable, fumeHood, fumeHoodResource, samplesOutStorageCondition, manualProtocolPacket,
+		runTime, updatedDropCompositionTable, fumeHoodModels, fumeHoodResource, samplesOutStorageCondition, manualProtocolPacket,
 		simulation, sharedFieldPacket, finalizedPacket, allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule,
 		resultRule, testsRule
 	},
@@ -7054,16 +7030,16 @@ growCrystalResourcePackets[
 	|>&	/@ transferTable;
 
 	(* FumeHood model can be automatically selected. *)
-	fumeHood = If[And[
+	fumeHoodModels = If[And[
 		MatchQ[Lookup[expandedResolvedOptions, CoCrystallizationAirDryTemperature], Ambient|$AmbientTemperature],
 		GreaterQ[Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime], 1 Hour]
 		],
 		(* find all the non-deprecated fume hood models *)
-		Search[Model[Instrument,FumeHood], Deprecated != True],
+		commonFumeHoodHandlingStationModels["Memoization"],
 		Null
 	];
-	fumeHoodResource = If[!NullQ[fumeHood],
-		Resource[Name -> ToString[Unique[]], Instrument -> fumeHood, Time -> Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime]]
+	fumeHoodResource = If[!NullQ[fumeHoodModels],
+		Resource[Name -> ToString[Unique[]], Instrument -> fumeHoodModels, Time -> Lookup[expandedResolvedOptions, CoCrystallizationAirDryTime]]
 	];
 
 

@@ -116,8 +116,8 @@ DefineTests[
 				];
 				
 				UploadSampleModel[
-					"Test Sample Model 1 for UploadResin Unit Test",
-					Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "Test Sample Model 1 for UploadResin Unit Test",
 					Expires->False,
 					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 					State->Liquid,
@@ -406,8 +406,8 @@ DefineTests[
 				];
 
 				UploadSampleModel[
-					"Test Sample Model 1 for UploadResinOptions Unit Test",
-					Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "Test Sample Model 1 for UploadResinOptions Unit Test",
 					Expires->False,
 					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 					State->Liquid,
@@ -683,8 +683,8 @@ DefineTests[
 				];
 
 				UploadSampleModel[
-					"Test Sample Model 1 for ValidUploadResinQ Unit Test",
-					Composition->{{100 VolumePercent,Model[Molecule,"Water"]}},
+					{{100 VolumePercent,Model[Molecule,"Water"]}},
+					Name -> "Test Sample Model 1 for ValidUploadResinQ Unit Test",
 					Expires->False,
 					DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 					State->Liquid,

@@ -24,12 +24,19 @@ DefineOptions[ExperimentPrepareTransporter,
 			{
 				OptionName -> Transporter,
 				Default -> Automatic,
-				Description -> "The portable cooler or heater to select and configure before using it to transport the input item.",
-				ResolutionDescription -> "This is automatically determined based on the container size and its transporter temperature.",
+				Description -> "The portable transporter to select and configure before using it to transport the input item.",
+				ResolutionDescription -> "This is automatically determined based on the container size, its transporter temperature and the requirement on lined surface.",
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Instrument, PortableHeater], Object[Instrument, PortableCooler], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater]}]
+					Pattern :> ObjectP[{
+						Object[Instrument, PortableHeater],
+						Object[Instrument, PortableCooler],
+						Model[Instrument, PortableCooler],
+						Model[Instrument, PortableHeater],
+						Model[Container, Rack],
+						Object[Container, Rack]
+					}]
 				],
 				Category -> "General"
 			},
@@ -38,7 +45,7 @@ DefineOptions[ExperimentPrepareTransporter,
 				Default -> Automatic,
 				Description -> "The temperature the portable cooler or heaters needs to be set to.",
 				ResolutionDescription -> "This option is calculated from the TransportTemperature of the Object[Sample]; or if this field is not informed, it will instead match the TransportTemperature of the model.",
-				AllowNull -> False,
+				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Quantity,
 					Pattern :> RangeP[-80 Celsius, 105 Celsius],
@@ -65,9 +72,33 @@ DefineOptions[ExperimentPrepareTransporter,
 				AllowNull -> True,
 				Widget -> Widget[
 					Type -> Object,
-					Pattern :> ObjectP[{Object[Resource, Sample], Object[Sample], Object[Container], Object[Item], Model[Container], Model[Sample], Model[Item]}]
+					Pattern :> ObjectP[{Object[Resource, Sample], Object[Sample], Object[Container], Object[Item], Model[Container], Model[Sample], Model[Item], Object[Part], Model[Part], Model[Plumbing], Object[Plumbing], Model[Sensor], Object[Sensor], Model[Wiring], Object[Wiring]}]
 				],
 				Category -> "Hidden"
+			},
+			{
+				OptionName -> LinerRequired,
+				Default -> Automatic,
+				Description -> "Indicates if any sensitive portions of this input sample are open to the external environment and prone to contamination, thus requires lined surface.",
+				ResolutionDescription -> "Set to True if ExposedSurfaces of the input model is True and the input does not need temperature control, otherwise set to False.",
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Category -> "General"
+			},
+			{
+				OptionName -> Liner,
+				Default -> Automatic,
+				Description -> "Indicate the type of protective insert(s) that should be placed within or on top of the Transporter.",
+				ResolutionDescription -> "Automatically set according to the DefaultLinerModels field of the input model.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Object[Item, Liner], Model[Item, Liner]}]
+				],
+				Category -> "General"
 			},
 			IndexMatchingInput -> "experiment samples"
 		],
@@ -103,11 +134,12 @@ Error::InsufficientTransporterDimensions = "The specified transporter `1` cannot
 Error::InconsistentTemperatureSetting = "The specified TransportTemperature `1` for items `2` is not consistent with the current NominalTemperature of transporter `3`. Please consider changing either the Transporter or TransportTemperature option.";
 Error::IncorrectTemperatureRange = "The specified TransportTemperature `1` is not within the supported temperature range of transporters `2`. Please consider changing either the Transporter or TransportTemperature option.";
 Error::ConflictingTransportTemperature = "The containers `1` contain multiple samples with different TransportTemperature, therefore the TransportTemperature option cannot be automatically determined. Please specify this option manually.";
+Error::TemperatureControlForLiner = "The LinerRequired option for `1` is set to True while TransportTemperature is set to `2`. Liners cannot currently be used inside portable heater or coolers.";
 
 (* ::Subsubsection:: *)
 (*ExperimentPrepareTransporter main function*)
 
-ExperimentPrepareTransporter[myInputs:ListableP[ObjectP[{Object[Sample], Object[Item], Model[Item], Object[Container], Model[Container]}]], myOptions:OptionsPattern[]] := Module[
+ExperimentPrepareTransporter[myInputs:ListableP[ObjectP[{Object[Sample], Object[Item], Model[Item], Object[Container], Model[Container], Model[Part], Object[Part]}]], myOptions:OptionsPattern[]] := Module[
 	{
 		outputSpecification, listedSamples, listedOptions, output, validLengths, validLengthTests,
 		safeOptionsNamed, safeOpsTests, gatherTests, samplesWithPreparedSamples, safeOps,
@@ -191,7 +223,7 @@ ExperimentPrepareTransporter[myInputs:ListableP[ObjectP[{Object[Sample], Object[
 	];
 
 	(* Return early if our root protocol is Null for any reason *)
-	If[NullQ[parentProtocol],
+	If[NullQ[parentProtocol] && (!fastTrack),
 		Message[Error::NoParentProtocol];
 		Return[outputSpecification /. {
 			Result -> $Failed,
@@ -321,7 +353,7 @@ DefineOptions[
 	}
 ];
 
-resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Model[Item], Object[Container], Model[Container], Object[Sample]}]...}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[]] := Module[
+resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Model[Item], Object[Container], Model[Container], Object[Sample], Model[Part], Object[Part]}]...}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[]] := Module[
 	{
 		outputSpecification, output, gatherTests, messages, cache, fastAssoc, optionsAssociation,
 		roundedOptionsAssociation, roundingTests, unresolvedTransporters, unresolvedTransportTempertures, unresolvedTransporterIndices,
@@ -338,9 +370,13 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		duplicateOptionsPositionCorrectionRule, correctedDuplicateOptionsPosition, nonDuplicatePositionsRule, allOptionsPosition,
 		invalidInputs, invalidOptions, allTests, resolvedOptions, transporterObjectInOptions,
 		allPortableTransporterModels, allSampleObjects, sampleContainers, sampleToContainerRule, inputsNoSample,
-		allPortableTransporterModelPackets, inputPackets, inputModels, inputModelPackets, resolvedTransportTemperatures,
+		allTransporterModelPackets, inputPackets, inputModels, inputModelPackets, resolvedTransportTemperatures,
 		inputDownloadFields, instrumentModelDownloadFields, downloadedStuff, cacheBall, currentInstrumentDownloadFields, noDuplicateInputsNoSample,
-		transportTemperatureFromObjects, transportTemperatureConflictOptions, transportTemperatureConflictTests
+		transportTemperatureFromObjects, transportTemperatureConflictOptions, transportTemperatureConflictTests,
+		exposedSurfacesFromModel, resolvedLinerRequireds, linerTemperatureConflictQs, linerTemperatureConflictOptions,
+		linerTemperatureConflictTests, allLinedRackModels, rackTransporterObjectInOptions, rackDownloadFields, rackModelDownloadFields,
+		resolvedLinerRequiredsNoDuplicate, allTransporterModelInfoAssocs, resolvedLinerNoDuplicate, liners, noDuplicateLiners,
+		unresolvedLiners
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -356,8 +392,9 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 	parentProtocol = Lookup[myOptions, ParentProtocol, Null];
 
-	(* Extract Object[Instrument] in supplied Transporter option *)
+	(* Extract Object[Instrument] and Object[Container] in supplied Transporter option *)
 	transporterObjectInOptions = DeleteDuplicates[Cases[ToList[Lookup[myOptions, Transporter]], ObjectP[Object[Instrument]]]];
+	rackTransporterObjectInOptions = DeleteDuplicates[Cases[ToList[Lookup[myOptions, Transporter]], ObjectP[Object[Container]]]];
 
 	(* --- Search for and Download all the information we need for resolver and resource packets function --- *)
 
@@ -366,12 +403,14 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		Deprecated != True && InternalDimensions != Null
 	];
 
+	allLinedRackModels = LinedRackModels;
+
 	(* Define list of fields to download *)
 
 	(* Define list of fields to download for supplied inputs *)
 	(* input can be Model or Object; can be Sample, Container or Item *)
 	inputDownloadFields = {
-		Dimensions, TransportTemperature, Container, SelfStanding, TransportStable, Model, Contents
+		Dimensions, TransportTemperature, Container, SelfStanding, TransportStable, Model, Contents, ExposedSurfaces
 	};
 
 	instrumentModelDownloadFields = {
@@ -382,17 +421,29 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		Contents, Model, NominalTemperature, EnvironmentalSensors, Status, CurrentProtocol, TemperatureControlledResources
 	};
 
+	rackDownloadFields = {
+		Model, Contents, Container, ResourcesOnLiner, Liners
+	};
+
+	rackModelDownloadFields = {
+		Dimensions, Positions, DefaultLinerModels
+	};
+
 	downloadedStuff = Quiet[
 		Download[
 			{
 				(*1*)myInputs,
 				(*2*)allPortableTransporterModels,
-				(*3*)transporterObjectInOptions
+				(*3*)transporterObjectInOptions,
+				(*4*)allLinedRackModels,
+				(*5*)rackTransporterObjectInOptions
 			},
 			Evaluate[{
 				(*1*){Packet[Sequence @@ inputDownloadFields], Packet[Model[inputDownloadFields]], Packet[Container[Model[inputDownloadFields]]], Packet[Container[inputDownloadFields]], Packet[Field[Contents[[All,2]]][inputDownloadFields]], Packet[Field[Contents[[All,2]]][Model][inputDownloadFields]]},
 				(*2*){Packet[Sequence @@ instrumentModelDownloadFields]},
-				(*3*){Packet[Sequence @@ currentInstrumentDownloadFields], Packet[Field[Contents[[All,2]]][Model][Dimensions]], Packet[Field[Contents[[All,2]]][Model, Container]]}
+				(*3*){Packet[Sequence @@ currentInstrumentDownloadFields], Packet[Field[Contents[[All,2]]][Model][Dimensions]], Packet[Field[Contents[[All,2]]][Model, Container]]},
+				(*4*){Packet[Sequence @@ rackModelDownloadFields]},
+				(*5*){Packet[Sequence @@ rackDownloadFields], Packet[Model[rackModelDownloadFields]], Packet[LinedContainers[Field[Contents[[All,2]]][Model][{Dimensions}]]], Packet[LinedContainers[Field[Contents[[All,2]]][{Model}]]]}
 			}],
 			Cache -> cache
 		],
@@ -411,7 +462,9 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 	inputsNoSample = Replace[myInputs, sampleToContainerRule, 2];
 
-	allPortableTransporterModelPackets = Experiment`Private`fetchPacketFromFastAssoc[#, fastAssoc] &/@ allPortableTransporterModels;
+	(* Pull out the Model packets of all transporters, including heater, cooler and lined racks *)
+	allTransporterModelPackets = Experiment`Private`fetchPacketFromFastAssoc[#, fastAssoc] &/@ Join[allPortableTransporterModels, allLinedRackModels];
+	allTransporterModelInfoAssocs = appendTransporterInformation[{}, Transpose[{Lookup[allTransporterModelPackets, Object], ConstantArray[Null, Length[allTransporterModelPackets]], allTransporterModelPackets}]];
 
 	(* Convert list of rules to Association so we can Lookup, Append, Join as usual. *)
 	optionsAssociation = Association[myOptions];
@@ -515,7 +568,37 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		{unresolvedTransportTempertures, transportTemperatureFromObjects}
 	];
 
-	transportTemperatureNullErrors = NullQ /@ resolvedTransportTemperatures;
+	(* Read the ExposedSurfaces from the model packets *)
+	exposedSurfacesFromModel = Map[
+		Function[{modelPac},
+			And[
+				MatchQ[modelPac, PacketP[]],
+				TrueQ[Lookup[modelPac, ExposedSurfaces]]
+			]
+		],
+		inputModelPackets
+	];
+
+	(* Resolve LinerRequired option *)
+	resolvedLinerRequireds = MapThread[
+		Function[{valueFromOption, valueFromModel, transportTemp},
+			Which[
+				(* If specified in option, use it *)
+				MatchQ[valueFromOption, BooleanP], valueFromOption,
+				(* Otherwise, if TransportTemperature is not Null and not 25C, set to False *)
+				!MatchQ[transportTemp, (Null|$AmbientTemperature)], False,
+				(* other case set according to the model's ExposedSurfaces field *)
+				True, valueFromModel
+			]
+		],
+		{Lookup[roundedOptionsAssociation, LinerRequired], exposedSurfacesFromModel, resolvedTransportTemperatures}
+	];
+
+	(* Check errors on TransportTemperature resolved to Null. An exception is if we require liner, then the temperature can and should be Null *)
+	transportTemperatureNullErrors = MapThread[
+		(NullQ[#1] && MatchQ[#2, False])&,
+		{resolvedTransportTemperatures, resolvedLinerRequireds}
+	];
 
 	(* Null TransportTemperature errors *)
 	transportTemperatureNullOptions = If[MemberQ[transportTemperatureNullErrors, True] && messages,
@@ -541,6 +624,23 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		Nothing
 	];
 
+	(* Can't simutaneously requesting liner and temperature control *)
+	linerTemperatureConflictQs = MapThread[
+		(!MatchQ[#1, (Null|EqualP[$AmbientTemperature])] && TrueQ[#2])&,
+		{resolvedTransportTemperatures, resolvedLinerRequireds}
+	];
+
+	linerTemperatureConflictOptions = If[MemberQ[linerTemperatureConflictQs, True] && messages,
+		Message[Error::TemperatureControlForLiner, PickList[myInputs, linerTemperatureConflictQs], PickList[resolvedTransportTemperatures, linerTemperatureConflictQs]];
+		{TransportTemperature, LinerRequired},
+		{}
+	];
+
+	linerTemperatureConflictTests = If[gatherTests,
+		Test["Items with ExposedSurface option set to True must not request any non-ambient transport temperatures:", MemberQ[transportTemperatureConflictTests, $Failed], False],
+		Nothing
+	];
+
 	(* --------------------------------------------------- *)
 	(* ------------Resolve Transporter option------------- *)
 	(* --------------------------------------------------- *)
@@ -551,9 +651,9 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 	suppliedTransporterInfoAssocs = constructInitialTransporterInfoAssoc[fastAssoc, transporterObjectInOptions];
 
 	{
-		unresolvedTransporters, unresolvedTransporterIndices
+		unresolvedTransporters, unresolvedTransporterIndices, unresolvedLiners
 	} = Lookup[roundedOptionsAssociation,
-		{Transporter, TransporterIndex}
+		{Transporter, TransporterIndex, Liner}
 	];
 
 	(* Input may have duplicate Object[Container], or have multiple Object[Sample] from the same container. Make a variable to indicate positions of duplicate objects *)
@@ -566,9 +666,17 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 	];
 
 	(* Filter out the duplicated Inputs and corresponding value of index-matched options *)
-	{noDuplicateInputs, noDuplicateTransporter, resolvedTransportTemperaturesNoDuplicate, noDuplicateTransporterIndex, noDuplicateInputsNoSample} = Map[
+	{
+		noDuplicateInputs,
+		noDuplicateTransporter,
+		resolvedTransportTemperaturesNoDuplicate,
+		noDuplicateTransporterIndex,
+		noDuplicateInputsNoSample,
+		resolvedLinerRequiredsNoDuplicate,
+		noDuplicateLiners
+	} = Map[
 		PickList[#, duplicateObjectPositions, Null] &,
-		{myInputs, unresolvedTransporters, resolvedTransportTemperatures, unresolvedTransporterIndices, inputsNoSample}
+		{myInputs, unresolvedTransporters, resolvedTransportTemperatures, unresolvedTransporterIndices, inputsNoSample, resolvedLinerRequireds, unresolvedLiners}
 	];
 
 	noDuplicateInputPackets = fetchPacketFromFastAssoc[#, fastAssoc] &/@ noDuplicateInputsNoSample;
@@ -601,7 +709,11 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentPrepareTransporter,
 		<|
-			Transporter -> noDuplicateTransporter, TransportTemperature -> resolvedTransportTemperaturesNoDuplicate, TransporterIndex -> noDuplicateTransporterIndex
+			Transporter -> noDuplicateTransporter,
+			TransportTemperature -> resolvedTransportTemperaturesNoDuplicate,
+			TransporterIndex -> noDuplicateTransporterIndex,
+			LinerRequired -> resolvedLinerRequiredsNoDuplicate,
+			Liner -> noDuplicateLiners
 		|>
 	];
 
@@ -615,6 +727,7 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 	{
 		(*1*)resolvedTransportersNoDuplicate,
 		(*2*)resolvedTransporterIndeciesNoDuplicate,
+		(*3*)resolvedLinerNoDuplicate,
 		(*3*)noGoodTemperatureCandidateErrors,
 		(*4*)noGoodSizeCandidateErrors,
 		(*5*)insufficientSpaceErrors,
@@ -623,7 +736,7 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		(*8*)incorrectTemperatureRangeErrors
 	} = Transpose[
 		MapThread[
-			Function[{modelPacket, option, temperature, objectPacket},
+			Function[{modelPacket, option, temperature, needLinerQ, objectPacket},
 				Module[
 					{
 						itemHeight, itemArea, candidateCurrentTransporters, resolvedTransporter,
@@ -631,7 +744,8 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 						itemLength, itemWidth, noGoodSizeCandidateError, unresolvedTransporter,
 						transporterAssocToUseBeforeUpdate, transporterAssocToUseAfterUpdate, insufficientSpaceError,
 						insufficientDimensionsError, inconsistentTemperatureError, incorrectTemperatureRangeError,
-						itemDimensions, correctedItemDimensions
+						itemDimensions, correctedItemDimensions, transporterDefaultLiner, resolvedLiner,
+						unresolvedLiner
 					},
 
 					(* Extract item's dimensions and construct its height and area *)
@@ -661,13 +775,23 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 					sortedTransporterInfoAssocs = SortBy[currentTransporterInfoAssocs, Lookup[#, Area] &];
 
 					(* Try to find if we can fit the item in any existing transporters *)
-					candidateCurrentTransporters = Cases[
-						currentTransporterInfoAssocs,
-						KeyValuePattern[{
-							NominalTemperature -> EqualP[temperature],
-							Height -> GreaterEqualP[itemHeight],
-							Area -> GreaterEqualP[itemArea * $TransporterPackingFraction]
-						}]
+					candidateCurrentTransporters = If[needLinerQ,
+						Cases[
+							currentTransporterInfoAssocs,
+							KeyValuePattern[{
+								LinedContainer -> True,
+								Height -> (GreaterEqualP[itemHeight] | Null),
+								Area -> GreaterEqualP[itemArea * $TransporterPackingFraction]
+							}]
+						],
+						Cases[
+							currentTransporterInfoAssocs,
+							KeyValuePattern[{
+								NominalTemperature -> EqualP[temperature],
+								Height -> GreaterEqualP[itemHeight],
+								Area -> GreaterEqualP[itemArea * $TransporterPackingFraction]
+							}]
+						]
 					];
 
 					(* Set the following error-checking variables as False (i.e., no error) *)
@@ -675,14 +799,14 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 					(* If we have found a current transporter as candidate, then use it. Otherwise we need to go through some more steps to find a new one *)
 					{resolvedTransporter, resolvedTransporterIndex} = Which[
-						(* If the supplied Transporter option is an Object[Instrument], use it. It must be in the Assoc already *)
-						MatchQ[unresolvedTransporter, ObjectP[Object[Instrument]]],
+						(* If the supplied Transporter option is an Object, use it. It must be in the Assoc already *)
+						MatchQ[unresolvedTransporter, ObjectP[{Object[Instrument], Object[Container]}]],
 							Module[{relevantTransporterAssoc},
 								relevantTransporterAssoc = FirstCase[currentTransporterInfoAssocs, KeyValuePattern[Object -> unresolvedTransporter], <| Index -> Null |>];
 								{unresolvedTransporter, Lookup[relevantTransporterAssoc, Index]}
 							],
 						(* If the supplied Transporter option is a Model, check if it's already part of the candidate *)
-						MatchQ[unresolvedTransporter, ObjectP[Model[Instrument]]],
+						MatchQ[unresolvedTransporter, ObjectP[{Model[Instrument], Model[Container]}]],
 							Module[{relevantTransporterAssocs, transporterAssocToUse},
 								relevantTransporterAssocs = Cases[candidateCurrentTransporters, KeyValuePattern[Model -> unresolvedTransporter]];
 								(* if it is, use the first one *)
@@ -718,39 +842,51 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 						Module[
 							{
 								temperatureLimitedCandidates, sizeLimitedCandidates, finalCandidatePackets, finalCandidates,
-								finalResolvedTransporter, finalResolvedTransporterPacket
+								finalResolvedTransporter, finalResolvedTransporterPacket, linerLimitedCandidates
 							},
 
-							(* Find transporter models that can be adjusted to the temperature *)
-							temperatureLimitedCandidates = Cases[
-								allPortableTransporterModelPackets,
-								KeyValuePattern[{MaxTemperature -> GreaterEqualP[temperature], MinTemperature -> LessEqualP[temperature]}]
+							(* Find transporter models that can be adjusted to the temperature. If we are looking for racked container, then don't filter out anything here *)
+							temperatureLimitedCandidates = If[NullQ[temperature],
+								allTransporterModelInfoAssocs,
+								Cases[
+									allTransporterModelInfoAssocs,
+									KeyValuePattern[{MaxTemperature -> GreaterEqualP[temperature], MinTemperature -> LessEqualP[temperature]}]
+								]
 							];
 
 							(* If there's no transporter that has the proper temperature range, record error here *)
 							(* Note that don't throw error if TransportTemperature == Null. A different error will be thrown *)
 							noGoodTemperatureCandidateError = TrueQ[Length[temperatureLimitedCandidates] == 0];
 
+							(* Find transporter models that has liner *)
+							linerLimitedCandidates = If[needLinerQ,
+								Cases[
+									temperatureLimitedCandidates,
+									KeyValuePattern[{LinedContainer -> True}]
+								],
+								temperatureLimitedCandidates
+							];
+
 							(* Find transporter models that fits the input item. Assume the item always need to be upright *)
 							sizeLimitedCandidates = Cases[
-								temperatureLimitedCandidates,
+								linerLimitedCandidates,
 								Alternatives[
-									KeyValuePattern[{InternalDimensions -> {GreaterEqualP[itemLength], GreaterEqualP[itemWidth], GreaterEqualP[itemHeight]}}],
-									KeyValuePattern[{InternalDimensions -> {GreaterEqualP[itemWidth], GreaterEqualP[itemLength], GreaterEqualP[itemHeight]}}]
+									KeyValuePattern[{InternalDimensions -> {GreaterEqualP[itemLength], GreaterEqualP[itemWidth], (GreaterEqualP[itemHeight] | Null)}}],
+									KeyValuePattern[{InternalDimensions -> {GreaterEqualP[itemWidth], GreaterEqualP[itemLength], (GreaterEqualP[itemHeight] | Null)}}]
 								]
 							];
 
 							(* If there's no transporter that fits the item, record error here *)
-							noGoodSizeCandidateError = TrueQ[Length[sizeLimitedCandidates] == 0 && Length[temperatureLimitedCandidates] > 0];
+							noGoodSizeCandidateError = TrueQ[Length[sizeLimitedCandidates] == 0 && Length[linerLimitedCandidates] > 0];
 
 							finalCandidatePackets = Which[
 								(* If there's at least one model that satisfies both conditions, use them *)
 								Length[sizeLimitedCandidates] > 0, sizeLimitedCandidates,
-								(* Otherwise, if there's at least one that satisfies temperature condition, and we ignore oversized item, set to Null *)
+								(* Otherwise, if there's at least one that satisfies temperature and liner condition, and we ignore oversized item, set to Null *)
 								(* Note we are using this special format so it can go through downstream process and eventually returns Null as the resolvedTransporter *)
-								Length[temperatureLimitedCandidates] > 0 && ignoreOversizedItems, {<| Object -> Null |>},
-								(* If we had IgnoreOversizedItems -> False, then use the ones that at least satisfies temperature *)
-								Length[temperatureLimitedCandidates] > 0, temperatureLimitedCandidates,
+								Length[linerLimitedCandidates] > 0 && ignoreOversizedItems, {<| Object -> Null |>},
+								(* If we had IgnoreOversizedItems -> False, then use the ones that at least satisfies temperature/liner *)
+								Length[linerLimitedCandidates] > 0, linerLimitedCandidates,
 								(* Finally, if we really have nothing to use, set to Null *)
 								True, {<| Object -> Null |>}
 							];
@@ -768,6 +904,22 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 							(* One exception is if we resolve Transporter to Null, then the index should also be Null *)
 							{finalResolvedTransporter, If[NullQ[finalResolvedTransporter], Null, Length[currentTransporterInfoAssocs]]}
 						]
+					];
+
+					unresolvedLiner = Lookup[option, Liner];
+
+					transporterDefaultLiner = fastAssocLookup[fastAssoc, resolvedTransporter, DefaultLinerModels];
+
+					resolvedLiner = Which[
+						(* If option is specified, use it *)
+						!MatchQ[unresolvedLiner, Automatic],
+							unresolvedLiner,
+						(* Otherwise, if the transporter model has DefaultLinerModels populated, use the first one *)
+						ListQ[transporterDefaultLiner] && MemberQ[transporterDefaultLiner, {_, ObjectP[Model[Item, Liner]]}],
+							FirstCase[transporterDefaultLiner, x:{_, ObjectP[Model[Item, Liner]]} :> Last[x], Null],
+						(* All other cases use none *)
+						True,
+							Null
 					];
 
 					(* Find the transporter info we resolve to before we update the remaining available area. It's possible that we resolve to Null and can't find any *)
@@ -789,15 +941,19 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 							(* Note items are free to rotate while kept upright. So as long as item dimensions fit in one way, we say it's good *)
 							Or[
 								And[
-									Lookup[transporterAssocToUseAfterUpdate, Height] >= itemHeight,
 									Lookup[transporterAssocToUseAfterUpdate, InternalDimensions][[2]] >= itemWidth,
 									Lookup[transporterAssocToUseAfterUpdate, InternalDimensions][[1]] >= itemLength
 								],
 								And[
-									Lookup[transporterAssocToUseAfterUpdate, Height] >= itemHeight,
 									Lookup[transporterAssocToUseAfterUpdate, InternalDimensions][[1]] >= itemWidth,
 									Lookup[transporterAssocToUseAfterUpdate, InternalDimensions][[2]] >= itemLength
-								]
+								],
+								(* Allow skip checking of item height if we resolved to a rack as transporter with MaxHeight -> Null *)
+								And[
+									NullQ[Lookup[transporterAssocToUseAfterUpdate, Height]],
+									MatchQ[resolvedTransporter, ObjectP[{Model[Container], Object[Container]}]]
+								],
+								Lookup[transporterAssocToUseAfterUpdate, Height] >= itemHeight
 							]
 						]
 					];
@@ -820,6 +976,8 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 					(* Skip the check if resolvedTransporter == Null *)
 					incorrectTemperatureRangeError = !Or[
 						NullQ[resolvedTransporter],
+						(* Don't check temperature if Temperature == Null *)
+						NullQ[temperature],
 						TrueQ[
 							And[
 								Lookup[transporterAssocToUseAfterUpdate, MaxTemperature] >= temperature,
@@ -832,6 +990,7 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 					{
 						(*1*)resolvedTransporter,
 						(*2*)resolvedTransporterIndex,
+						(*3*)resolvedLiner,
 						(*3*)noGoodTemperatureCandidateError,
 						(*4*)noGoodSizeCandidateError,
 						(*5*)insufficientSpaceError,
@@ -842,7 +1001,7 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 				]
 			],
-			{noDuplicateInputModelPackets, mapThreadFriendlyOptions, resolvedTransportTemperaturesNoDuplicate, noDuplicateInputPackets}
+			{noDuplicateInputModelPackets, mapThreadFriendlyOptions, resolvedTransportTemperaturesNoDuplicate, resolvedLinerRequiredsNoDuplicate, noDuplicateInputPackets}
 		]
 	];
 
@@ -896,7 +1055,7 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 
 	(* Check if transporters have enough space to fit each single item separately *)
 	insufficentDimensionsOptions = If[MemberQ[insufficientDimensionsErrors, True] && messages,
-		Message[Error::InsufficientTransporterDimensions, PickList[resolvedTransportersNoDuplicate, insufficientDimensionsErrors, True], PickList[noDuplicateInputs, insufficientSpaceErrors, True]];
+		Message[Error::InsufficientTransporterDimensions, PickList[resolvedTransportersNoDuplicate, insufficientDimensionsErrors, True], PickList[noDuplicateInputs, insufficientDimensionsErrors, True]];
 		{Transporter},
 		{}
 	];
@@ -940,13 +1099,16 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 	(* now distribute options *)
 	transporters = resolvedTransportersNoDuplicate[[#]] &/@ allOptionsPosition;
 	transporterIndecies = resolvedTransporterIndeciesNoDuplicate[[#]] &/@ allOptionsPosition;
+	liners = resolvedLinerNoDuplicate[[#]] &/@ allOptionsPosition;
 
 	resolvedOptions = ReplaceRule[
 		myOptions,
 		{
 			Transporter -> transporters,
 			TransportTemperature -> resolvedTransportTemperatures,
-			TransporterIndex -> transporterIndecies
+			TransporterIndex -> transporterIndecies,
+			Liner -> liners,
+			LinerRequired -> resolvedLinerRequireds
 		}
 	];
 
@@ -960,7 +1122,8 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 		insufficentDimensionsOptions,
 		inconsistentTemperatureOptions,
 		inconsistentTemperatureRangeOptions,
-		transportTemperatureConflictOptions
+		transportTemperatureConflictOptions,
+		linerTemperatureConflictOptions
 	}]];
 
 	allTests = Cases[
@@ -972,7 +1135,8 @@ resolveExperimentPrepareTransporterOptions[myInputs:{ObjectP[{Object[Item], Mode
 			noGoodSizeCandidateTests,
 			noGoodTemperatureCandidateTests,
 			transportTemperatureNullTests,
-			transportTemperatureConflictTests
+			transportTemperatureConflictTests,
+			linerTemperatureConflictTests
 		}],
 		TestP
 	];
@@ -1000,7 +1164,7 @@ DefineOptions[
 	Options:>{HelperOutputOption, CacheOption, SimulationOption}
 ];
 
-prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], Object[Container], Model[Container], Object[Sample]}]...},myUnresolvedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..}, ops:OptionsPattern[]] := Module[
+prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], Object[Container], Model[Container], Object[Sample], Model[Part], Object[Part]}]...},myUnresolvedOptions:{(_Rule|_RuleDelayed)...},myResolvedOptions:{(_Rule|_RuleDelayed)..}, ops:OptionsPattern[]] := Module[
 	{
 		outputSpecification, output, gatherTests, messages, cache, expandedInputs,
 		expandedResolvedOptions, transporters, transporterIndecies, transportTemperature, transporterResources,
@@ -1008,7 +1172,8 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		previewRule, optionsRule, resolvedOptionsNoHidden, testsRule, resultRule, resourcePlacement,
 		uuid, temperatureControlledResources, transporterPickingTime, transporterConfigurationTime, checkpoints,
 		transporterResourcesNoDuplicates, transporterIndexMatchingTuple, transportTemperatureNoDuplicates, transporterIndexMatchingTupleNoDup,
-		fumeHoodResource, cableResources, cableResourcesNoDuplicates
+		cableResources, cableResourcesNoDuplicates, resourcesOnLiner, linedContainers, linerResources, liners,
+		linerResourcesNoDuplicates
 	},
 	(* Determine the requested output format of this function. *)
 	outputSpecification = OptionValue[Output];
@@ -1025,7 +1190,7 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentPrepareTransporter, {myInputs}, myResolvedOptions];
 
 	(* make resource for Transporters *)
-	{transporters, transporterIndecies, transportTemperature} = Lookup[expandedResolvedOptions, {Transporter, TransporterIndex, TransportTemperature}];
+	{transporters, transporterIndecies, transportTemperature, linedContainers, liners} = Lookup[expandedResolvedOptions, {Transporter, TransporterIndex, TransportTemperature, LinerRequired, Liner}];
 
 	uuid = CreateUUID[];
 
@@ -1036,11 +1201,29 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 					Resource[Instrument -> instrument],
 				ObjectP[Model[Instrument]],
 					Resource[Instrument -> instrument, Name -> uuid <> ToString[index] <> Download[instrument, ID]],
+				ObjectP[Object[Container]],
+					Resource[Sample -> instrument],
+				ObjectP[Model[Container]],
+					Resource[Sample -> instrument, Name -> uuid <> ToString[index] <> Download[instrument, ID], Rent -> True],
 				_,
 					Null
 			]
 		],
 		{transporters, transporterIndecies}
+	];
+
+	linerResources = MapThread[
+		Function[{liner, index},
+			Switch[liner,
+				ObjectP[Object[Item, Liner]],
+					Resource[Sample -> liner],
+				ObjectP[Model[Item, Liner]],
+					Resource[Sample -> liner, Name -> uuid <> ToString[index] <> Download[liner, ID]],
+				_,
+					Null
+			]
+		],
+		{liners, transporterIndecies}
 	];
 
 	cableResources = MapThread[
@@ -1054,11 +1237,11 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		{transporters, transporterIndecies}
 	];
 
-	transporterIndexMatchingTuple = Transpose[{transporterIndecies, transporterResources, transportTemperature, cableResources}];
+	transporterIndexMatchingTuple = Transpose[{transporterIndecies, transporterResources, transportTemperature, cableResources, linerResources}];
 
 	transporterIndexMatchingTupleNoDup = DeleteDuplicatesBy[transporterIndexMatchingTuple, First];
 
-	{transporterResourcesNoDuplicates, transportTemperatureNoDuplicates, cableResourcesNoDuplicates} = Transpose[transporterIndexMatchingTupleNoDup][[2;;4]];
+	{transporterResourcesNoDuplicates, transportTemperatureNoDuplicates, cableResourcesNoDuplicates, linerResourcesNoDuplicates} = Transpose[transporterIndexMatchingTupleNoDup][[2;;]];
 
 	(* compute ResourcePlacement field by pairing the Resource option and resolved Transporter option *)
 	(* If Resource option is Null, then use the input item *)
@@ -1072,8 +1255,11 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		{Lookup[expandedResolvedOptions, Resource], transporterResources, myInputs}
 	];
 
-	(* Find TemperatureControlledResources by remove entries with Transporter == Null, then take the first column *)
-	temperatureControlledResources = (DeleteCases[resourcePlacement, {_, Null}])[[All,1]];
+	(* Find TemperatureControlledResources by identify entries with Transporter == Instrument, then take the first column *)
+	temperatureControlledResources = First /@ PickList[resourcePlacement, transporters, ObjectP[{Object[Instrument], Model[Instrument]}]];
+
+	(* Find ResourcesOnLiner by identify entries with Transporter == Container, then take the first column *)
+	resourcesOnLiner = First /@ PickList[resourcePlacement, transporters, ObjectP[{Object[Container], Model[Container]}]];
 
 	(* Create checkpoints *)
 
@@ -1090,12 +1276,6 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 
 	protocolObject = CreateID[Object[Protocol, PrepareTransporter]];
 
-	(* Reserve a fumehood to set up heater *)
-	fumeHoodResource = If[MemberQ[transporters, ObjectP[{Object[Instrument, PortableHeater], Model[Instrument, PortableHeater]}]],
-		Resource[Instrument -> Model[Instrument, FumeHood, "id:P5ZnEj4P8kNO"]],
-		Null
-	];
-
 	protocolPacket = <|
 		Object -> protocolObject,
 		UnresolvedOptions -> myUnresolvedOptions,
@@ -1104,9 +1284,10 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 		Replace[Temperatures] -> transportTemperatureNoDuplicates,
 		Replace[ResourcePlacements] -> resourcePlacement,
 		Replace[TemperatureControlledResources] -> temperatureControlledResources,
+		Replace[ResourcesOnLiner] -> resourcesOnLiner,
 		Replace[Checkpoints] -> checkpoints,
-		FumeHood -> Link[fumeHoodResource],
-		Replace[PowerCables] -> cableResourcesNoDuplicates
+		Replace[PowerCables] -> cableResourcesNoDuplicates,
+		Replace[Liners] -> linerResourcesNoDuplicates
 	|>;
 
 
@@ -1164,22 +1345,23 @@ prepareTransporterResourcePackets[myInputs:{ObjectP[{Object[Item], Model[Item], 
 
 TransporterInformationAssociationP = AssociationMatchP[
 	Association[
-		Object -> (Null | ObjectP[{Object[Instrument, PortableCooler], Object[Instrument, PortableHeater], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater]}]),
-		Model -> ObjectP[{Model[Instrument, PortableCooler], Model[Instrument, PortableHeater]}],
+		Object -> (Null | ObjectP[{Object[Instrument, PortableCooler], Object[Instrument, PortableHeater], Model[Instrument, PortableCooler], Model[Instrument, PortableHeater], Object[Container], Model[Container]}]),
+		Model -> ObjectP[{Model[Instrument, PortableCooler], Model[Instrument, PortableHeater], Model[Container]}],
 		(* Index is a unique integer identifier to indicate multiple copies of the same model *)
 		Index -> _Integer,
 		(* Height of internal dimensions *)
-		Height -> DistanceP,
+		Height -> (DistanceP | Null),
 		(* Current available area after accounting for all contents *)
 		Area -> AreaP,
-		MinTemperature -> TemperatureP,
-		MaxTemperature -> TemperatureP,
+		MinTemperature -> (Null | TemperatureP),
+		MaxTemperature -> (Null | TemperatureP),
 		NominalTemperature -> (Null | TemperatureP),
-		InternalDimensions -> {DistanceP, DistanceP, DistanceP}
+		InternalDimensions -> {DistanceP, DistanceP, (DistanceP | Null)},
+		LinedContainer -> BooleanP
 	]
 ];
 
-appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociationP...}, myNewInfoTuple:{{(ObjectP[{Object[Instrument], Model[Instrument]}] | Null), (Null|TemperatureP), (Null | TransporterInformationAssociationP | PacketP[Model[Instrument]])}...}] := Module[
+appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociationP...}, myNewInfoTuple:{{(ObjectP[{Object[Instrument], Model[Instrument], Object[Container], Model[Container]}] | Null), (Null|TemperatureP), (Null | TransporterInformationAssociationP | PacketP[Model[]])}...}] := Module[
 	{newTransporters, nominalTemperatures, modelPackets, newAssocs},
 
 	(* The myNewInfoTuple is always in the following format *)
@@ -1187,22 +1369,88 @@ appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociation
 
 	newAssocs = MapThread[
 		Function[{transporter, temperature, modelPacket, index},
-			If[NullQ[transporter],
+			Which[
+				NullQ[transporter],
 				(* If transporter == Null, don't update anything *)
-				Nothing,
-				(* Otherwise, construct association of new transporters which format matches TransporterInformationAssociationP *)
-				Association[
-					Object -> transporter,
-					Model -> Lookup[modelPacket, Object],
-					Index -> Length[myPreviousAssocs] + index,
-					Height -> Lookup[modelPacket, InternalDimensions][[3]],
-					(* "Area" represents the current available area. At this point, we don't consider any contents yet *)
-					Area -> Times @@ (Lookup[modelPacket, InternalDimensions][[1;;2]]),
-					MinTemperature -> Lookup[modelPacket, MinTemperature],
-					MaxTemperature -> Lookup[modelPacket, MaxTemperature],
-					NominalTemperature -> temperature,
-					InternalDimensions -> Lookup[modelPacket, InternalDimensions]
-				]
+					Nothing,
+				(* If transporter is an instrument, it's a cooler or heater, construct association of new transporters which format matches TransporterInformationAssociationP *)
+				MatchQ[modelPacket, PacketP[Model[Instrument]]],
+					Association[
+						Object -> transporter,
+						Model -> Lookup[modelPacket, Object],
+						Index -> Length[myPreviousAssocs] + index,
+						Height -> Lookup[modelPacket, InternalDimensions][[3]],
+						(* "Area" represents the current available area. At this point, we don't consider any contents yet *)
+						Area -> Times @@ (Lookup[modelPacket, InternalDimensions][[1;;2]]),
+						MinTemperature -> Lookup[modelPacket, MinTemperature],
+						MaxTemperature -> Lookup[modelPacket, MaxTemperature],
+						NominalTemperature -> temperature,
+						InternalDimensions -> Lookup[modelPacket, InternalDimensions],
+						LinedContainer -> False
+					],
+				(* If transporter is a Rack, construct information using Null as temperature and LinedContainer -> True *)
+				MatchQ[modelPacket, PacketP[Model[Container, Rack]]],
+					Module[{dimensions, positions, firstPositionDimensions, correctedInternalDimensions},
+						(* For racks, use the first Position entry to calculate internal dimension *)
+						(* Substitute whatever unavailable using external Dimensions value *)
+
+						(* Find external dimensions *)
+						dimensions = Lookup[modelPacket, Dimensions];
+
+						(* Find the Positions *)
+						positions = Lookup[modelPacket, Positions];
+
+						(* Find the dimensions of the first position *)
+						firstPositionDimensions = If[MatchQ[positions, {_Association..}],
+							Lookup[First[positions], {MaxWidth, MaxDepth, MaxHeight}],
+							{Null, Null, Null}
+						];
+
+						(* Find the internal dimensions on the width and depth. Use values from Positions, if it's Null, use values from Dimensions *)
+						(* Do not use the external Height as internal height. If MaxHeight from Positions is Null, that means the rack has no lid and can fit item of any height *)
+						correctedInternalDimensions = Append[
+							MapThread[
+								If[NullQ[#1], #2, #1]&,
+								{
+									firstPositionDimensions[[1;;2]],
+									If[MatchQ[dimensions, {_, _, _}], dimensions[[1;;2]], {Null, Null}]
+								}
+							],
+							firstPositionDimensions[[3]]
+						];
+
+						Association[
+							Object -> transporter,
+							Model -> Lookup[modelPacket, Object],
+							Index -> Length[myPreviousAssocs] + index,
+							Height -> correctedInternalDimensions[[3]],
+							(* "Area" represents the current available area. At this point, we don't consider any contents yet *)
+							Area -> Times @@ (correctedInternalDimensions[[1;;2]]),
+							MinTemperature -> Null,
+							MaxTemperature -> Null,
+							NominalTemperature -> Null,
+							InternalDimensions -> correctedInternalDimensions,
+							LinedContainer -> True
+						]
+					],
+				(* If transporter model is already in TransporterInformationAssociationP, read the information *)
+				MatchQ[modelPacket, PacketP[Model[Instrument]]],
+					Association[
+						Object -> transporter,
+						Model -> Lookup[modelPacket, Object],
+						Index -> Length[myPreviousAssocs] + index,
+						Height -> Lookup[modelPacket, InternalDimensions][[3]],
+						(* "Area" represents the current available area. At this point, we don't consider any contents yet *)
+						Area -> Times @@ (Lookup[modelPacket, InternalDimensions][[1;;2]]),
+						MinTemperature -> Lookup[modelPacket, MinTemperature],
+						MaxTemperature -> Lookup[modelPacket, MaxTemperature],
+						NominalTemperature -> temperature,
+						InternalDimensions -> Lookup[modelPacket, InternalDimensions],
+						LinedContainer -> Lookup[modelPacket, LinedContainer]
+					],
+				(* All other case return nothing *)
+				True,
+					Nothing
 			]
 		],
 		{newTransporters, nominalTemperatures, modelPackets, Range[1, Length[newTransporters]]}
@@ -1212,7 +1460,7 @@ appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociation
 ];
 
 (* Single tuple overload *)
-appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociationP...}, myNewInfoTuple:{(ObjectP[{Object[Instrument], Model[Instrument]}] | Null), (Null|TemperatureP), (Null | PacketP[Model[Instrument]])}] := appendTransporterInformation[myPreviousAssocs, {myNewInfoTuple}];
+appendTransporterInformation[myPreviousAssocs:{TransporterInformationAssociationP...}, myNewInfoTuple:{(ObjectP[{Object[Instrument], Model[Instrument], Object[Container], Model[Container]}] | Null), (Null|TemperatureP), (Null | PacketP[Model[]])}] := appendTransporterInformation[myPreviousAssocs, {myNewInfoTuple}];
 
 DefineOptions[updateTransporterCapacity,
 	Options :> {
@@ -1254,7 +1502,7 @@ updateTransporterCapacity[myTransporterInfoAssocs:{TransporterInformationAssocia
 
 ];
 
-constructInitialTransporterInfoAssoc[myFastAssoc_Association, myCurrentTransporters:{ObjectP[Object[Instrument]]...}] := Module[
+constructInitialTransporterInfoAssoc[myFastAssoc_Association, myCurrentTransporters:{ObjectP[{Object[Instrument], Object[Container, Rack]}]...}] := Module[
 	{
 		initialTransportersPackets, initialTransporterModels, initialTransporterModelPackets, initialTransporterInfomationAssocsNoContents,
 		initialTransporterContents, initialContentsPackets, initialContentsModels, initialContentsModelPackets, initialContentsInfoAssoc,

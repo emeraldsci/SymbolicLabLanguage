@@ -102,12 +102,18 @@ DefineTests[ExperimentBioconjugationPreview,
         (*Upload Model samples so we can upload new sample objects later.*)
         {model1,model2}=UploadSampleModel[
           {
+            {
+              {1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationPreview test oligomer 1" <> $SessionUUID]},
+              {100 VolumePercent,Model[Molecule,"Water"]}
+            },
+            {
+              {1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationPreview test oligomer 2" <> $SessionUUID]},
+              {100 VolumePercent,Model[Molecule,"Water"]}
+            }
+          },
+          Name -> {
             "ExperimentBioconjugationPreview model test sample 1" <> $SessionUUID,
             "ExperimentBioconjugationPreview model test sample 2" <> $SessionUUID
-          },
-          Composition->{
-            {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationPreview test oligomer 1" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
-            {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationPreview test oligomer 2" <> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
           },
           IncompatibleMaterials->{{None},{None}},
           Expires->{True,True},
@@ -294,12 +300,12 @@ DefineTests[ExperimentBioconjugationOptions,
         (*Upload Model samples so we can upload new sample objects later.*)
         {model1,model2}=UploadSampleModel[
           {
-            "ExperimentBioconjugationOptions model test sample 1"<> $SessionUUID,
-            "ExperimentBioconjugationOptions model test sample 2"<> $SessionUUID
-          },
-          Composition->{
             {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationOptions test oligomer 1"<> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
             {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ExperimentBioconjugationOptions test oligomer 2"<> $SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+          },
+          Name -> {
+            "ExperimentBioconjugationOptions model test sample 1"<> $SessionUUID,
+            "ExperimentBioconjugationOptions model test sample 2"<> $SessionUUID
           },
           IncompatibleMaterials->{{None},{None}},
           Expires->{True,True},
@@ -496,12 +502,12 @@ DefineTests[ValidExperimentBioconjugationQ,
         (*Upload Model samples so we can upload new sample objects later.*)
         {model1,model2}=UploadSampleModel[
           {
-            "ValidExperimentBioconjugationQ model test sample 1"<>$SessionUUID,
-            "ValidExperimentBioconjugationQ model test sample 2"<>$SessionUUID
-          },
-          Composition->{
             {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ValidExperimentBioconjugationQ test oligomer 1"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}},
             {{1 Milligram/Milliliter,Model[Molecule,Oligomer,"ValidExperimentBioconjugationQ test oligomer 2"<>$SessionUUID]},{100 VolumePercent,Model[Molecule,"Water"]}}
+          },
+          Name -> {
+            "ValidExperimentBioconjugationQ model test sample 1"<>$SessionUUID,
+            "ValidExperimentBioconjugationQ model test sample 2"<>$SessionUUID
           },
           IncompatibleMaterials->{{None},{None}},
           Expires->{True,True},

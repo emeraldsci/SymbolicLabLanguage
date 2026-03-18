@@ -59,6 +59,14 @@ DefineObjectType[Object[User], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		Department -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> EmeraldDepartmentP | _String,
+			Description -> "The department or function to which the user belongs in their parent organization.",
+			Category -> "Organizational Information",
+			Abstract -> True
+		},
 
 		(* --- Personal Information --- *)
 		FirstName -> {
@@ -83,6 +91,14 @@ DefineObjectType[Object[User], {
 			Class -> String,
 			Pattern :> _String,
 			Description -> "The person's family name (surname).",
+			Category -> "Personal Information",
+			Abstract -> True
+		},
+		FullName -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The person's full name (first name and last name combined).",
 			Category -> "Personal Information",
 			Abstract -> True
 		},
@@ -118,6 +134,7 @@ DefineObjectType[Object[User], {
 			Description->"The skill sets this person has or is working on obtaining.",
 			Category->"Operations Information"
 		},
+
 
 		(* --- Team Information --- *)
 		FinancingTeams -> {

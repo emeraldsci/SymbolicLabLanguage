@@ -2689,6 +2689,19 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       Variables:>{options}
     ],
     Example[
+      {Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options=ExperimentSupercriticalFluidChromatography[
+        {Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 3" <> $SessionUUID]},
+        CentrifugeIntensity -> 1001 RPM,
+        Output -> Options
+      ];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
+    ],
+    Example[
       {Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
       options=ExperimentSupercriticalFluidChromatography[
         {Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 3" <> $SessionUUID]},
@@ -2997,6 +3010,19 @@ DefineTests[ExperimentSupercriticalFluidChromatography,
       0.08 Milliliter,
       EquivalenceFunction -> Equal,
       Variables:>{options}
+    ],
+    Example[
+      {Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentSupercriticalFluidChromatography[
+        {Object[Sample, "ExperimentSFC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentSFC Test Sample 3" <> $SessionUUID]},
+        AliquotAmount -> 0.08101 Milliliter,
+        Output -> Options
+      ];
+      Lookup[options, AliquotAmount],
+      81 Microliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[
       {Options,AliquotSampleLabel,"Set name labels for aliquots taken from the input samples:"},

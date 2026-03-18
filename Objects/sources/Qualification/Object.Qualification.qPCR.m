@@ -142,7 +142,44 @@ DefineObjectType[Object[Qualification, qPCR], {
 			],
 			Description -> "Analysis performed to fit standard quantification cycle vs Log(dilution) in order to determine PCR efficiency.",
 			Category -> "Experimental Results"
+		},
+		(*ViiA7 Specific Fields*)
+		VerificationPlate -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Plate],
+				Object[Container, Plate]
+			],
+			Description -> "Indicates the plate used to qualify the target thermocycler.",
+			Category -> "General",
+			Abstract -> True
+		},
+		VerificationReportFolderPath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "Address of the folder used to store the verification report files.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		VerificationReportFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The file paths where the verification report is located.",
+			Category -> "General",
+			Developer -> True
+		},
+		VerificationReportFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The verification report file from the instrument software.",
+			Category -> "General",
+			Developer -> False
 		}
-
 	}
 }];

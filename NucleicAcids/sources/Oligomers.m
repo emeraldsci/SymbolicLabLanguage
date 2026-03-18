@@ -1118,13 +1118,23 @@ TrajectoryRegression[in:TrajectoryP,ss:{SpeciesP...},tt:{(_?NumericQ|_?TimeQ|End
 
 evalInterpolate[species_,xvals_,tvals_,ss_,tt_,ipOrder_]:= Module[{interps,tsecs,ypreds},
 	(* raw time values, in seconds *)
-	tsecs =convertToSecond/@(tt/.{End:>Last[tvals]});
+	tsecs = convertToSecond/@(tt/.{End:>Last[tvals]});
 	(* create an interpolation function for each species *)
 	interps = Table[
 		Quiet[Interpolation[Transpose[{perturbedTimes[tvals],First[Pick[Transpose[xvals],SameQ[s,#]&/@sortAndReformatStructures[species]]]}], InterpolationOrder -> ipOrder]],
 		{s,sortAndReformatStructures[ss]}];
 	(* evaluate the interpolation functions at every time *)
-	ypreds = Map[#[tsecs]&,interps];
+	(* need this With call because InterpolatingFunction behaves differently between 13.3.1 and 14.2 (sometimes the former gives a list containing an entry while the latter gives just that single entry) *)
+	(* we want to be consistent across both so we need to have the list if it's not there *)
+	ypreds = Map[
+		With[{functionOutput = #[tsecs]},
+			If[ListQ[functionOutput],
+				functionOutput,
+				ToList[functionOutput]
+			]
+		]&,
+		interps
+	];
 	(* transpose back they're grouped by time point instead of species *)
 	Transpose[ypreds]
 ];

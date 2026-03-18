@@ -142,6 +142,39 @@ DefineObjectType[Object[Data, Appearance], {
 			Description -> "Returns the cropped image of the sample.",
 			Category -> "Experimental Results",
 			Abstract -> True
+		},
+
+		(* --- Color Reference Information --- *)
+		ColorReferences -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> ColorReferencesP,
+			Description -> "The set of color standards used to compare color intensity with the sample whose appearance is captured in this data.",
+			Category -> "Imaging Specifications"
+		},
+		ColorReferenceSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The color reference standards imaged together with the sample in order to compare color intensity.",
+			Category -> "Imaging Specifications"
+		},
+		MoreIntenseColorReferences -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The color reference standards that the operator has determined are equally or more intensely colored than the sample.",
+			Category -> "Experimental Results"
+		},
+		LessIntenseColorReferences -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The color reference standards that the operator has determined are less intensely colored than the sample.",
+			Category -> "Experimental Results"
 		}
 	}
 }];

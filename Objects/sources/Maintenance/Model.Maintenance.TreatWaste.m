@@ -23,6 +23,32 @@ DefineObjectType[Model[Maintenance, TreatWaste], {
 			Units -> Second,
 			Description -> "The length of time for which the source samples are incubated with bleach.",
 			Category -> "General"
+		},
+		BleachContainerModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The model of the BleachContainers that are loaded with bleach and brought to the BisoafetyCabinet to treat the liquid biohazard samples.",
+			Category -> "General"
+		},
+		FunnelModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part, Funnel],
+			Description -> "The model of the funnel used to facilitate the transfer of liquid biohazard waste to the BleachContainers in the BiosafetyCabinet.",
+			Category -> "General",
+			Developer -> True
+		},
+		FunnelBathContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Vessel],
+			Description -> "The container model that is used to hold the Funnel in a bleach bath after transferring liquid biohazard waste from all batches.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }];

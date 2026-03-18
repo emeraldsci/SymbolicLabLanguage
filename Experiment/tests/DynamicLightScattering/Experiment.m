@@ -2490,6 +2490,7 @@ DefineTests[ExperimentDynamicLightScattering,
     (* - Sample Prep unit tests - *)
     Example[{Options, PreparatoryUnitOperations, "Specify prepared samples to be run in a dynamic light scattering experiment:"},
       options = ExperimentDynamicLightScattering["Protein Container",
+        CollectStaticLightScattering -> False,
         PreparatoryUnitOperations -> {
           LabelContainer[
             Label -> "Protein Container",
@@ -2607,11 +2608,19 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], CentrifugeIntensity -> 1000 * RPM, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
       Lookup[options, CentrifugeIntensity],
-      1000 * RPM,
+      1000 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
     ],
     (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
     Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
@@ -2680,7 +2689,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterMaterial -> GxF, CollectStaticLightScattering -> False, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "50 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterMaterial -> GxF, CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, PrefilterMaterial],
       GxF,
       Variables :> {options}
@@ -2692,7 +2701,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, CollectStaticLightScattering -> False, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "50 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, PrefilterPoreSize],
       1. * Micrometer,
       Variables :> {options}
@@ -2704,7 +2713,7 @@ DefineTests[ExperimentDynamicLightScattering,
       Variables :> {options}
     ],
     Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-      options = ExperimentDynamicLightScattering[Object[Sample, "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], CollectStaticLightScattering -> False, Output -> Options];
+      options = ExperimentDynamicLightScattering[Object[Sample, "50 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], CollectStaticLightScattering -> False, Output -> Options];
       Lookup[options, FilterHousing],
       ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
       Variables :> {options}
@@ -2776,6 +2785,14 @@ DefineTests[ExperimentDynamicLightScattering,
       0.49 * Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], AliquotAmount -> 0.4901 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      0.49 Milliliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentDynamicLightScattering[Object[Sample, "Test 10 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID], AssayVolume -> 0.5 * Milliliter, Output -> Options];
@@ -3065,7 +3082,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {10*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3077,7 +3095,8 @@ DefineTests[ExperimentDynamicLightScattering,
                 {10*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {20*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test 100 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3088,7 +3107,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {50*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3099,7 +3119,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {20*Micromolar,Link[Model[Molecule, Protein, "Test 40 kDa Model[Molecule,Protein] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3110,7 +3131,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {10*(Milligram/Milliliter),Link[Model[Molecule, cDNA, "Test Model[Molecule,cDNA] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3121,7 +3143,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {10*(Milligram/Milliliter),Link[Model[Molecule, Oligomer, "Test Model[Molecule,Oligomer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3132,7 +3155,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {10*(Milligram/Milliliter),Link[Model[Molecule, Polymer, "Test Model[Molecule,Polymer] for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>,
             <|
               Type->Model[Sample],
@@ -3143,7 +3167,8 @@ DefineTests[ExperimentDynamicLightScattering,
               Replace[Composition]->{
                 {10*(Milligram/Milliliter),Link[Model[Molecule, Protein, "Test Model[Molecule,Protein] with no MolecularWeight for ExperimentDynamicLightScattering Tests" <> $SessionUUID]]},
                 {100*VolumePercent,Link[Model[Molecule, "Water"]]}
-              }
+              },
+              Replace[IncompatibleMaterials] -> {None}
             |>
           }
         ];
@@ -3216,7 +3241,7 @@ DefineTests[ExperimentDynamicLightScattering,
             1.5*Milliliter,
             1.5*Milliliter,
             1.5*Milliliter,
-            25*Milliliter,
+            50*Milliliter,
             1.5*Milliliter,
             1.7*Milliliter,
             1.5*Milliliter,
@@ -3236,7 +3261,7 @@ DefineTests[ExperimentDynamicLightScattering,
             "Test sample in SampleLoadingPlate for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Test 1 mL water for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Test unknown concentration protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
-            "25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID,
+            "50 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID,
             "Test Model-less protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Mixture of proteins sample for ExperimentDynamicLightScattering" <> $SessionUUID,
             "Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID,
@@ -3375,7 +3400,7 @@ dlsUnitTestCleanUp[]:=Module[{objects,existingObjects},
       Object[Sample,"Test sample in SampleLoadingPlate for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Test 1 mL water for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Test unknown concentration protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
-      Object[Sample,"25 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID],
+      Object[Sample,"50 mL water sample in 50mL Tube for ExperimentDynamicLightScattering tests" <> $SessionUUID],
       Object[Sample,"Test Model-less protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Mixture of proteins sample for ExperimentDynamicLightScattering" <> $SessionUUID],
       Object[Sample,"Test 50 mg/mL 40 kDa protein sample for ExperimentDynamicLightScattering" <> $SessionUUID],

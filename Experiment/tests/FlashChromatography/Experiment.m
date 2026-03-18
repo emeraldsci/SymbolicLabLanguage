@@ -2107,6 +2107,14 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFlashChromatography[Object[Sample, "Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentFlashChromatography[Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],CentrifugeTime->10*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -2277,6 +2285,14 @@ DefineTests[
 			0.12*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFlashChromatography[Object[Sample, "Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID], AliquotAmount -> 0.12001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.12 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentFlashChromatography[Object[Sample,"Sample 1 for ExperimentFlashChromatography Testing"<>$SessionUUID],AssayVolume->0.12*Milliliter,Output->Options];
@@ -6803,14 +6819,11 @@ DefineTests[
 			Variables:>{protocol}
 		]
 	},
+	TurnOffMessages :> {Warning::InaccurateBalance, Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance},
 	SymbolSetUp:>{
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
 		$CreatedObjects={};
 	},
 	SymbolTearDown:>{
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
 		EraseObject[$CreatedObjects,Force->True,Verbose->False]
 	}
 ];

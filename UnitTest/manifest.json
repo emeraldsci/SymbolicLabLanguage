@@ -51,6 +51,7 @@
 		"LoadTests",
 		"MessageArguments",
 		"MessageFailures",
+		"NamedObjects",
 		"Outcome",
 		"Output",
 		"OutputFormat",

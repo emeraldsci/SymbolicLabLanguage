@@ -13,24 +13,24 @@
 DefineTests[runSyncBilling,
 	{
 		Example[{Basic, "Create a new billing object for a financing team with no bill but with a pricing scheme:"},
-			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> False];
+			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> False, Time -> EstimatedTime];
 			Download[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], {CurrentBills[[All,1]], CurrentBills[[All,1]][Notebook]}],
 			{{ObjectP[Object[Bill]]..},{ObjectP[Object[LaboratoryNotebook,"Test lab notebook for runSyncBilling tests"<>$SessionUUID]]..}},
 			TimeConstraint -> 400
 		],
 		Example[{Options, Notify, "Returns a table summarizing the results of the SyncBilling when Notify -> False:"},
-			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> False],
+			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> False, Time -> EstimatedTime],
 			_Pane,
 			TimeConstraint -> 300
 		],
 		(*tasks wont be created on test db so this wont be spamming anyone*)
 		Example[{Options, Notify, "Use the Notify option to alert business team when SyncBilling is complete:"},
-			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> True],
+			runSyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Notify -> True, Time -> EstimatedTime],
 			_Pane,
 			TimeConstraint -> 300
 		],
 		Example[{Additional, "Returns a message indicating that no active teams were found when given an empty list:"},
-			runSyncBilling[{}, Notify -> False],
+			runSyncBilling[{}, Notify -> False, Time -> EstimatedTime],
 			_String,
 			TimeConstraint -> 300
 		]
@@ -739,7 +739,7 @@ DefineTests[runSyncBilling,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -1462,7 +1462,7 @@ DefineTests[runSyncBilling,
 
 			(* syncbilling to update the bill object*)
 			Block[{$DeveloperSearch = True}, Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for runSyncBilling testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			]];
 
@@ -1604,7 +1604,7 @@ DefineTests[runSyncBilling,
 DefineTests[SyncBilling,
 	{
 		Example[{Basic, "Create a new billing object for a financing team with no bill but with a pricing scheme:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Verbose -> True];
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Verbose -> True, Time -> EstimatedTime];
 			{{result}, {{notebook}}} =Download[
 				{
 					{Object[Team,Financing,"A test financing team object for SyncBilling testing"<>$SessionUUID]},
@@ -1620,46 +1620,52 @@ DefineTests[SyncBilling,
 			Variables:>{notebook, result}
 		],
 		Example[{Basic, "Display the packets for the proposed changes:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True, Time -> EstimatedTime],
+			{PacketP[{Object[Team], Object[Bill], Object[EmeraldCloudFile]}]..},
+			TimeConstraint -> 300
+		],
+		(* Create this test to make sure Time -> Time works. But the final price from SyncBilling won't change because we hard code final charge of PriceOperatorTime to be 0 *)
+		Example[{Basic, "If not specified, use real time to calculated operator time:"},
+			SyncBilling[Object[Team, Financing, "A test financing team object with real operator time for SyncBilling testing" <> $SessionUUID], Upload -> False, Time -> Time],
 			{PacketP[{Object[Team], Object[Bill], Object[EmeraldCloudFile]}]..},
 			TimeConstraint -> 300
 		],
 		Example[{Basic, "Display the packets for the proposed changes:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True, Time -> EstimatedTime],
 			{PacketP[{Object[Team], Object[Bill], Object[EmeraldCloudFile]}]..},
 			TimeConstraint -> 300
 		],
 		Example[{Options, Notify, "Makes asana tasks:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Notify -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Notify -> False, Verbose -> True, Time -> EstimatedTime],
 			{PacketP[{Object[Team], Object[Bill], Object[EmeraldCloudFile]}]..},
 			TimeConstraint -> 300
 		],
 		Example[{Options, Verbose, "Adds progress output to track the progress of the function:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True, Time -> EstimatedTime],
 			{PacketP[{Object[Team], Object[Bill], Object[EmeraldCloudFile]}]..},
 			TimeConstraint -> 300
 		],
 
 		Example[{Messages, "FinancingTeamDoesNotExist", "Returns messages if the team does not exist:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing not real"], Upload -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing not real"], Upload -> False, Verbose -> True, Time -> EstimatedTime],
 			$Failed,
 			Messages :> {SyncBilling::FinancingTeamDoesNotExist},
 			TimeConstraint -> 300
 		],
 		Example[{Messages, "ActiveTeamsOnly", "Display the message if the team is not active:"},
-			SyncBilling[Object[Team, Financing, "A test financing not active team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True],
+			SyncBilling[Object[Team, Financing, "A test financing not active team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Verbose -> True, Time -> EstimatedTime],
 			$Failed,
 			Messages :> {SyncBilling::ActiveTeamsOnly},
 			TimeConstraint -> 300
 		],
 		Example[{Messages, "PricingFunctionFailed", "Display the message if the pricing function fails:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Fail -> True],
+			SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Upload -> False, Fail -> True, Time -> EstimatedTime],
 			$Failed,
 			Messages :> {SyncBilling::PricingFunctionFailed},
 			TimeConstraint -> 300
 		],
 		Example[{Additional, "Multi-site","Creates new bills if the team is configured to be bill for using 2 sites:"},
-			SyncBilling[Object[Team, Financing, "A test financing team object 2 for SyncBilling testing"<>$SessionUUID]];
+			SyncBilling[Object[Team, Financing, "A test financing team object 2 for SyncBilling testing"<>$SessionUUID], Time -> EstimatedTime];
 			Download[Object[Team, Financing, "A test financing team object 2 for SyncBilling testing"<>$SessionUUID],Length[CurrentBills]],
 			2,
 			(* we wipe this so we can be sure we don't have any lingering Object[Bills] in there *)
@@ -1675,11 +1681,13 @@ DefineTests[SyncBilling,
 					Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID],
 					Object[Team, Financing, "A test financing team object 2 for SyncBilling testing"<>$SessionUUID],
 					Object[Team, Financing, "A test financing not active team object for SyncBilling testing"<>$SessionUUID],
+					Object[Team, Financing, "A test financing team object with real operator time for SyncBilling testing" <> $SessionUUID],
 					Model[Pricing, "A test ala carte pricing scheme for SyncBilling testing"<>$SessionUUID],
 					Model[Pricing, "A test ala carte pricing scheme (2nd site) for SyncBilling testing"<>$SessionUUID],
 					Object[LaboratoryNotebook, "Test lab notebook for SyncBilling tests"<>$SessionUUID],
 					Object[LaboratoryNotebook, "Test lab notebook 2 for SyncBilling tests"<>$SessionUUID],
 					Object[LaboratoryNotebook, "Test lab notebook 3 for SyncBilling tests"<>$SessionUUID],
+					Object[LaboratoryNotebook, "Test lab notebook 4 for SyncBilling tests"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol in SyncBilling test"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 2 in SyncBilling test (refunded)"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 3 in SyncBilling test (with instrument sans PricingLevel)"<>$SessionUUID],
@@ -1688,6 +1696,7 @@ DefineTests[SyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in SyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in SyncBilling test (incomplete)"<>$SessionUUID],
 					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol with real PriceOperatorTime in SyncBilling test" <> $SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for SyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for SyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for SyncBilling test"<>$SessionUUID],
@@ -1710,7 +1719,9 @@ DefineTests[SyncBilling,
 					Object[Resource, Operator, "Test Operator Resource 5 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 6 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 7 for SyncBilling tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 8 for SyncBilling tests"<>$SessionUUID],
 					Object[Bill, "A test bill object for SyncBilling testing"<>$SessionUUID],
+					Object[Bill, "A test bill object with real operator time for SyncBilling testing"<>$SessionUUID],
 					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for SyncBilling"<>$SessionUUID],
 					Model[Container, Vessel, "Test Container Model for SyncBilling test (reusable, sterile)"<>$SessionUUID],
 					Model[Container, Vessel, "Test Container Model 2 for SyncBilling test (reusable)"<>$SessionUUID],
@@ -1792,7 +1803,10 @@ DefineTests[SyncBilling,
 					Object[Container, Vessel, "Test 2mL Tube 1 for SyncBilling tests"<>$SessionUUID],
 					Object[Container, Plate, "Test Plate 1 for SyncBilling tests"<>$SessionUUID],
 					Object[Container,Site,"Test site 1 for SyncBilling"<>$SessionUUID],
-					Object[Container,Site,"Test site 2 for SyncBilling"<>$SessionUUID]
+					Object[Container,Site,"Test site 2 for SyncBilling"<>$SessionUUID],
+
+					Object[Program, ProcedureEvent, "Test ProcedureEvent " <> ToString[#] <> " for real PriceOperatorTime in SyncBilling test " <> $SessionUUID] & /@ Range[10],
+					Object[Protocol, Cover, "Test Cover Protocol " <> ToString[#] <> " for real PriceOperatorTime test history events in SyncBilling test" <> $SessionUUID] & /@ Range[4]
 				}],
 				ObjectP[]
 			]];
@@ -1802,16 +1816,19 @@ DefineTests[SyncBilling,
 		Module[{firstSet,financingTeamID,financingTeamID2,modelPricingID1,secondUploadList,syncBillingResult,objectNotebookID,objectNotebookID2,
 			newBillObject,fplcProtocolID,fplcModelID,operatorModelID,operatorModelID2,containerID,containerID2,containerID3,
 			sampleID1,sampleID2,sampleID3,sampleID4,sampleID5,productID1,productID1a,productID1b,productID2,
-			productID3,productID4,productID5,productID5a,productID5b,productID6,sampleUpload,siteID,modelPricingID2,financingTeamID3,objectNotebookID3,siteID2},
+			productID3,productID4,productID5,productID5a,productID5b,productID6,sampleUpload,siteID,modelPricingID2,financingTeamID3,objectNotebookID3,siteID2, financingTeamID4, objectNotebookID4, coverProtocolID, procedureEventIDs, coverHistoryProtocolIDs, syncBillingResultForRealOperatorTime, realTimeBillObject},
 
 			modelPricingID1=CreateID[Model[Pricing]];
 			modelPricingID2=CreateID[Model[Pricing]];
 			financingTeamID=CreateID[Object[Team, Financing]];
 			financingTeamID2=CreateID[Object[Team, Financing]];
 			financingTeamID3=CreateID[Object[Team, Financing]];
+			financingTeamID4=CreateID[Object[Team, Financing]];
 			objectNotebookID=CreateID[Object[LaboratoryNotebook]];
 			objectNotebookID2=CreateID[Object[LaboratoryNotebook]];
 			objectNotebookID3=CreateID[Object[LaboratoryNotebook]];
+			objectNotebookID4=CreateID[Object[LaboratoryNotebook]];
+			coverProtocolID=CreateID[Object[Protocol, Cover]];
 			fplcProtocolID=CreateID[Object[Protocol, FPLC]];
 			fplcModelID=CreateID[Model[Instrument, FPLC]];
 			operatorModelID=CreateID[Model[User, Emerald, Operator]];
@@ -1826,6 +1843,8 @@ DefineTests[SyncBilling,
 			sampleID5=CreateID[Model[Sample]];
 			siteID=CreateID[Object[Container,Site]];
 			siteID2=CreateID[Object[Container,Site]];
+			procedureEventIDs = CreateID[ConstantArray[Object[Program, ProcedureEvent], 14]];
+			coverHistoryProtocolIDs = CreateID[ConstantArray[Object[Protocol, Cover], 4]];
 			{productID1, productID1a, productID1b, productID2, productID3, productID4,
 				productID5, productID5a, productID5b, productID6} = CreateID[ConstantArray[Object[Product],10]];
 
@@ -1833,6 +1852,7 @@ DefineTests[SyncBilling,
 				<|
 					Object->siteID,
 					Name->"Test site 1 for SyncBilling"<>$SessionUUID,
+					Model -> Link[Model[Container, Site, "id:XnlV5jlAEa53"], Objects],
 					DeveloperObject->True
 				|>,
 				<|
@@ -1877,6 +1897,18 @@ DefineTests[SyncBilling,
 						{Link[modelPricingID2],Link[$Site]}
 					},
 					Name -> "A test financing team object 2 for SyncBilling testing"<>$SessionUUID
+				|>,
+				<|
+					Object -> financingTeamID4,
+					MaxThreads -> 5,
+					MaxUsers -> 2,
+					NumberOfUsers -> 2,
+					Status -> Active,
+					Type -> Object[Team, Financing],
+					DeveloperObject -> True,
+					NextBillingCycle -> Now - 1Day,
+					Replace[CurrentPriceSchemes] -> {Link[modelPricingID1],Link[siteID]},
+					Name -> "A test financing team object with real operator time for SyncBilling testing"<>$SessionUUID
 				|>,
 				<|
 					Object -> modelPricingID1,
@@ -2029,6 +2061,14 @@ DefineTests[SyncBilling,
 					DeveloperObject -> True,
 					Name -> "Test lab notebook 3 for SyncBilling tests"<>$SessionUUID
 				|>,
+				<|
+					Object -> objectNotebookID4,
+					Replace[Financers] -> {
+						Link[financingTeamID4, NotebooksFinanced]
+					},
+					Type -> Object[LaboratoryNotebook],
+					Name -> "Test lab notebook 4 for SyncBilling tests"<>$SessionUUID
+				|>,
 				Association[
 					Object -> fplcProtocolID,
 					Type -> Object[Protocol, FPLC],
@@ -2098,6 +2138,8 @@ DefineTests[SyncBilling,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
 					Name -> "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID
 				|>,
+
+				(* instrument resources *)
 				<|
 					Type -> Object[Instrument, FPLC],
 					Model -> Link[Model[Instrument, FPLC, "AKTA avant 25"], Objects],
@@ -2135,6 +2177,7 @@ DefineTests[SyncBilling,
 				Association[
 					Type -> Object[User, Emerald, Operator],
 					Model -> Link[operatorModelID, Objects],
+					Position -> "Laboratory Operator",
 					Name -> "Test Operator for SyncBilling test"<>$SessionUUID
 				],
 				Association[
@@ -2476,6 +2519,52 @@ DefineTests[SyncBilling,
 
 			(*upload the first set of stuff*)
 			Upload[firstSet];
+
+			(* upload for real time price operator time testing *)
+			Upload[Flatten[{
+				Association[
+					Object -> coverProtocolID,
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol with real PriceOperatorTime in SyncBilling test"<>$SessionUUID,
+					DateCompleted -> Now - 2 Week,
+					Status -> Completed,
+					Transfer[Notebook] -> Link[objectNotebookID4, Objects],
+					Site -> Link[Object[Container,Site,"Test site 1 for SyncBilling"<>$SessionUUID]],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[1]], Protocol], Link[procedureEventIDs[[2]], Protocol]},
+					Replace[StatusLog] -> {
+						{Now - 3 Week, OperatorStart,
+							Link[Object[User, Emerald, Operator, "Test Operator for SyncBilling test"<>$SessionUUID]]},
+						{Now - 3 Week, OperatorProcessing,
+							Link[Object[User, Emerald, Operator, "Test Operator for SyncBilling test"<>$SessionUUID]]},
+						{Now - 2 Week, Completed,
+							Link[Object[User, Emerald, Operator, "Test Operator for SyncBilling test"<>$SessionUUID]]}}
+				],
+
+				(* procedure events *)
+				(* procedure event 1-2 : for normal cover protocol *)
+				(* procedure event 3-10 : for history cover protocol *)
+				<|
+					Object -> procedureEventIDs[[#]],
+					TaskID -> "1234567",
+					Type -> Object[Program, ProcedureEvent],
+					TaskType -> "ResourcePicking",
+					Name -> "Test ProcedureEvent " <>ToString[#]<>" for real PriceOperatorTime in SyncBilling test "<>$SessionUUID,
+					EventType -> If[EvenQ[#], TaskEnd, TaskStart],
+					NumberOfItems -> If[EvenQ[#], #, Null],
+					CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for SyncBilling test" <> $SessionUUID]],
+					DateCreated -> Now - 3 Week + # * Hour
+				|>& /@Range[10],
+
+				<|
+					Object -> coverHistoryProtocolIDs[[#]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol "<>ToString[#]<>" for real PriceOperatorTime test history events in SyncBilling test"<>$SessionUUID,
+					DateCompleted -> Now - 3.5 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[2*# + 1]], Protocol], Link[procedureEventIDs[[2*# + 2]], Protocol]}
+				|>& /@Range[4]
+			}]];
 			
 			(* update the modelPricing to include OperatorModelPrice *)
 			Upload[<|
@@ -2523,15 +2612,34 @@ DefineTests[SyncBilling,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
 			(*get the newly created Bill*)
 			newBillObject=FirstCase[syncBillingResult, ObjectP[Object[Bill]]];
 
+			(*run sync billing in order to generate the object[bill]*)
+			syncBillingResultForRealOperatorTime=Quiet[
+				SyncBilling[Object[Team, Financing, "A test financing team object with real operator time for SyncBilling testing" <> $SessionUUID]],
+				PriceData::MissingBill
+			];
+
+			realTimeBillObject = FirstCase[syncBillingResultForRealOperatorTime, ObjectP[Object[Bill]]];
+
 			(*now make the second set of stuff*)
 			secondUploadList=List[
+				<|
+					Object -> realTimeBillObject,
+					Name -> "A test bill object with real operator time for SyncBilling testing"<>$SessionUUID,
+					DateStarted -> Now - 1 Month
+				|>,
+				<|
+					Object -> Object[Team, Financing, "A test financing team object with real operator time for SyncBilling testing" <> $SessionUUID],
+					Replace[BillingHistory] -> {
+						{Now - 1 Month, Link[realTimeBillObject, Organization], Link[modelPricingID1], Link[siteID]}
+					}
+				|>,
 				<|
 					Object -> newBillObject,
 					Name -> "A test bill object for SyncBilling testing"<>$SessionUUID,
@@ -2833,6 +2941,22 @@ DefineTests[SyncBilling,
 					Type -> Object[Resource, Operator],
 					DeveloperObject -> True,
 					Name -> "Test Operator Resource 2 for SyncBilling tests"<>$SessionUUID
+				|>,
+				<|
+					Time -> Quantity[1, "Hours"],
+					EstimatedTime -> Quantity[1.5, "Hours"],
+					Operator -> Link[Object[User, Emerald, Operator, "Test Operator for SyncBilling test"<>$SessionUUID]],
+					Replace[RequestedOperators] -> {
+						Link[Model[User, Emerald, Operator, "Test Operator Model for SyncBilling test"<>$SessionUUID]]
+					},
+					Replace[Requestor] -> {
+						Link[Object[Protocol, Cover, "Test Cover Protocol with real PriceOperatorTime in SyncBilling test" <> $SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, Cover, "Test Cover Protocol with real PriceOperatorTime in SyncBilling test" <> $SessionUUID], SubprotocolRequiredResources],
+					Status -> Fulfilled,
+					Type -> Object[Resource, Operator],
+					DeveloperObject -> False,
+					Name -> "Test Operator Resource 8 for SyncBilling tests"<>$SessionUUID
 				|>,
 
 				(*cleaned container resources*)
@@ -3254,11 +3378,15 @@ DefineTests[SyncBilling,
 			objs=Quiet[Cases[
 				Flatten[{
 					Object[Team, Financing, "A test financing team object for SyncBilling testing"<>$SessionUUID],
+					Object[Team, Financing, "A test financing team object 2 for SyncBilling testing"<>$SessionUUID],
 					Object[Team, Financing, "A test financing not active team object for SyncBilling testing"<>$SessionUUID],
+					Object[Team, Financing, "A test financing team object with real operator time for SyncBilling testing" <> $SessionUUID],
 					Model[Pricing, "A test ala carte pricing scheme for SyncBilling testing"<>$SessionUUID],
-
+					Model[Pricing, "A test ala carte pricing scheme (2nd site) for SyncBilling testing"<>$SessionUUID],
 					Object[LaboratoryNotebook, "Test lab notebook for SyncBilling tests"<>$SessionUUID],
 					Object[LaboratoryNotebook, "Test lab notebook 2 for SyncBilling tests"<>$SessionUUID],
+					Object[LaboratoryNotebook, "Test lab notebook 3 for SyncBilling tests"<>$SessionUUID],
+					Object[LaboratoryNotebook, "Test lab notebook 4 for SyncBilling tests"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol in SyncBilling test"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 2 in SyncBilling test (refunded)"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 3 in SyncBilling test (with instrument sans PricingLevel)"<>$SessionUUID],
@@ -3267,6 +3395,7 @@ DefineTests[SyncBilling,
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in SyncBilling test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in SyncBilling test (incomplete)"<>$SessionUUID],
 					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SyncBilling test (no instrument used)"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol with real PriceOperatorTime in SyncBilling test" <> $SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for SyncBilling test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for SyncBilling unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for SyncBilling test"<>$SessionUUID],
@@ -3289,7 +3418,9 @@ DefineTests[SyncBilling,
 					Object[Resource, Operator, "Test Operator Resource 5 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 6 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 7 for SyncBilling tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 8 for SyncBilling tests"<>$SessionUUID],
 					Object[Bill, "A test bill object for SyncBilling testing"<>$SessionUUID],
+					Object[Bill, "A test bill object with real operator time for SyncBilling testing"<>$SessionUUID],
 					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for SyncBilling"<>$SessionUUID],
 					Model[Container, Vessel, "Test Container Model for SyncBilling test (reusable, sterile)"<>$SessionUUID],
 					Model[Container, Vessel, "Test Container Model 2 for SyncBilling test (reusable)"<>$SessionUUID],
@@ -3298,6 +3429,7 @@ DefineTests[SyncBilling,
 					Object[Container, Vessel, "Test Container 2 for SyncBilling test (dishwash, autoclave)"<>$SessionUUID],
 					Object[Container, Vessel, "Test Container 3 for SyncBilling test (dishwash)"<>$SessionUUID],
 					Object[Container, Vessel, "Test Container 4 for SyncBilling test (not reusable)"<>$SessionUUID],
+					Object[Container, Vessel, "Test Container 5 for SyncBilling test"<>$SessionUUID],
 					Object[Resource, Sample, "Test Container Resource 6 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Sample, "Test Container Resource 3 for SyncBilling tests"<>$SessionUUID],
 					Object[Resource, Sample, "Test Container Resource 4 for SyncBilling tests"<>$SessionUUID],
@@ -3360,6 +3492,7 @@ DefineTests[SyncBilling,
 					Object[Container, Vessel, "Test Container 3 for FPLC in SyncBilling test"<>$SessionUUID],
 					Object[Container, Vessel, "Test Container 4 for FPLC in SyncBilling test"<>$SessionUUID],
 					Object[Container, Vessel, "Test Container 5 for FPLC in SyncBilling test"<>$SessionUUID],
+
 					Object[Resource, Sample, "Fake sample resource for SyncBilling FPLC unit test 1"<>$SessionUUID],
 					Object[Resource, Sample, "Fake sample resource for SyncBilling FPLC unit test 2"<>$SessionUUID],
 					Object[Resource, Sample, "Fake sample resource for SyncBilling FPLC unit test 3"<>$SessionUUID],
@@ -3367,7 +3500,12 @@ DefineTests[SyncBilling,
 
 					Object[Transaction, ShipToECL, "Test ShipToECL transaction for SyncBilling testing"<>$SessionUUID],
 					Object[Container, Vessel, "Test 2mL Tube 1 for SyncBilling tests"<>$SessionUUID],
-					Object[Container, Plate, "Test Plate 1 for SyncBilling tests"<>$SessionUUID]
+					Object[Container, Plate, "Test Plate 1 for SyncBilling tests"<>$SessionUUID],
+					Object[Container,Site,"Test site 1 for SyncBilling"<>$SessionUUID],
+					Object[Container,Site,"Test site 2 for SyncBilling"<>$SessionUUID],
+
+					Object[Program, ProcedureEvent, "Test ProcedureEvent " <> ToString[#] <> " for real PriceOperatorTime in SyncBilling test " <> $SessionUUID] & /@ Range[10],
+					Object[Protocol, Cover, "Test Cover Protocol " <> ToString[#] <> " for real PriceOperatorTime test history events in SyncBilling test" <> $SessionUUID] & /@ Range[4]
 				}],
 				ObjectP[]
 			]];

@@ -5,7 +5,7 @@
 
 
 (* ::Subsubsection:: *)
-(*AnalyzeEpitopeBinnning*)
+(*AnalyzeEpitopeBinning*)
 
 DefineUsage[AnalyzeEpitopeBinning,
   {

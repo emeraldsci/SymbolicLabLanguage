@@ -15984,45 +15984,47 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				{resolvedInitialAverageVelocities, resolvedInitialFlowRates, resolvedInitialPressures, resolvedInitialResidenceTimes} = Transpose@MapThread[
 					Function[{velocity, flowRate, pressure, residenceTime, temperature},
 						Switch[
-							{velocity, flowRate, pressure, residenceTime},
-							{Automatic, Automatic, Automatic, Automatic},
+							{velocity, flowRate, pressure, residenceTime, First[columnFilmThickness]},
+							{_, _, _, _, Null},
+							{Null,Null,Null,Null},
+							{Automatic, Automatic, Automatic, Automatic, _},
 							{
 								convertColumnFlowRateToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								defaultFlowRate,
 								convertColumnFlowRateToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnFlowRateToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null]},
+							{Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], _},
 							{velocity, flowRate, pressure, residenceTime},
-							{Null, Null, Null, Null},
+							{Null, Null, Null, Null, _},
 							{
 								Null,
 								Null,
 								Null,
 								Null
 							},
-							{Except[Automatic | Null], _, _, _},
+							{Except[Automatic | Null], _, _, _, _},
 							{
 								velocity,
 								convertColumnVelocityToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, velocity, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnVelocityToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, velocity, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnVelocityToResidenceTime[First@columnLength, velocity]
 							},
-							{_, Except[Automatic | Null], _, _},
+							{_, Except[Automatic | Null], _, _, _},
 							{
 								convertColumnFlowRateToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								flowRate,
 								convertColumnFlowRateToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnFlowRateToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{_, _, Except[Automatic | Null], _},
+							{_, _, Except[Automatic | Null], _, _},
 							{
 								convertColumnPressureToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnPressureToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature],
 								pressure,
 								convertColumnPressureToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{_, _, _, Except[Automatic | Null]},
+							{_, _, _, Except[Automatic | Null], _},
 							{
 								convertColumnResidenceTimeToVelocity[First@columnLength, residenceTime],
 								convertColumnResidenceTimeToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, residenceTime, temperature, outletPressure, referencePressure, referenceTemperature],

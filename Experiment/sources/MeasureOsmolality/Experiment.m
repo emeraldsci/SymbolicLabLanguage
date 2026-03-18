@@ -826,7 +826,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Download *)
 	instrumentDownloadFields,listedSampleContainerPackets,instrumentPacket,calibrantsPackets,
 	samplePackets,sampleModelPackets,sampleContainerPackets,sampleComponentPackets,simulatedSampleContainerModels,simulatedSampleContainerObjects,osmolalityStandardsList,
-	calibrantsObjectsPackets,controlsObjectsPackets,instrumentModel,specifiedCalibrantModels,specifiedControlModels,
+	calibrantsObjectsPackets,initialControlsObjectsPackets,controlsObjectsPackets,instrumentModel,specifiedCalibrantModels,specifiedControlModels,
 	specifiedCalibrantObjectToModelAssociation,specifiedControlObjectToModelAssociation,controlVolumes,
 	rawControls,rawControlOsmolalities,rawControlVolumes,rawControlTolerances,
 	(* Invalid Input Tests*)
@@ -953,7 +953,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 		listedSampleContainerPackets,
 		{instrumentPacket},
 		calibrantsObjectsPackets,
-		controlsObjectsPackets,
+		initialControlsObjectsPackets,
 		calibrantsPackets
 	}=Quiet[Download[
 		(* Samples *)
@@ -1020,8 +1020,11 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Replace calibrant objects in options with models *)
 	specifiedCalibrantModels=ReplaceAll[ToList[calibrants],specifiedCalibrantObjectToModelAssociation];
 
+	(* Flatten control packets to get rid unnecessary nesting *)
+	controlsObjectsPackets = Flatten@initialControlsObjectsPackets;
+
 	(* Associate control object with model *)
-	specifiedControlObjectToModelAssociation=AssociationThread[Cases[ToList[controls],ObjectP[Object[Sample]]],Lookup[controlsObjectsPackets[[All,1]],Object]];
+	specifiedControlObjectToModelAssociation=AssociationThread[Cases[ToList[controls],ObjectP[Object[Sample]]],Lookup[controlsObjectsPackets,Object]];
 
 	(* Replace control objects in options with models *)
 	specifiedControlModels=ReplaceAll[ToList[controls],specifiedControlObjectToModelAssociation];

@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*© 2011-2023 Emerald Cloud Lab, Inc.*)
+(*\[Copyright] 2011-2025 Emerald Cloud Lab, Inc.*)
 
 
 DefineObjectType[Model[Sample], {
@@ -722,7 +722,7 @@ DefineObjectType[Model[Sample], {
 			Pattern:>GreaterP[0*Liter],
 			Units->Liter Milli,
 			IndexMatching->FixedAmounts,
-			Description->"If this sample model is purchased and stored in pre-measured amounts, the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in.",
+			Description->"For each member of FixedAmounts, if this sample model is purchased and stored in pre-measured amounts, the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in.",
 			Category->"Inventory"
 		},
 		PipettingMethod->{
@@ -762,14 +762,6 @@ DefineObjectType[Model[Sample], {
 			Relation->Object[Company, Service][CustomSynthesizes],
 			Description->"Companies that can be contracted to synthesize samples of this model.",
 			Category->"Inventory"
-		},
-		StickeredUponArrival->{
-			Format->Single,
-			Class->Expression,
-			Pattern:>BooleanP,
-			Description->"Indicates if a barcode should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category->"Inventory",
-			Developer->True
 		},
 		BarcodeTag->{
 			Format->Single,
@@ -989,6 +981,13 @@ DefineObjectType[Model[Sample], {
 			Category -> "Health & Safety",
 			Developer -> True
 		},
+		OccupationalExposureBanding -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Description -> "Indicates the Occupational Exposure Band for this sample, which requires specific environmental health and safety handling considerations. Ranging from least stringent at OEB1 to most stringent at OEB5.",
+			Category -> "Health & Safety"
+		},
 
 		(* --- Compatibility --- *)
 		IncompatibleMaterials->{
@@ -1028,8 +1027,15 @@ DefineObjectType[Model[Sample], {
 			Category->"Compatibility",
 			Abstract->False
 		},
+		ForeignMaterialContactDisallowed -> {
+			Format->Single,
+			Class->Expression,
+			Pattern:>BooleanP,
+			Description->"Indicates if any contact of this sample with submerged item/part is blocked.",
+			Category->"Compatibility"
+		},
 
-		(* --- Qualifications & Maintenance --- *)
+				(* --- Qualifications & Maintenance --- *)
 		QualificationFrequency->{
 			Format->Multiple,
 			Class->{Link, Real},
@@ -1078,6 +1084,14 @@ DefineObjectType[Model[Sample], {
 			Class -> Expression,
 			Pattern :> FieldP[Object[Report,Certificate,Analysis], Output->Short],
 			Description -> "A list of the required fields populated by receiving.",
+			Category -> "Quality Assurance"
+		},
+		ReceivingBatchCertificateExample -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Report,Certificate][ModelsSupported],
+			Description -> "Certificate example that contains images for where receiving batch information can be found on documentation.",
 			Category -> "Quality Assurance"
 		},
 

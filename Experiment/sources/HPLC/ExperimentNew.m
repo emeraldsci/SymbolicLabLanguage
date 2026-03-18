@@ -4260,36 +4260,6 @@ $DefaultIonExchangePreparativeColumn=Model[Item, Column, "id:rea9jl1or6Np"];
 $DefaultIonExchangeAnalyticalColumn=Model[Item, Column, "id:zGj91aR3d6GL"];
 $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$DefaultReversePhasePreparativeColumn,$DefaultReversePhaseAnalyticalColumn,$DefaultIonExchangePreparativeColumn,$DefaultIonExchangeAnalyticalColumn];
 
-(* HPLC Vials *)
-$ChromatographyLCCompatibleVials = {
-	(* "HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
-	(* "1mL HPLC Vial (total recovery)" *)
-	Model[Container, Vessel, "id:1ZA60vL48X85"],
-	(* "Amber HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:GmzlKjznOxmE"],
-	(* "HPLC vial (high recovery), LCMS Certified" *)
-	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
-	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
-	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
-	(* "Polypropylene HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:qdkmxz0A884Y"],
-	(* "PFAS Testing Vials, Agilent" *)
-	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
-	(* "2mL HPLC clear vial, flat bottom" *)
-	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
-};
-
-$ChromatographyLCCompatibleVialsNamed = {
-	Model[Container, Vessel, "HPLC vial (high recovery)"],
-	Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
-	Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
-	Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
-	Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
-	Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],
-	Model[Container, Vessel, "PFAS Testing Vials, Agilent"]
-};
-
 (* ::Subsection:: *)
 (* ExperimentHPLC *)
 
@@ -4306,7 +4276,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		modelColumnFields, gradientFields, fractionCollectionFields, sampleFields, modelContainerFields, optionsWithObjects,
 		availableInstruments, availableInstrumentObjects, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
 		instrumentObjects, objectSampleFields, modelSampleFields, modelSampleFieldsPacket, objectContainerFields, modelContainerFieldsPacket, analyteFields,
-		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache,
+		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache, lcVialModels,
 		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, authorObject, cacheBall,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets,
 		resourcePacketTests, cartridgeObjects, modelCartridgeObjects, cartridgeFields, modelCartridgeFields,
@@ -4611,6 +4581,9 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
 	];
 
+	(* Find all compatible LC vials prior to downloading. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -4622,7 +4595,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards/blanks *)
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 					(* Preparatory HPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
@@ -5275,7 +5248,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
 		roundedInjectionTable, instrumentMaxColumnOD,
 		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments,
-		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions
+		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions,
+		lcVialModels, lcVialModelsNamed
 	},
 
 	(* Determine the requested return value from the function *)
@@ -10767,12 +10741,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		PickList[simulatedSampleContainers, specifiedAliquotBools, False],
 		ObjectP[Object[Container, Plate]]
 	];
+
+	(* Pull the memoized LC vials and their names. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+	lcVialModelsNamed = NamedObject[lcVialModels, Cache -> cache];
+
 	(* Vessels are for Dionex and Waters instruments *)
 	uniqueNonAliquotableVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
 		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"], Model[Container, Vessel, "PFAS Testing Vials, Agilent"]} *)
-		{False, ObjectP[$ChromatographyLCCompatibleVials]}
+		{False, ObjectP[lcVialModels]}
 	];
 
 	(* Need anything that is aliquotable too *)
@@ -14622,7 +14601,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Only prep HPLC uses different containers *)
 	{compatibleContainers, namedCompatibleContainers} = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		{{Model[Container, Vessel, "id:bq9LA0dBGGR6"], Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:bq9LA0dBGGrd"], Model[Container, Vessel, "id:rea9jl1orrMp"]}, {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]}},
-		{$ChromatographyLCCompatibleVials, $ChromatographyLCCompatibleVialsNamed}
+		{lcVialModels, lcVialModelsNamed}
 	];
 
 	(* If the sample's container model is not compatible with the instrument, it will not be possible to run the samples. *)
@@ -18950,8 +18929,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	compatibleVialContainer = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		(* "50mL Tube" *)
 		{Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
-		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
-		$ChromatographyLCCompatibleVials
+		(* We could assign this to a variable but it returns exactly what we need and is only used here so just inserting the memoized search directly. *)
+		allLCCompatibleVialSearch["Memoization"]
 	];
 
 	(* Set autosampler dead volume (following the same number as in the resolver *)
@@ -19625,12 +19604,9 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		columnPrimeFlowRates
 	];
 
-	(* Get the Initial FlowRate of the last ColumnFlush or ColumnPrime - if ColumnPrime is specified as frequency, it will serve as a flush *)
-	columnFlushInitialFlowRate = Which[
-		!NullQ[columnFlushFlowRates], Last[columnFlushFlowRates],
-		!NullQ[columnPrimeFlowRates], Last[columnPrimeFlowRates],
-		True, 1Milliliter / Minute
-	];
+	(* Get the final flow rate of the very last injection (usually column flush) of the injection table to be the flow rate for shut-down. This makes sure that we won't unnecessarily change flow rate during shutdown *)
+	(* Here in theory, we should take the last gradient entry, and then last gradient point, and then last entry as the flow rate. We take an easy route to just flatten everything and the very last entry is just our final flow rate. *)
+	columnFlushInitialFlowRate = Last[Flatten[allGradientTuples]];
 
 	(* Put together the Shutdown gradient *)
 	shutdownGradient = If[MatchQ[instrumentModel, ObjectP[dionexHPLCInstruments]],
@@ -19870,7 +19846,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	];
 
 	(* Leave 0 mL if no BufferD used. Round for water dispenser if buffer is water. *)
-	bufferDVolume = If[NullQ[bufferDModel],
+	bufferDVolume = If[NullQ[Lookup[resolvedOptions, BufferD]],
 		0 Milliliter,
 		If[MatchQ[bufferDModel, WaterModelP],
 			roundToDispenseVolume[Total[bufferDVolumePerGradient] + extraBufferVolume],
@@ -19960,14 +19936,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferAVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferAVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferAVolume) <= 7.5 Liter],
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19978,14 +19963,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferBVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferBVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferBVolume) <= 7.5 Liter],
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19996,14 +19990,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferCVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferCVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferCVolume) <= 7.5 Liter],
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20014,14 +20017,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferDVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferDVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferDVolume) <= 7.5 Liter],
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20036,7 +20048,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20049,7 +20061,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20111,7 +20123,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	bufferDResource = Which[
 		(* If no BufferD AND Dionex, set to Null *)
 		And[
-			NullQ[bufferDModel],
+			NullQ[Lookup[resolvedOptions, BufferD]],
 			MatchQ[instrumentModel,dionexHPLCPattern]
 		],
 		Null,
@@ -20119,7 +20131,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* This is only for Agilent *)
 		MatchQ[bufferDContainer, {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} | {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}],
 		Resource[
-			Sample -> Lookup[resolvedOptions, BufferC],
+			Sample -> Lookup[resolvedOptions, BufferD],
 			Amount -> bufferDVolume + 2.5 Liter,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20127,7 +20139,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Otherwise we have a non-carboy *)
 		True,
 		Resource[
-			Sample -> If[!NullQ[bufferDModel], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
+			Sample -> If[!NullQ[Lookup[resolvedOptions, BufferD]], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
 			Amount -> bufferDVolume + bufferDeadVolume,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20156,7 +20168,10 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 				(* Otherwise 1 Liter bottle since we have 1 Liter cap assigned. It requires >130 injections to go beyond the max volume *)
 				If[internalUsageQ,
 					{Model[Container, Vessel, "id:4pO6dM5l83Vz"]}, (* 1L Glass Bottle, Detergent-Sensitive *)
-					{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					If[MatchQ[needleWashSolution, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"]}, (* 1L Glass Bottle *)
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					]
 				]
 			];
 			Resource[
@@ -20179,7 +20194,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferA],
 			Amount -> systemPrimeBufferAVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20196,7 +20212,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferB],
 			Amount -> systemPrimeBufferBVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20213,7 +20230,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferC],
 			Amount -> systemPrimeBufferCVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20231,7 +20249,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferD],
 			Amount -> systemPrimeBufferDVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20248,7 +20267,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferA],
 			Amount -> systemFlushBufferAVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20265,7 +20285,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferB],
 			Amount -> systemFlushBufferBVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20282,7 +20303,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferC],
 			Amount -> systemFlushBufferCVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20299,7 +20321,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferD],
 			Amount -> systemFlushBufferDVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20414,7 +20437,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			(* Use buffer and fraction volume to decide the time, or take 6 Hour *)
 			Min[maxFractionTotalVolume / bufferUsePerTime, 6 Hour]
 		],
-		6 Hour
+		(* we don't collect fractions, go a value that is between 1-3Hours and as close to the SeparationTime/2 as possible *)
+		Min[
+			Max[totalRunTime/2,1Hour],
+			3Hour
+		]
 	];
 
 	(* Create placement field value for SystemPrime buffers *)
@@ -23095,9 +23122,109 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 	((totalVolume * totalGradientProportion) + extraVolume) Milliliter
 ];
 
+(* Preferred LC Vials *)
+$PreferredLCCompatibleVials = {
+	(* "HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
+	(* "1mL HPLC Vial (total recovery)" *)
+	Model[Container, Vessel, "id:1ZA60vL48X85"],
+	(* "Amber HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:GmzlKjznOxmE"],
+	(* "HPLC vial (high recovery), LCMS Certified" *)
+	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
+	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
+	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
+	(* "Polypropylene HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:qdkmxz0A884Y"],
+	(* "PFAS Testing Vials, Agilent" *)
+	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
+	(* "2mL HPLC clear vial, flat bottom" *)
+	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
+}
 
 (* ::Subsubsection::Closed:: *)
-(*allHPLCInstrumentSearch*)
+(*allLCCompatibleVialSearch*)
+
+(* ::Subsubsection::Closed:: *)
+(*pierceableCapFootprints*)
+
+pierceableCapFootprints[fakeString:_String] := pierceableCapSearch[fakeString] = Module[
+	{},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`pierceableCapFootprints];
+
+	DeleteDuplicates[
+		Download[
+			Search[Model[Item, Cap],
+				And[
+					VerifiedCoverModel == True,
+					Pierceable == True,
+					Products[Deprecated] != True
+				]
+			],
+			CoverFootprint
+		]
+	]
+];
+
+
+(* Function to search the database for all non-deprecated CE vials that fit the autosampler.
+ 	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
+allLCCompatibleVialSearch[fakeString:_String] := allLCCompatibleVialSearch[fakeString] = Module[
+	{pierceableContainers, containers, centrifugableQ, coverFootprints},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`allLCCompatibleVialSearch];
+
+	coverFootprints = Alternatives@@pierceableCapFootprints["Memoization"];
+
+	{pierceableContainers, containers} = Search[
+		{
+			Model[Container, Vessel],
+			Model[Container, Vessel]
+		},
+		{
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				],
+				CoverFootprints == coverFootprints
+			],
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				]
+			]
+		}
+	];
+
+	centrifugableQ = MemberQ[allCentrifugableContainersSearch["Memoization"], ObjectP[#]]& /@ containers;
+
+	SortBy[PickList[containers, centrifugableQ], {!MemberQ[#, $PreferredLCCompatibleVials], !MemberQ[#, pierceableContainers]}]
+];
 
 (* Function to search the database for all non-deprecated HPLC instruments.
  	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)

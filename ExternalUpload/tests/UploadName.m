@@ -152,6 +152,28 @@ DefineTests[UploadName,
 			}
 		],
 
+		Example[{Options, Upload, "Return packets without uploading when Upload -> False:"},
+			(
+				beforeName=Download[testColumn1, Name];
+				packets=UploadName[testColumn1, "new Test Name 1, UploadName " <> $SessionUUID, Upload -> False];
+				afterName=Download[testColumn1, Name];
+				{packets, MatchQ[beforeName,afterName]}
+			),
+			{{PacketP[]}, True},
+			Variables:>{beforeName,packets,afterName}
+		],
+
+		Example[{Options, Upload, "Return packets for multiple objects without uploading when Upload -> False:"},
+			(
+				beforeNames=Download[{testColumn1, testColumn2}, Name];
+				packets=UploadName[{testColumn1, testColumn2}, {"new Test Name 1, UploadName " <> $SessionUUID, "new Test Name 2, UploadName " <> $SessionUUID}, Upload -> False];
+				afterNames=Download[{testColumn1, testColumn2}, Name];
+				{packets, MatchQ[beforeNames,afterNames]}
+			),
+			{{PacketP[]..},True},
+			Variables:>{beforeNames,packets,afterNames}
+		],
+
 		Example[{Messages, "NameAlreadyInUse", "Cannot add name that is already in use for that type:"},
 			(
 				UploadName[{testColumn1, testColumn2}, {"Test Name 1, UploadName " <> $SessionUUID, "Test Name 1, UploadName " <> $SessionUUID}]

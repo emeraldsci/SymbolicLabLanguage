@@ -16,6 +16,15 @@ DefineTests[ExperimentPrepareTransporter,
 			],
 			ObjectP[Object[Protocol, PrepareTransporter]]
 		],
+		Example[{Basic, "Function generates an Object[Protocol, PrepareTransporter] for items that need to be placed on a liner:"},
+			ExperimentPrepareTransporter[
+				{Model[Container, Vessel, "2mL Tube"]},
+				TransportTemperature -> Null,
+				LinerRequired -> True,
+				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
+			],
+			ObjectP[Object[Protocol, PrepareTransporter]]
+		],
 		Example[{Basic, "Function takes Object[Container] as input:"},
 			ExperimentPrepareTransporter[
 				{Object[Container, Vessel, "Test 50mL Tube 1 for ExperimentPrepareTransporter" <> $SessionUUID]},
@@ -86,8 +95,7 @@ DefineTests[ExperimentPrepareTransporter,
 				Lookup[Download[protocol, ResolvedOptions], Transporter]
 			},
 			{
-				(* 1 more count when heaters are involved because we also need a fume hood *)
-				{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+				{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
 				{ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableCooler]]},
 				{ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableHeater]], ObjectP[Model[Instrument, PortableCooler]], ObjectP[Model[Instrument, PortableHeater]]}
 			},
@@ -104,8 +112,7 @@ DefineTests[ExperimentPrepareTransporter,
 				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
 			];
 			DeleteDuplicates[Cases[Download[protocol, RequiredResources[[All,1]][Object]], ObjectP[Object[Resource, Instrument]]]],
-			(* 1 more count when heaters are involved because we also need a fume hood *)
-			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+			{ObjectP[Object[Resource, Instrument]]},
 			Variables :> {protocol}
 		],
 		Example[{Additional, "When multiple identical Model[Container] are supplied as input, it will be interpreted as having multiple instances of the same kind of container:"},
@@ -119,8 +126,7 @@ DefineTests[ExperimentPrepareTransporter,
 				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
 			];
 			DeleteDuplicates[Cases[Download[protocol, RequiredResources[[All,1]][Object]], ObjectP[Object[Resource, Instrument]]]],
-			(* 1 more count when heaters are involved because we also need a fume hood *)
-			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
+			{ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]], ObjectP[Object[Resource, Instrument]]},
 			Variables :> {protocol}
 		],
 		Example[{Options, Upload, "Function output packet instead of object if Upload -> False:"},
@@ -189,6 +195,40 @@ DefineTests[ExperimentPrepareTransporter,
 			],
 			{EqualP[80 Celsius], EqualP[4 Celsius]}
 		],
+		Example[{Options, LinerRequired, "If LinerRequired -> True, Function will resolve Model[Container, Rack] and Liners to transport the input sample:"},
+			Download[
+				ExperimentPrepareTransporter[
+					{Model[Container, Vessel, "50mL Round Bottom Flask with 14/20 Joint"]},
+					TransportTemperature -> Null,
+					LinerRequired -> True,
+					ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
+				],
+				{Temperatures, Transporters, Liners}
+			],
+			{{Null}, {ObjectP[Model[Container, Rack]]}, {ObjectP[Model[Item, Liner]]}}
+		],
+		Example[{Options, LinerRequired, "If LinerRequired is not specified, function will automatically resolve from the ExposedSurfaces field of the input Model:"},
+			Download[
+				ExperimentPrepareTransporter[
+					{Model[Container, Vessel, "50mL Round Bottom Flask with 14/20 Joint"]},
+					TransportTemperature -> Null,
+					ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
+				],
+				{Temperatures, Transporters, Liners}
+			],
+			{{Null}, {ObjectP[Model[Container, Rack]]}, {ObjectP[Model[Item, Liner]]}}
+		],
+		Example[{Options, LinerRequired, "If TransportTemperature is not Null and the input Model has ExposedSurfaces -> True, function will only set up portable cooler or heater:"},
+			Download[
+				ExperimentPrepareTransporter[
+					{Model[Container, Vessel, "50mL Round Bottom Flask with 14/20 Joint"]},
+					TransportTemperature -> 4 Celsius,
+					ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
+				],
+				{Temperatures, Transporters, Liners}
+			],
+			{{EqualP[4 Celsius]}, {ObjectP[Model[Instrument, PortableCooler]]}, {Null}}
+		],
 		Example[{Options, IgnoreOversizedItems, "If IgnoreOversizedItems -> True, function ignores input items that can't physically fit to any available transporters:"},
 			Lookup[
 				ExperimentPrepareTransporter[
@@ -203,7 +243,7 @@ DefineTests[ExperimentPrepareTransporter,
 			{Null, ObjectP[Model[Instrument]]},
 			Messages :> {Warning::OversizedItem}
 		],
-		Example[{Options, Resource, "If Resource options are specified, the TemperatureControlledResources and ResourcePlacements fields will be populated with the resource objects:"},
+		Example[{Options, Resource, "If Resource options are specified, when requesting portable cooler/heaters, the TemperatureControlledResources and ResourcePlacements fields will be populated with the resource objects:"},
 			protocol = ExperimentPrepareTransporter[
 				{Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "50mL Tube"]},
 				TransportTemperature -> 4 Celsius,
@@ -222,6 +262,29 @@ DefineTests[ExperimentPrepareTransporter,
 				{
 					{ObjectP[Object[Resource, Sample, "Test resource object 1 for ExperimentPrepareTransporter" <> $SessionUUID]], ObjectP[Model[Instrument, PortableCooler]]},
 					{ObjectP[Object[Resource, Sample, "Test resource object 2 for ExperimentPrepareTransporter" <> $SessionUUID]], ObjectP[Model[Instrument, PortableCooler]]}
+				}
+			},
+			Variables :> {protocol}
+		],
+		Example[{Options, Resource, "If Resource options are specified, when requesting lined racks, the ResourcesOnLiner and ResourcePlacements fields will be populated with the resource objects:"},
+			protocol = ExperimentPrepareTransporter[
+				{Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "50mL Tube"]},
+				LinerRequired -> True,
+				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 2 for ExperimentPrepareTransporter" <> $SessionUUID],
+				Resource -> {
+					Object[Resource, Sample, "Test resource object 1 for ExperimentPrepareTransporter" <> $SessionUUID],
+					Object[Resource, Sample, "Test resource object 2 for ExperimentPrepareTransporter" <> $SessionUUID]
+				}
+			];
+			Download[protocol, {ResourcesOnLiner, ResourcePlacements}],
+			{
+				{
+					ObjectP[Object[Resource, Sample, "Test resource object 1 for ExperimentPrepareTransporter" <> $SessionUUID]],
+					ObjectP[Object[Resource, Sample, "Test resource object 2 for ExperimentPrepareTransporter" <> $SessionUUID]]
+				},
+				{
+					{ObjectP[Object[Resource, Sample, "Test resource object 1 for ExperimentPrepareTransporter" <> $SessionUUID]], ObjectP[Model[Container, Rack]]},
+					{ObjectP[Object[Resource, Sample, "Test resource object 2 for ExperimentPrepareTransporter" <> $SessionUUID]], ObjectP[Model[Container, Rack]]}
 				}
 			},
 			Variables :> {protocol}
@@ -268,6 +331,25 @@ DefineTests[ExperimentPrepareTransporter,
 			},
 			Variables :> {protocol}
 		],
+		Example[{Options, Resource, "If Resource options are not specified, the ResourcesOnLiner and ResourcePlacements fields will be populated with the input objects instead:"},
+			protocol = ExperimentPrepareTransporter[
+				{Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "50mL Tube"]},
+				LinerRequired -> True,
+				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 2 for ExperimentPrepareTransporter" <> $SessionUUID]
+			];
+			Download[protocol, {ResourcesOnLiner, ResourcePlacements}],
+			{
+				{
+					ObjectP[Model[Container, Vessel, "50mL Tube"]],
+					ObjectP[Model[Container, Vessel, "50mL Tube"]]
+				},
+				{
+					{ObjectP[Model[Container, Vessel, "50mL Tube"]], ObjectP[Model[Container, Rack]]},
+					{ObjectP[Model[Container, Vessel, "50mL Tube"]], ObjectP[Model[Container, Rack]]}
+				}
+			},
+			Variables :> {protocol}
+		],
 		Example[{Messages, "NoParentProtocol", "This function is only meant to be called as subprotocol, thus ParentProtocol -> Null is not acceptable:"},
 			ExperimentPrepareTransporter[
 				{Model[Container, Vessel, "50mL Tube"]},
@@ -303,7 +385,7 @@ DefineTests[ExperimentPrepareTransporter,
 				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
 			],
 			$Failed,
-			Messages :> {Error::NoTransportTemperature, Error::InvalidOption, Error::UnsupportedTemperature}
+			Messages :> {Error::NoTransportTemperature, Error::InvalidOption}
 		],
 		Example[{Messages, "InsufficientTransporterSpace", "If items cannot fit in a specified Transporter object because too many other items are already there, an error will be thrown:"},
 			protocol1 = ExperimentPrepareTransporter[
@@ -353,6 +435,16 @@ DefineTests[ExperimentPrepareTransporter,
 			],
 			$Failed,
 			Messages :> {Error::IncorrectTemperatureRange, Error::InvalidOption}
+		],
+		Example[{Messages, "TemperatureControlForLiner", "If TransportTemperature is not Null and the LinerRequired -> True, function will throw an error:"},
+			ExperimentPrepareTransporter[
+				{Model[Container, Vessel, "50mL Round Bottom Flask with 14/20 Joint"]},
+				TransportTemperature -> 4 Celsius,
+				LinerRequired -> True,
+				ParentProtocol -> Object[Protocol, HPLC, "Test protocol 1 for ExperimentPrepareTransporter" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::TemperatureControlForLiner, Error::InvalidOption}
 		],
 		Test["When a mix of multiple duplicated objects are supplied as input, the function's internal remove and restore duplicate feature works well:",
 
@@ -593,5 +685,9 @@ DefineTests[ExperimentPrepareTransporter,
 			existingObjects = PickList[allObjects, DatabaseMemberQ[allObjects], True];
 			EraseObject[existingObjects, Verbose -> False, Force -> True];
 		]
+	},
+	TurnOffMessages :> {
+		Warning::DeprecatedModels,
+		Warning::DeprecatedProduct
 	}
 ]

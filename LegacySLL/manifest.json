@@ -55,6 +55,7 @@
 		"Ignore",
 		"InputFormat",
 		"InterruptibleOption",
+        "InventoryManagementTypesP",
 		"Landscape",
 		"Lowercase",
 		"MaterialsObjects",
@@ -79,6 +80,7 @@
 		"PlateAndWellP",
 		"PlateOrientation",
 		"Portrait",
+		"PreferredBeaker",
 		"PreferredContainer",
 		"PriorityOption",
 		"ProductObject",
@@ -114,6 +116,7 @@
 		"Template",
 		"TipType",
 		"TrackingNumber",
+		"TrainingPracticeOptions",
 		"TransactionObject",
 		"TransferDevices",
 		"TroubleshootingComments",
@@ -123,6 +126,7 @@
 		"UltracentrifugeCompatible",
 		"Upload",
 		"UploadOption",
+		"UploadValidPackets",
 		"UserName",
 		"VacuumFlask",
 		"VerboseOption",
@@ -130,6 +134,7 @@
 		"WideBore",
 		"Wrap",
 		"$EmailEnabled",
+        "$InventoryManagementTypes",
 		"$PreferredContainerCoverLookup"
 	]
 }

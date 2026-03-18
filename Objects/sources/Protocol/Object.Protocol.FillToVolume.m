@@ -67,6 +67,30 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			Category -> "Fill to Volume",
 			Developer -> True
 		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates whether any glassware introduced in this protocol (including, if relevant, any funnels or intermediate containers) are oven dried before use.",
+			Category -> "Fill to Volume"
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates whether any glassware introduced in this protocol (including, if relevant, any solvent preparatory containers, funnels, or intermediate containers) are oven dried before use.",
+			Category -> "Fill to Volume"
+		},
+		OvenDryUnitOperations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[UnitOperation, OvenDry],
+			Description -> "The OvenDry unit operations, if any, that contain the instructions for oven drying or depyrogenating specified glassware prior to any other manipulations.",
+			Category -> "Fill to Volume"
+		},
 		SolventStorage -> {
 			Format -> Multiple,
 			Class -> Expression,

@@ -69,6 +69,16 @@ DefineObjectType[Object[Item], {
       Headers -> {"Date", "Restricted", "Responsible Party"},
       Category -> "Organizational Information"
     },
+    PrintStickersLog -> {
+      Format -> Multiple,
+      Class -> {Date, Link},
+      Pattern :> {_?DateObjectQ, _Link},
+      Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+      Description -> "Indicates times at which stickers were printed for this item.",
+      Headers -> {"Date", "Responsible Party"},
+      Category -> "Organizational Information",
+      Developer -> True
+    },
     Restricted -> {
       Format -> Single,
       Class -> Boolean,
@@ -78,11 +88,11 @@ DefineObjectType[Object[Item], {
     },
     RestrictedLog -> {
       Format -> Multiple,
-      Class -> {Date, Boolean, Link},
-      Pattern :> {_?DateObjectQ, BooleanP, _Link},
-      Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+      Class -> {Date, Boolean, Link, String},
+      Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+      Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
       Description -> "A log of changes made to this item's restricted status.",
-      Headers -> {"Date", "Restricted", "Responsible Party"},
+      Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
       Category -> "Organizational Information"
     },
     Destination -> {
@@ -137,6 +147,14 @@ DefineObjectType[Object[Item], {
       Category -> "Organizational Information",
       Developer -> True
     },
+    PermanentSticker -> {
+      Format -> Single,
+      Class -> Boolean,
+      Pattern :> BooleanP,
+      Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
+      Category -> "Organizational Information",
+      Developer -> True
+    },
 
     (*--- Container Information ---*)
     Container -> {
@@ -161,6 +179,13 @@ DefineObjectType[Object[Item], {
       Category -> "Container Information",
       Headers ->{"Date","Change Type","Container","Position","Responsible Party"}
     },
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this item was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
     Position -> {
       Format -> Single,
       Class -> String,
@@ -595,6 +620,13 @@ DefineObjectType[Object[Item], {
       Description -> "Indicates whether the item should be disposed of as biohazardous waste if disposed of, though it is not necessarily designated for disposal at this time.",
       Category -> "Storage & Handling"
     },
+    OEBCompoundDisposal -> {
+      Format -> Single,
+      Class -> Integer,
+      Pattern :> GreaterP[0, 1],
+      Description -> "Indicates the highest occupational exposure band of any sample that the item has contacted or may have been contacted by, which determines the banding level used for its disposal, though it is not necessarily designated for disposal at this time.",
+      Category -> "Storage & Handling"
+    },
     Expires -> {
       Format -> Single,
       Class -> Expression,
@@ -891,6 +923,14 @@ DefineObjectType[Object[Item], {
       Pattern :> _Link,
       Relation -> Object[Maintenance, ReceiveInventory][Items],
       Description -> "The MaintenanceReceiveInventory in which this item was received.",
+      Category -> "Inventory"
+    },
+    BarcodeInventory -> {
+      Format -> Single,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+      Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this item is affixed.",
       Category -> "Inventory"
     },
     QCDocumentationFiles -> {

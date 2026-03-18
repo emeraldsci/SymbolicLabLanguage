@@ -113,6 +113,13 @@ DefineObjectType[Model[HandlingCondition],{
 			Description -> "The minimum distance per unit time traveled by non-turbid air that is smoothly blown in the LaminarFlowDirection.",
 			Category-> "Operating Limits"
 		},
+		CultureHandling -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> CultureHandlingP,
+			Description -> "Indicates the type of cell samples (Microbial or NonMicrobial) that this environment can be used with (to prevent contamination). Refer to the patterns MicrobialCellTypeP and NonMicrobialCellTypeP for more information.",
+			Category -> "Model Information"
+		},
 		AsepticTechniqueEnvironment -> {
 			(* This field will determine if a HandlingStation needs to be in a BSC. *)
 			Format -> Single,

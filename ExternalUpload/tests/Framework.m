@@ -1632,7 +1632,7 @@ DefineTests[approximateDensity,
 			Round[UnitConvert[approximateDensity[{
 				{50 VolumePercent,<|State->Liquid, Density->(1 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample1"], ID->"id:testSample1"|>},
 				{50 VolumePercent,<|State->Liquid, Density->(2 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample2"], ID->"id:testSample2"|>}
-			}],"Grams"/"Milliliters"],0.01],
+			}],Gram / Milliliter],0.01],
 			(1.67 Gram/Milliliter),
 			EquivalenceFunction->Equal
 		],
@@ -1640,7 +1640,7 @@ DefineTests[approximateDensity,
 			Round[UnitConvert[approximateDensity[{
 				{50 MassPercent,<|State->Liquid, Density->(1 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample1"], ID->"id:testSample1"|>},
 				{50 MassPercent,<|State->Liquid, Density->(2 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample2"], ID->"id:testSample2"|>}
-			}],"Grams"/"Milliliters"],0.01],
+			}],Gram / Milliliter],0.01],
 			(1.5 Gram/Milliliter),
 			EquivalenceFunction->Equal
 		],
@@ -1648,7 +1648,7 @@ DefineTests[approximateDensity,
 			Round[UnitConvert[approximateDensity[{
 				{50 MassPercent,<|State->Liquid, Density->(1 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample1"], ID->"id:testSample1"|>},
 				{50 VolumePercent,<|State->Liquid, Density->(2 Gram/Milliliter), Type->Model[Molecule], Object->Model[Molecule, "id:testSample2"], ID->"id:testSample2"|>}
-			}],"Grams"/"Milliliters"],0.01],
+			}],Gram / Milliliter],0.01],
 			(1.67 Gram/Milliliter),
 			EquivalenceFunction->Equal
 		],
@@ -1656,7 +1656,7 @@ DefineTests[approximateDensity,
 			Round[UnitConvert[approximateDensity[{
 				{1 Milliliter,<|State->Liquid, Density->(1 Gram/Milliliter), Type->Object[Sample], Object->Object[Sample, "id:testSample1"], ID->"id:testSample1"|>},
 				{1 Milliliter,<|State->Liquid, Density->(2 Gram/Milliliter), Type->Object[Sample], Object->Object[Sample, "id:testSample2"], ID->"id:testSample2"|>}
-			}],"Grams"/"Milliliters"],0.01],
+			}],Gram / Milliliter],0.01],
 			(1.67 Gram/Milliliter),
 			EquivalenceFunction->Equal
 		],
@@ -1664,8 +1664,151 @@ DefineTests[approximateDensity,
 			Round[UnitConvert[approximateDensity[{
 				{0 Milliliter, <|State -> Liquid, Density -> Null, Type -> Object[Sample], Object -> Object[Sample, "id:testSample1"], ID -> "id:testSample1"|>},
 				{0 Milliliter, <|State -> Liquid, Density -> Null, Type -> Object[Sample], Object -> Object[Sample, "id:testSample2"], ID -> "id:testSample2"|>}
-			}], "Grams" / "Milliliters"], 0.01],
+			}], Gram / Milliliter], 0.01],
 			(1. Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Approximates density when provided composition with Molar concentration components:",
+			Round[UnitConvert[approximateDensity[{
+				{1 Mole / Liter, <|State -> Liquid, Density -> (1.5 Gram / Milliliter), MolecularWeight -> (100 Gram / Mole), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{50 VolumePercent, <|State -> Liquid, Density -> (0.8 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(0.94 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Approximates density when provided composition with mass concentration (g/L) components:",
+			Round[UnitConvert[approximateDensity[{
+				{200 Gram / Liter, <|State -> Liquid, Density -> (1.2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{50 VolumePercent, <|State -> Liquid, Density -> (0.9 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(0.99 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Filters out low concentration components (less than 5 MassPercent):",
+			Round[UnitConvert[approximateDensity[{
+				{2 MassPercent, <|State -> Liquid, Density -> (10 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{98 MassPercent, <|State -> Liquid, Density -> (1 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Filters out low concentration components (less than 5 VolumePercent):",
+			Round[UnitConvert[approximateDensity[{
+				{3 VolumePercent, <|State -> Liquid, Density -> (5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{97 VolumePercent, <|State -> Liquid, Density -> (1 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Filters out low molar concentration components (less than 0.5 M):",
+			Round[UnitConvert[approximateDensity[{
+				{0.3 Mole / Liter, <|State -> Liquid, Density -> (2 Gram / Milliliter), MolecularWeight -> (200 Gram / Mole), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{80 VolumePercent, <|State -> Liquid, Density -> (1 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Filters out low mass concentration components (less than 10 g/L):",
+			Round[UnitConvert[approximateDensity[{
+				{8 Gram / Liter, <|State -> Liquid, Density -> (5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{70 VolumePercent, <|State -> Liquid, Density -> (1.2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.2 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Filters out unsupported concentration components, such as Cell concentration:",
+			Round[UnitConvert[approximateDensity[{
+				{1000 Cell / Liter, <|State -> Liquid, Type -> Model[Cell, Bacteria], Object -> Model[Cell, Bacteria, "id:testSample1"], ID -> "id:testSample1"|>},
+				{100 VolumePercent, <|State -> Liquid, Density -> (1.2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.2 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Uses default density of water (0.997 g/mL) when component density is Null:",
+			Round[UnitConvert[approximateDensity[{
+				{50 VolumePercent, <|State -> Liquid, Density -> Null, Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{50 VolumePercent, <|State -> Liquid, Density -> (1.5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.3 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Handles mixed composition amount types in a single calculation:",
+			Round[UnitConvert[approximateDensity[{
+				{20 MassPercent, <|State -> Liquid, Density -> (2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{30 VolumePercent, <|State -> Liquid, Density -> (0.8 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>},
+				{0.5 Mole / Liter, <|State -> Liquid, Density -> (1.2 Gram / Milliliter), MolecularWeight -> (100 Gram / Mole), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample3"], ID -> "id:testSample3"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.33 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Ignores PercentConfluency components:",
+			Round[UnitConvert[approximateDensity[{
+				{80 PercentConfluency, <|State -> Liquid, Density -> (10 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{50 VolumePercent, <|State -> Liquid, Density -> (1.5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.5 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Returns water density when all components are filtered out:",
+			Round[UnitConvert[approximateDensity[{
+				{1 MassPercent, <|State -> Liquid, Density -> (5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{2 VolumePercent, <|State -> Liquid, Density -> (3 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Handles empty composition list by returning the default density:",
+			Round[UnitConvert[approximateDensity[{}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Handles composition with all Null concentrations:",
+			Round[UnitConvert[approximateDensity[{
+				{Null, <|State -> Liquid, Density -> (2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{Null, <|State -> Liquid, Density -> (3 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Correctly processes volume ratios in volume-based overload:",
+			Round[UnitConvert[approximateDensity[{
+				{1 Milliliter, <|State -> Liquid, Density -> (2 Gram / Milliliter), Type -> Object[Sample], Object -> Object[Sample, "id:testSample1"], ID -> "id:testSample1"|>},
+				{3 Milliliter, <|State -> Liquid, Density -> (1 Gram / Milliliter), Type -> Object[Sample], Object -> Object[Sample, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1.4 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Handles mixed Null amounts and packets in composition by using the available information and default water density:",
+			Round[UnitConvert[approximateDensity[{
+				{Null, <|State -> Liquid, Density -> (5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{50 VolumePercent, <|State -> Liquid, Density -> (1.5 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>},
+				{Null, Null}
+			}], Gram / Milliliter], 0.01],
+			(1.5 Gram / Milliliter),
+			EquivalenceFunction -> Equal
+		],
+
+		Test["Handles case where scaling factor calculation encounters zero contributions:",
+			Round[UnitConvert[approximateDensity[{
+				{0 MassPercent, <|State -> Liquid, Density -> (2 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample1"], ID -> "id:testSample1"|>},
+				{0 VolumePercent, <|State -> Liquid, Density -> (3 Gram / Milliliter), Type -> Model[Molecule], Object -> Model[Molecule, "id:testSample2"], ID -> "id:testSample2"|>}
+			}], Gram / Milliliter], 0.01],
+			(1 Gram / Milliliter),
 			EquivalenceFunction -> Equal
 		]
 	}
@@ -2479,6 +2622,16 @@ DefineTests[formatFieldValue,
 			fieldDefinition = Lookup[Lookup[LookupTypeDefinition[Model[Item, Column]], Fields], Dimensions];
 			formatFieldValue[Model[Item, Column], Dimensions, {1 Centimeter, 1 Centimeter, 10 Centimeter}, fieldDefinition],
 			{{1 Centimeter, 1 Centimeter, 10 Centimeter}, {}}
+		],
+		Test["If an object is already wrapped in the correct Link, the link is returned in the same correct format:",
+			fieldDefinition = Lookup[Lookup[LookupTypeDefinition[Model[Container]], Fields], Products];
+			formatFieldValue[Model[Container], Products, {Link[Object[Product, "id:xRO9n3Bwp1ox"], ProductModel]}, fieldDefinition],
+			{{Link[Object[Product, "id:xRO9n3Bwp1ox"], ProductModel]}, {}}
+		],
+		Test["If an object is already wrapped in an incorrect Link (such as originating from a type with different field definition), the link is returned in the corrected format:",
+			fieldDefinition = Lookup[Lookup[LookupTypeDefinition[Model[Container]], Fields], Products];
+			formatFieldValue[Model[Container], Products, {Link[Object[Product, "id:xRO9n3Bwp1ox"], IncorrectBackLink]}, fieldDefinition],
+			{{Link[Object[Product, "id:xRO9n3Bwp1ox"], ProductModel]}, {}}
 		]
 	},
 	Variables :> {fieldDefinition, filePath}
@@ -2494,22 +2647,22 @@ DefineTests[executeDefaultUploadFunction,
 		Test["When Model[Sample] is supplied as the first input, function calls UploadSampleModel and use the Name from option as input:",
 			Catch[executeDefaultUploadFunction[Model[Sample], {Name -> {"Water"}}, "sample model"]],
 			{"Water"},
-			Stubs :> {UploadSampleModel[x___] := Throw[First[{x}]]}
+			Stubs :> {UploadSampleModel[x___] := Throw[First[{x}]], $AllowAutoNewModelCreation = True}
 		],
 		Test["Function modifies the input options, setting Strict -> False and Upload -> False, then pass to the external upload function:",
 			Catch[executeDefaultUploadFunction[Model[Sample], {Name -> {"Water"}}, "sample model"]],
-			AssociationMatchP[<| Name -> {"Water"}, Upload -> False, Strict -> False |>],
-			Stubs :> {UploadSampleModel[x___] := Throw[Association[Last[{x}]]]}
+			AssociationMatchP[<| Upload -> False, Strict -> False |>],
+			Stubs :> {UploadSampleModel[x___] := Throw[Association[Last[{x}]]], $AllowAutoNewModelCreation = True}
 		],
 		Test["When Model[Item, Column] is supplied as the first input, function calls UploadColumn and use the Name from option as input:",
 			Catch[executeDefaultUploadFunction[Model[Item, Column], {Name -> {"test column"}}, "column model"]],
 			{"test column"},
-			Stubs :> {UploadColumn[x___] := Throw[First[{x}]]}
+			Stubs :> {UploadColumn[x___] := Throw[First[{x}]], $AllowAutoNewModelCreation = True}
 		],
 		Test["If the upload function did not return a list of packets, this function will return {$Failed, $Failed}:",
 			executeDefaultUploadFunction[Model[Container, Plate], {Name -> {"test container"}}, "container model"],
 			{$Failed, $Failed},
-			Stubs :> {UploadContainerModel[x___] := {"1"}}
+			Stubs :> {UploadContainerModel[x___] := {"1"}, $AllowAutoNewModelCreation = True}
 		],
 		Test["If the upload function returns a list of packets, the first output of this function is the objects that matches the requested type, while the second output is all packets:",
 			executeDefaultUploadFunction[Model[Item, Column], {Name -> "test column"}, "column model test"],
@@ -2518,12 +2671,12 @@ DefineTests[executeDefaultUploadFunction,
 			Stubs :> {UploadColumn[x___] := With[
 				{objects = Flatten[Search[{{Model[Item, Lid]}, {Model[Item, Column]}}, MaxResults -> 1]]},
 				Download[objects, Packet[Name]]
-			]}
+			], $AllowAutoNewModelCreation = True}
 		],
 		Test["If no function is directly available in $ObjectBuilder to create the requested type, function that creates parent type of the input will be used:",
 			Catch[executeDefaultUploadFunction[Model[Container, Plate, Filter], {Name -> {"test plate filter"}}, "container model"]],
 			Model[Container, Plate, Filter],
-			Stubs :> {UploadContainerModel[x___] := Throw[First[{x}]]}
+			Stubs :> {UploadContainerModel[x___] := Throw[First[{x}]], $AllowAutoNewModelCreation = True}
 		]
 	},
 	SetUp :> {ClearMemoization[]}
@@ -2599,6 +2752,38 @@ DefineTests[preProcessOptionValue,
 				{EqualP[1 VolumePercent], Model[Molecule, "id:Y0lXejMq5qAa"], EqualP[DateObject[{2025, 1, 1, 0, 0, 0}]]}
 			}
 		],
+		Test["Existing links are stripped:",
+			preProcessOptionValue[
+				Model[Sample],
+				PipettingMethod,
+				Link[Model[Method, Pipetting, "id:4pO6dM5OV9vr"]]
+			],
+			Model[Method, Pipetting, "id:4pO6dM5OV9vr"]
+		],
+		Test["Existing links with backlinks are stripped:",
+			preProcessOptionValue[
+				Model[Sample],
+				PipettingMethod,
+				Link[Model[Method, Pipetting, "id:4pO6dM5OV9vr"], Backlink]
+			],
+			Model[Method, Pipetting, "id:4pO6dM5OV9vr"]
+		],
+		Test["Existing links with backlinks and IDs are stripped:",
+			preProcessOptionValue[
+				Model[Sample],
+				PipettingMethod,
+				Link[Model[Method, Pipetting, "id:4pO6dM5OV9vr"], Backlink, "Vrbp1EdMzJ5m"]
+			],
+			Model[Method, Pipetting, "id:4pO6dM5OV9vr"]
+		],
+		Test["Nested links are stripped:",
+			preProcessOptionValue[
+				Object[Instrument],
+				StatusLog,
+				{{DateObject[{2025, 01, 01, 00, 00, 00}], Available, Link[$PersonID]}}
+			],
+			{{DateObject[{2025, 01, 01, 00, 00, 00}], Available, $PersonID}}
+		],
 		Test["Other fields are unchanged:",
 			preProcessOptionValue[
 				Model[Sample],
@@ -2649,12 +2834,12 @@ DefineTests[installDefaultUploadFunction,
 				ClearAll[installDefaultUploadFunctionTestFunction2]
 			}
 		],
-		Example[{Options, AuxilliaryPacketsFunction, "Generate an upload function for Model[Sample] with name 'installDefaultUploadFunctionTestFunction3' that uses a custom option resolver and auxilliary packet function:"},
+		Example[{Options, AuxiliaryPacketsFunction, "Generate an upload function for Model[Sample] with name 'installDefaultUploadFunctionTestFunction3' that uses a custom option resolver and auxiliary packet function:"},
 			installDefaultUploadFunction[
 				installDefaultUploadFunctionTestFunction3,
 				Model[Sample],
 				OptionResolver -> installDefaultUploadFunctionOptionResolver3,
-				AuxilliaryPacketsFunction -> installDefaultUploadFunctionAuxilliaryPacketsFunction3
+				AuxiliaryPacketsFunction -> installDefaultUploadFunctionAuxiliaryPacketsFunction3
 			];
 			DownValues[installDefaultUploadFunctionTestFunction3],
 			Except[{}],
@@ -2794,21 +2979,21 @@ DefineTests[installDefaultUploadFunction,
 				ClearAll[installDefaultUploadFunctionTestFunction10]
 			}
 		],
-		Test["If an auxilliary packet function is specified, it is used:",
+		Test["If an auxiliary packet function is specified, it is used:",
 			installDefaultUploadFunction[
 				installDefaultUploadFunctionTestFunction11,
 				Model[Sample],
 				OptionResolver -> installDefaultUploadFunctionOptionResolver11,
-				AuxilliaryPacketsFunction -> installDefaultUploadFunctionAuxilliaryPacketsFunction11
+				AuxiliaryPacketsFunction -> installDefaultUploadFunctionAuxiliaryPacketsFunction11
 			];
 			DownValues[installDefaultUploadFunctionTestFunction11],
 			_?(And[
 				MemberQ[#,
-					_installDefaultUploadFunctionAuxilliaryPacketsFunction11,
+					_installDefaultUploadFunctionAuxiliaryPacketsFunction11,
 					Infinity
 				],
 				!MemberQ[#,
-					_generateDefaultUploadFunctionAuxilliaryPackets,
+					_generateDefaultUploadFunctionAuxiliaryPackets,
 					Infinity
 				]
 			]&),
@@ -4019,13 +4204,13 @@ DefineTests[installDefaultUploadFunction,
 		Test["Downloads of URLs are memoized, so repeated function calls are fast:",
 			timing1 = First@AbsoluteTiming[UploadIDUFTest1[
 				"Test object 1 for UploadIDUFTest1 unit tests 20 " <> $SessionUUID,
-				StructureImageFile -> "https://www.emeraldcloudlab.com/static/d167d3457dcf81e5d4e6ae0101d359d4/ea92a/robotic-sample-preparation-workcell.png",
+				StructureImageFile -> "https://www.emeraldcloudlab.com/static/d167d3457dcf81e5d4e6ae0101d359d4/5a251/robotic-sample-preparation-workcell.webp",
 				Output -> Options
 			]];
 			timing2 = First@AbsoluteTiming[
 				UploadIDUFTest1[
 					"Test object 1 for UploadIDUFTest1 unit tests 20 " <> $SessionUUID,
-					StructureImageFile -> "https://www.emeraldcloudlab.com/static/d167d3457dcf81e5d4e6ae0101d359d4/ea92a/robotic-sample-preparation-workcell.png",
+					StructureImageFile -> "https://www.emeraldcloudlab.com/static/d167d3457dcf81e5d4e6ae0101d359d4/5a251/robotic-sample-preparation-workcell.webp",
 					Output -> Options
 				];
 			];
@@ -4108,11 +4293,11 @@ DefineTests[installDefaultUploadFunction,
 			Variables :> {resolvedOptions}
 		],
 
-		Example[{Options, AuxilliaryPacketsFunction, "Specify a custom auxilliary packets function to make modifications to related objects along with the primary changes:"},
+		Example[{Options, AuxiliaryPacketsFunction, "Specify a custom auxiliary packets function to make modifications to related objects along with the primary changes:"},
 			(* Set the options *)
 			DefineOptions[UploadIDUFTest3, Options :> {MoleculeOptions, ExternalUploadHiddenOptions}];
 
-			(* Define a silly custom auxilliary packets function *)
+			(* Define a silly custom auxiliary packets function *)
 			UploadIDUFTest3AuxPackets[myType_, myInput:{___}, listedOptions_, resolvedOptions_] := {
 				<|
 					Object -> Model[Sample, "Test sample 1 for UploadIDUFTest3 Modification unit tests 1 " <> $SessionUUID],
@@ -4124,7 +4309,7 @@ DefineTests[installDefaultUploadFunction,
 			installDefaultUploadFunction[
 				UploadIDUFTest3,
 				Model[Molecule],
-				AuxilliaryPacketsFunction -> UploadIDUFTest3AuxPackets
+				AuxiliaryPacketsFunction -> UploadIDUFTest3AuxPackets
 			];
 
 			(* Call the function *)
@@ -4751,7 +4936,7 @@ DefineTests[installDefaultUploadFunction,
 			(* Set the options *)
 			DefineOptions[UploadIDUFTest15, Options :> {MoleculeOptions, ExternalUploadHiddenOptions}];
 
-			(* Define a silly custom auxilliary packets function. Just sets BP of everything to 1 Kelvin *)
+			(* Define a silly custom auxiliary packets function. Just sets BP of everything to 1 Kelvin *)
 			UploadIDUFTest15GeneratedPackets[myType_, myInputs : _List, myOptions_, myOps : OptionsPattern[]] := {
 				Map[
 					<|
@@ -5075,8 +5260,6 @@ DefineTests[installDefaultUploadFunction,
 	}
 ];
 
-
-
 (* ::Subsubsection::Closed:: *)
 (*installDefaultOptionsFunction*)
 
@@ -5376,6 +5559,23 @@ DefineTests[installDefaultVerificationFunction,
 			TearDown :> {
 				ClearAll[ECL`UploadDefaultVerificationTestFunction3],
 				ClearAll[ECL`UploadVerifiedDefaultVerificationTestFunction3]
+			}
+		],
+		Example[{Options, OptionCategoryChange, "Use OptionCategoryChange option to change the category of certain options. This is especially useful to hide/show certain options:"},
+			installDefaultVerificationFunction[ECL`UploadDefaultVerificationTestFunction,
+				Model[Sample],
+				OptionCategoryChange -> {<| Options -> Upload, Category -> "General" |>}
+			];
+			Lookup[FirstCase[OptionDefinition[ECL`UploadVerifiedDefaultVerificationTestFunction], KeyValuePattern["OptionSymbol" -> Upload]], "Category"],
+			"General",
+			SetUp :> {
+				ClearAll[ECL`UploadDefaultVerificationTestFunction],
+				ClearAll[ECL`UploadVerifiedDefaultVerificationTestFunction],
+				DefineOptions[ECL`UploadDefaultVerificationTestFunction, Options :> {ExternalUploadHiddenOptions}]
+			},
+			TearDown :> {
+				ClearAll[ECL`UploadDefaultVerificationTestFunction],
+				ClearAll[ECL`UploadVerifiedDefaultVerificationTestFunction]
 			}
 		],
 		Test["A single overload is defined that calls the named function:",
@@ -6080,7 +6280,8 @@ Module[{cacheForRunOptionValidationTests, validContainerModel1, validContainerMo
 						Replace[CoverFootprints] -> {CapScrewTube35x13},
 						Ampoule -> False,
 						Aperture -> 0.3 Meter,
-						Replace[ContainerMaterials] -> {LDPE}
+						Replace[ContainerMaterials] -> {LDPE},
+						MaxCentrifugationForce -> 1000 GravitationalAcceleration
 					|>,
 					<|
 						Type -> Model[Container, Vessel],
@@ -6124,7 +6325,8 @@ Module[{cacheForRunOptionValidationTests, validContainerModel1, validContainerMo
 						Replace[CoverFootprints] -> {CapScrewTube35x13},
 						Ampoule -> False,
 						Aperture -> 0.3 Meter,
-						Replace[ContainerMaterials] -> {LDPE}
+						Replace[ContainerMaterials] -> {LDPE},
+						MaxCentrifugationForce -> 1000 GravitationalAcceleration
 					|>
 				}];
 
@@ -6141,6 +6343,92 @@ Module[{cacheForRunOptionValidationTests, validContainerModel1, validContainerMo
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 		]
 	]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*uploadVerified*)
+
+DefineTests[uploadVerified,
+	{
+		Test["Function updates the Verified field based on the Verified option:",
+			uploadVerified[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Verified -> True];
+			Download[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Verified],
+			True
+		],
+		Test["Function updates the VerifiedLog field based on the Verified option:",
+			uploadVerified[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Verified -> True];
+			Download[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], VerifiedLog],
+			{{True, LinkP[Object[User]], _DateObject}}
+		],
+		Test["Function updates Verified field of multiple objects:",
+			uploadVerified[
+				{Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]},
+				Verified -> True
+			];
+			Download[{Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]}, Verified],
+			{True, True}
+		],
+		Test["Function updates Verified field of multiple objects using index-matching Verified option:",
+			uploadVerified[
+				{Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]},
+				Verified -> {False, True}
+			];
+			Download[{Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]}, Verified],
+			{False, True}
+		],
+		Test["Function updates PendingParameterization field if this option is set:",
+			uploadVerified[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], PendingParameterization -> True];
+			Download[Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID], PendingParameterization],
+			True
+		]
+	},
+	SetUp :> Upload[{
+		<|
+			Object -> Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID],
+			Verified -> Null,
+			Replace[VerifiedLog] -> {},
+			PendingParameterization -> Null
+		|>,
+		<|
+			Object -> Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID],
+			Verified -> Null,
+			Replace[VerifiedLog] -> {}
+		|>
+	}],
+	SymbolSetUp :> {
+		Module[{allObj, existingObj},
+			allObj = {
+				Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID],
+				Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]
+			};
+			existingObj = PickList[allObj, DatabaseMemberQ[allObj]];
+			EraseObject[existingObj, Force -> True, Verbose -> False]
+		],
+		Module[{},
+			Upload[{
+				<|
+					Type -> Model[Container, Vessel],
+					Name -> "Test container model for uploadVerified "<>$SessionUUID,
+					DeveloperObject -> True
+				|>,
+				<|
+					Type -> Model[Sample],
+					Name -> "Test sample model for uploadVerified "<>$SessionUUID,
+					DeveloperObject -> True
+				|>
+			}]
+		]
+	},
+	SymbolTearDown :> {
+		Module[{allObj, existingObj},
+			allObj = {
+				Model[Container, Vessel, "Test container model for uploadVerified "<>$SessionUUID],
+				Model[Sample, "Test sample model for uploadVerified "<>$SessionUUID]
+			};
+			existingObj = PickList[allObj, DatabaseMemberQ[allObj]];
+			EraseObject[existingObj, Force -> True, Verbose -> False]
+		]
+	}
 ];
 
 
@@ -6608,4 +6896,865 @@ DefineTests[downloadDuffPackets,
 			Variables :> {packet}
 		]
 	}
-]
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*combineEHSFields*)
+
+DefineTests[combineEHSFields,
+	{
+		(* Basic examples showing each overload *)
+		Example[{Basic, "Combines individual EHS field values using field-specific logic:"},
+			combineEHSFields[BiosafetyLevel, "BSL-2", "BSL-3"],
+			BiosafetyLevel -> "BSL-3"
+		],
+		Example[{Basic, "Calculates EHS fields from sample composition:"},
+			combineEHSFields[
+				{
+					{50 VolumePercent, Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{30 VolumePercent, Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{State, Flammable},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{
+				State -> Liquid,
+				Flammable -> True
+			}
+		],
+		Example[{Basic, "Updates destination EHS fields after sample transfer:"},
+			combineEHSFields[
+				State,
+				Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				10 Milliliter,
+				90 Milliliter,
+				Download[{
+					Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Solid, {PacketP[], AssociationMatchP[<|EHSPercentages -> {State -> {Solid -> EqualP[0.9], Liquid -> EqualP[0.1]}}|>, AllowForeignKeys -> True]}}
+		],
+
+		Test["State field: Combined sample state follows priority order Liquid > Solid > Gas:",
+			{
+				combineEHSFields[State, Liquid, Solid],
+				combineEHSFields[State, Gas, Solid],
+				combineEHSFields[State, Gas, Null]
+			},
+			{
+				State -> Liquid,
+				State -> Solid,
+				State -> Gas
+			}
+		],
+		Test["CellType field: Combined sample cell type follows priority order Mammalian > Yeast > Bacterial:",
+			{
+				combineEHSFields[CellType, Yeast, Mammalian],
+				combineEHSFields[CellType, Yeast, Bacterial],
+				combineEHSFields[CellType, Bacterial, Null]
+			},
+			{
+				CellType -> Mammalian,
+				CellType -> Yeast,
+				CellType -> Bacterial
+			}
+		],
+		Test["BiosafetyLevel field: Combined sample takes highest biosafety level (BSL-4 > BSL-3 > BSL-2 > BSL-1):",
+			{
+				combineEHSFields[BiosafetyLevel, "BSL-2", "BSL-3"],
+				combineEHSFields[BiosafetyLevel, "BSL-4", "BSL-1"],
+				combineEHSFields[BiosafetyLevel, "BSL-1", "BSL-3"]
+			},
+			{
+				BiosafetyLevel -> "BSL-3",
+				BiosafetyLevel -> "BSL-4",
+				BiosafetyLevel -> "BSL-3"
+			}
+		],
+
+		Test["Flammable field: If any component is flammable, the combined sample is flammable:",
+			{
+				combineEHSFields[Flammable, True, False],
+				combineEHSFields[Flammable, False, True],
+				combineEHSFields[Flammable, Null, True],
+				combineEHSFields[Flammable, False, False]
+			},
+			{
+				Flammable -> True,
+				Flammable -> True,
+				Flammable -> True,
+				Flammable -> False
+			}
+		],
+		Test["Acid field: If any component is acidic, the combined sample is acidic:",
+			{
+				combineEHSFields[Acid, False, True],
+				combineEHSFields[Acid, True, False],
+				combineEHSFields[Acid, True, Null],
+				combineEHSFields[Acid, False, False]
+			},
+			{
+				Acid -> True,
+				Acid -> True,
+				Acid -> True,
+				Acid -> False
+			}
+		],
+		Test["Base field: If any component is basic, the combined sample is basic:",
+			{
+				combineEHSFields[Base, False, True],
+				combineEHSFields[Base, True, False],
+				combineEHSFields[Base, Null, True],
+				combineEHSFields[Base, False, False]
+			},
+			{
+				Base -> True,
+				Base -> True,
+				Base -> True,
+				Base -> False
+			}
+		],
+		Test["Radioactive field: If any component is radioactive, the combined sample is radioactive:",
+			{
+				combineEHSFields[Radioactive, True, False],
+				combineEHSFields[Radioactive, False, True],
+				combineEHSFields[Radioactive, Null, True],
+				combineEHSFields[Radioactive, False, False]
+			},
+			{
+				Radioactive -> True,
+				Radioactive -> True,
+				Radioactive -> True,
+				Radioactive -> False
+			}
+		],
+		Test["Pyrophoric field: If any component is pyrophoric, the combined sample is pyrophoric:",
+			{
+				combineEHSFields[Pyrophoric, True, False],
+				combineEHSFields[Pyrophoric, False, True],
+				combineEHSFields[Pyrophoric, Null, True],
+				combineEHSFields[Pyrophoric, False, False]
+			},
+			{
+				Pyrophoric -> True,
+				Pyrophoric -> True,
+				Pyrophoric -> True,
+				Pyrophoric -> False
+			}
+		],
+		Test["WaterReactive field: If any component is water reactive, the combined sample is water reactive:",
+			{
+				combineEHSFields[WaterReactive, True, False],
+				combineEHSFields[WaterReactive, False, True],
+				combineEHSFields[WaterReactive, Null, True],
+				combineEHSFields[WaterReactive, False, False]
+			},
+			{
+				WaterReactive -> True,
+				WaterReactive -> True,
+				WaterReactive -> True,
+				WaterReactive -> False
+			}
+		],
+		Test["Fuming field: If any component produces fumes, the combined sample produces fumes:",
+			{
+				combineEHSFields[Fuming, True, False],
+				combineEHSFields[Fuming, False, True],
+				combineEHSFields[Fuming, Null, True],
+				combineEHSFields[Fuming, False, False]
+			},
+			{
+				Fuming -> True,
+				Fuming -> True,
+				Fuming -> True,
+				Fuming -> False
+			}
+		],
+		Test["HazardousBan field: If any component is banned as hazardous, the combined sample is banned:",
+			{
+				combineEHSFields[HazardousBan, True, False],
+				combineEHSFields[HazardousBan, False, True],
+				combineEHSFields[HazardousBan, Null, True],
+				combineEHSFields[HazardousBan, False, False]
+			},
+			{
+				HazardousBan -> True,
+				HazardousBan -> True,
+				HazardousBan -> True,
+				HazardousBan -> False
+			}
+		],
+		Test["ExpirationHazard field: If any component becomes hazardous upon expiration, the combined sample has expiration hazard:",
+			{
+				combineEHSFields[ExpirationHazard, True, False],
+				combineEHSFields[ExpirationHazard, False, True],
+				combineEHSFields[ExpirationHazard, Null, True],
+				combineEHSFields[ExpirationHazard, False, False]
+			},
+			{
+				ExpirationHazard -> True,
+				ExpirationHazard -> True,
+				ExpirationHazard -> True,
+				ExpirationHazard -> False
+			}
+		],
+		Test["MSDSRequired field: If any component requires MSDS, the combined sample requires MSDS:",
+			{
+				combineEHSFields[MSDSRequired, True, False],
+				combineEHSFields[MSDSRequired, False, True],
+				combineEHSFields[MSDSRequired, Null, True],
+				combineEHSFields[MSDSRequired, False, False]
+			},
+			{
+				MSDSRequired -> True,
+				MSDSRequired -> True,
+				MSDSRequired -> True,
+				MSDSRequired -> False
+			}
+		],
+		Test["LightSensitive field: If any component is light sensitive, the combined sample is light sensitive:",
+			{
+				combineEHSFields[LightSensitive, True, False],
+				combineEHSFields[LightSensitive, False, True],
+				combineEHSFields[LightSensitive, Null, True],
+				combineEHSFields[LightSensitive, False, False]
+			},
+			{
+				LightSensitive -> True,
+				LightSensitive -> True,
+				LightSensitive -> True,
+				LightSensitive -> False
+			}
+		],
+		Test["LiquidHandlerIncompatible field: If any component is incompatible with liquid handlers, the combined sample is incompatible:",
+			{
+				combineEHSFields[LiquidHandlerIncompatible, True, False],
+				combineEHSFields[LiquidHandlerIncompatible, False, True],
+				combineEHSFields[LiquidHandlerIncompatible, Null, True],
+				combineEHSFields[LiquidHandlerIncompatible, False, False]
+			},
+			{
+				LiquidHandlerIncompatible -> True,
+				LiquidHandlerIncompatible -> True,
+				LiquidHandlerIncompatible -> True,
+				LiquidHandlerIncompatible -> False
+			}
+		],
+		Test["UltrasonicIncompatible field: If any component is incompatible with ultrasonics, the combined sample is incompatible:",
+			{
+				combineEHSFields[UltrasonicIncompatible, True, False],
+				combineEHSFields[UltrasonicIncompatible, False, True],
+				combineEHSFields[UltrasonicIncompatible, Null, True],
+				combineEHSFields[UltrasonicIncompatible, False, False]
+			},
+			{
+				UltrasonicIncompatible -> True,
+				UltrasonicIncompatible -> True,
+				UltrasonicIncompatible -> True,
+				UltrasonicIncompatible -> False
+			}
+		],
+		Test["Expires field: If any component expires, the combined sample expires:",
+			{
+				combineEHSFields[Expires, True, False],
+				combineEHSFields[Expires, False, True],
+				combineEHSFields[Expires, Null, True],
+				combineEHSFields[Expires, False, False]
+			},
+			{
+				Expires -> True,
+				Expires -> True,
+				Expires -> True,
+				Expires -> False
+			}
+		],
+		Test["Pungent field: If any component is pungent, the combined sample is pungent:",
+			{
+				combineEHSFields[Pungent, True, False],
+				combineEHSFields[Pungent, False, True],
+				combineEHSFields[Pungent, Null, True],
+				combineEHSFields[Pungent, False, False]
+			},
+			{
+				Pungent -> True,
+				Pungent -> True,
+				Pungent -> True,
+				Pungent -> False
+			}
+		],
+		Test["ParticularlyHazardousSubstance field: If any component is particularly hazardous, the combined sample is particularly hazardous:",
+			{
+				combineEHSFields[ParticularlyHazardousSubstance, True, False],
+				combineEHSFields[ParticularlyHazardousSubstance, False, True],
+				combineEHSFields[ParticularlyHazardousSubstance, Null, True],
+				combineEHSFields[ParticularlyHazardousSubstance, False, False]
+			},
+			{
+				ParticularlyHazardousSubstance -> True,
+				ParticularlyHazardousSubstance -> True,
+				ParticularlyHazardousSubstance -> True,
+				ParticularlyHazardousSubstance -> False
+			}
+		],
+		Test["DoubleGloveRequired field: If any component requires double gloves, the combined sample requires double gloves:",
+			{
+				combineEHSFields[DoubleGloveRequired, True, False],
+				combineEHSFields[DoubleGloveRequired, False, True],
+				combineEHSFields[DoubleGloveRequired, Null, True],
+				combineEHSFields[DoubleGloveRequired, False, False]
+			},
+			{
+				DoubleGloveRequired -> True,
+				DoubleGloveRequired -> True,
+				DoubleGloveRequired -> True,
+				DoubleGloveRequired -> False
+			}
+		],
+		Test["Ventilated field: If any component requires ventilation, the combined sample requires ventilation:",
+			{
+				combineEHSFields[Ventilated, True, False],
+				combineEHSFields[Ventilated, False, True],
+				combineEHSFields[Ventilated, Null, True],
+				combineEHSFields[Ventilated, False, False]
+			},
+			{
+				Ventilated -> True,
+				Ventilated -> True,
+				Ventilated -> True,
+				Ventilated -> False
+			}
+		],
+
+		Test["Sterile field: If any component is non-sterile, the combined sample is non-sterile:",
+			{
+				combineEHSFields[Sterile, False, True],
+				combineEHSFields[Sterile, True, False],
+				combineEHSFields[Sterile, True, True],
+				combineEHSFields[Sterile, Null, False]
+			},
+			{
+				Sterile -> False,
+				Sterile -> False,
+				Sterile -> True,
+				Sterile -> False
+			}
+		],
+		Test["Anhydrous field: If any component is not anhydrous, the combined sample is not anhydrous:",
+			{
+				combineEHSFields[Anhydrous, False, True],
+				combineEHSFields[Anhydrous, True, False],
+				combineEHSFields[Anhydrous, True, True],
+				combineEHSFields[Anhydrous, Null, False]
+			},
+			{
+				Anhydrous -> False,
+				Anhydrous -> False,
+				Anhydrous -> True,
+				Anhydrous -> False
+			}
+		],
+		Test["DrainDisposal field: If any component cannot be disposed down drain, the combined sample cannot be disposed down drain:",
+			{
+				combineEHSFields[DrainDisposal, False, True],
+				combineEHSFields[DrainDisposal, True, False],
+				combineEHSFields[DrainDisposal, True, True],
+				combineEHSFields[DrainDisposal, Null, False]
+			},
+			{
+				DrainDisposal -> False,
+				DrainDisposal -> False,
+				DrainDisposal -> True,
+				DrainDisposal -> False
+			}
+		],
+		Test["AsepticHandling field: If any component does not require aseptic handling, the combined sample does not require aseptic handling:",
+			{
+				combineEHSFields[AsepticHandling, False, True],
+				combineEHSFields[AsepticHandling, True, False],
+				combineEHSFields[AsepticHandling, True, True],
+				combineEHSFields[AsepticHandling, Null, False]
+			},
+			{
+				AsepticHandling -> False,
+				AsepticHandling -> False,
+				AsepticHandling -> True,
+				AsepticHandling -> False
+			}
+		],
+
+		(* Numeric field tests *)
+		Test["ShelfLife field: Combined sample shelf life is shortest of known component shelf lives:",
+			{
+				combineEHSFields[ShelfLife, 30 Day, 60 Day],
+				combineEHSFields[ShelfLife, Null, 60 Day],
+				combineEHSFields[ShelfLife, 60 Day, Null]
+			},
+			{
+				ShelfLife -> 30 Day,
+				ShelfLife -> 60 Day,
+				ShelfLife -> 60 Day
+			}
+		],
+		Test["UnsealedShelfLife field: Combined sample unsealed shelf life is shortest of known component unsealed shelf lives:",
+			{
+				combineEHSFields[UnsealedShelfLife, 7 Day, 14 Day],
+				combineEHSFields[UnsealedShelfLife, Null, 14 Day]
+			},
+			{
+				UnsealedShelfLife -> 7 Day,
+				UnsealedShelfLife -> 14 Day
+			}
+		],
+
+		(* NFPA field tests *)
+		Test["NFPA field: Combined sample NFPA ratings are worst case of all known components:",
+			{
+				combineEHSFields[
+					NFPA,
+					{Health -> 2, Flammability -> 1, Reactivity -> 0, Special -> {}},
+					{Health -> 1, Flammability -> 3, Reactivity -> 2, Special -> {}}
+				],
+				combineEHSFields[
+					NFPA,
+					Null,
+					{Health -> 1, Flammability -> 3, Reactivity -> 2, Special -> {}}
+				],
+				combineEHSFields[
+					NFPA,
+					{Health -> 1, Flammability -> 1, Reactivity -> 1, Special -> {Oxidizer}},
+					{Health -> 2, Flammability -> 2, Reactivity -> 2, Special -> {WaterReactive}}
+				]
+			},
+			{
+				NFPA -> {Health -> 2, Flammability -> 3, Reactivity -> 2, Special -> {}},
+				NFPA -> {Health -> 1, Flammability -> 3, Reactivity -> 2, Special -> {}},
+				NFPA -> {Health -> 2, Flammability -> 2, Reactivity -> 2, Special -> {Oxidizer, WaterReactive}}
+			}
+		],
+
+		(* IncompatibleMaterials field tests *)
+		Test["IncompatibleMaterials field: Combined sample is incompatible with all materials that its components are incompatible with:",
+			{
+				combineEHSFields[IncompatibleMaterials, {ABS, Nitrile}, {Nitrile, PVC}],
+				combineEHSFields[IncompatibleMaterials, {None}, {ABS, Nitrile}]
+			},
+			{
+				IncompatibleMaterials -> {ABS, Nitrile, PVC},
+				IncompatibleMaterials -> {ABS, Nitrile}
+			}
+		],
+
+		(* Special edge case fields *)
+		Test["MSDSFile field: When components have different MSDS files, no single file applies:",
+			combineEHSFields[
+				MSDSFile,
+				Object[EmeraldCloudFile, "Test SDS File 1 for combineEHSFields unit tests " <> $SessionUUID],
+				Object[EmeraldCloudFile, "Test SDS File 2 for combineEHSFields unit tests " <> $SessionUUID]
+			],
+			MSDSFile -> Null
+		],
+		Test["DOTHazardClass field: Uses available value when only one value is provided, otherwise returns Null including when conflicting:",
+			{
+				combineEHSFields[DOTHazardClass, Null, "Class 3"],
+				combineEHSFields[DOTHazardClass, "Class 1", "Class 3"]
+			},
+			{
+				DOTHazardClass -> "Class 3",
+				DOTHazardClass -> Null
+			}
+		],
+		Test["PipettingMethod field: Combined sample uses more restrictive pipetting method:",
+			combineEHSFields[
+				PipettingMethod,
+				Model[Method, Pipetting, "id:L8kPEjnkBZL4"], (* Organic *)
+				Model[Method, Pipetting, "id:qdkmxzqkJlw1"] (* Aqueous *)
+			],
+			PipettingMethod -> Model[Method, Pipetting, "id:L8kPEjnkBZL4"]
+		],
+		Test["Unknown field: Unrecognized fields default to source value:",
+			combineEHSFields[UnknownField, "SourceValue", "DestinationValue"],
+			UnknownField -> "SourceValue"
+		],
+
+		(* Composition-based combination tests *)
+		Test["Composition-based: Empty composition returns Null for all EHS fields:",
+			combineEHSFields[
+				{},
+				{State, Flammable},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{State -> Null, Flammable -> Null}
+		],
+		Test["Composition-based: Single component composition inherits EHS field values from that component:",
+			combineEHSFields[
+				{
+					{100 VolumePercent, Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{State, Flammable},
+				100 Milliliter,
+				Download[{Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID]}]
+			],
+			{State -> Liquid, Flammable -> True}
+		],
+
+		(* Transfer-based combination tests *)
+		Test["Transfer-based: Destination EHS field updated based on transfer volumes and source properties:",
+			combineEHSFields[
+				State,
+				Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				10 Milliliter,
+				90 Milliliter,
+				Download[{
+					Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Solid, {PacketP[], AssociationMatchP[<|EHSPercentages -> {State -> {Solid -> EqualP[0.9], Liquid -> EqualP[0.1]}}|>, AllowForeignKeys -> True]}}
+		],
+		Test["Transfer-based: Mass and volume units properly converted for EHS field calculations:",
+			combineEHSFields[
+				Flammable,
+				Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				10 Gram,
+				90 Milliliter,
+				Download[{
+					Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{True, {PacketP[], AssociationMatchP[<|Flammable -> True, EHSPercentages -> {Flammable -> {False -> EqualP[0.9], True -> EqualP[0.1]}}|>, AllowForeignKeys -> True]}}
+		],
+
+		(* Composition-based tests demonstrating percentage thresholds *)
+		Test["Composition-based: Flammable field follows 5% threshold - above threshold becomes True:",
+			combineEHSFields[
+				{
+					{10 VolumePercent, Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{90 VolumePercent, Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{Flammable},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Flammable -> True}
+		],
+
+		Test["Composition-based: Flammable field follows 5% threshold - below threshold becomes False:",
+			combineEHSFields[
+				{
+					{3 VolumePercent, Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{97 VolumePercent, Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{Flammable},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Flammable -> False}
+		],
+
+		Test["Composition-based: Acid field follows 10% threshold - above threshold becomes True:",
+			combineEHSFields[
+				{
+					{15 VolumePercent, Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{85 VolumePercent, Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{Acid},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Acid -> True}
+		],
+
+		Test["Composition-based: Acid field follows 10% threshold - below threshold becomes False:",
+			combineEHSFields[
+				{
+					{5 VolumePercent, Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{95 VolumePercent, Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{Acid},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Acid -> False}
+		],
+
+		Test["Composition-based: State field liquid overrides if >10% liquid component present:",
+			combineEHSFields[
+				{
+					{20 VolumePercent, Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{80 VolumePercent, Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{State},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{State -> Liquid}
+		],
+
+		Test["Composition-based: State field solid wins when liquid <10% of total:",
+			combineEHSFields[
+				{
+					{5 VolumePercent, Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{95 VolumePercent, Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{State},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{State -> Solid}
+		],
+
+		Test["Composition-based: IncompatibleMaterials are filtered out of the result:",
+			combineEHSFields[
+				{
+					{10 VolumePercent, Model[Molecule, "Test Acrylic Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{2 VolumePercent, Model[Molecule, "Test Brass Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{88 VolumePercent, Model[Molecule, "Test Compatible Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{IncompatibleMaterials},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Acrylic Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Brass Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test Compatible Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{}
+		],
+
+		Test["Composition-based: BiosafetyLevel takes highest level regardless of percentage:",
+			combineEHSFields[
+				{
+					{5 VolumePercent, Model[Molecule, "Test BSL3 Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{95 VolumePercent, Model[Molecule, "Test BSL1 Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{BiosafetyLevel},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test BSL3 Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test BSL1 Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{BiosafetyLevel -> "BSL-3"}
+		],
+
+		Test["Composition-based: Radioactive becomes True with any amount of radioactive component:",
+			combineEHSFields[
+				{
+					{1 VolumePercent, Model[Molecule, "Test Radioactive Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{99 VolumePercent, Model[Molecule, "Test NonRadioactive Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{Radioactive},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test Radioactive Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NonRadioactive Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{Radioactive -> True}
+		],
+
+		Test["Composition-based: The whole NFPA rating is nulled out if more than one rating exists for any category:",
+			combineEHSFields[
+				{
+					{40 VolumePercent, Model[Molecule, "Test NFPA High Health Molecule for combineEHSFields unit tests " <> $SessionUUID]},
+					{60 VolumePercent, Model[Molecule, "Test NFPA High Flammability Molecule for combineEHSFields unit tests " <> $SessionUUID]}
+				},
+				{NFPA},
+				100 Milliliter,
+				Download[{
+					Model[Molecule, "Test NFPA High Health Molecule for combineEHSFields unit tests " <> $SessionUUID],
+					Model[Molecule, "Test NFPA High Flammability Molecule for combineEHSFields unit tests " <> $SessionUUID]
+				}]
+			],
+			{NFPA -> Null}
+		]
+	},
+	SymbolSetUp :> {
+		Module[
+			{
+				allNamedObjects, existingObjects,
+				testLiquidMolecule, testSolidMolecule, testSourceMolecule, testDestinationMolecule, testFlammableMolecule, testNonFlammableMolecule, testAcidicMolecule, testNonAcidicMolecule, testAcidIncompatibleMolecule, testBaseIncompatibleMolecule, testNeutralMolecule, testBSL3Molecule, testBSL1Molecule, testRadioactiveMolecule, testNonRadioactiveMolecule, testNFPAHighHealthMolecule, testNFPAHighFlammabilityMolecule,
+				testCloudFile1, testCloudFile2
+			},
+
+			(* All named objects created for these unit tests *)
+			allNamedObjects = {
+				Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Acrylic Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Brass Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Compatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test BSL3 Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test BSL1 Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Radioactive Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonRadioactive Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NFPA High Health Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NFPA High Flammability Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Object[EmeraldCloudFile, "Test SDS File 1 for combineEHSFields unit tests " <> $SessionUUID],
+				Object[EmeraldCloudFile, "Test SDS File 2 for combineEHSFields unit tests " <> $SessionUUID]
+			};
+
+			(* Erase any existing objects *)
+			existingObjects = PickList[allNamedObjects, DatabaseMemberQ[allNamedObjects]];
+			EraseObject[existingObjects, Force -> True, Verbose -> False];
+
+			(* Create test cloud files *)
+			{testCloudFile1, testCloudFile2} = Upload[{
+				<|
+					Type -> Object[EmeraldCloudFile],
+					Name -> "Test SDS File 1 for combineEHSFields unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>,
+				<|
+					Type -> Object[EmeraldCloudFile],
+					Name -> "Test SDS File 2 for combineEHSFields unit tests " <> $SessionUUID,
+					DeveloperObject -> True
+				|>
+			}];
+
+			(* Then create test molecules with different properties *)
+			{testLiquidMolecule, testSolidMolecule, testSourceMolecule, testDestinationMolecule, testFlammableMolecule, testNonFlammableMolecule, testAcidicMolecule, testNonAcidicMolecule, testAcidIncompatibleMolecule, testBaseIncompatibleMolecule, testNeutralMolecule, testBSL3Molecule, testBSL1Molecule, testRadioactiveMolecule, testNonRadioactiveMolecule, testNFPAHighHealthMolecule, testNFPAHighFlammabilityMolecule} = Quiet[
+				UploadMolecule[
+					{
+						"Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Acrylic Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Brass Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Compatible Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test BSL3 Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test BSL1 Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test Radioactive Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test NonRadioactive Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test NFPA High Health Molecule for combineEHSFields unit tests " <> $SessionUUID,
+						"Test NFPA High Flammability Molecule for combineEHSFields unit tests " <> $SessionUUID
+					},
+					State -> {Liquid, Solid, Liquid, Solid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid, Liquid},
+					Flammable -> {True, False, True, False, True, False, False, False, False, False, False, False, False, False, False, False, True},
+					Acid -> {False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False},
+					Base -> {False, False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False},
+					IncompatibleMaterials -> {{None}, {None}, {None}, {None}, {None}, {None}, {None}, {None}, {Acrylic}, {Brass}, {None}, {None}, {None}, {None}, {None}, {None}, {None}},
+					BiosafetyLevel -> {"BSL-1", "BSL-2", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-3", "BSL-1", "BSL-1", "BSL-1", "BSL-1", "BSL-1"},
+					Radioactive -> {False, False, False, False, False, False, False, False, False, False, False, False, False, True, False, False, False},
+					NFPA -> {
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 1, 1, {}},
+						{1, 4, 1, {}},
+						{4, 1, 1, {}}
+					},
+					Density -> {
+						1.0 Gram / Milliliter,
+						1.5 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.2 Gram / Milliliter,
+						0.79 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.18 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						1.0 Gram / Milliliter,
+						0.79 Gram / Milliliter
+					},
+					MSDSFile -> NotApplicable,
+					DOTHazardClass -> "Class 0",
+					Force -> True
+				],
+				Error::CompoundNotFound
+			];
+
+		]
+	},
+	SymbolTearDown :> {
+		Module[
+			{allNamedObjects, existingObjects},
+
+			(* Clean up all test objects *)
+			allNamedObjects = {
+				Model[Molecule, "Test Liquid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Solid Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Source Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Destination Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Flammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonFlammable Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Acidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonAcidic Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Acrylic Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Brass Incompatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Compatible Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test BSL3 Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test BSL1 Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test Radioactive Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NonRadioactive Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NFPA High Health Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Model[Molecule, "Test NFPA High Flammability Molecule for combineEHSFields unit tests " <> $SessionUUID],
+				Object[EmeraldCloudFile, "Test SDS File 1 for combineEHSFields unit tests " <> $SessionUUID],
+				Object[EmeraldCloudFile, "Test SDS File 2 for combineEHSFields unit tests " <> $SessionUUID]
+			};
+
+			existingObjects = PickList[allNamedObjects, DatabaseMemberQ[allNamedObjects]];
+			EraseObject[existingObjects, Force -> True, Verbose -> False];
+		]
+	}
+];

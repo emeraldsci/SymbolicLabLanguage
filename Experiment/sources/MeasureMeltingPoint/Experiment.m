@@ -7,6 +7,244 @@
 (* ::Subsection:: *)
 (* Option Definitions *)
 
+
+(* ::Subsubsection:: *)
+(* GrindSharedOptions *)
+
+DefineOptionSet[GrindSharedOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> Grind,
+			Default -> Automatic,
+			Description -> "Determines if the sample is ground to a fine powder (to reduce the size of powder particles) via a lab mill (grinder) before measuring the melting point. Smaller powder particles enhance heat transfer and reproducibility of the measurements.",
+			ResolutionDescription -> "Automatically set to False if the sample is prepacked in a melting point capillary tube or Amount is set Null. Otherwise set to True.",
+			AllowNull -> False,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			]
+		},
+		{
+			OptionName -> GrinderType,
+			Default -> Automatic,
+			Description -> "Type of grinder that is used for reducing the size of the powder particles (grinding the sample into a fine powder) before packing the sample into a melting point capillary and measuring the melting temperature. Options include BallMill, KnifeMill, and automated MortarGrinder. BallMill consists of a rotating or vibrating grinding container with sample and hard balls inside in which the size reduction occurs through impact/friction of hard balls on/with the solid particles. KnifeMill consists of rotating sharp blades in which size reduction occurs through cutting of the solid particles into smaller pieces. Automated MortarGrinder consists of a rotating bowl (mortar) with the sample inside and an angled revolving column (pestle) in which size reduction occurs through pressure and friction between mortar, pestle, and sample particles.",
+			ResolutionDescription -> "Automatically set to the type of the grinder that is determined by PreferredGrinder function if Grind is set to True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> GrinderTypeP
+			]
+		},
+		{
+			OptionName -> Grinder,
+			Default -> Automatic,
+			Description -> "The instrument that is used to grind the sample into a fine powder if Grind is True.",
+			ResolutionDescription -> "Automatically determined by PreferredGrinder function.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Instrument, Grinder], Object[Instrument, Grinder]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Instruments",
+						"Grinders"
+					}
+				}
+			]
+		},
+		{
+			OptionName -> Fineness,
+			Default -> Automatic,
+			Description -> "The approximate size of the largest particle in a solid sample. Fineness, Amount, and BulkDensity are used to determine a suitable Grinder using PreferredGrinder function if Grind is set to True and Grinder is not specified.",
+			ResolutionDescription -> "Automatically set to 1 Millimeter if Grind is set to True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[1 Micrometer, 80 Millimeter, 1 Micrometer],
+				Units -> {1, {Millimeter, {Millimeter, Micrometer}}}
+			]
+		},
+		{
+			OptionName -> BulkDensity,
+			Default -> Automatic,
+			Description -> "The mass of a volume unit of the powder. The volume for calculating BulkDensity includes the volumes of particles, internal pores, and inter-particle void spaces. This parameter is used to calculate the volume of a powder from its mass (Amount). The volume, in turn, is used along with the fineness in PreferredGrinder to determine a suitable Grinder if Grind is set to True and Grinder is not specified.",
+			ResolutionDescription -> "Automatically set to 1 g/mL if Grind is set to True .",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[
+					1 Milligram/Milliliter,
+					25 Gram/Milliliter,
+					1 Milligram/Milliliter
+				],
+				Units -> CompoundUnit[
+					{1, {Gram, {Milligram, Gram, Kilogram}}},
+					{-1, {Milliliter, {Microliter, Milliliter, Liter}}}
+				]
+			]
+		},
+		{
+			OptionName -> GrindingContainer,
+			Default -> Automatic,
+			Description ->
+				"The container that the sample is transferred into for the grinding process if Grind is set to True. Refer to instrumentation table in help files for more information about the containers that are used for each model of grinders.",
+			ResolutionDescription -> "Automatically set to a suitable container based on the selected grinder Instrument and Amount of the sample.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[Container, Vessel],
+					Object[Container, Vessel],
+					Model[Container, GrindingContainer],
+					Object[Container, GrindingContainer]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Containers",
+						"Tubes & Vials"
+					},
+					{
+						Object[Catalog, "Root"],
+						"Containers",
+						"Grinding Containers"
+					}
+				}
+			]
+		},
+		{
+			OptionName -> GrindingBead,
+			Default -> Automatic,
+			Description -> "In ball mills, grinding beads or grinding balls are used along with the sample inside the grinding container to beat and crush the sample into fine particles as a result rapid mechanical movements of the grinding container.",
+			ResolutionDescription -> "Automatically set 2.8 mm stainless steel if Grind is set to True and GrinderType is set to BallMill.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Item, GrindingBead], Object[Item, GrindingBead]}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials",
+						"Grinding",
+						"Grinding Beads"
+					}
+				}
+			]
+		},
+		{
+			OptionName -> NumberOfGrindingBeads,
+			Default -> Automatic,
+			Description -> "In ball mills, determines how many grinding beads or grinding balls are used along with the sample inside the grinding container to beat and crush the sample into fine particles.",
+			ResolutionDescription -> "Automatically set to a number of grinding beads that roughly have the same volume as the sample if Grind is set to True and GrinderType is set to BallMill. The number is estimated based on the estimated volume of the sample and diameter of the selected GrindingBead, considering 50% of packing void volume. When calculated automatically, NumberOfGrindingBeads will not be less than 1 or greater than 20.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> RangeP[1, 20, 1]
+			]
+		},
+		{
+			OptionName -> GrindingRate,
+			Default -> Automatic,
+			Description -> "Indicates the speed of the circular motion exerted by grinders to pulverize the samples into smaller powder particles.",
+			ResolutionDescription -> "Automatically set to the default RPM for the selected Grinder according to the values in Table x.x, if Grind is set to True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Alternatives[
+				Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 RPM, 25000 RPM],
+					Units -> RPM
+				],
+				Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.01 Hertz, 420 Hertz],
+					Units -> Hertz
+				]
+			]
+		},
+		{
+			OptionName -> GrindingTime,
+			Default -> Automatic,
+			Description -> "Determines the duration for which the solid substance is ground into a fine powder in the grinder.",
+			ResolutionDescription -> "Automatically set to a default value based on the selected Grinder according to table x.x if Grind is set to True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+				Units -> {1, {Second, {Second, Minute, Hour}}}
+			]
+		},
+		{
+			OptionName -> NumberOfGrindingSteps,
+			Default -> Automatic,
+			Description -> "Determines how many times the grinding process is repeated to completely grind the sample and prevent excessive heating of the sample. Between each grinding step there is a cooling time that the grinder is switched off to cool down the sample and prevent excessive rise in sample's temperature.",
+			ResolutionDescription -> "Automatically set to 1 if Grind is True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> RangeP[1, 50, 1]
+			]
+		},
+		{
+			OptionName -> CoolingTime,
+			Default -> Automatic,
+			Description -> "Determines the duration of time between each grinding step that the grinder is switched off to cool down the sample and prevent excessive rise in the sample's temperature.",
+			ResolutionDescription -> "Automatically set to 30 Second if Grind is set to True and NumberOfGrindingSteps is greater than 1.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+				Units -> {1, {Second, {Second, Minute, Hour}}}
+			]
+		},
+		{
+			OptionName -> GrindingProfile,
+			Default -> Automatic,
+			Description -> "A set of steps of the grinding process, with each step provided as {grinding rate, grinding time} or as {wait time} indicating a cooling period to prevent the sample from overheating.",
+			ResolutionDescription -> "Automatically set to reflect the selections of GrindingRate, GrindingTime, NumberOfGrindingSteps, and CoolingTime if Grind is set to True.",
+			AllowNull -> True,
+			Category -> "Grinding",
+			Widget -> Adder[Alternatives[
+				"Grinding" -> {
+					"Rate" -> Widget[
+						Type -> Quantity,
+						Pattern :> Alternatives[RangeP[0 RPM, 25000 RPM], RangeP[0 Hertz, 420 Hertz]],
+						Units -> Alternatives[RPM, Hertz]
+					],
+					"Time" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+						Units -> {1, {Second, {Second, Minute, Hour}}}
+					]
+				},
+				"Cooling" -> {
+					"Time" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
+						Units -> {1, {Second, {Second, Minute, Hour}}}
+					]
+				}
+			]]
+		}
+	]
+}];
+
+(* ::Subsubsection::Closed:: *)
+(*ExperimentMeasureMeltingPoint option defintions*)
+
 DefineOptions[ExperimentMeasureMeltingPoint,
 	Options :> {
 
@@ -122,231 +360,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 				UnitOperation -> True
 			},
 			(*Grinding*)
-			{
-				OptionName -> Grind,
-				Default -> Automatic,
-				Description -> "Determines if the sample is ground to a fine powder (to reduce the size of powder particles) via a lab mill (grinder) before measuring the melting point. Smaller powder particles enhance heat transfer and reproducibility of the measurements.",
-				ResolutionDescription -> "Automatically set to False if the sample is prepacked in a melting point capillary tube or Amount is set Null. Otherwise set to True.",
-				AllowNull -> False,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> BooleanP
-				]
-			},
-			{
-				OptionName -> GrinderType,
-				Default -> Automatic,
-				Description -> "Type of grinder that is used for reducing the size of the powder particles (grinding the sample into a fine powder) before packing the sample into a melting point capillary and measuring the melting temperature. Options include BallMill, KnifeMill, and automated MortarGrinder. BallMill consists of a rotating or vibrating grinding container with sample and hard balls inside in which the size reduction occurs through impact/friction of hard balls on/with the solid particles. KnifeMill consists of rotating sharp blades in which size reduction occurs through cutting of the solid particles into smaller pieces. Automated MortarGrinder consists of a rotating bowl (mortar) with the sample inside and an angled revolving column (pestle) in which size reduction occurs through pressure and friction between mortar, pestle, and sample particles.",
-				ResolutionDescription -> "Automatically set to the type of the grinder that is determined by PreferredGrinder function if Grind is set to True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Enumeration,
-					Pattern :> GrinderTypeP
-				]
-			},
-			{
-				OptionName -> Grinder,
-				Default -> Automatic,
-				Description -> "The instrument that is used to grind the sample into a fine powder if Grind is True.",
-				ResolutionDescription -> "Automatically determined by PreferredGrinder function.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{Model[Instrument, Grinder], Object[Instrument, Grinder]}],
-					OpenPaths -> {
-						{
-							Object[Catalog, "Root"],
-							"Instruments",
-							"Grinders"
-						}
-					}
-				]
-			},
-			{
-				OptionName -> Fineness,
-				Default -> Automatic,
-				Description -> "The approximate size of the largest particle in a solid sample. Fineness, Amount, and BulkDensity are used to determine a suitable Grinder using PreferredGrinder function if Grind is set to True and Grinder is not specified.",
-				ResolutionDescription -> "Automatically set to 1 Millimeter if Grind is set to True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[1 Micrometer, 80 Millimeter, 1 Micrometer],
-					Units -> {1, {Millimeter, {Millimeter, Micrometer}}}
-				]
-			},
-			{
-				OptionName -> BulkDensity,
-				Default -> Automatic,
-				Description -> "The mass of a volume unit of the powder. The volume for calculating BulkDensity includes the volumes of particles, internal pores, and inter-particle void spaces. This parameter is used to calculate the volume of a powder from its mass (Amount). The volume, in turn, is used along with the fineness in PreferredGrinder to determine a suitable Grinder if Grind is set to True and Grinder is not specified.",
-				ResolutionDescription -> "Automatically set to 1 g/mL if Grind is set to True .",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[
-						1 Milligram/Milliliter,
-						25 Gram/Milliliter,
-						1 Milligram/Milliliter
-					],
-					Units -> CompoundUnit[
-						{1, {Gram, {Milligram, Gram, Kilogram}}},
-						{-1, {Milliliter, {Microliter, Milliliter, Liter}}}
-					]
-				]
-			},
-			{
-				OptionName -> GrindingContainer,
-				Default -> Automatic,
-				Description ->
-					"The container that the sample is transferred into for the grinding process if Grind is set to True. Refer to instrumentation table in help files for more information about the containers that are used for each model of grinders.",
-				ResolutionDescription -> "Automatically set to a suitable container based on the selected grinder Instrument and Amount of the sample.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{
-						Model[Container, Vessel],
-						Object[Container, Vessel],
-						Model[Container, GrindingContainer],
-						Object[Container, GrindingContainer]
-					}],
-					OpenPaths -> {
-						{
-							Object[Catalog, "Root"],
-							"Containers",
-							"Tubes & Vials"
-						},
-						{
-							Object[Catalog, "Root"],
-							"Containers",
-							"Grinding Containers"
-						}
-					}
-				]
-			},
-			{
-				OptionName -> GrindingBead,
-				Default -> Automatic,
-				Description -> "In ball mills, grinding beads or grinding balls are used along with the sample inside the grinding container to beat and crush the sample into fine particles as a result rapid mechanical movements of the grinding container.",
-				ResolutionDescription -> "Automatically set 2.8 mm stainless steel if Grind is set to True and GrinderType is set to BallMill.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{Model[Item, GrindingBead], Object[Item, GrindingBead]}],
-					OpenPaths -> {
-						{
-							Object[Catalog, "Root"],
-							"Materials",
-							"Grinding",
-							"Grinding Beads"
-						}
-					}
-				]
-			},
-			{
-				OptionName -> NumberOfGrindingBeads,
-				Default -> Automatic,
-				Description -> "In ball mills, determines how many grinding beads or grinding balls are used along with the sample inside the grinding container to beat and crush the sample into fine particles.",
-				ResolutionDescription -> "Automatically set to a number of grinding beads that roughly have the same volume as the sample if Grind is set to True and GrinderType is set to BallMill. The number is estimated based on the estimated volume of the sample and diameter of the selected GrindingBead, considering 50% of packing void volume. When calculated automatically, NumberOfGrindingBeads will not be less than 1 or greater than 20.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Number,
-					Pattern :> RangeP[1, 20, 1]
-				]
-			},
-			{
-				OptionName -> GrindingRate,
-				Default -> Automatic,
-				Description -> "Indicates the speed of the circular motion exerted by grinders to pulverize the samples into smaller powder particles.",
-				ResolutionDescription -> "Automatically set to the default RPM for the selected Grinder according to the values in Table x.x, if Grind is set to True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Alternatives[
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[1 RPM, 25000 RPM],
-						Units -> RPM
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.01 Hertz, 420 Hertz],
-						Units -> Hertz
-					]
-				]
-			},
-			{
-				OptionName -> GrindingTime,
-				Default -> Automatic,
-				Description -> "Determines the duration for which the solid substance is ground into a fine powder in the grinder.",
-				ResolutionDescription -> "Automatically set to a default value based on the selected Grinder according to table x.x if Grind is set to True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
-					Units -> {1, {Second, {Second, Minute, Hour}}}
-				]
-			},
-			{
-				OptionName -> NumberOfGrindingSteps,
-				Default -> Automatic,
-				Description -> "Determines how many times the grinding process is repeated to completely grind the sample and prevent excessive heating of the sample. Between each grinding step there is a cooling time that the grinder is switched off to cool down the sample and prevent excessive rise in sample's temperature.",
-				ResolutionDescription -> "Automatically set to 1 if Grind is True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Number,
-					Pattern :> RangeP[1, 50, 1]
-				]
-			},
-			{
-				OptionName -> CoolingTime,
-				Default -> Automatic,
-				Description -> "Determines the duration of time between each grinding step that the grinder is switched off to cool down the sample and prevent excessive rise in the sample's temperature.",
-				ResolutionDescription -> "Automatically set to 30 Second if Grind is set to True and NumberOfGrindingSteps is greater than 1.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Widget[
-					Type -> Quantity,
-					Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
-					Units -> {1, {Second, {Second, Minute, Hour}}}
-				]
-			},
-			{
-				OptionName -> GrindingProfile,
-				Default -> Automatic,
-				Description -> "A set of steps of the grinding process, with each step provided as {grinding rate, grinding time} or as {wait time} indicating a cooling period to prevent the sample from overheating.",
-				ResolutionDescription -> "Automatically set to reflect the selections of GrindingRate, GrindingTime, NumberOfGrindingSteps, and CoolingTime if Grind is set to True.",
-				AllowNull -> True,
-				Category -> "Grinding",
-				Widget -> Adder[Alternatives[
-					"Grinding" -> {
-						"Rate" -> Widget[
-							Type -> Quantity,
-							Pattern :> Alternatives[RangeP[0 RPM, 25000 RPM], RangeP[0 Hertz, 420 Hertz]],
-							Units -> Alternatives[RPM, Hertz]
-						],
-						"Time" -> Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
-							Units -> {1, {Second, {Second, Minute, Hour}}}
-						]
-					},
-					"Cooling" -> {
-						"Time" -> Widget[
-							Type -> Quantity,
-							Pattern :> RangeP[1 Second, $MaxExperimentTime, 1 Second],
-							Units -> {1, {Second, {Second, Minute, Hour}}}
-						]
-					}
-				]]
-			},
+			GrindSharedOptions,
 
 			(* Desiccation *)
 			{
@@ -710,6 +724,7 @@ DefineOptions[ExperimentMeasureMeltingPoint,
 		NonBiologyPostProcessingOptions
 	}
 ];
+
 
 (* ::Subsection::Closed:: *)
 (* ExperimentMeasureMeltingPoint Errors and Warnings *)
@@ -4714,11 +4729,15 @@ measureMeltingPointResourcePackets[
 				Sample -> PickList[ToList[mySamples], grind1Qs] /. labelFinder[1],
 				SampleOutLabel -> PickList[ToList[mySamples], grind1Qs] /. samplesInLabels[[All, 3]],
 				Sequence @@ Normal@KeyDrop[grind1OptionRules, {SampleOutLabel, SampleLabel}],
-				ContainerOut -> MapThread[Which[
-					!TrueQ[#1], Nothing,
-					TrueQ[#2], #3,
-					True, Automatic
-				]&, {grind1Qs, realDesiccateQs, sampleContainer}]
+				ContainerOut -> MapThread[
+					Which[
+						!TrueQ[#1], Nothing,
+						TrueQ[#2], #3,
+						True, Automatic
+					]&,
+					{grind1Qs, realDesiccateQs, sampleContainer}
+				],
+				GrindingContainer -> PickList[grindingContainer, grind1Qs]
 			]
 		],
 		If[
@@ -4762,7 +4781,8 @@ measureMeltingPointResourcePackets[
 			Nothing,
 			Grind[
 				Sample -> PickList[ToList[mySamples], grind2Qs] /. labelFinder[5],
-				Sequence @@ Normal@KeyDrop[grind2OptionRules, {SampleOutLabel, SampleLabel}]
+				Sequence @@ Normal@KeyDrop[grind2OptionRules, {SampleOutLabel, SampleLabel}],
+				GrindingContainer -> PickList[grindingContainer, grind2Qs]
 			]
 		]
 	};

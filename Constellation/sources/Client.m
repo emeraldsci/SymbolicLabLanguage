@@ -3372,7 +3372,9 @@ parseUploadResponse[{$Failed, False}]:={$Failed, False};
 System`TimeZonesDump`setupICUFunctions[DateObject, Null, Null];
 
 DateObjectToRFC3339[date:_?DateObjectQ]:=Module[{iSOTimeStamp, milliSecondFraction, formattedTimeStamp},
-	iSOTimeStamp=DateString[date, "ISODateTime", TimeZone -> 0];
+    (* DateString's TimeZone option is not working in 14.2 and 14.3. Adding TimeZoneConvert is a workaround for this *)
+	(* Associated redmine ticket: https://redmine.wolfram.com/redmine/issues/3890 *)
+	iSOTimeStamp=DateString[TimeZoneConvert[date, 0], "ISODateTime", TimeZone->0];
 	milliSecondFraction=Quiet[Check[StringPart[DateString[date, {"SecondFraction"}], 2;;], {}]];
 	(* If the there are no milliseconds don't this partition to the timestamp *)
 	formattedTimeStamp=If[Length[milliSecondFraction] > 2, iSOTimeStamp<>milliSecondFraction, iSOTimeStamp];

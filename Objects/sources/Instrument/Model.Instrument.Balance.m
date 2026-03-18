@@ -77,6 +77,14 @@ DefineObjectType[Model[Instrument, Balance], {
 			Description -> "The size of the space inside the balance.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
+		},
+		MaxUSPMinWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Milligram],
+			Units -> Milligram,
+			Description -> "The largest value that the instrument's calculated Minimum Weight (as defined by USP <1251>) is allowed to be before the instrument is considered to be out of specification.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

@@ -71,7 +71,7 @@ DefineTests[PlotICPMS,
 					Name -> "ICPMS Protocol For PlotICPMS Test " <> $SessionUUID,
 					Object -> protocol1,
 					Type -> Object[Protocol, ICPMS],
-					Replace[AnalyteData] -> {Link[data1, Protocol]}
+					Replace[Data] -> {Link[data1, Protocol]}
 				|>
 			];
 		];

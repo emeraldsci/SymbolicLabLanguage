@@ -737,7 +737,7 @@ uploadUnitOperationCore[myInput:UnitOperationPrimitiveP,myOptions:OptionsPattern
                 (* Go through the list and find the first "real" field that matches it. *)
                 MapThread[
                   Function[{singletonValue, index},
-                    Module[{firstMatchingSplitField, previousFieldValue},
+                    Module[{firstMatchingSplitField, previousFieldValue, actualSingletonValue},
                       (* What fields should we put this value into? *)
                       firstMatchingSplitField=FirstCase[
                         patternsToFields/.{Verbatim[_Link] :> (ObjectReferenceP[] | _Link | _Resource)},
@@ -748,9 +748,17 @@ uploadUnitOperationCore[myInput:UnitOperationPrimitiveP,myOptions:OptionsPattern
                         First[patternsToFields][[2]]
                       ];
 
+                      (* goofiness where 4 Unit matches GreaterP[0, 1] but does not match _Integer *)
+                      (* thus, if we actually did this, we need to Unitless so we actually match _Integer *)
+                      actualSingletonValue = If[MatchQ[singletonValue, UnitsP[Unit]] && Not[IntegerQ[singletonValue]] && StringEndsQ[ToString@firstMatchingSplitField, "Integer"],
+                        (* note also that if we have something like 5. Unit, we want to make sure it becomes 5, not 5. for an integer field *)
+                        Round[Unitless[singletonValue, Unit]],
+                        singletonValue
+                      ];
+
                       (* Write into that field. *)
                       previousFieldValue=initializedSplitFields[firstMatchingSplitField];
-                      previousFieldValue[[index]]=singletonValue;
+                      previousFieldValue[[index]]=actualSingletonValue;
 
                       initializedSplitFields[firstMatchingSplitField] = previousFieldValue;
                     ]

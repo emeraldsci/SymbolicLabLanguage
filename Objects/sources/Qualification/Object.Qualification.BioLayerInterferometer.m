@@ -29,7 +29,7 @@ DefineObjectType[Object[Qualification,BioLayerInterferometer],{
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> SamplePreparationP,
-			Description -> "A list of transfers, consolidations, aliquiots, mixes and diutions that will be performed in the order listed to prepare samples for the qualification.",
+			Description -> "A list of transfers, consolidations, aliquots, mixes and diutions that will be performed in the order listed to prepare samples for the qualification.",
 			Category -> "Sample Preparation"
 		}
 	}

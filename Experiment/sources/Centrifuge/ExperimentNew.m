@@ -217,6 +217,7 @@ DefineOptions[ExperimentCentrifuge,
 		ModelInputOptions,
 		NonBiologyPostProcessingOptions,
 		SterileOption,
+		EquivalentTransferEnvironmentsOption,
 
 	(* SamplesIn Shared Options *)
 		SamplesInStorageOption,
@@ -239,13 +240,13 @@ DefineOptions[ExperimentCentrifuge,
 (*ExperimentCentrifuge Messages *)
 
 
-Error::IncompatibleCentrifuge = "The input container Model `1``2` cannot be centrifuged at the specified Intensity (`3`), Temperature (`4`), and/or Time (`5`) with the selected centrifuge (`6`). Please refer to the MaxStackHeight, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate and MaxTime fields for the limitation of the instrument and specify `7`valid combinations of the options. CentrifugeDevices can be used to find centrifuges that can meet the desired settings.";
-Error::NoCompatibleCentrifuge = "There are no centrifuges capable attaining the specified Intensity (`1`), Temperature (`2`), and/or Time (`3`) when Preparation is set to `4`. Please ensure that the specified containers can fit on the centrifuge, are not too heavy, and that spin parameters fall within the operating limits of available centrifuges. CentrifugeDevices can be used to find centrifuges that can meet the desired settings.";
+Error::IncompatibleCentrifuge = "The`1` input container Model `2``3` cannot be centrifuged at the specified Intensity (`4`), Temperature (`5`), and/or Time (`6`) with the selected centrifuge (`7`). `8`Please refer to the MaxStackHeight, MaxTemperature, MinTemperature, MaxRotationRate, MinRotationRate and MaxTime fields for the limitation of the instrument and specify `9`valid combinations of the options. CentrifugeDevices can be used to find centrifuges that can meet the desired settings.";
+Error::NoCompatibleCentrifuge = "There are no centrifuges capable attaining the specified Intensity (`1`), Temperature (`2`), and/or Time (`3`) when Preparation is set to `4``5`. `6`Please ensure that the specified containers can fit on the centrifuge, are not too heavy, and that spin parameters fall within the operating limits of available centrifuges. CentrifugeDevices can be used to find centrifuges that can meet the desired settings.";
 Error::NoTransferContainerFound = "The samples `1` must be transferred to a different container in order to fit on a centrifuge that matches the specified options, but no appropriate transfer container could be found. Please manually set the AliquotAmount (if calling this function standalone) or CentrifugeAliquot (if calling this function from sample preparation) to specify a compatible volume amount. A volume under 50 Milliliter is usually compatible (depending on the other rate/temperature options you have specified).";
 Error::SamplesNotInFilterContainer = "The sample(s) `1` have been specified to be collected in the CollectionContainer(s), `2`, however, the samples are not in a Model[Container, Plate, Filter] that has a Plate footprint or a Model[Container, Vessel, Filter]. Samples must be in a filter container in order to be collected. Please do not specify the CollectionContainer option for these samples or set the Aliquot->True option and aliquot the samples into a filter plate or vessel before the start of the experiment.";
 Error::ConflictingCollectionContainers = "The sample(s) `1` have different CollectionContainer(s), `2`, specified. However, these samples are in the same container. Samples in the same container must be filtered into the same collection container. Please change the CollectionContainer option or let it resolve automatically.";
 Error::InvalidCounterweights = "The CounterbalanceWeight `1` are not sufficiently close to the weights of any Model[Item,Counterweight]. Please provide weights within `2` of a Model[Item,Counterweight] with the same footprint.";
-Warning::CentrifugePrecision="The specified intensities `1` are not attainable by the precisions `2` of the centrifuge that will be used. Therefore, these intensities have been rounded to `3`.";
+Warning::CentrifugePrecision = "The option `1` specified as `2` not attainable by the `3` that will be used. Therefore, these intensities have been rounded to `4`.";
 Warning::ContainerCentrifugeIncompatible="The samples `1` are in containers that cannot fit on the centrifuges `2`. These samples will be transferred to `3`.";
 Warning::SterileConflict="Sterile was set as False but some samples are marked as sterile. The experiment will proceed with a non-sterile instrument. If this is not desired, please adjust the sterile option.";
 Error::RotorRotorGeometryConflict = "For sample(s) `1`, the specified Rotor `2` are `3`, which do not match the specified RotorGeometry `4`. Please change the Rotor or RotorGeometry option or let it resolve automatically.";
@@ -362,19 +363,16 @@ ExperimentCentrifuge[myInputs : ListableP[ObjectP[{Object[Container], Object[Sam
 
 (* Sample input/core overload*)
 ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : OptionsPattern[]] := Module[
-	{listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
-		myOptionsWithPreparedSamples,mySamplesWithPreparedSamplesNamed,myOptionsWithPreparedSamplesNamed,
-		safeOpsNamed, safeOps, safeOpsTests, validLengths, validLengthTests, optionsResolverOnly,
-		returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,collectionContainerOption,
-		templatedOptions, templateTests, inheritedOptions, expandedSafeOps, cacheBall, resolvedOptionsResult,
-		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, sampleObjects, centrifugeOption,allCentrifugeEquipmentPackets,
-		allPreferredContainers, samplePackets, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields,
-		allCounterweights, counterweightModelFields, updatedSimulation,
-		thingsToDownload, fieldsToDownload, downloadedStuff, protocolPacketWithResources, resourcePacketTests, protocolObject,
-		sampleFields, objectContainerFields, modelContainerFields, resolvedPreparation, centrifugeInstruments,
-		centrifugeRotors, centrifugeBuckets, centrifugeAdapters, sampleContainers, uniqueSampleContainers, centrifugeModelFields, centrifugeRotorModelFields,
-		centrifugeBucketModelFields, centrifugeAdapterModelFields, simulation, performSimulationQ, simulatedProtocol,
-		cacheToUse, specifiedParentProtocol
+	{
+		listedSamples, listedOptions, outputSpecification, output, gatherTests, validSamplePreparationResult, mySamplesWithPreparedSamples,
+		myOptionsWithPreparedSamples, mySamplesWithPreparedSamplesNamed, myOptionsWithPreparedSamplesNamed, updatedSimulation,
+		safeOpsNamed, safeOps, safeOpsTests, validLengths, validLengthTests, templatedOptions, templateTests, inheritedOptions,
+		expandedSafeOps, centrifugeOption, centrifugeFields, centrifugeRotorOption, centrifugeRotorFields, collectionContainerOption,
+		allCounterweights, counterweightModelFields, allCentrifugeEquipmentPackets, allPreferredContainers, thingsToDownload,
+		sampleFields, objectContainerFields, modelContainerFields, fieldsToDownload, cacheToUse, downloadedStuff,
+		sampleObjects,  samplePackets, cacheBall, resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions,
+		resolvedPreparation, optionsResolverOnly, returnEarlyBecauseOptionsResolverOnly, returnEarlyBecauseFailuresQ,
+		performSimulationQ, protocolPacketWithResources, resourcePacketTests, simulation, simulatedProtocol, protocolObject
 	},
 
 	(* Determine the requested return value from the function *)
@@ -413,7 +411,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	];
 
 	(* Call sanitize-inputs to clean any named objects *)
-	{mySamplesWithPreparedSamples,safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed,safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
+	{mySamplesWithPreparedSamples, safeOps, myOptionsWithPreparedSamples} = sanitizeInputs[mySamplesWithPreparedSamplesNamed, safeOpsNamed, myOptionsWithPreparedSamplesNamed, Simulation -> updatedSimulation];
 
 	(* If the specified options don't match their patterns or if option lengths are invalid return $Failed *)
 	If[MatchQ[safeOps, $Failed],
@@ -482,21 +480,21 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	centrifugeRotorOption = Lookup[expandedSafeOps, Rotor];
 
 	(* Get the collection container option *)
-	collectionContainerOption=Lookup[expandedSafeOps,CollectionContainer];
+	collectionContainerOption = Lookup[expandedSafeOps, CollectionContainer];
 
 	(* Centrifuge defaults to model, but can be specified as an object. Get the appropriate fields to download. *)
 	centrifugeRotorFields = Switch[#,
-		ObjectP[Model[Container,CentrifugeRotor]], {Packet[Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle]},
-		ObjectP[Object[Container,CentrifugeRotor]], {Packet[StorageCondition],Packet[Field[StorageCondition[{StorageCondition}]]],Packet[Model],Packet[Field[Model[{Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle}]]]},
+		ObjectP[Model[Container, CentrifugeRotor]], {Packet[Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle]},
+		ObjectP[Object[Container, CentrifugeRotor]], {Packet[StorageCondition], Packet[Field[StorageCondition[{StorageCondition}]]], Packet[Model], Packet[Field[Model[{Name, MaxRadius, MaxForce, MaxRotationRate, MaxImbalance, Footprint, Positions, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle}]]]},
 		Automatic, {}
 	]& /@ ToList[centrifugeRotorOption];
 
 
 	(* Find all the counterweights models *)
-	allCounterweights=allCounterweightsSearch["Memoization"];
+	allCounterweights = allCounterweightsSearch["Memoization"];
 
 	(* Download the necessary fields from the counterweight models *)
-	counterweightModelFields={Packet[Footprint, Weight, Name, RentByDefault, Dimensions]};
+	counterweightModelFields = {Packet[Footprint, Weight, Name, RentByDefault, Dimensions]};
 
 	(* Separate download to fetch centrifuge/rotor/bucket information required for subsequent resolution steps *)
 	(* Find all centrifuge-related objects (instruments, rotors, and buckets) from which we might need information *)
@@ -529,7 +527,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	(* Sample Fields. *)
 	sampleFields = SamplePreparationCacheFields[Object[Sample], Format -> Packet];
 	objectContainerFields = SamplePreparationCacheFields[Object[Container]];
-	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]],ToList[{DestinationContainerModel,Counterweights}]];
+	modelContainerFields = Union[SamplePreparationCacheFields[Model[Container]], ToList[{DestinationContainerModel, Counterweights}]];
 
 	(* Format the fields to download *)
 	fieldsToDownload = Join[
@@ -570,7 +568,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 	sampleObjects = Lookup[Transpose[samplePackets][[1]], Object];
 
 	(* Download dump *)
-	cacheBall = FlattenCachePackets[{Lookup[expandedSafeOps, Cache, {}], Flatten[{downloadedStuff,allCentrifugeEquipmentPackets}]}];
+	cacheBall = FlattenCachePackets[{Lookup[expandedSafeOps, Cache, {}], Flatten[{downloadedStuff, allCentrifugeEquipmentPackets}]}];
 
 	(* Build the resolved options *)
 	resolvedOptionsResult = Check[
@@ -685,7 +683,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 		(* If we're doing Preparation->Robotic and Upload->True, call ExperimentRoboticSamplePreparation with our primitive. *)
 		MatchQ[resolvedPreparation, Robotic],
-			Module[{primitive,nonHiddenOriginOptions, samplesMaybeWithModels},
+			Module[{primitive, nonHiddenOriginOptions, samplesMaybeWithModels},
 
 				(* convert the samples to models if we had model inputs originally *)
 				(* if we don't have a simulation or a single prep unit op, then we know we didn't have a model input *)
@@ -702,10 +700,10 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
 				(* Remove any hidden options before returning. *)
-				nonHiddenOriginOptions=RemoveHiddenPrimitiveOptions[Centrifuge,listedOptions];
-				primitive=Centrifuge@@Join[
+				nonHiddenOriginOptions = RemoveHiddenPrimitiveOptions[Centrifuge, listedOptions];
+				primitive = Centrifuge@@Join[
 					{
-						Sample->samplesMaybeWithModels
+						Sample -> samplesMaybeWithModels
 					},
 					nonHiddenOriginOptions
 				];
@@ -716,7 +714,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 
 					DownValues[ExperimentCentrifuge]={};
 
-					ExperimentCentrifuge[___, options:OptionsPattern[]]:=Module[{frameworkOutputSpecification},
+					ExperimentCentrifuge[___, options:OptionsPattern[]] := Module[{frameworkOutputSpecification},
 						(* Lookup the output specification the framework is asking for. *)
 						frameworkOutputSpecification=Lookup[ToList[options], Output];
 
@@ -756,19 +754,19 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		(* If we're doing Preparation->Manual AND our ParentProtocol isn't ManualSamplePreparation, generate an *)
 		(* Object[Protocol, ManualSamplePreparation]. *)
 		And[
-			!MatchQ[Lookup[safeOps,ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
+			!MatchQ[Lookup[safeOps, ParentProtocol], ObjectP[{Object[Protocol, ManualSamplePreparation], Object[Protocol, ManualCellPreparation]}]],
 			MatchQ[Lookup[resolvedOptions, PreparatoryUnitOperations], Null|{}],
 			MatchQ[Lookup[resolvedOptions, Incubate], {False..}],
 			(* NOTE: No Centrifuge prep for Centrifuge. *)
 			MatchQ[Lookup[resolvedOptions, Filtration], {False..}],
 			MatchQ[Lookup[resolvedOptions, Aliquot], {False..}]
 		],
-			Module[{primitive, nonHiddenOptions,nonHiddenOriginOptions},
-				nonHiddenOptions=RemoveHiddenOptions[ExperimentCentrifuge,collapsedResolvedOptions];
-				nonHiddenOriginOptions=RemoveHiddenPrimitiveOptions[Centrifuge,listedOptions];
-				primitive=Centrifuge@@Join[
+			Module[{primitive, nonHiddenOptions, nonHiddenOriginOptions},
+				nonHiddenOptions = RemoveHiddenOptions[ExperimentCentrifuge, collapsedResolvedOptions];
+				nonHiddenOriginOptions = RemoveHiddenPrimitiveOptions[Centrifuge, listedOptions];
+				primitive = Centrifuge@@Join[
 					{
-						Sample->mySamples
+						Sample -> mySamples
 					},
 					nonHiddenOriginOptions
 				];
@@ -776,19 +774,19 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 				(* Remove any hidden options before returning.*)
 				(* Memoize the value of ExperimentCentrifuge so the framework doesn't spend time resolving it again.*)
 				Internal`InheritedBlock[{ExperimentCentrifuge, $PrimitiveFrameworkResolverOutputCache},
-					$PrimitiveFrameworkResolverOutputCache=<||>;
+					$PrimitiveFrameworkResolverOutputCache = <||>;
 
-					DownValues[ExperimentCentrifuge]={};
+					DownValues[ExperimentCentrifuge] = {};
 
-					ExperimentCentrifuge[___, options:OptionsPattern[]]:=Module[{frameworkOutputSpecification},
+					ExperimentCentrifuge[___, options: OptionsPattern[]] := Module[{frameworkOutputSpecification},
 						(* Lookup the output specification the framework is asking for. *)
-						frameworkOutputSpecification=Lookup[ToList[options], Output];
+						frameworkOutputSpecification = Lookup[ToList[options], Output];
 
 						frameworkOutputSpecification/.{
 							Options -> nonHiddenOptions,
 							Preview -> Null,
 							Simulation -> simulation,
-							RunTime -> (Max[Lookup[nonHiddenOptions,Time]]+1Minute)
+							RunTime -> (Max[Lookup[nonHiddenOptions, Time]] + 1 Minute)
 						}
 					];
 
@@ -840,7 +838,7 @@ ExperimentCentrifuge[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions :
 		],
 		Preview -> Null,
 		Simulation -> simulation,
-		RunTime -> (Max[Lookup[collapsedResolvedOptions,Time]]+1Minute)
+		RunTime -> (Max[Lookup[collapsedResolvedOptions, Time]] + 1 Minute)
 	}
 ];
 
@@ -855,7 +853,8 @@ DefineOptions[
 ];
 
 resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentCentrifugeOptions]]:=Module[
-	{outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,
+	{
+		outputSpecification,output,gatherTests,messages,cache,samplePrepOptions,simulatedSamples,resolvedSamplePrepOptions,updatedSimulation,
 		centrifugeNewOptions,sampleDownloads, specifiedEmail,specifiedUpload,resolvedEmail,
 		resolvedPostProcessingOptions,specifiedParentProtocol, samplePackets, sampleContainerModelPackets,sampleContainerPackets,
 		discardedSamplePackets,discardedInvalidInputs, discardedTest,roundedOptions,precisionTests,invalidInputs,invalidOptions,
@@ -863,9 +862,11 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		specifiedTimes,specifiedTemperatures, inputContainerModels, centrifugesAndContainersByOptionSet, specifiedCentrifugeAsModel,
 		semiResolvedCentrifuges, semiResolvedTargetContainers, incompatibleCentrifugeBools, noCentrifugeFoundBools,
 		noTransferFoundBools, centrifugeInvalidOptions,centrifugeCompatibleTests,noCentrifugeFoundInvalidOptions,
+		incompatibleCentrifugeBiohazardQs, incompatibleCollectionContainers, incompatibleCollectionContainersQ, noCentrifugeFoundBiohazardQs,
 		noCentrifugeFoundTests, noTransferContainerInvalidInputs,noTransferContainerTests, semiResolvedCentrifugesAsModel,
 		centrifugeModelCounts,centrifugesByFrequency,resolvedCentrifugeLists,roundedIntensities, intensityPrecisionValidBools,
-		semiResolvedTargetContainerModels,resolvedCentrifugeModels,resolvedRotors,resolvedBuckets,maxRadii,optionsWithRoundedIntensity,intensityPrecisionTests, resolvedCentrifugesAsModelLists,resolvedCentrifugesAsModels,resolvedCentrifuges,
+		semiResolvedTargetContainerModels,resolvedCentrifugeModels,resolvedRotors,resolvedBuckets,maxRadii,optionsWithRoundedIntensity,
+		intensityPrecisionTests, resolvedCentrifugesAsModelLists,resolvedCentrifugesAsModels,resolvedCentrifuges,
 		resolvedCentrifugeModelPackets,centrifugeRateResolutions,centrifugeMaxRates,resolvedIntensities, groupedContainerPackets,
 		groupedSamples, groupedTargetContainers, groupedTimes, groupedTemperatures, groupedIndexes, centrifugeTransferTests,
 		sampleContainerContents, stowAwayBools, stowAways, stowawayTest, targetContainerWithStowAwayTransfers, infoByContainerSet,
@@ -902,7 +903,9 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		resolvedCounterweight, mismatchedInstruments, nullTareWeightErrors, noCounterweightErrors,nullTareWeightSamples,
 		nullTareWeightInputs,nullTareWeightTest,noCounterweightSamples,noCounterweightInputs,noCounterweightTest,incompatiblePreparationOptions,incompatiblePreparationTests,
 		misMatchedInstrumentPreparationQ, allowedWorkCells, resolvedWorkCell,priorityOfCentrifuges,cantTransferRoboticBools,
-		cantTransferContainerRoboticInvalidInputs,centrifugeMinRates,plateTooHeavyForCentrifugeErrors,tooHeavyPlateSamples,tooHeavyPlateInputs, fastAssoc, resolvedWeightStabilityDuration, resolvedMaxWeightVariation
+		cantTransferContainerRoboticInvalidInputs,centrifugeMinRates,plateTooHeavyForCentrifugeErrors,tooHeavyPlateSamples,tooHeavyPlateInputs, fastAssoc, resolvedWeightStabilityDuration, resolvedMaxWeightVariation,
+		componentModelPackets, biohazardSampleQs, modifiedSampleCellTypes, bucketToTransferEnvironmentMergedAssoc,
+		bucketToTransferEnvironmentLookup, semiResolvedEquivalentTransferEnvironments, resolvedEquivalentTransferEnvironments
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -967,10 +970,11 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		Quiet[Download[
 			simulatedSamples,
 			{
-				Packet[Status, LiquidHandlerIncompatible, Volume, Container, Sterile, Name, Mass, Model, Position, StorageCondition],
+				Packet[Status, LiquidHandlerIncompatible, Volume, Container, Sterile, Name, Mass, Model, Position, StorageCondition, Composition, BiohazardDisposal, BiosafetyLevel],
 				Packet[Container[Model[{MaxVolume,NumberOfWells, Name, Deprecated, Sterile, AspectRatio, Counterweights, TareWeight, Footprint,Positions,Dimensions}]]],
 				Packet[Container[{Contents,Model, Name, Status, Sterile, TareWeight}]],
-				Packet[Container[Contents][[All, 2]][{Container, Volume, Mass, Model}]]
+				Packet[Container[Contents][[All, 2]][{Container, Volume, Mass, Model}]],
+				Packet[Composition[[All,2]][{CellType, BiosafetyLevel}]]
 			},
 			Cache->cache,
 			Simulation -> updatedSimulation
@@ -998,7 +1002,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	counterbalancePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ allCounterweights;
 
 	(* Get the downloaded mess into a usable form *)
-	{samplePackets, sampleContainerModelPacketsWithNulls,sampleContainerPacketsWithNulls,allContentsPackets}=If[Not[MatchQ[simulatedSamples, mySamples]],
+	{samplePackets, sampleContainerModelPacketsWithNulls,sampleContainerPacketsWithNulls,allContentsPackets, componentModelPackets}=If[Not[MatchQ[simulatedSamples, mySamples]],
 		Transpose[sampleDownloads],
 		{
 			fetchPacketFromFastAssoc[#, fastAssoc]& /@ simulatedSamples,
@@ -1018,6 +1022,22 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				Map[
 					fetchPacketFromFastAssoc[#, fastAssoc]&,
 					containerContents,
+					{2}
+				]
+			],
+			With[
+				{
+					components = Map[
+						If[MatchQ[fastAssocLookup[fastAssoc, #, Composition],$Failed],
+							{#},
+							fastAssocLookup[fastAssoc, #, Composition][[All,2]]
+						]&,
+						simulatedSamples
+					]
+				},
+				Map[
+					fetchPacketFromFastAssoc[#, fastAssoc]&,
+					components,
 					{2}
 				]
 			]
@@ -1046,6 +1066,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(* Generate a lookup table from footprint to centrifuge equipment *)
 	footprintCentrifugeEquipmentLookup = AssociationThread[allFootprints, allFootprintCentrifugeEquipment];
 
+	(* Call the helper function to determine, for each sample, if it should be handled as biohazardous sample for centrifugation, i.e. buckets are treated as covered secondary containers, with sample loading and unloading happening in biosafety cabinets. *)
+	biohazardSampleQs = evaluateSamplesBiohazard[samplePackets, componentModelPackets];
 
 	(*-- INPUT VALIDATION CHECKS --*)
 
@@ -1082,12 +1104,23 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(if we find that a sample needs to be transferred but can't find a container to transfer it to.) *)
 
 
-	(*-- OPTION PRECISION CHECKS --*)
+	(*-- OPTION PRECISION CHECKS I--*)
 
 	(* - Check that temperature is not more precise than 1C and time not more than 1s - *)
-	{roundedOptions,precisionTests}=If[gatherTests,
-		RoundOptionPrecision[Association[centrifugeNewOptions],{Temperature,Time},{1 Celsius,1 Second},Output->{Result,Tests}],
-		{RoundOptionPrecision[Association[centrifugeNewOptions],{Temperature,Time},{1 Celsius,1 Second}],Null}
+	{roundedOptions, precisionTests} = If[gatherTests,
+		RoundOptionPrecision[
+			Association[centrifugeNewOptions],
+			{Temperature, Time},
+			{1 Celsius, 1 Second},
+			Output -> {Result, Tests}],
+		{
+			RoundOptionPrecision[
+				Association[centrifugeNewOptions],
+				{Temperature, Time},
+				{1 Celsius, 1 Second}
+			],
+			Null
+		}
 	];
 
 	(* Note that intensity precision isn't checked until we know the centrifuge that will be used and the container that the sample will be in
@@ -1885,6 +1918,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				Temperature->resolvedTemperature/.{Ambient -> $AmbientTemperature},
 				Intensity->specifiedIntensities,
 				CollectionContainer->resolvedCollectionContainers,
+				Biohazard -> biohazardSampleQs,
 				Preparation->resolvedPreparation,
 				WorkCell->Lookup[myOptions,WorkCell,Automatic],
 				Cache->cacheBall,
@@ -1922,7 +1956,9 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 			expandedIntensityByContainer, expandedCollectionContainerByContainer, containerOptionSets, uniqueOptionSets,
 			uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer, compatibleCentrifuges,
 			centrifugesToContainerRules, mergedCentrifugesToContainerRules, optionSetToCompatibleCentrifuges,
-			optionSetsPerInput, centrifugesByOptionsByContainer, allCentrifugableContainers},
+			optionSetsPerInput, centrifugesByOptionsByContainer, allCentrifugableContainers,
+				expandedBiohazardSampleQs, uniqueBiohazardSampleQs
+			},
 
 			(* get all the containers that we could aliquot into *)
 			allPreferredContainers = DeleteDuplicates@Flatten[{
@@ -1941,10 +1977,10 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				Flatten[{#, allCentrifugableContainers}]&,
 				inputContainerModels
 			];
-			{expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer} = Map[
+			{expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer, expandedBiohazardSampleQs} = Map[
 				(* doing Length[allPreferredContainers] + 1 because we are taking all the preferred containers and also the input container for each sample *)
 				Flatten[Transpose[ConstantArray[#,Length[allCentrifugableContainers]+1]],1]&,
-				{specifiedTimes, resolvedTemperature, specifiedIntensities,resolvedCollectionContainers}
+				{specifiedTimes, resolvedTemperature, specifiedIntensities,resolvedCollectionContainers, biohazardSampleQs}
 			];
 
 			(* remove duplicates *)
@@ -1953,10 +1989,11 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				Flatten[expandedTimeByContainer],
 				Flatten[expandedTemperatureByContainer],
 				Flatten[expandedIntensityByContainer],
-				Flatten[expandedCollectionContainerByContainer]
+				Flatten[expandedCollectionContainerByContainer],
+				Flatten[expandedBiohazardSampleQs]
 			}];
 			uniqueOptionSets = DeleteDuplicates[containerOptionSets];
-			{uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer} = Transpose[uniqueOptionSets];
+			{uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer, uniqueBiohazardSampleQs} = Transpose[uniqueOptionSets];
 
 			(* get the compatible centrifuges *)
 			compatibleCentrifuges = CentrifugeDevices[
@@ -1965,6 +2002,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				Temperature -> uniqueTemperatures /. {Ambient -> $AmbientTemperature},
 				Intensity -> uniqueIntensity,
 				CollectionContainer -> uniqueCollectionContainer,
+				Biohazard -> uniqueBiohazardSampleQs,
 				Preparation -> resolvedPreparation,
 				WorkCell -> Lookup[myOptions, WorkCell, Automatic],
 				Cache -> cacheBall,
@@ -2201,31 +2239,45 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 	(* Store the invalid options due to the specified centrifuge not being able to reach the Time/Temperature/Intensity. (Only give the option symbols if the option is not Automatic at indexes corresponding to this error.) *)
 	centrifugeInvalidOptions=PickList[{Instrument,Intensity, Time, Temperature}, {PickList[specifiedCentrifuges, incompatibleCentrifugeBools],PickList[specifiedIntensities, incompatibleCentrifugeBools], PickList[specifiedTimes, incompatibleCentrifugeBools], PickList[resolvedTemperature, incompatibleCentrifugeBools]}, Except[{} | {Automatic ..}]];
-
+	(* Gather a list of whether the sample is biohazard *)
+	incompatibleCentrifugeBiohazardQs = PickList[biohazardSampleQs, incompatibleCentrifugeBools];
+	(* Provide more specific error messages if we have collection container because that can be the issue for going beyond MaxStackHeight *)
+	incompatibleCollectionContainers = PickList[resolvedCollectionContainers,incompatibleCentrifugeBools];
+	incompatibleCollectionContainersQ = MemberQ[incompatibleCollectionContainers, ObjectP[]];
 	(* If the user specified a centrifuge that will not work with the specified Time/Temperature/Intensity options and we are throwing messages, throw an error message .*)
 	(* But if instrument and preparation is mismatched, skip this error message because this was checked before *)
 	
 	If[MemberQ[incompatibleCentrifugeBools,True]&&!gatherTests&&!misMatchedInstrumentPreparationQ,
-		If[MemberQ[PickList[resolvedCollectionContainers,incompatibleCentrifugeBools],ObjectP[]],
-			(* Provide more specific error messages if we have collection container because that can be the issue for going beyond MaxStackHeight *)
-			Message[
-				Error::IncompatibleCentrifuge,
-				ObjectToString[PickList[inputContainerModels,incompatibleCentrifugeBools]],
-				" with the collection containers " <> ObjectToString[PickList[resolvedCollectionContainers,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[specifiedIntensities,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[resolvedTemperature,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[specifiedTimes,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[specifiedCentrifuges,incompatibleCentrifugeBools], Cache->cacheBall],
-				"shorter filter and collection container stacks with "
+		Message[
+			Error::IncompatibleCentrifuge,
+			Which[
+				AllTrue[incompatibleCentrifugeBiohazardQs, TrueQ] && MatchQ[resolvedPreparation, Manual],
+				(* All requires aseptic handling of bucket loading *)
+				" biohazard sample(s) in the",
+				!NoneTrue[incompatibleCentrifugeBiohazardQs, TrueQ] && MatchQ[resolvedPreparation, Manual],
+				(* Some true. Those without compatible centrifuges has some biohazard and some non-biohazard samples *)
+				" biohazard and non-biohazard samples in the",
+				True,
+				(* biohazard-irrelevant or Robotic. *)
+				""
 			],
-			Message[
-				Error::IncompatibleCentrifuge,
-				ObjectToString[PickList[inputContainerModels,incompatibleCentrifugeBools]],
-				"",
-				ObjectToString[PickList[specifiedIntensities,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[resolvedTemperature,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[specifiedTimes,incompatibleCentrifugeBools]],
-				ObjectToString[PickList[specifiedCentrifuges,incompatibleCentrifugeBools], Cache->cacheBall],
+			ObjectToString[PickList[inputContainerModels,incompatibleCentrifugeBools]],
+			If[incompatibleCollectionContainersQ,
+				" with the collection containers " <> ObjectToString[incompatibleCollectionContainers],
+				""
+			],
+			ObjectToString[PickList[specifiedIntensities,incompatibleCentrifugeBools]],
+			ObjectToString[PickList[resolvedTemperature,incompatibleCentrifugeBools]],
+			ObjectToString[PickList[specifiedTimes,incompatibleCentrifugeBools]],
+			ObjectToString[PickList[specifiedCentrifuges,incompatibleCentrifugeBools], Cache->cacheBall],
+			If[MemberQ[incompatibleCentrifugeBiohazardQs, True] && MatchQ[resolvedPreparation, Manual],
+				(* Add a sentence explaining what limitation does biohazardous samples pose to centrifuge selection *)
+				"Biohazard samples must use a centrifuge with removable swing buckets that can be loaded/unloaded and covered/uncovered inside a biosafety cabinet. This is currently only supported on Model[Instrument, Centrifuge, \"Avanti J-15R\"]",
+				(* biohazard-irrelevant or Robotic. *)
+				""
+			],
+			If[incompatibleCollectionContainersQ,
+				"shorter filter and collection container stacks with ",
 				""
 			]
 		]
@@ -2253,10 +2305,33 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 
 	(* Store the invalid options no centrifuge being able to meet the desired Time/Temperature/Intensity. (Only give the option symbols if the option is not Automatic at indexes corresponding to this error.) *)
 	noCentrifugeFoundInvalidOptions=PickList[{Intensity, Time, Temperature}, {PickList[specifiedIntensities, noCentrifugeFoundBools], PickList[specifiedTimes, noCentrifugeFoundBools], PickList[resolvedTemperature, noCentrifugeFoundBools]}, Except[{} | {Automatic ..}]];
+	noCentrifugeFoundBiohazardQs = PickList[biohazardSampleQs, noCentrifugeFoundBools];
 
 	(* If the user specified Time/Temperature/Intensity options for which no centrifuge could be found and we are throwing messages, throw an error message .*)
 	If[MemberQ[noCentrifugeFoundBools,True]&&!gatherTests,
-		Message[Error::NoCompatibleCentrifuge, ObjectToString[PickList[specifiedIntensities,noCentrifugeFoundBools]], ObjectToString[PickList[resolvedTemperature,noCentrifugeFoundBools]], ObjectToString[PickList[specifiedTimes,noCentrifugeFoundBools]], resolvedPreparation]
+		Message[Error::NoCompatibleCentrifuge,
+			ObjectToString[PickList[specifiedIntensities,noCentrifugeFoundBools]],
+			ObjectToString[PickList[resolvedTemperature,noCentrifugeFoundBools]],
+			ObjectToString[PickList[specifiedTimes,noCentrifugeFoundBools]],
+			resolvedPreparation,
+			Which[
+				AllTrue[noCentrifugeFoundBiohazardQs, TrueQ] && MatchQ[resolvedPreparation, Manual],
+				(* All requires aseptic handling of bucket loading *)
+					" for biohazard sample(s)",
+				!NoneTrue[noCentrifugeFoundBiohazardQs, TrueQ] && MatchQ[resolvedPreparation, Manual],
+				(* Some true. Those without compatible centrifuges has some biohazard and some non-biohazard samples *)
+					" for both biohazard and non-biohazard samples",
+				True,
+				(* biohazard-irrelevant or Robotic. *)
+					""
+			],
+			If[MemberQ[noCentrifugeFoundBiohazardQs, True] && MatchQ[resolvedPreparation, Manual],
+				(* Add a sentence explaining what limitation does biohazardous samples pose to centrifuge selection *)
+				"Biohazard samples require the centrifuge to be equipped with removable swing buckets that can be loaded and unloaded, covered and uncovered inside a biosafety cabinet. This is currently only supported on Model[Instrument, Centrifuge, \"Avanti J-15R\"]. ",
+				(* biohazard-irrelevant or Robotic. *)
+				""
+			]
+		]
 	];
 
 	(* If the user specified Time/Temperature/Intensity options and we are gathering tests, create a passing and/or failing test with the appropriate result. *)
@@ -2386,11 +2461,11 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(* We now know the centrifuge that will be used for each sample and the container model that the sample will be in.
 	 	From this info, figure out the max radius so that we can convert between rate and force. Also, resolve the final Centrifuge for the samples. This could be a list earlier because of the same frequency *)
 	{resolvedCentrifugeModels,resolvedRotors,resolvedBuckets,maxRadii,resolvedRotorAngle,resolvedRotorGeometry,resolvedChilledRotor,noRotorFoundBools}=Transpose@MapThread[
-		Function[{containerModel,centrifugeModelList,rotorModelList, rotorAngle, rotorGeometry, chilledRotor},
+		Function[{containerModel,centrifugeModelList,rotorModelList, rotorAngle, rotorGeometry, chilledRotor, biohazardSampleQ},
 			Module[
 				{containerModelPacket, containerModelFootprint, centrifugeCompatibilities, potentialCentrifugeCompatibility, centrifugeCompatibility, centrifuge, rotor,
 					bucket, rotorMaxRadius, bucketMaxRadius,radius,semiResolvedRotorModels, allRotors, allCompatibleRotors, allRotorAngles, allRotorGeometries, incompatibleRotorQ, angle, geometry, chilled,
-					centrifugeType, allRotorPackets, potentialCentrifugeCompatibilityConsideringChilledRotor},
+					centrifugeType, allRotorPackets, potentialCentrifugeCompatibilityConsideringChilledRotor, rawCentrifugeCompatibilities},
 
 				(* Get the packet corresponding to the target container model *)
 				containerModelPacket = FirstCase[cacheBall,KeyValuePattern[{Object->containerModel,Footprint->_}],{}];
@@ -2398,8 +2473,13 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				(* Look up the container's footprint *)
 				containerModelFootprint = Lookup[containerModelPacket, Footprint, Null];
 
-				(* Look up container model's footprint's compatible centrifuge equipment sets *)
-				centrifugeCompatibilities = Lookup[footprintCentrifugeEquipmentLookup, containerModelFootprint, {}];
+				(* Look up container model's footprint's compatible centrifuge equipment sets, without considering biohazardness of the sample *)
+				rawCentrifugeCompatibilities = Lookup[footprintCentrifugeEquipmentLookup, containerModelFootprint, {}];
+				(* If handling biohazard samples manually, filter the tuples to only retain those with a coverable bucket model *)
+				centrifugeCompatibilities = If[TrueQ[biohazardSampleQ] && MatchQ[resolvedPreparation, Manual],
+					Cases[rawCentrifugeCompatibilities, {_,_,ObjectP[Keys[bucketCoverModelLookup["Memoization"]]]}],
+					rawCentrifugeCompatibilities
+				];
 
 				(* From the compatible sets, collect all rotors *)
 				allCompatibleRotors = Cases[Flatten[centrifugeCompatibilities], ObjectP[Model[Container,CentrifugeRotor]]];
@@ -2545,8 +2625,67 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 				{centrifuge,rotor,bucket,radius,angle,geometry,chilled,incompatibleRotorQ}
 			]
 		],
-		{semiResolvedTargetContainerModels,resolvedCentrifugesAsModelLists, suppliedRotorModel, suppliedRotorAngle, suppliedRotorGeometry, suppliedChilledRotor}
+		{semiResolvedTargetContainerModels,resolvedCentrifugesAsModelLists, suppliedRotorModel, suppliedRotorAngle, suppliedRotorGeometry, suppliedChilledRotor, biohazardSampleQs}
 	];
+	(* --- Resolve EquivalentTransferEnvironments ---*)
+	(* This section below mirrors how ExperimentInoculateLiquidMedia resolves transfer environment, with a similar reasoning that, if this reaches here, it should be considered dealing with biohazard samples, so we should not resolve to aseptic transfer BSC or use it as catch-all, regardless of whether there are cells in the composition *)
+	(* If there is any bucket involved, do the cell type check for all samples, to prepare for transfer environment resolving *)
+	modifiedSampleCellTypes = Module[{mainCellIdentityModels, sampleCellTypes},
+		(* first get the main cell object in the composition; if this is a mixture it will pick the one with the highest concentration *)
+		mainCellIdentityModels = selectMainCellFromSample[mySamples, Cache -> cacheBall, Simulation -> updatedSimulation];
+
+		(* Determine what kind of cells the input samples are *)
+		sampleCellTypes = lookUpCellTypes[samplePackets, ConstantArray[Null, Length[samplePackets]], mainCellIdentityModels, Cache -> cacheBall];
+
+		(* If there are samples without cell in composition as control, we should use the same WorkCell/TransferEnvironment/Instrument as the experimental group but there can be grouped together *)
+		(* For example, sample 1 is water, sample 2 is HEK293 cells, we should inoculate both together using mammalian WorkCell/TransferEnvironment/Instrument *)
+		(* Note: if cell is Insect/Plant/Fungus, we treat them the same as Null *)
+		If[MemberQ[sampleCellTypes, Except[Mammalian | Yeast | Bacterial]] && MemberQ[sampleCellTypes, Mammalian | Yeast | Bacterial] && EqualQ[DeleteDuplicates@Cases[sampleCellTypes, Mammalian | Yeast | Bacterial], 1],
+			sampleCellTypes /. (Except[Mammalian | Yeast | Bacterial] -> FirstCase[sampleCellTypes, Mammalian | Yeast | Bacterial]),
+			(* Otherwise, the no cell sample will go with microbial samples *)
+			sampleCellTypes
+		]
+	];
+	(* Here we know the bucket model to use. We can semi-resolve the hidden option EquivalentTransferEnvironments for each sample. *)
+	semiResolvedEquivalentTransferEnvironments = MapThread[
+		Function[{suppliedTransferEnvironment, biohazardSampleQ, cellType},
+			Which[
+				(* Although this is a hidden option, but just in case it might be specified by developer when calling from other experiment, respect the input here *)
+				MatchQ[suppliedTransferEnvironment, Except[Automatic]],
+					suppliedTransferEnvironment,
+				biohazardSampleQ,
+					If[MatchQ[cellType, MicrobialCellTypeP],
+						Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"],(* Biosafety Cabinet Handling Station for Microbiology *)
+						Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"] (* Biosafety Cabinet Handling Station for Tissue Culture *)
+					],
+				(* Otherwise no bucket is involved or the bucket can be loaded/unloaded on a bench *)
+				True,
+					Null
+			]
+		],
+		{Lookup[mapThreadFriendlyOptions, EquivalentTransferEnvironments, Automatic], biohazardSampleQs, modifiedSampleCellTypes}
+	];
+	(* Make a merged assoc for bucket -> BSC *)
+	bucketToTransferEnvironmentMergedAssoc = Merge[Normal[AssociationThread[resolvedBuckets, semiResolvedEquivalentTransferEnvironments], Association], Identity];
+
+	bucketToTransferEnvironmentLookup = KeyValueMap[
+		Function[{bucket, transferEnvironmentList},
+			(* If there is microbiology BSC in the list to work with one bucket, use microbiology BSC *)
+			bucket -> Which[
+				!MemberQ[transferEnvironmentList, ObjectP[]],
+				(* No BSC resolved for the bucket *)
+					Null,
+				MemberQ[transferEnvironmentList, Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"]](* Biosafety Cabinet Handling Station for Microbiology *),
+					Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"],
+				True,
+				(* Otherwise use the first one in the list, which is the Tissue Culture BSC for now. *)
+					FirstCase[transferEnvironmentList, ObjectP[Model[Instrument, HandlingStation, BiosafetyCabinet]]]
+			]
+		],
+		KeyDrop[bucketToTransferEnvironmentMergedAssoc, Null]
+	];
+	(* And then if there are multiple cell types to work with one bucket, no need to do it in separate biosafety cabinets, favors microbial BSC if any *)
+	resolvedEquivalentTransferEnvironments = resolvedBuckets /. bucketToTransferEnvironmentLookup;
 
 	(* -- Deal with any errors related to no rotor being able to meet the desired RotorAngle/RotorGeometry -- *)
 
@@ -2626,8 +2765,8 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		]&,
 		resolvedCentrifugesAsModels
 	];
-	
 
+	(*-- OPTION PRECISION CHECKS II --*)
 	(* Get the resolution of each centrifuge model *)
 	centrifugeRateResolutions = Lookup[resolvedCentrifugeModelPackets,SpeedResolution,Null];
 
@@ -2635,53 +2774,61 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	because we won't know what container the sample will be in (in case a transfer is required to fit on the centrifuge)
 	and because we don't know the centrifuge until now unless centrifuge was specified. Without knowing both the
 	container and centrifuge, we can't convert between force and rate to do the precision check.) *)
-	{roundedIntensities, intensityPrecisionValidBools} = Transpose[MapThread[Function[{intensity,maxRadius,resolution,centrifuge},
-		Which[
+	{roundedIntensities, intensityPrecisionValidBools} = Transpose@MapThread[
+		Function[{intensity, maxRadius, resolution, centrifuge},
+			Which[
 
-		(* If intensity is Automatic or if we couldn't resolve the centrifuge due to invalid input,
-		keep the value as is and set the precision validity bool as True *)
-			MatchQ[intensity,Automatic] || NullQ[centrifuge],
-			{intensity,True},
+				(* If intensity is Automatic or if we couldn't resolve the centrifuge due to invalid input,
+			keep the value as is and set the precision validity bool as True *)
+				MatchQ[intensity, Automatic] || NullQ[centrifuge],
+					{intensity, True},
 
-		(* If intensity is specified as a rate and the rate is attainable at the centrifuge precision,
-			keep the value as is and set the precision validity bool as True. Otherwise,
-			round the value and set the precision validity bool as False *)
-			MatchQ[intensity,GreaterP[0 RPM]],
-			If[PossibleZeroQ[Mod[intensity,resolution]],
-				{intensity,True},
-				{Round[intensity,resolution],False}
-			],
+				(* If intensity is specified as a rate and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision validity bool as True. Otherwise,
+				round the value and set the precision validity bool as False *)
+				RPMQ[intensity] && MatchQ[resolvedPreparation, Manual],
+					If[PossibleZeroQ[Mod[intensity, resolution]],
+						{intensity, True},
+						{SafeRound[intensity, resolution], False}
+					],
 
-		(* If we have to convert force to RPM, we can't really do the precision check since the units are different, skip it *)
-			True,
-			{intensity,True}
-		]
-	],{specifiedIntensities,maxRadii,centrifugeRateResolutions,resolvedCentrifuges}]];
-	(* Update the options with the rounded intensities *)
-	optionsWithRoundedIntensity = ReplaceRule[Normal[roundedOptions],Intensity -> roundedIntensities];
+				(* If intensity is specified as g and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision validity bool as True. Otherwise,
+				round the value and set the precision validity bool as False *)
+				MatchQ[intensity, GreaterP[0 GravitationalAcceleration]] && MatchQ[resolvedPreparation, Manual] && !NullQ[maxRadius],
+					Module[{convertedRPM, roundedRPM, convertedBackRCF, roundedRCF},
+						convertedRPM = RCFToRPM[intensity, maxRadius];
+						roundedRPM = SafeRound[convertedRPM, resolution];
+						convertedBackRCF = RPMToRCF[roundedRPM, maxRadius];
+						roundedRCF = SafeRound[convertedBackRCF, 0.1 GravitationalAcceleration];
+						{roundedRCF, EqualQ[intensity, roundedRCF]}
+					],
 
-	(* If we had to round the intensity, throw a warning *)
-	If[MemberQ[intensityPrecisionValidBools,False]&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
-		Message[Warning::CentrifugePrecision, ObjectToString[PickList[specifiedIntensities,intensityPrecisionValidBools,False]],ObjectToString[PickList[centrifugeRateResolutions,intensityPrecisionValidBools,False]],ObjectToString[PickList[roundedIntensities,intensityPrecisionValidBools,False]]]
-	];
+				(* If intensity is specified as a rate and we are doing robotic, we need to convert rate to RCF *)
+				RPMQ[intensity] && MatchQ[resolvedPreparation, Robotic] && !NullQ[maxRadius],
+					Module[{convertedRCF, roundedRCF, convertedBackRPM, roundedRPM},
+						convertedRCF = RPMToRCF[intensity, maxRadius];
+						(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+						roundedRCF = SafeRound[convertedRCF, 0.1 GravitationalAcceleration];
+						convertedBackRPM = RCFToRPM[roundedRCF, maxRadius];
+						roundedRPM = SafeRound[convertedBackRPM, 0.1 RPM];
+						{roundedRPM, EqualQ[intensity, roundedRPM]}
+					],
 
-	(* Make warnings regarding intensity precision rounding*)
-	intensityPrecisionTests=If[gatherTests,
-		Module[{failingTest,passingTest},
-			failingTest=If[MemberQ[intensityPrecisionValidBools,False],
-				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:",True,False],
-				Nothing
-			];
+				(* If intensity is specified as a g and we are doing robotic, we need to check if rounding is necessary *)
+				MatchQ[intensity, GreaterP[0 GravitationalAcceleration]] && MatchQ[resolvedPreparation, Robotic],
+					(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+					{SafeRound[intensity, 0.1 GravitationalAcceleration], EqualQ[intensity, SafeRound[intensity, 0.1 GravitationalAcceleration]]},
 
-			passingTest=If[MemberQ[intensityPrecisionValidBools,True],
-				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:",True,True],
-				Nothing
-			];
-
-			{failingTest,passingTest}
+				(* if we don't know the max radius of the rotor then we can't calculate the force, skip it *)
+				True,
+					{intensity, True}
+			]
 		],
-		Nothing
+		{specifiedIntensities, maxRadii, centrifugeRateResolutions, resolvedCentrifuges}
 	];
+	(* Update the options with the rounded intensities *)
+	optionsWithRoundedIntensity = ReplaceRule[Normal[roundedOptions], Intensity -> roundedIntensities];
 
 	(* --- Resolve Intensity --- *)
 
@@ -2694,27 +2841,119 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(*If Intensity is specified, use it. Otherwise, calculate from 1/5 of the centrifuge max rate (rounded to centrifuge precision)
 	and give the result units of force since this is more relevant than rate. (If centrifuge could not be resolved due to invalid input, resolve intensity to Null.) *)
 	resolvedIntensities = MapThread[
-		Function[{intensity,maxRadius,minRate,maxRate,resolution,centrifuge},
+		Function[{intensity, maxRadius, minRate, maxRate, resolution, centrifuge},
 			Which[
-				MatchQ[intensity,Except[Automatic]],
-					(*if we can, we should convert RPM to G right here, if we are doing robotic *)
-					If[Not[NullQ[maxRadius]]&&Not[CompatibleUnitQ[intensity,1 GravitationalAcceleration]]&&roboticPritimitveQ,
-						RPMToRCF[intensity,maxRadius],
-						(*if we don't have a max radius and we are not doing robotic, that means the conversion shouldnt be made and thus we stick with specified intensity *)
-						intensity
+				MatchQ[intensity, Except[Automatic]],
+				(* Note:here I am keeping the logic of converting specified intensity to different unit. Not sure why we modify user options here *)
+				(* The only thing clear is robotic centrifuge prefers G, manual centrifuge prefers RPM *)
+					Which[
+						(*if we can, we should convert RPM to G right here, if we are doing robotic *)
+						Not[NullQ[maxRadius]] && Not[CompatibleUnitQ[intensity, 1 GravitationalAcceleration]] && roboticPritimitveQ,
+							SafeRound[RPMToRCF[intensity, maxRadius], 0.1 GravitationalAcceleration],
+						(*if we can, we should convert G to RPM right here, if we are doing manual *)
+						Not[NullQ[maxRadius]] && !RPMQ[intensity] && RPMQ[resolution] && MatchQ[resolvedPreparation, Manual],
+							SafeRound[RCFToRPM[intensity, maxRadius], resolution],
+						(*if we don't have a max radius or G for robotic/RPM for manual, that means the conversion shouldnt be made and thus we stick with specified intensity *)
+						True,
+							intensity
 					],
 
 				(* if we don't know the max radius of the rotor then we can't calculate the force, in that case stick with RPM *)
-				NullQ[maxRadius],Round[Max[{(maxRate/5),minRate*1.1}],resolution],
+				NullQ[maxRadius], SafeRound[Max[{(maxRate/5), minRate*1.1}], resolution],
 
-				MatchQ[centrifuge,ObjectP[]],
-				RPMToRCF[Round[Max[{(maxRate/5),minRate*1.1}],resolution], maxRadius],
+				(* if we know the max radius of the rotor and preparation is robotic, use G as unit *)
+				MatchQ[centrifuge, ObjectP[]] && roboticPritimitveQ,
+					Module[{convertedToRCF, roundedRCF},
+						convertedToRCF = RPMToRCF[Max[{(maxRate/5), minRate*1.1}], maxRadius];
+						roundedRCF = SafeRound[convertedToRCF, 0.1 GravitationalAcceleration]
+					],
 
-				NullQ[centrifuge],
-				Null
+				(* if we know the max radius of the rotor and preparation is manual, use RPM as unit *)
+				MatchQ[centrifuge, ObjectP[]],
+					SafeRound[Max[{(maxRate/5), minRate*1.1}], resolution],
+
+				NullQ[centrifuge], Null
 			]
 		],
-		{roundedIntensities,maxRadii,centrifugeMinRates,centrifugeMaxRates,centrifugeRateResolutions,resolvedCentrifuges}
+		{roundedIntensities, maxRadii, centrifugeMinRates, centrifugeMaxRates, centrifugeRateResolutions, resolvedCentrifuges}
+	];
+
+	(* If we had to round the intensity, throw a warning *)
+	If[MemberQ[intensityPrecisionValidBools, False] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[
+			{
+				specifiedIntensitiesToRound, centrifugeResolutions, relatedCentrifuges, roundedSpecifiedIntensities,
+				resolvedRelatedIntensities, joinSingleQuantityString, finalRoundAndConvertedIntensities
+			},
+			specifiedIntensitiesToRound = PickList[specifiedIntensities, intensityPrecisionValidBools, False];
+			centrifugeResolutions = PickList[centrifugeRateResolutions, intensityPrecisionValidBools, False];
+			relatedCentrifuges = PickList[resolvedCentrifuges, intensityPrecisionValidBools, False];
+			roundedSpecifiedIntensities = PickList[roundedIntensities, intensityPrecisionValidBools, False];
+			resolvedRelatedIntensities = PickList[resolvedIntensities, intensityPrecisionValidBools, False];
+			joinSingleQuantityString[rate:GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]] := If[RPMQ[rate],
+				StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " RPM"],
+				StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " GravitationalAcceleration"]
+			];
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				MapThread[
+					Which[
+						MatchQ[#1, GreaterP[0 GravitationalAcceleration]] && RPMQ[#2],
+							(* If we do convert from RPM to G, or vice versa, list both values *)
+							StringJoin[ToString[NumberForm[QuantityMagnitude[#1], {$MachinePrecision, 1}]], " GravitationalAcceleration (equivalent to ", joinSingleQuantityString[#2], ")"],
+						MatchQ[#2, GreaterP[0 GravitationalAcceleration]] && RPMQ[#1],
+							StringJoin[joinSingleQuantityString[#1], " (equivalent to ", ToString[NumberForm[QuantityMagnitude[#2], {$MachinePrecision, 1}]], " GravitationalAcceleration)"],
+						RPMQ[#2],
+							joinSingleQuantityString[#2],
+						True,
+							StringJoin[ToString[NumberForm[QuantityMagnitude[#1], {$MachinePrecision, 1}]], " GravitationalAcceleration"]
+					]&,
+					{roundedSpecifiedIntensities, resolvedRelatedIntensities}
+				]
+			];
+			Message[
+				Warning::CentrifugePrecision,
+				(*1*)If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], "Intensity", "CentrifugeIntensity"],
+				(*2*)StringJoin[
+				joinClauses[joinSingleQuantityString /@ specifiedIntensitiesToRound],
+				" ",
+				isOrAre[DeleteDuplicates[specifiedIntensitiesToRound]]
+			],
+				(*3*)If[MatchQ[resolvedPreparation, Manual],
+				StringJoin[
+					pluralize[DeleteDuplicates@centrifugeResolutions, "precision ", "precisions "],
+					joinClauses[joinSingleQuantityString /@ centrifugeResolutions],
+					" of the manual ",
+					pluralize[DeleteDuplicates@relatedCentrifuges, "centrifuge ", "centrifuges "],
+					samplesForMessages[relatedCentrifuges, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+				],
+				(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+				StringJoin[
+					"precision 0.1 GravitationalAcceleration of the robotic ",
+					pluralize[DeleteDuplicates@relatedCentrifuges, "centrifuge ", "centrifuges "],
+					samplesForMessages[relatedCentrifuges, CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+				]
+			],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	(* Make warnings regarding intensity precision rounding *)
+	intensityPrecisionTests = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[MemberQ[intensityPrecisionValidBools, False],
+				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:", True, False],
+				Nothing
+			];
+
+			passingTest = If[MemberQ[intensityPrecisionValidBools, True],
+				Warning["The precision of any user-supplied Intensity options is compatible with instrumental precision:", True, True],
+				Nothing
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
 	];
 
 	(* - Validate the Name option - *)
@@ -3265,7 +3504,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
 	resolvedWeightStabilityDuration = If[MatchQ[Lookup[myOptions, WeightStabilityDuration], Except[Automatic]],
 		Lookup[myOptions, WeightStabilityDuration],
-		60 Second
+		$DefaultWeightStabilityDuration
 	];
 
 	(* always use Model[Instrument, Balance, "Ohaus EX6202"], so resolve to the AllowedMaxVariation of it *)
@@ -3479,6 +3718,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 					Sterile -> resolvedSterile,
 					CollectionContainer -> resolvedCollectionContainers,
 					CounterbalanceWeight -> resolvedCounterbalanceWeights,
+					EquivalentTransferEnvironments -> resolvedEquivalentTransferEnvironments,
 					Cache -> cache,
 					Simulation -> updatedSimulation
 				},
@@ -3490,6 +3730,7 @@ resolveExperimentCentrifugeOptions[mySamples:{ObjectP[Object[Sample]]..},myOptio
 		Tests -> Flatten[
 			{
 				discardedTest,
+				precisionTests,
 				centrifugeCompatibleTests,
 				noCentrifugeFoundTests,
 				noTransferContainerTests,
@@ -3572,7 +3813,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 		adapterResourcesIndexMatchedToContainer, secondaryAdapterResourcesIndexMatchedToContainer, tareRackIndexMatched,
 		tertiaryAdapterResourcesIndexMatchedToContainer, counterbalanceAdapterLinksIndexMatchedToContainer, tareRackResourcesIndexMatched,
-		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer, tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer
+		secondaryCounterbalanceAdapterLinksIndexMatchedToContainer, tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer,
+		transferEnvironments, expandedTransferEnvironments, totalUniqueBuckets, bucketCovers, bucketCoverResources, handlingEnvironmentResource
 	},
 
 	resolvedOptionsExpanded=RemoveHiddenOptions[ExperimentCentrifuge, myResolvedOptions];
@@ -3782,7 +4024,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		counterbalanceWeights,
 		sampleLabel,
 		sampleContainerLabel,
-		counterweight
+		counterweight,
+		transferEnvironments
 	}=Lookup[myResolvedOptions,
 		{
 			Time,
@@ -3800,7 +4043,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 			CounterbalanceWeights,
 			SampleLabel,
 			SampleContainerLabel,
-			Counterweight
+			Counterweight,
+			EquivalentTransferEnvironments
 		}
 	];
 
@@ -3835,7 +4079,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 		expandedCollectionContainers,
 		expandedSampleLabel,
 		expandedSampleContainerLabel,
-		expandedCounterweight
+		expandedCounterweight,
+		expandedTransferEnvironments
 	}=expandByReplicates[
 		replicates,
 		{
@@ -3852,7 +4097,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 			collectionContainers,
 			sampleLabel,
 			sampleContainerLabel,
-			counterweight
+			counterweight,
+			transferEnvironments
 		}
 	];
 
@@ -3886,13 +4132,18 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 	(* We know the centrifuge that will be used for each sample and the container model that the sample will be in.
 	 	From this info, figure out the max radius so that we can convert between rate and force. *)
 	(*Also get the bucket, rotor, and centrifuge adapter that will be used for each sample. *)
-	{expandedMaxRadii,expandedBuckets,expandedAdapters, expandedSecondaryAdapters, expandedTertiaryAdapters}=Transpose[MapThread[Function[{containerModel,centrifugeModel,rotorModel},
+	{expandedMaxRadii,expandedBuckets,expandedAdapters, expandedSecondaryAdapters, expandedTertiaryAdapters}=Transpose[MapThread[Function[{containerModel,centrifugeModel,rotorModel, tranasferEnvironment},
 		Module[
-			{containerModelPacket, centrifugeCompatibilities, potentialCentrifugeCompatibility, centrifugeCompatibility, rotor,
+			{centrifugeCompatibilities, potentialCentrifugeCompatibility, centrifugeCompatibility, rawCentrifugeCompatibilities,
 			bucket, rotorMaxRadius, bucketMaxRadius, maxRadius, adapters, adapter1, adapter2, adapter3},
 
-			(* Look up container model's compatible centrifuge equipment sets *)
-			centrifugeCompatibilities = Lookup[containerCentrifugeEquipmentLookup, containerModel, {}];
+			(* Look up container model's compatible centrifuge equipment sets without considering biohazardness of the sample *)
+			rawCentrifugeCompatibilities = Lookup[containerCentrifugeEquipmentLookup, containerModel, {}];
+			(* If biohazard, i.e. the transfer environment is BSC, filter the tuples to only retain those with a coverable bucket model *)
+			centrifugeCompatibilities = If[MatchQ[tranasferEnvironment, ObjectP[{Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]],
+				Cases[rawCentrifugeCompatibilities, {_,_,ObjectP[Keys[bucketCoverModelLookup["Memoization"]]]}],
+				rawCentrifugeCompatibilities
+			];
 
 			(* Extract the best entry that corresponds to the instrument model that will be used *)
 			(* Extract the entry that corresponds to the instrument model that will be used *)
@@ -3930,7 +4181,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 			{maxRadius, bucket, adapter1, adapter2, adapter3}
 		]
-	],{expandedTargetContainerModels,expandedCentrifugesModels,expandedRotorsModels}]];
+	],{expandedTargetContainerModels,expandedCentrifugesModels,expandedRotorsModels, expandedTransferEnvironments}]];
 
 	(* For each sample, try to find the counterweights *)
 	{expandedCounterbalanceAdapters,expandedCounterbalanceSecondaryAdapters,expandedCounterbalanceTertiaryAdapters}=Transpose[
@@ -3989,6 +4240,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 	],{expandedIntensities,expandedMaxRadii,centrifugeRateResolutions}]];
 
 	(* Group each set of sample parameters by samples that will use the same centrifuge, time, temperature, force, bucket, rotor *)
+	(* Note that Transfer environment and bucket covers are tied to the buckets. *)
 	groupedSampleParameters = GatherBy[Transpose[{
 		(*1*)expandedTargetContainers,
 		(*2*)expandedTargetContainerModels,
@@ -4119,7 +4371,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 	(* In order to get tubes out of the ultracentrifuge carefully, we need to use pliers. *)
 	(* Create resource rules that replace an ultracentrifuge rotor with the proper plier resource *)
-	plierResourceReplaceRules = Map[
+	plierResourceReplaceRules = Flatten[Map[
 		Function[{rotorModel},
 			Which[
 				(* For robotic primitive we don't need this resource *)
@@ -4129,7 +4381,7 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 			]
 		],
 		rotorByParameterGroup
-	];
+	]];
 
 	(* Get the centrifuge and rotor resources indexed to the centrifuge option *)
 	centrifugeResources = centrifuges /. centrifugeToResourceRules;
@@ -4141,11 +4393,20 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 	We only make one resource per bucket model * the number of those buckets that are needed.
 	Buckets can't be indexed to SamplesIn or ContainersIn since it is possible to have more buckets than containers
 	(e.g. centrifuging 1 bucket, but you still need a second bucket for the counterweight). *)
+	totalUniqueBuckets = DeleteCases[DeleteDuplicates[Flatten[indexedBucketsByParameterGroup, 1]], {}];
 	bucketResources = Resource[
 		Sample->#[[1]],
 		Rent->True,
 		Name -> CreateUUID[]
-	] & /@ DeleteCases[DeleteDuplicates[Flatten[indexedBucketsByParameterGroup, 1]], {}];
+	] & /@ totalUniqueBuckets;
+	(* Create bucket cover models for each unique bucket *)
+	bucketCovers = Lookup[bucketCoverModelLookup["Memoization"], #[[1]], {}]& /@ totalUniqueBuckets;
+	bucketCoverResources = Resource[
+		Sample -> #,
+		Rent -> True,
+		Name -> CreateUUID[]
+	] & /@ Flatten[bucketCovers];
+
 
 	(* Make resources for our adapters. *)
 	(* Right now we just make new resources for each adapter that we need. We could optimize this a little more by *)
@@ -4257,9 +4518,25 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 
 	(* ExperimentMeasureWeight doesn't accept plates and also doesn't populate container weight (only sample weight and tare weight of the empty container).
 	 So, we make resources for a balance and tare racks, have custom tasks in the procedure for measuring container weight, and have sections in the compile and parse for dealing with the weight data. *)
-	balanceResource = Resource[
-		Instrument -> $CentrifugeBalanceModel,
-		Time -> (1 Minute * Length[containersIn])
+	(* Make a resource for handling stations that the balance would be in *)
+	{balanceResource, handlingEnvironmentResource} = If[MatchQ[Lookup[myResolvedOptions, CounterbalanceWeight], {MassP..}],
+		{Null, Null},
+		{
+			(* balance resource *)
+			Resource[
+				Instrument -> $CentrifugeBalanceModel,
+				Time -> (1 Minute * Length[containersIn])
+			],
+			Module[{handlingStationModels},
+				(* get the handling station models - we only want non-specialized ambient handling stations *)
+				handlingStationModels = Cases[Lookup[Lookup[Experiment`Private`balanceHandlingStationLookup["Memoization"], $CentrifugeBalanceModel, {}], "Model", {}], Except[ObjectP[specializedHandlingStationModels["Memoization"]], ObjectP[Model[Instrument, HandlingStation, Ambient]]]];
+
+				If[Length[handlingStationModels] > 0,
+					Resource[Instrument -> handlingStationModels, Time -> (1 Minute * Length[containersIn])],
+					Null
+				]
+			]
+		}
 	];
 
 	(* Get all the racks from the cache*)
@@ -4473,6 +4750,9 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				Replace[Rotors] -> expandedRotorResources, (* Resources are only generated for ultracentrifuge rotors and not generated for other rotors because most rotors remain attached to associated centrifuges and are never gathered/placed *)
 				Replace[Plier] -> plierResource,
 				Replace[Buckets] -> bucketResources,
+				Replace[BucketCovers] -> bucketCoverResources,
+				(* Here we do not have batching info of the TransferEnvironments, let its resources be handles together in the compiler together with the batching *)
+				Replace[TransferEnvironments] -> Link/@expandedTransferEnvironments,
 				Replace[CentrifugeAdapters]-> adapterResourcesIndexMatchedToContainer,
 				Replace[SecondaryCentrifugeAdapters]-> secondaryAdapterResourcesIndexMatchedToContainer,
 				Replace[TertiaryCentrifugeAdapters]-> tertiaryAdapterResourcesIndexMatchedToContainer,
@@ -4481,10 +4761,8 @@ centrifugeResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOpt
 				Replace[TertiaryCounterbalanceAdapters] -> tertiaryCounterbalanceAdapterLinksIndexMatchedToContainer,
 				Replace[Times] -> expandedTimes,
 				Replace[Temperatures] -> expandedTemperatures,
-				Balance -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
-					Null,
-					balanceResource
-				],
+				Balance -> Link[balanceResource],
+				HandlingEnvironment -> Link[handlingEnvironmentResource],
 				WeightStabilityDuration -> If[MatchQ[Lookup[myResolvedOptions,CounterbalanceWeight],{MassP..}],
 					Null,
 					Lookup[myResolvedOptions,WeightStabilityDuration]
@@ -4977,6 +5255,13 @@ DefineOptions[CentrifugeDevices,
 						]
 					}
 				]
+			},
+			{
+				OptionName -> Biohazard,
+				Default -> False,
+				AllowNull -> False,
+				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
+				Description -> "Indicates if the sample subject to centrifugation is considered biohazardous. If Biohazard -> True, the centrifuge must be equipped with a swing-bucket rotor that uses removable buckets, and all sample loading and unloading must be performed inside a biosafety cabinet."
 			}
 		],
 		{
@@ -5011,7 +5296,7 @@ centrifugeInstrumentDownloadFields[]:={MaxTime, MaxTemperature, MinTemperature, 
 
 centrifugeRotorDownloadFields[]:={MaxRadius, MaxForce, MaxRotationRate, Footprint, Positions, StorageCondition, Name, MaxImbalance, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle};
 
-centrifugeBucketDownloadFields[]:={MaxRadius, MaxForce, MaxRotationRate, Footprint, Positions, MaxStackHeight, Name, MaxImbalance, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle};
+centrifugeBucketDownloadFields[]:={MaxRadius, MaxForce, MaxRotationRate, Footprint, Positions, MaxStackHeight, Name, MaxImbalance, AvailableLayouts, RotorType, DefaultStorageCondition, RotorAngle, CoverFootprints};
 
 centrifugeAdapterDownloadFields[]:={Footprint, AdapterFootprint, Name};
 
@@ -5032,6 +5317,7 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 	expandedIntensityByContainer,containerOptionSets,uniqueOptionSets,uniqueContainers,
 	uniqueTimes,uniqueTemperatures,uniqueIntensity,centrifugeDevicesByUniqueSet,setRules,resultRules,
 	centrifugeDevicesBySet,collectionContainerOption,expandedCollectionContainerOption,expandedCollectionContainerByContainer,
+	biohazardOption, expandedBiohazardOption,expandedBiohazardByContainer, uniqueBiohazard,
 	uniqueCollectionContainer, safeOpsNamed, simulation,preparationMethod
 },
 
@@ -5065,13 +5351,13 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 	preparationMethod = Lookup[safeOps,Preparation,Manual];
 
 	(* Pull out options and assign them to variables *)
-	{cacheOption,simulation,timeOption,temperatureOption,intensityOption,collectionContainerOption}=Lookup[safeOps,{Cache,Simulation,Time,Temperature,Intensity,CollectionContainer}];
+	{cacheOption,simulation,timeOption,temperatureOption,intensityOption,collectionContainerOption, biohazardOption}=Lookup[safeOps,{Cache,Simulation,Time,Temperature,Intensity,CollectionContainer, Biohazard}];
 
 	(* This overload doesn't have any input, so we can't use the built in index matching checks to make sure the options are the right length/to expand the options.
 	Instead, do this manually below. *)
 
 	(* Figure out the length of each option that was provided as a list *)
-	listedOptionLengths = If[ListQ[#], Length[#], Nothing] & /@ {timeOption, temperatureOption, intensityOption, collectionContainerOption};
+	listedOptionLengths = If[ListQ[#], Length[#], Nothing] & /@ {timeOption, temperatureOption, intensityOption, collectionContainerOption, biohazardOption};
 
 	(* Give an error if there are any listed options with differing lengths *)
 	optionLengthTest = If[!Length[DeleteDuplicates[listedOptionLengths]] > 1,
@@ -5098,7 +5384,7 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 	];
 
 	(* Expand any singleton options *)
-	{expandedTimeOption, expandedTemperatureOption, expandedIntensityOption, expandedCollectionContainerOption}=If[ListQ[#], #, ConstantArray[#, Max[listedOptionLengths, 1]]] & /@ {timeOption, temperatureOption, intensityOption, collectionContainerOption};
+	{expandedTimeOption, expandedTemperatureOption, expandedIntensityOption, expandedCollectionContainerOption, expandedBiohazardOption}=If[ListQ[#], #, ConstantArray[#, Max[listedOptionLengths, 1]]] & /@ {timeOption, temperatureOption, intensityOption, collectionContainerOption, biohazardOption};
 
 	(* Downloaded stuff about the centrifuges/rotors/buckets that can be used to centrifuge each container model *)
 	downloadedStuff = nonDeprecatedCentrifugeModelPackets["Memoization"];
@@ -5111,20 +5397,20 @@ CentrifugeDevices[myOptions:OptionsPattern[]]:=Module[{
 
 	(* Expand the containers and options *)
 	expandedContainers = ConstantArray[allCentrifugableContainers,Length[expandedTimeOption]];
-	{expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer} = Map[
+	{expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer, expandedBiohazardByContainer} = Map[
 		Flatten[Transpose[ConstantArray[#,Length[allCentrifugableContainers]]],1]&,
-		{expandedTimeOption, expandedTemperatureOption, expandedIntensityOption,expandedCollectionContainerOption}
+		{expandedTimeOption, expandedTemperatureOption, expandedIntensityOption,expandedCollectionContainerOption, expandedBiohazardOption}
 	];
 
 	(* Get each container with its options *)
-	containerOptionSets = Transpose[{Flatten[expandedContainers],expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer}];
+	containerOptionSets = Transpose[{Flatten[expandedContainers],expandedTimeByContainer, expandedTemperatureByContainer, expandedIntensityByContainer, expandedCollectionContainerByContainer, expandedBiohazardByContainer}];
 
 	(* Get just unique container-option sets. *)
 	uniqueOptionSets = DeleteDuplicates[containerOptionSets];
-	{uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer} = Transpose[uniqueOptionSets];
+	{uniqueContainers, uniqueTimes, uniqueTemperatures, uniqueIntensity, uniqueCollectionContainer, uniqueBiohazard} = Transpose[uniqueOptionSets];
 
 	(* For each unique container-option set, call the container overload on all centrifugable container models *)
-	centrifugeDevicesByUniqueSet = CentrifugeDevices[uniqueContainers,ReplaceRule[safeOps,{Time->uniqueTimes,Temperature->uniqueTemperatures,Intensity->uniqueIntensity,CollectionContainer->uniqueCollectionContainer,Cache->Cases[Flatten[downloadedStuff],PacketP[]]}]];
+	centrifugeDevicesByUniqueSet = CentrifugeDevices[uniqueContainers, ReplaceRule[safeOps, {Time -> uniqueTimes, Temperature -> uniqueTemperatures, Intensity -> uniqueIntensity, CollectionContainer -> uniqueCollectionContainer, Biohazard -> uniqueBiohazard, Cache -> Cases[Flatten[downloadedStuff], PacketP[]]}]];
 
 	(* Order the centrifuge devices result by the original expanded option sets by using rules that relate each original set and each result to its index in the unique sets *)
 	setRules = MapIndexed[Rule[#1, #2[[1]]] &, uniqueOptionSets];
@@ -5187,7 +5473,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		compatibleCentrifugesByContainer,
 		inputPackets, centrifugeEquipmentPackets, inputContainerFootprints, inputContainerCentrifugeEnsembles, centrifugeEnsemblesByType,
 		centrifugeObjectPacketLookup, centrifugeEnsemblesPackets, inputModelContainerPackets, inputObjectContainerPackets,
-		inputSamplePackets, collectionContainerPackets,
+		inputSamplePackets, collectionContainerPackets, biohazardOption,
 		collectionContainerOption, collectionContainerNoIndices, allCentrifugableContainers , fastAssoc,
 		collectionContainerModelPackets, collectionContainerObjectPackets, simulation,
 
@@ -5248,9 +5534,9 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 	expandedSafeOps = Last[ExpandIndexMatchedInputs[CentrifugeDevices, {ToList[sanitizedInputs]}, safeOps]];
 
 	(* Pull out options and assign them to variables *)
-	{cacheOption, simulation, timeOption, temperatureOption, intensityOption, collectionContainerOption} = Lookup[
+	{cacheOption, simulation, timeOption, temperatureOption, intensityOption, collectionContainerOption, biohazardOption} = Lookup[
 		expandedSafeOps,
-		{Cache, Simulation, Time, Temperature, Intensity, CollectionContainer}
+		{Cache, Simulation, Time, Temperature, Intensity, CollectionContainer, Biohazard}
 	];
 
 	(* Centrifuges and related parameters are stored in Model[Container,Plate]/Model[Container,Vessel]. Find all of these containers.
@@ -5503,7 +5789,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 		duplicate centrifuges in each set because there are now multiple rotors of the same footprint
 		that are technically usable in a given centrifuge (e.g. Microfuge 16 with FX241.5 and FA361.5) *)
 	compatibleCentrifugesByContainer = DeleteDuplicates /@ MapThread[
-		Function[{packets, desiredTime, desiredTemperature, desiredIntensity, collectionContainerPacket, inputPacket},
+		Function[{packets, desiredTime, desiredTemperature, desiredIntensity, collectionContainerPacket, desiredBiohazard, inputPacket},
 			(* Return {} if the inputPackets is not in allCentrifugableContainers *)
 			(* Note: this is the case for deprecated or Quartz container which we can still resolve centrifuge based on footprint, but we should not proceed *)
 			If[!MemberQ[allCentrifugableContainers, ObjectP[Lookup[inputPacket, Object]]],
@@ -5533,7 +5819,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 								maxTime, maxTemperature, minTemperature, centrifugeMinRate, centrifugeMaxRate, rotorMaxRadius, bucketMaxRadius,
 								maxRadius, rotorMaxForce, bucketMaxForce, centrifugeMinForce, centrifugeMaxForce, rotorMaxRate, bucketMaxRate,
 								maxForce, maxRate, timeCompatible, temperatureCompatible, speedCompatible, forceCompatible, centrifugeType, typeCompatible,
-								asepticHandling, stackCompatible, object, preparationMethodCompatible, weightCompatible, HiGCompatible
+								asepticHandling, stackCompatible, object, preparationMethodCompatible, weightCompatible, HiGCompatible, biohazardCompatible
 							},
 
 							(* Get info about the centrifuge *)
@@ -5685,6 +5971,25 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 								True
 							];
 
+							(* Make sure the centrifuge is compliant with the biohazard of the sample. If the sample is considered biohazardous *)
+							biohazardCompatible = Which[
+								TrueQ[desiredBiohazard] && MatchQ[preparationMethod, Robotic],
+								(* For robotic prep, the centrifuge needs to have AsepticHandling -> True, which is an indicator that it is inside a biology work-cell *)
+									MemberQ[$OnDeckCentrifuges, object] && TrueQ[asepticHandling],
+								(* For manual prep, the centrifuge has to use a removeable bucket that can be covered. Note that this should be the same as Keys[bucketCoverModelLookup["Memoization"]] by current design, just easy to check the packet here since we already have it in the mapthread. *)
+								TrueQ[desiredBiohazard] && MatchQ[preparationMethod, Manual],
+									And[
+										MatchQ[bucketPacket, ObjectP[]],
+										MatchQ[
+											Lookup[bucketPacket, CoverFootprints],
+											{CoverFootprintP..}
+										]
+									],
+								(* Sample is non-biohazardous *)
+								True,
+									True
+							];
+
 							(* preparation method compatible *)
 							preparationMethodCompatible = If[
 								MatchQ[preparationMethod, Robotic], MemberQ[$OnDeckCentrifuges, object],
@@ -5692,7 +5997,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 							];
 
 							(* If the centrifuge is compatible on all settings, return the centrifuge object. Otherwise return nothing. *)
-							If[MatchQ[{timeCompatible, temperatureCompatible, speedCompatible, forceCompatible, typeCompatible, stackCompatible, preparationMethodCompatible, weightCompatible, HiGCompatible}, {True..}],
+							If[MatchQ[{timeCompatible, temperatureCompatible, speedCompatible, forceCompatible, typeCompatible, stackCompatible, preparationMethodCompatible, weightCompatible, HiGCompatible, biohazardCompatible}, {True..}],
 								Lookup[centrifugePacket, Object, Nothing],
 								Nothing
 							]
@@ -5704,7 +6009,7 @@ CentrifugeDevices[myInputs : {ObjectP[{Model[Container], Object[Container], Obje
 				]
 			]]
 		],
-		{centrifugeEnsemblesPackets, timeOption, (temperatureOption /. {Ambient -> $AmbientTemperature}), intensityOption, collectionContainerPackets, inputPackets}
+		{centrifugeEnsemblesPackets, timeOption, (temperatureOption /. {Ambient -> $AmbientTemperature}), intensityOption, collectionContainerPackets, biohazardOption, inputPackets}
 	];
 
 	(* Return requested output *)
@@ -5877,10 +6182,7 @@ allCentrifugableContainersSearch[fakeString:_String]:=allCentrifugableContainers
 				Footprint == CentrifugeableFootprintP,
 				ContainerMaterials != Quartz,
 				DeveloperObject != True,
-				Or[
-					MaxCentrifugationForce == Null,
-					MaxCentrifugationForce >= 1 GravitationalAcceleration
-				]
+				MaxCentrifugationForce >= 1 GravitationalAcceleration
 			],
 			(* we definitely do not allow open vessels to be centrifuged *)
 			And[
@@ -5889,10 +6191,7 @@ allCentrifugableContainersSearch[fakeString:_String]:=allCentrifugableContainers
 				Footprint == CentrifugeableFootprintP,
 				ContainerMaterials != Quartz,
 				DeveloperObject != True,
-				Or[
-					MaxCentrifugationForce == Null,
-					MaxCentrifugationForce >= 1 GravitationalAcceleration
-				]
+				MaxCentrifugationForce >= 1 GravitationalAcceleration
 			],
 			(* we allow open container filter as long as we are sure it is a filter, DestinationContainerModel is populated *)
 			And[
@@ -5902,10 +6201,7 @@ allCentrifugableContainersSearch[fakeString:_String]:=allCentrifugableContainers
 				Footprint == CentrifugeableFootprintP,
 				ContainerMaterials != Quartz,
 				DeveloperObject != True,
-				Or[
-					MaxCentrifugationForce == Null,
-					MaxCentrifugationForce >= 1 GravitationalAcceleration
-				]
+				MaxCentrifugationForce >= 1 GravitationalAcceleration
 			]
 		}
 	];
@@ -6546,7 +6842,83 @@ rawCentrifugeFootprintPaths[myFootprint:FootprintP, myCentrifugeEquipmentPackets
 (* If we encounter anything that doesn't have the Footprint field (i.e., an instrument), or anything that doesn't have Footprint populated, cease recursion *)
 rawCentrifugeFootprintPaths[myFootprint:($Failed|Null), myCentrifugeEquipmentPackets_, myCurrentPath_] := myCurrentPath;
 
+(* Helper function - Determine for each sample, if it should be handled as biohazardous sample for centrifugation, i.e. buckets are treated as covered secondary containers, with sample loading and unloading happening in biosafety cabinets. *)
+(* Note that for now, the criteria is all microbial samples, but is written in a way to be future-comatible with BSL-2 mammalian cells, once we have BSL-2 mammalian cells introduced into the lab. *)
+evaluateSamplesBiohazard[
+	samplesPackets : {PacketP[]..},
+	componentModelPacketsForSamples : {(_List)..}
+] := MapThread[
+	Function[{samplePacket, componentModelPacketsPerSample},
+		Module[{cellComponentTypes, biohazardDisposal, sterile, sampleCellType, sampleBiosafetyLevel, mammalianCellBSLs},
+			(* BiohazardDisposal flags any sample that was living at any point to eventually be treated as biohazard waste. This is kind of similar to BSL-2 that lysed or supposed dead BSL-2 should still be processed with BSL-2 level of safety measures, until Autoclave/Bleaching. *)
+			{biohazardDisposal, sterile, sampleCellType, sampleBiosafetyLevel} = Lookup[samplePacket, {BiohazardDisposal, Sterile, CellType, BiosafetyLevel}];
+			(* Get a list of all CellType from cell models in the composition *)
+			cellComponentTypes = Lookup[
+				Cases[componentModelPacketsPerSample, ObjectP[Model[Cell]]],
+				CellType
+			];
 
+			(* Compile a list of BSL levels for all mammalian cells *)
+			mammalianCellBSLs = Lookup[
+				Cases[componentModelPacketsPerSample, KeyValuePattern[CellType -> Mammalian]],
+				BiosafetyLevel
+			];
+			(* Go through conditions to decide whether this sample is considered as biohazard *)
+			Which[
+				(* This sample has nothing to do with living cells. Theoretically this should be enough to indicate that this sample has nothing to do with cells, but just in case this field was not correctly updated somehow in its history, also check that the sample and its components do not have a cell type that requires biohazard  considerations. *)
+				And[
+					!TrueQ[biohazardDisposal],
+					!MemberQ[Flatten[{cellComponentTypes, sampleCellType}], MicrobialCellTypeP]
+					(*!MemberQ[Flatten[{mammalianCellBSLs, sampleBiosafetyLevel}], "BSL-2"]*)
+				],
+					False,
+				(* BiohazardDisposal could be flagged True for Media to eventually dispose of it as biohazard sample, but here for Centrifuge, we do not consider it biohazard yet. *)
+				TrueQ[sterile], False,
+				(* If we have a biohazard flagged because it contains microbial cells or because it used to contain microbial cells, consider it biohazard for centrifugation *)
+				MemberQ[Flatten[{cellComponentTypes, sampleCellType}], MicrobialCellTypeP], True,
+				(* For mammalian cells, check if any BSL level gets to BSL-2. Also because the history is lost if the cells are lyse or filtered or pelleted so that Model[Cell] is no longer a component. We should still check the sample's BSL rating if it gets to BSL-2. *)
+				(* MemberQ[Flatten[{mammalianCellBSLs, sampleBiosafetyLevel}], "BSL-2"], True *)
+				(* Catch-all *)
+				True, False
+			]
+		]
+	],
+	{samplesPackets, componentModelPacketsForSamples}
+];
+
+(* ::Subsubsection:: *)
+(*bucketCoverModelLookup*)
+
+(* cache the bucket -> cover lookup *)
+bucketCoverModelLookup[fakeString_] := bucketCoverModelLookup[fakeString] = (
+	(* this needs to stay outside the Module if you have the same variable name as the function name *)
+	If[!MemberQ[$Memoization, Experiment`Private`bucketCoverModelLookup],
+		AppendTo[$Memoization, Experiment`Private`bucketCoverModelLookup]
+	];
+	Module[{bucketPackets, lidModelPackets, coverableBucketPackets},
+		(* Get all lid packets from memoization *)
+		lidModelPackets = Cases[Flatten[coverModelPackets[{}]], PacketP[Model[Item, Lid]]];
+		(* Get all bucket packets from memoization *)
+		bucketPackets = Cases[Flatten[nonDeprecatedCentrifugeModelPackets["Memoization"]], PacketP[Model[Container, CentrifugeBucket]]];
+		(* coverable buckets *)
+		coverableBucketPackets = Cases[bucketPackets, KeyValuePattern[CoverFootprints -> {CoverFootprintP..}]];
+
+		(* Go through each coverable bucket packet to build the bucket to cover assoc *)
+		Association @ Map[
+			Function[coverableBucketPacket,
+				Download[coverableBucketPacket, Object] -> Download[
+					Cases[
+						lidModelPackets,
+						KeyValuePattern[CoverFootprint -> Lookup[coverableBucketPacket, CoverFootprints][[1]]]
+					],
+					Object
+				]
+
+			],
+			coverableBucketPackets
+		]
+	]
+);
 
 (* ::Section:: *)
 (*End Private*)

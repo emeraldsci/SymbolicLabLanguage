@@ -951,8 +951,8 @@ DefineTests[ExperimentDesiccate,
 				];
 
 				solidSampleModelPacket = UploadSampleModel[
-					"Test solid sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
-					Composition -> {{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					{{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					Name -> "Test solid sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -969,8 +969,8 @@ DefineTests[ExperimentDesiccate,
 				];
 
 				gasModelPacket = UploadSampleModel[
-					"Test gas sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
-					Composition -> {{100 MassPercent, Model[Molecule, "Test Helium Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					{{100 MassPercent, Model[Molecule, "Test Helium Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					Name -> "Test gas sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -986,8 +986,9 @@ DefineTests[ExperimentDesiccate,
 					Upload -> False
 				];
 
-				noStateSampleModelPacket = UploadSampleModel["Test no-state sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
-					Composition -> {{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+				noStateSampleModelPacket = UploadSampleModel[
+					{{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					Name -> "Test no-state sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -998,13 +999,13 @@ DefineTests[ExperimentDesiccate,
 					DOTHazardClass -> "Class 0",
 					IncompatibleMaterials -> {None},
 					Expires -> False,
-					State -> Gas,
 					BiosafetyLevel -> "BSL-1",
 					Upload -> False
 				];
 
-				noStorageConditionModelPacket = UploadSampleModel["Test no-StorageCondition sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
-					Composition -> {{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+				noStorageConditionModelPacket = UploadSampleModel[
+					{{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentDesiccate Tests " <> $SessionUUID]}},
+					Name -> "Test no-StorageCondition sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -1020,8 +1021,9 @@ DefineTests[ExperimentDesiccate,
 					Upload -> False
 				];
 
-				liquidSampleModelPacket = UploadSampleModel["Test liquid sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
-					Composition -> {{100 VolumePercent, Model[Molecule, "Water"]}},
+				liquidSampleModelPacket = UploadSampleModel[
+					{{100 VolumePercent, Model[Molecule, "Water"]}},
+					Name -> "Test liquid sample 1 for ExperimentDesiccate Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,

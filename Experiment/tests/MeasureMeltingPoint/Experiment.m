@@ -4105,10 +4105,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Force -> True
 				];
 
-				sampleModelPacket99C = UploadSampleModel["Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				sampleModelPacket99C = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test solid sample 99C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4124,10 +4124,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				sampleModelPacket350C = UploadSampleModel["Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				sampleModelPacket350C = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test solid sample 350C for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4143,12 +4143,12 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				multipleComponentSampleModelPacket = UploadSampleModel["Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				multipleComponentSampleModelPacket = UploadSampleModel[{
 						{10 MassPercent, Model[Molecule, "Test Molecule with melting point of 350 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]},
 						{89 MassPercent, Model[Molecule, "Test Molecule with melting point of 152 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]},
 						{1 MassPercent, Model[Molecule, "Test Molecule with melting point of 99 Celsius for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test solid sample with 3 components for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4164,10 +4164,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				solidSampleModelPacket = UploadSampleModel["Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				solidSampleModelPacket = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test solid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4183,10 +4183,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				desiccantModelPacket = UploadSampleModel["Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				desiccantModelPacket = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test CaO Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test Indicating Drierite For ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4202,10 +4202,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				gasModelPacket = UploadSampleModel["Test gas sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				gasModelPacket = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test Helium Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test gas sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4221,10 +4221,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				noStateSampleModelPacket = UploadSampleModel["Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				noStateSampleModelPacket = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test no-state sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4235,15 +4235,14 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					DOTHazardClass -> "Class 0",
 					IncompatibleMaterials -> {None},
 					Expires -> False,
-					State -> Gas,
 					BiosafetyLevel -> "BSL-1",
 					Upload -> False
 				];
 
-				noStorageConditionModelPacket = UploadSampleModel["Test no-StorageCondition sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				noStorageConditionModelPacket = UploadSampleModel[{
 						{100 MassPercent, Model[Molecule, "Test NaCl Molecule for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID]}
 					},
+					Name -> "Test no-StorageCondition sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,
@@ -4259,10 +4258,10 @@ DefineTests[ExperimentMeasureMeltingPoint,
 					Upload -> False
 				];
 
-				liquidSampleModelPacket = UploadSampleModel["Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
-					Composition -> {
+				liquidSampleModelPacket = UploadSampleModel[{
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test liquid sample 1 for ExperimentMeasureMeltingPoint Tests " <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					Flammable -> False,

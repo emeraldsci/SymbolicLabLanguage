@@ -755,6 +755,14 @@ DefineTests[ExperimentEvaporate,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentEvaporate[Object[Sample,"Evaporate Test Water Sample5" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
 			Lookup[options, AssayVolume],
@@ -944,14 +952,14 @@ DefineTests[ExperimentEvaporate,
 			Variables :> {options}
 		],
 		Example[{Options, FilterIntensity, "The rotational speed or force at which the samples will be centrifuged during filtration:"},
-			options = ExperimentEvaporate[Object[Sample, "Evaporate Test Water Sample" <> $SessionUUID], FiltrationType -> Centrifuge, FilterIntensity -> 1000*RPM, FilterContainerOut -> Model[Container,Vessel,"2mL Tube"],Output -> Options];
+			options = ExperimentEvaporate[Object[Sample, "Evaporate Test Water Sample2" <> $SessionUUID], FiltrationType -> Centrifuge, FilterIntensity -> 1000*RPM, FilterContainerOut -> Model[Container,Vessel,"2mL Tube"],Output -> Options];
 			Lookup[options, FilterIntensity],
 			1000*RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
 		Example[{Options, FilterTemperature, "The temperature at which the centrifuge chamber will be held while the samples are being centrifuged during filtration:"},
-			options = ExperimentEvaporate[Object[Sample, "Evaporate Test Water Sample" <> $SessionUUID], FiltrationType -> Centrifuge, FilterTemperature -> 10*Celsius, FilterContainerOut -> Model[Container,Vessel,"2mL Tube"], Output -> Options];
+			options = ExperimentEvaporate[Object[Sample, "Evaporate Test Water Sample2" <> $SessionUUID], FiltrationType -> Centrifuge, FilterTemperature -> 10*Celsius, FilterContainerOut -> Model[Container,Vessel,"2mL Tube"], Output -> Options];
 			Lookup[options, FilterTemperature],
 			10*Celsius,
 			EquivalenceFunction -> Equal,
@@ -1144,10 +1152,10 @@ DefineTests[ExperimentEvaporate,
 				}];
 
 				sampleModel=UploadSampleModel[
-					{"Test 40mer DNA oligomer sample model for ExperimentEvaporate tests"<>$SessionUUID},
-					Composition->{{
+					{{
 						{20 * Micromolar,Model[Molecule,Oligomer,"Test 40mer DNA Model Molecule for ExperimentEvaporate tests"<>$SessionUUID]}
 					}},
+					Name -> {"Test 40mer DNA oligomer sample model for ExperimentEvaporate tests"<>$SessionUUID},
 					DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
 					Flammable->False,
 					Acid->False,
@@ -1212,7 +1220,7 @@ DefineTests[ExperimentEvaporate,
 						1 Milliliter,
 						1.9 Milliliter,
 						1.5 Milliliter,
-						30 Milliliter,
+						50 Milliliter,
 						45 Milliliter,
 						1.7 Milliliter,
 						30 Milliliter,

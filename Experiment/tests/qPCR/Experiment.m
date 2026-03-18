@@ -262,6 +262,43 @@ DefineTests[
 			{
 				ObjectP[Model[Molecule]], DistanceP, DistanceP,
 				ObjectP[Model[Molecule]], DistanceP, DistanceP
+			}
+		],
+		Test[
+			"If an Object[Sample] is specified for MasterMix and it is already in a liquid handler container, there is no need to move it:",
+			Module[
+				{modelMasterMixProtocol, modelMasterMixProtocolMasterMixContainer, tubeMasterMixProtocol, tubeMasterMixProtocolMasterMixContainer, bottleMasterMixProtocol, bottleMasterMixProtocolMasterMixContainer},
+				modelMasterMixProtocol = ExperimentqPCR[
+					{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]},
+					{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}},
+					MasterMix->Model[Sample,"id:aXRlGn6YABEp"]
+				];
+				modelMasterMixProtocolMasterMixContainer = FirstCase[modelMasterMixProtocol[RequiredResources], {___, MasterMix, ___}][[1]][ContainerModels];
+				tubeMasterMixProtocol = ExperimentqPCR[
+					{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]},
+					{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}},
+					MasterMix->Object[Sample, "Test MasterMix sample 2 for ExperimentqPCR"<>$SessionUUID]
+				];
+				tubeMasterMixProtocolMasterMixContainer = FirstCase[tubeMasterMixProtocol[RequiredResources], {___, MasterMix, ___}][[1]][ContainerModels];
+				bottleMasterMixProtocol = ExperimentqPCR[
+					{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]},
+					{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}},
+					MasterMix->Object[Sample, "Test MasterMix sample 3 for ExperimentqPCR"<>$SessionUUID]
+				];
+				bottleMasterMixProtocolMasterMixContainer = FirstCase[bottleMasterMixProtocol[RequiredResources], {___, MasterMix, ___}][[1]][ContainerModels];
+				{
+					modelMasterMixProtocolMasterMixContainer,
+					tubeMasterMixProtocolMasterMixContainer,
+					bottleMasterMixProtocolMasterMixContainer
+				}
+			],
+			{
+				(* Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"] *)
+				{ObjectP[Model[Container, Vessel, "id:o1k9jAG00e3N"]]},
+				(* No need to move *)
+				{},
+				(* Model[Container, Vessel, "New 0.5mL Tube with 2mL Tube Skirt"] because container is not liquid handler compatible *)
+				{ObjectP[Model[Container, Vessel, "id:o1k9jAG00e3N"]]}
 			},
 			Messages:>{Warning::SampleMustBeMoved}
 		],
@@ -1613,6 +1650,14 @@ DefineTests[
 			Variables :> {options},
 			Messages :> {Warning::SampleStowaways}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::SampleStowaways, Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1775,6 +1820,19 @@ DefineTests[
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentqPCR[
+				{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]},
+				{{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}},
+				AliquotAmount -> 0.08101 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentqPCR[{Object[Sample, "Test Template 1 for ExperimentqPCR"<>$SessionUUID]}, {{{Object[Sample, "Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID], Object[Sample, "Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}}, AssayVolume -> 0.08*Milliliter, Output -> Options];
@@ -3687,6 +3745,32 @@ DefineTests[
 			),
 			{True, True},
 			Variables :> {prot, rr, mmResource, mmContainers}
+		],
+		Test["Works with more than 48 samples to request a master mix PCR prep plate (resource requested in compiler):",
+			Module[
+				{protocol, masterMixResource},
+				protocol = ExperimentqPCR[
+					ConstantArray[Object[Sample,"Test Template 1 for ExperimentqPCR"<>$SessionUUID],60],
+					ConstantArray[{{Object[Sample,"Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID],Object[Sample,"Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}, 60]
+				];
+				masterMixResource = FirstCase[protocol[RequiredResources], {___, MasterMix, ___}][[1]];
+				Download[masterMixResource, Amount]
+			],
+			(* (10 uL per sample * 60/8 (round up) per prep plate position * 1.1 + 10 uL dead volume for PCR plate) * 8 positions in prep plate + 38 uL (0.02 * 1.9 mL of 2mL tube max) *)
+			EqualP[822 Microliter]
+		],
+		Test["Works with more than 48 samples to request a master mix DWP prep plate when volume is large (resource requested in compiler):",
+			Module[
+				{protocol, masterMixResource},
+				protocol = ExperimentqPCR[
+					ConstantArray[Object[Sample,"Test Template 1 for ExperimentqPCR"<>$SessionUUID],180],
+					ConstantArray[{{Object[Sample,"Test Primer 1 Forward for ExperimentqPCR"<>$SessionUUID],Object[Sample,"Test Primer 1 Reverse for ExperimentqPCR"<>$SessionUUID]}}, 180]
+				];
+				masterMixResource = FirstCase[protocol[RequiredResources], {___, MasterMix, ___}][[1]];
+				Download[masterMixResource, Amount]
+			],
+			(* (10 uL per sample * 180/8 (round up) per prep plate position * 1.1 + 20 uL dead volume for PCR plate) * 8 positions in prep plate + 1000 uL (0.02 * 50 mL of 50 mL tube max) *)
+			EqualP[3184 Microliter]
 		]
 		
 	},

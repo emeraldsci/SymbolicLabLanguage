@@ -1298,6 +1298,13 @@ validQualificationLCMSQTests[packet:PacketP[Object[Qualification,LCMS]]]:=Module
 		RequiredWhenCompleted[packet, {QualificationNotebook}]
 	}
 ];
+(* ::Subsection::Closed:: *)
+(*validQualificationKarlFischerTitratorQTests*)
+
+validQualificationKarlFischerTitratorQTests[packet:PacketP[Object[Qualification, KarlFischerTitrator]]]:= {
+	RequiredWhenCompleted[packet, {WaterContent}],
+	NotNullFieldTest[packet, {ExpectedWaterContent}]
+};
 
 (* ::Subsection::Closed:: *)
 (*validQualificationKarlFischerTitratorQTests*)
@@ -2085,6 +2092,19 @@ validQualificationPressureManifoldQTests[packet:PacketP[Object[Qualification,Pre
 
 };
 
+(* ::Subsection::Closed:: *)
+(*validQualificationPlateWasherQTests*)
+
+
+validQualificationPlateWasherQTests[packet: PacketP[Object[Qualification, PlateWasher]]] := {
+	(*required when completed*)
+	RequiredWhenCompleted[packet,
+		{
+			Target, Instrument, QualificationProtocols, PrereadData, Data
+		}
+	]
+};
+
 
 (* ::Subsection::Closed:: *)
 (*validQualificationProteinCapillaryElectrophoresisQTests*)
@@ -2795,6 +2815,7 @@ registerValidQTestFunction[Object[Qualification, PlateReader],validQualification
 registerValidQTestFunction[Object[Qualification, DLSPlateReader], validQualificationDLSPlateReaderQTests];
 registerValidQTestFunction[Object[Qualification, PlateSealer],validQualificationPlateSealerQTests];
 registerValidQTestFunction[Object[Qualification, PressureManifold],validQualificationPressureManifoldQTests];
+registerValidQTestFunction[Object[Qualification, PlateWasher], validQualificationPlateWasherQTests];
 registerValidQTestFunction[Object[Qualification, ProteinCapillaryElectrophoresis],validQualificationProteinCapillaryElectrophoresisQTests];
 registerValidQTestFunction[Object[Qualification, qPCR],validQualificationqPCRQTests];
 registerValidQTestFunction[Object[Qualification, DigitalPCR],validQualificationDigitalPCRQTests];

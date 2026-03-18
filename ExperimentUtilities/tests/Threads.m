@@ -131,8 +131,8 @@ DefineTests[
 
 
 				bacteriaModel = UploadSampleModel[
-					"Bacterial cells Model (for AvailableThreads)" <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Bacterial cells Model (for AvailableThreads)" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Bacterial Incubation with Shaking"],
 					State -> Liquid,

@@ -195,7 +195,7 @@ DefineTests[EmeraldHistogram,
 		],
 		Example[{Options,ChartElements,"Use an image instead of bars in the histogram:"},
 			EmeraldHistogram[RandomVariate[NormalDistribution[2.0,0.5],10]*Second,
-				ChartElements->Import["ExampleData/spikey.tiff"]
+				ChartElements->ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]
 		 	],
 			ValidGraphicsP[]
 		],

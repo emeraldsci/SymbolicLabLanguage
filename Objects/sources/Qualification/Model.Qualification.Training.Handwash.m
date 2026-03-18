@@ -56,6 +56,14 @@ DefineObjectType[Model[Qualification,Training,Handwash], {
       Relation -> Model[Sample]|Model[Item],
       Description -> "A malleable thermoplastic wrap that is used to temporarily seal containers while cleaning.",
       Category -> "General"
-    }
+    },
+		FunnelModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Part, Funnel],
+			Description -> "Funnel used to transfer wash solvent into the target container.",
+			Category -> "General"
+		}
   }
 }]

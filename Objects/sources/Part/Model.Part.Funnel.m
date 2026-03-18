@@ -10,18 +10,18 @@ DefineObjectType[Model[Part, Funnel], {
 	Cache->Session,
 	Fields -> {
 		FunnelMaterial -> {
-		    Format -> Single,
-		    Class -> Expression,
-		    Pattern :> MaterialP,
-		    Category -> "Part Specifications",
-		    Description -> "The materials of which this part is made that come in direct contact with the samples it contains."
+		  Format -> Single,
+		  Class -> Expression,
+		  Pattern :> MaterialP,
+		  Category -> "Part Specifications",
+		  Description -> "The materials of which this part is made that come in direct contact with the samples it contains."
 		},
 		FunnelType -> {
-		    Format -> Single,
-		    Class -> Expression,
-		    Pattern :> FunnelTypeP,
-		    Category -> "Part Specifications",
-		    Description -> "The type of the funnel for use with liquids or solids."
+		  Format -> Single,
+		  Class -> Expression,
+		  Pattern :> FunnelTypeP,
+		  Category -> "Part Specifications",
+		  Description -> "The type of the funnel for use with liquids or solids."
 		},
 		StemLength -> {
 			Format -> Single,
@@ -61,6 +61,14 @@ DefineObjectType[Model[Part, Funnel], {
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
 			Description -> "The maximum volume of fluid that funnels of this model can hold.",
+			Category -> "Physical Properties"
+		},
+		MaxTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Kelvin],
+			Units -> Celsius,
+			Description -> "Maximum temperature that funnels of this model can be exposed to and maintain structural integrity.",
 			Category -> "Physical Properties"
 		}
 	}

@@ -2763,11 +2763,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
@@ -2928,6 +2936,14 @@ DefineTests[
 			400 Microliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentDialysis[Object[Sample, "sample 2 in 50mL tube for ExperimentDialysis testing"<> $SessionUUID], AliquotAmount -> 400.01 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			400 Microliter,
+			EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
 			options=ExperimentDialysis[

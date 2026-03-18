@@ -44,7 +44,7 @@ DefineObjectType[Object[Item, CalibrationWeight], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
-			Description -> "PDF of the weight's calibration cerificate.",
+			Description -> "PDF of the weight's calibration certificate.",
 			Category -> "Physical Properties"
 		}
 	}

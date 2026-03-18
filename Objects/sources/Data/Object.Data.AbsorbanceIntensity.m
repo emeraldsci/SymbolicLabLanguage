@@ -37,6 +37,14 @@ DefineObjectType[Object[Data, AbsorbanceIntensity], {
 			Category -> "General",
 			Abstract -> True
 		},
+		MicrofluidicChipWorkingSample ->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "For the Microfluidic plate readers, the sample on the microfluidic chip that was directly measured to generate the data.",
+			Category -> "General"
+		},
 		Wavelength -> {
 			Format -> Single,
 			Class -> Real,

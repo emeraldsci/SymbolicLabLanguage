@@ -4,10 +4,10 @@
 (*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
 
 
-DefineObjectType[Model[Item,Septum], {
-	Description->"A model of a barrier (typically made from a polymer material) that goes under a crimped cap and retains a liquid or solid in a container.",
-	CreatePrivileges->None,
-	Cache->Session,
+DefineObjectType[Model[Item, Septum], {
+	Description -> "A model of a barrier (typically made from a polymer material) that creates an airtight seal and retains liquid or solid in a container.",
+	CreatePrivileges -> None,
+	Cache -> Session,
 	Fields -> {
 		CoverFootprint -> {
 			Format -> Single,
@@ -26,25 +26,25 @@ DefineObjectType[Model[Item,Septum], {
 		MaxTemperature -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Kelvin],
+			Pattern :> GreaterP[0 * Kelvin],
 			Description -> "The maximum temperature for which this septum is rated.",
-			Units->Celsius,
+			Units -> Celsius,
 			Category -> "Physical Properties"
 		},
 		Thickness -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Millimeter],
+			Pattern :> GreaterP[0 * Millimeter],
 			Description -> "The depth of the barrier formed by this septum on the orifice it is installed upon.",
-			Units->Millimeter,
+			Units -> Millimeter,
 			Category -> "Physical Properties"
 		},
 		Diameter -> {
 			Format -> Single,
 			Class -> Real,
-			Pattern :> GreaterP[0*Millimeter],
+			Pattern :> GreaterP[0 * Millimeter],
 			Description -> "The diameter of the septum.",
-			Units->Millimeter,
+			Units -> Millimeter,
 			Category -> "Physical Properties"
 		},
 		Barcode -> {
@@ -53,6 +53,14 @@ DefineObjectType[Model[Item,Septum], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if this cap type is big enough to have a barcode sticker. Septa should be barcoded if they are longer than 4.1 cm (the size of ECL identification stickers). If covers are too small to be stickered, they will be placed on a cover rack and will be identified by the sticker on the cover rack.",
 			Category -> "Physical Properties"
+		},
+		MaxNumberOfInjections -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			Description -> "The maximum number of times this septum can be pierced with a needle before performance is expected to degrade and the septum should be replaced.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

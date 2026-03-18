@@ -345,6 +345,13 @@ DefineObjectType[Object[UnitOperation, Cover], {
 			],
 			Description -> "The additional crimped caps that we need to retry the crimping, if the initial crimping was too loose or too tight.",
 			Category -> "General"
+		},
+		Force -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicate if already covered SampleLink will first be uncovered then re-covered.",
+			Category -> "General"
 		}
 	}
 }];

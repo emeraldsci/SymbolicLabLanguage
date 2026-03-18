@@ -78,6 +78,12 @@ DefineTests[ExperimentMeasureDensity,
 			240*Microliter
 		],
 
+		Example[{Messages, InaccurateBalance, "Throw a message if the aliquot volume is smaller than the MaxUSPMinWeight of the balance:"},
+			ExperimentMeasureDensity[Object[Sample, "Measure Density Private Model Test Sample" <> $SessionUUID], Volume -> 50 * Microliter],
+			ObjectP[Object[Protocol, MeasureDensity]],
+			Messages :> {Warning::ModelDensityNotUpdated, Warning::InaccurateBalance}
+		],
+
 		Example[{Options, RecoupSample, "RecoupSample option determines whether the sample beings weighted will be discarded or returned to the source container after it has been measured:"},
 			Lookup[
 				ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID],RecoupSample->True,Output->Options],
@@ -122,6 +128,7 @@ DefineTests[ExperimentMeasureDensity,
 				prot,
 				{
 					Balance,
+					HandlingEnvironment,
 					WeightStabilityDurations,
 					MaxWeightVariations,
 					BatchedWeightStabilityDurations,
@@ -130,6 +137,7 @@ DefineTests[ExperimentMeasureDensity,
 			],
 			{
 				LinkP[Model[Instrument, Balance]],
+				LinkP[Model[Instrument, HandlingStation, Ambient]],
 				Join[ConstantArray[TimeP, 5], ConstantArray[Null, 5], ConstantArray[TimeP, 5]],
 				Join[ConstantArray[MassP, 5], ConstantArray[Null, 5], ConstantArray[MassP, 5]],
 				Join[ConstantArray[Null, 5], ConstantArray[TimeP, 10]],
@@ -674,6 +682,14 @@ DefineTests[ExperimentMeasureDensity,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureDensity[Object[Sample, "Measure Density Test Sample"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample In Tube Without Tare"<> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -823,6 +839,14 @@ DefineTests[ExperimentMeasureDensity,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureDensity[Object[Sample, "Measure Density Test Sample" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentMeasureDensity[Object[Sample,"Measure Density Test Sample"<> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
@@ -993,11 +1017,11 @@ DefineTests[ExperimentMeasureDensity,
 
 		(* Create some Models for testing purposes *)
 		UploadSampleModel[
-			"10mer Test DNA for ExperimentMeasureDensity"<> $SessionUUID,
-			Composition->{
+			{
 				{20*Micromolar,Model[Molecule, Oligomer, "Test 10mer Model[Molecule,Oligomer] for ExperimentMeasureDensity"<> $SessionUUID]},
 				{100*VolumePercent,Model[Molecule, "Water"]}
 			},
+			Name -> "10mer Test DNA for ExperimentMeasureDensity"<> $SessionUUID,
 			DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
 			MSDSFile -> NotApplicable,
 			Expires -> False,
@@ -1007,13 +1031,13 @@ DefineTests[ExperimentMeasureDensity,
 		];
 
 		UploadSampleModel[
-			"10mer Test DNA with Density for ExperimentMeasureDensity"<> $SessionUUID,
-			Composition->{
+			{
 				{20*Micromolar,Model[Molecule, Oligomer, "Test 10mer Model[Molecule,Oligomer] for ExperimentMeasureDensity"<> $SessionUUID]},
 				{100*VolumePercent,Model[Molecule, "Water"]}
 			},
+			Name -> "10mer Test DNA with Density for ExperimentMeasureDensity"<> $SessionUUID,
 			DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"],
-			Density->1.5 Gram/Milliliter,
+			Density->0.1 Gram/Milliliter,
 			MSDSFile -> NotApplicable,
 			Expires -> False,
 			BiosafetyLevel -> "BSL-1",

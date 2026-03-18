@@ -61,11 +61,11 @@ DefineTests[ExperimentCover,
 		],
 		Example[{Basic, "Resolve options to cover an uncovered container that's already on a bench:"},
 			ExperimentCover[
-				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentCover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 50mL Tube for ExperimentCover Testing 1" <> $SessionUUID],
 				Output -> Options
 			],
 			KeyValuePattern[{
-				Cover -> _?(MatchQ[Download[#, {Model[CoverType], Model[CoverFootprint]}], {Crimp, Crimped13mmCap}]&),
+				Cover -> _?(MatchQ[Download[#, {CoverType, CoverFootprint}], {Screw, CapScrewTube35x13}]&),
 				Environment -> ObjectP[Object[Container, Bench, "Fake bench for ExperimentCover tests" <> $SessionUUID]]
 			}]
 		],
@@ -81,11 +81,11 @@ DefineTests[ExperimentCover,
 		],
 		Example[{Basic, "Resolve options to cover an uncovered container that's already inside a handling station:"},
 			ExperimentCover[
-				Object[Container, Vessel, "Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 50mL Tube in Handling Station for ExperimentCover Testing" <> $SessionUUID],
 				Output -> Options
 			],
 			KeyValuePattern[{
-				Cover -> _?(MatchQ[Download[#, {Model[CoverType], Model[CoverFootprint]}], {Crimp, Crimped13mmCap}]&),
+				Cover -> _?(MatchQ[Download[#, {CoverType, CoverFootprint}], {Screw, CapScrewTube35x13}]&),
 				Environment -> ObjectP[Object[Instrument, HandlingStation, Ambient, "Test handling station for ExperimentCover tests" <> $SessionUUID]]
 			}]
 		],
@@ -219,30 +219,6 @@ DefineTests[ExperimentCover,
 			ObjectP[Object[Item, Cap, "Test Aspiration Cap previously covered on 100mL Glass Bottle" <> $SessionUUID]],
 			Variables :> {options}
 		],
-		Example[{Message, "KeckClampConflict", "If a KeckClamp and Cover are incompatible with one another, an error is thrown:"},
-			ExperimentCover[
-				{Object[Container, Vessel, "Uncovered 1L Pear Shaped Flask with 24/40 Joint for ExperimentCover Testing" <> $SessionUUID]},
-				KeckClamp -> Model[Item, Clamp, "Keck Clamps for 14/20, 14/35 Taper Joint"]
-			],
-			$Failed,
-			Messages:>{
-				Error::KeckClampConflict,
-				Error::InvalidOption
-			},
-			Stubs:>{$ECLApplication=Engine}
-		],
-		Example[{Message, "KeckClampConflict", "If a Cover requires a KeckClamp, but none is provided, an error is thrown:"},
-			ExperimentCover[
-				{Object[Container, Vessel, "Uncovered 1L Pear Shaped Flask with 24/40 Joint for ExperimentCover Testing" <> $SessionUUID]},
-				KeckClamp -> Null
-			],
-			$Failed,
-			Messages:>{
-				Error::KeckClampConflict,
-				Error::InvalidOption
-			},
-			Stubs:>{$ECLApplication=Engine}
-		],
 		Example[{Additional, "If given a container (plate) that contains samples with live cells, use the breathable & sterile plate seal:"},
 			ExperimentCover[
 				Object[Container, Plate, "Uncovered tissue culture plate for ExperimentCover Testing" <> $SessionUUID],
@@ -315,6 +291,23 @@ DefineTests[ExperimentCover,
 				Null,
 				Null,
 				ObjectP[Model[Part, Decrimper]]
+			}
+		],
+		Example[{Options, {Instrument, Septum}, "If CrimpType is Crimp and we have a matching hand crimper but the chosen cover uses a septum, Instrument resolves to the pneumatic crimper:"},
+			Lookup[
+				ExperimentCover[
+					Object[Container, Vessel, "Uncovered 6 mL aspiration vial for hand-crimping in ExperimentCover testing" <> $SessionUUID],
+					Cover -> Model[Item, Cap, "VWR Flip Off 20mm Cap"],
+					Output -> Options
+				],
+				{
+					Instrument,
+					Septum
+				}
+			],
+			{
+				ObjectP[Model[Instrument, Crimper]],
+				ObjectP[Model[Item, Septum]]
 			}
 		],
 		Example[{Options, {Instrument, Decrimper}, "If CrimpType is Crimp and a hand crimper can be used, Instrument resolves to that and not the pneumatic crimper (and Decrimper is set as well):"},
@@ -625,6 +618,30 @@ DefineTests[ExperimentCover,
 				ExperimentCover[containerID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule}
+		],
+		Example[{Messages, "KeckClampConflict", "If a KeckClamp and Cover are incompatible with one another, an error is thrown:"},
+			ExperimentCover[
+				{Object[Container, Vessel, "Uncovered 1L Pear Shaped Flask with 24/40 Joint for ExperimentCover Testing" <> $SessionUUID]},
+				KeckClamp -> Model[Item, Clamp, "Keck Clamps for 14/20, 14/35 Taper Joint"]
+			],
+			$Failed,
+			Messages:>{
+				Error::KeckClampConflict,
+				Error::InvalidOption
+			},
+			Stubs:>{$ECLApplication=Engine}
+		],
+		Example[{Messages, "KeckClampConflict", "If a Cover requires a KeckClamp, but none is provided, an error is thrown:"},
+			ExperimentCover[
+				{Object[Container, Vessel, "Uncovered 1L Pear Shaped Flask with 24/40 Joint for ExperimentCover Testing" <> $SessionUUID]},
+				KeckClamp -> Null
+			],
+			$Failed,
+			Messages:>{
+				Error::KeckClampConflict,
+				Error::InvalidOption
+			},
+			Stubs:>{$ECLApplication=Engine}
 		],
 		Example[{Messages, "AluminumFoilRollConflict", "If AluminumFoilRoll is specified, then CoverType must be set to AluminumFoil or AluminumFoil must be set to True:"},
 			ExperimentCover[
@@ -948,7 +965,8 @@ DefineTests[ExperimentCover,
 				Object[Item, Cap, "20mm vial aspiration cap for ExperimentCover testing" <> $SessionUUID],
 				Object[Part, Crimper, "Test 20mm Crimper for ExperimentCover testing" <> $SessionUUID],
 				Object[Part, Decrimper, "Test 20mm Decrimper for ExperimentCover testing" <> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Crimpers and Decrimpers still InUse for ExperimentCover testing" <> $SessionUUID]
+				Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Crimpers and Decrimpers still InUse for ExperimentCover testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 50mL Tube in Handling Station for ExperimentCover Testing" <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -1038,14 +1056,16 @@ DefineTests[ExperimentCover,
 						(*39*)Model[Container, Vessel, "250mL Erlenmeyer Flask"],
 						(*40*)Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"],
 						(*41*)Model[Item, Cap, "VWR Flip Off 13mm Cap"],
-						(*42*)Model[Container, Vessel, "Headspace vial, 6 mL, crimp clear flat bottom"],
-						(*43*)Model[Item, Cap, "Aluminum septum caps for Metrohm Karl Fischer oven vials"],
-						(*44*)Model[Part, Crimper, "Manual Crimper, 20 mm"],
-						(*45*)Model[Part, Decrimper, "Manual Decrimper, 20 mm"]
+						(*42*)Model[Container, Vessel, "50mL Tube"],
+						(*43*)Model[Container, Vessel, "Headspace vial, 6 mL, crimp clear flat bottom"],
+						(*44*)Model[Item, Cap, "Aluminum septum caps for Metrohm Karl Fischer oven vials"],
+						(*45*)Model[Part, Crimper, "Manual Crimper, 20 mm"],
+						(*46*)Model[Part, Decrimper, "Manual Decrimper, 20 mm"]
 					},
 					Join[
 						ConstantArray[{"Work Surface", fakeBench}, 39],
 						{
+							{"Working Zone Slot", handlingStation},
 							{"Working Zone Slot", handlingStation},
 							{"Working Zone Slot", handlingStation}
 						},
@@ -1093,6 +1113,7 @@ DefineTests[ExperimentCover,
 						(*39*)"Uncovered Erlenmeyer flask with live cell samples for ExperimentCover Testing" <> $SessionUUID,
 						(*40*)"Uncovered 0.3mL High-Recovery Crimp Top Vial (13mm) 2 for ExperimentCover Testing" <> $SessionUUID,
 						(*41*)"Uncovered Flip Off 13mm Cap 2 on Vial for ExperimentCover Testing" <> $SessionUUID,
+						(*42*)"Uncovered 50mL Tube in Handling Station for ExperimentCover Testing" <> $SessionUUID,
 						(*42*)"Uncovered 6 mL aspiration vial for hand-crimping in ExperimentCover testing" <> $SessionUUID,
 						(*43*)"20mm vial aspiration cap for ExperimentCover testing" <> $SessionUUID,
 						(*44*)"Test 20mm Crimper for ExperimentCover testing" <> $SessionUUID,
@@ -1278,7 +1299,8 @@ DefineTests[ExperimentCover,
 				Object[Item, Cap, "20mm vial aspiration cap for ExperimentCover testing" <> $SessionUUID],
 				Object[Part, Crimper, "Test 20mm Crimper for ExperimentCover testing" <> $SessionUUID],
 				Object[Part, Decrimper, "Test 20mm Decrimper for ExperimentCover testing" <> $SessionUUID],
-				Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Crimpers and Decrimpers still InUse for ExperimentCover testing" <> $SessionUUID]
+				Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Crimpers and Decrimpers still InUse for ExperimentCover testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 50mL Tube in Handling Station for ExperimentCover Testing" <> $SessionUUID]
 			}], ObjectP[]];
 
 

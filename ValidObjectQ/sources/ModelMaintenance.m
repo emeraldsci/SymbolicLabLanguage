@@ -550,11 +550,24 @@ validModelMaintenanceCleanPlateWasherQTests[packet:PacketP[Model[Maintenance,Cle
 	NotNullFieldTest[
 		packet,
 		{
-			WashSolvent,
-			MaintenancePlate,
-			WashVolume,
-			NumberOfWashes
+			WashSolvent
 		}
+	],
+	(* Fields required for ELISA NIMBUS Plate Washer only *)
+	Test["If Targets contain NIMBUS plate washer, MaintenancePlate, WashVolume and NumberOfWashes must be specified",
+		{Download[packet, Targets[IntegratedInstruments]], Lookup[packet, {MaintenancePlate, WashVolume, NumberOfWashes}]},
+		Alternatives[
+			{{___, {___, ObjectP[Model[Instrument, PlateWasher, "id:pZx9jo81mDnj"]], ___}, ___}, {ObjectP[], Except[Null], Except[Null]}},(*Model[Instrument, PlateWasher, "ELISA NIMBUS Microplate Washer"]*)
+			{_, {Null, Null, Null}}
+		]
+	],
+	(* Fields required for ELISA NIMBUS Plate Washer only *)
+	Test["If Targets contain BioTek plate washer, MethodFile must be specified",
+		{Download[packet, Targets[IntegratedInstruments]], Lookup[packet, MethodFile]},
+		Alternatives[
+			{{___, {___, ObjectP[Model[Instrument, PlateWasher, "id:dORYzZm51LLA"]], ___}, ___}, ObjectP[]},(*Model[Instrument, PlateWasher, "BioTek 405LS Microplate Washer"]*)
+			{_, Null}
+		]
 	]
 };
 
@@ -924,6 +937,15 @@ validModelMaintenanceInstallGasCylinderQTests[packet:PacketP[Model[Maintenance,I
 };
 
 (* ::Subsection::Closed:: *)
+(*validModelMaintenanceRestockLocalCacheQTests*)
+
+
+validModelMaintenanceRestockLocalCacheQTests[packet:PacketP[Model[Maintenance,RestockLocalCache]]]:={
+  NotNullFieldTest[packet,{Targets,MaxResults}]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validMaintenanceLubricateQTests*)
 
 
@@ -1233,6 +1255,30 @@ validModelMaintenanceAuditGasCylindersQTests[packet:PacketP[Model[Maintenance,Au
 	]*)
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateColonyHandlerQTests*)
+
+validModelMaintenanceCalibrateColonyHandlerQTests[packet:PacketP[Model[Maintenance, CalibrateColonyHandler]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateThermocyclerQTests*)
+
+
+validModelMaintenanceCalibrateThermocyclerQTests[packet:PacketP[Model[Maintenance,CalibrateThermocycler]]]:={
+	NotNullFieldTest[packet,{Targets, CalibrationPlates, CalibrationReportTypes, CalibrationTypes}]
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateThermocyclerQTests*)
+
+
+validModelMaintenanceCalibrateThermocyclerQTests[packet:PacketP[Model[Maintenance,CalibrateThermocycler]]]:={
+	NotNullFieldTest[packet,{Targets, CalibrationPlates}]
+};
+
 
 (* ::Subsection:: *)
 (* Test Registration*)
@@ -1246,6 +1292,7 @@ registerValidQTestFunction[Model[Maintenance, CalibrateAutosampler],validModelMa
 registerValidQTestFunction[Model[Maintenance, CalibrateBalance],validModelMaintenanceCalibrateBalanceQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateBalance, CrossFlowFiltration],validModelMaintenanceCalibrateBalanceCrossFlowFiltrationQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateCarbonDioxide],validModelMaintenanceCalibrateCarbonDioxideQTests];
+registerValidQTestFunction[Model[Maintenance, CalibrateColonyHandler],validModelMaintenanceCalibrateColonyHandlerQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateConductivity],validModelMaintenanceCalibrateConductivityQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateDNASynthesizer],validModelMaintenanceCalibrateDNASynthesizerQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateElectrochemicalReactor],validModelMaintenanceCalibrateElectrochemicalReactorQTests];
@@ -1308,10 +1355,11 @@ registerValidQTestFunction[Model[Maintenance, Replace, Sensor],validModelMainten
 registerValidQTestFunction[Model[Maintenance, Replace, GasFilter],validModelMaintenanceReplaceGasFilterQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, VacuumPump],validModelMaintenanceReplaceVacuumPumpQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, WasteContainer], validModelMaintenanceReplaceWasteContainerQTests];
+registerValidQTestFunction[Model[Maintenance, RestockLocalCache],validModelMaintenanceRestockLocalCacheQTests];
 registerValidQTestFunction[Model[Maintenance, StorageUpdate],validModelMaintenanceStorageUpdateQTests];
 registerValidQTestFunction[Model[Maintenance, Shipping],validModelMaintenanceShippingQTests];
 registerValidQTestFunction[Model[Maintenance, TrainInternalRobotArm],validModelMaintenanceTrainInternalRobotArmPositionQTests];
 registerValidQTestFunction[Model[Maintenance,TreatWaste],validModelMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Model[Maintenance, UpdateLiquidHandlerDeckAccuracy],validModelMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
 registerValidQTestFunction[Model[Maintenance, AuditGasCylinders],validModelMaintenanceAuditGasCylindersQTests];
-
+registerValidQTestFunction[Model[Maintenance, CalibrateThermocycler], validModelMaintenanceCalibrateThermocyclerQTests];
