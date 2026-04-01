@@ -283,6 +283,7 @@ DefineOptions[ExperimentNMR,
 
 Error::NMRTooManySamples="The (number of input samples * NumberOfReplicates) cannot fit onto the instrument in a single protocol.  Please selectPlease select fewer than `1` samples to run this protocol.";
 Warning::NonStandardSolvent="The specified solvent(s) `1` are not one of ECL's currently supported solvents `2`.  Note that this may result in a poor spectrum, and we recommend using a deuterated solvent.";
+(* note that this Error::SampleAmountStateConflict message is also used verbatim in ExperimentKarlFischerTitration *)
 Error::SampleAmountStateConflict="The state of sample(s) after aliquoting (if applicable) `1` is not compatible with the units specified in the SampleAmount option `2`.  Please set SampleAmount and/or the Aliquoting options to correspond to the state of the sample.";
 Error::SampleAmountTooHigh="The specified SampleAmount value(s) `1` are higher than the available amount(s) `2` for sample(s) `3`.  Please lower SampleAmount, or leave it as Automatic.";
 Error::UnsupportedNMRTube="The following specified NMRTube are not currently supported by the ECL: `1`.  Please select a container model where the Footprint field is set to NMRTube.";
@@ -2679,7 +2680,7 @@ nmrResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolvedOptions:{_
 	tweezerResource=If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Sample->Model[Item, Tweezer, "Straight flat tip tweezer"],Rent->True]],Null];
 	
 	(* We also gonna ask the transfer of coaxial inserts to be finished in a fume hood *)
-	fumeHoodResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Instrument -> Model[Instrument, FumeHood, "Labconco Premier 6 Foot"], Time -> 1Hour]],Null];
+	fumeHoodResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Instrument -> commonFumeHoodHandlingStationModels["Memoization"], Time -> 1Hour]],Null];
 	insertsWashWasteContainerResource = If[MemberQ[expandedUseExternalStandard,True],Link[Resource[Sample->Model[Container, Vessel, "250mL Kimax Beaker"],Rent->True,Name->ToString[Unique[]]]],Null];
 	
 	(* get the ContainersIn with no Duplicates *)

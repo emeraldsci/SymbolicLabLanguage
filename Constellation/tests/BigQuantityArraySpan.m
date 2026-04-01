@@ -62,7 +62,7 @@ DefineTests[BigQuantityArraySpan,
 	      	_?(Length[#]===100&)
 	   	],
 		Example[{Options, BigQuantityArrayByteLimit, "Setting the BigQuantityArrayByteLimit option prevents the downloading of spans that take up too much memory:"},
-	        BigQuantityArraySpan[obj, BigDataQuantityArray, 1, 100, BigQuantityArrayByteLimit -> Quantity[10, "MB"]],
+	        BigQuantityArraySpan[obj, BigDataQuantityArray, 1, 100, BigQuantityArrayByteLimit -> Quantity[10, "Megabytes"]],
 	      	_?(Length[#]===100&)
 	   ]
 	},

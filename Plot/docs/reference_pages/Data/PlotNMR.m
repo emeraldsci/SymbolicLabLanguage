@@ -82,7 +82,7 @@ DefineUsage[PlotNMR,
 			}
 		},
 		MoreInformation->{
-			"NMR spectra are traditionally displayed in reverse x-axis form, however the option for PlotRange uses the standard {{xmin,xmax},{ymin,ymax}} format."
+			"NMR spectra are traditionally displayed in reverse x-axis form; however, the option for PlotRange uses the standard {{xmin,xmax},{ymin,ymax}} format."
 		},
 		SeeAlso -> {
 			"PlotChromatography",

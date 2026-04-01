@@ -256,6 +256,38 @@ DefineObjectType[Object[Protocol, InoculateLiquidMedia],{
       Category -> "Sample Storage",
       IndexMatching -> SamplesIn
     },
+    SourceStartingAppearances -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Data][Protocol],
+      Description -> "Images of SamplesIn captured by the camera rig inside the biosafety cabinet prior to inoculation.",
+      Category -> "Experimental Results"
+    },
+    SourceFinalAppearances -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Data][Protocol],
+      Description -> "Images of SamplesIn captured by the camera rig inside the biosafety cabinet after inoculation.",
+      Category -> "Experimental Results"
+    },
+    DestinationStartingAppearances -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Data][Protocol],
+      Description -> "Images of DestinationMediaContainers captured by the camera rig inside the biosafety cabinet after inoculation.",
+      Category -> "Experimental Results"
+    },
+    DestinationFinalAppearances -> {
+      Format -> Multiple,
+      Class -> Link,
+      Pattern :> _Link,
+      Relation -> Object[Data][Protocol],
+      Description -> "Images of DestinationMediaContainers captured by the camera rig inside the biosafety cabinet after inoculation.",
+      Category -> "Experimental Results"
+    },
     (* Developer *)
     RequiredObjects -> {
       Format -> Multiple,

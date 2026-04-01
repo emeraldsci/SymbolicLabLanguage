@@ -283,7 +283,7 @@ plotKineticRatesObjectiveFunction[fittedRatePacket_,resolvedOps_List]:=Module[{
 	optimum = Log10[kRanges[[;;,1]]/.allRateRules];
 
 	(* evaluate the error function at all the rate values *)
-	objTable = SortBy[Analysis`Private`ObjectiveFunctionTable[rxs,kts,kRanges,AdditionalPoints->{optimum}],Last];
+	objTable = SortBy[Analysis`Private`ObjectiveFunctionTable[rxs,kts,kRanges,Analysis`Private`AdditionalPoints->{optimum}],Last];
 
 	(* symbolic rates from reactions *)
 	kvars=Cases[Flatten[rxs[[;;,2;;]]],Except[_?NumberQ]];

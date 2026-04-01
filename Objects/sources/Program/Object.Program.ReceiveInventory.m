@@ -362,6 +362,15 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Description -> "Indicate where the incoming items, together with their CollectionBin will be temporarily segregated for SLL object sticker labeling and/or for qualifications.",
 			Category -> "Inventory",
 			Developer -> True
+		},
+		CryogenicSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample], Object[Container], Model[Container]],
+			Description -> "The samples to be stored in cryogenic storage at the end of this program.",
+			Category -> "Sample Storage",
+			Developer -> True
 		}
 	}
 }];

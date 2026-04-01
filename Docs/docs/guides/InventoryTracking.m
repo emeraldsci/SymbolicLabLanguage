@@ -39,6 +39,7 @@ Guide[
 	RelatedGuides -> {
 		GuideLink["SampleStorage"],
 		GuideLink["SampleShipments"],
-		GuideLink["LocationTracking"]
+		GuideLink["LocationTracking"],
+		GuideLink["UploadingNewSamplesOrModels"]
 	}
 ]

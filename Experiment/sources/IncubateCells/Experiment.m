@@ -1924,8 +1924,8 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 				MatchQ[resolvedFailureResponse, Freeze] && MemberQ[missingVolumeInvalidCases, Except[{ObjectP[], Liquid, Null}]]
 			],
 				If[Length[missingVolumeInvalidCases] > 1,
-					"ExperimentIncubateCells will still incubate these samples, however, there is not enough media to guarantee proper cell growth.",
-					"ExperimentIncubateCells will still incubate this sample, however, there is not enough media to guarantee proper cell growth."
+					"ExperimentIncubateCells will still incubate these samples; however, there is not enough media to guarantee proper cell growth.",
+					"ExperimentIncubateCells will still incubate this sample; however, there is not enough media to guarantee proper cell growth."
 				],
 				"The MaxVolume of the source containers will be used when determining the cryogenic vials to store the sample(s)."
 			];
@@ -8676,7 +8676,7 @@ resolveExperimentIncubateCellsOptions[mySamples: {ObjectP[Object[Sample]]...}, m
 			sampleToSpecifiedCustomIncubatorQs = AssociationThread[mySamples -> (MemberQ[customIncubators, #]& /@ specifiedIncubators)];
 			(* Construct a capture sentence with no technical details, only include how many unique custom incubators are involved. *)
 			captureSentence = StringJoin[
-				"Only one custom incubator can be used per protocol, however, ",
+				"Only one custom incubator can be used per protocol; however, ",
 				IntegerName[Length[uniqueCustomIncubators], "English"],
 				" are being used."
 			];
@@ -9453,12 +9453,12 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 
 			(* Create a lookup from the cellType to the preferred BSC transfer environment. *)
 			cellTypeToBSC = {
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"] *)
-				Bacterial -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"],
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Tissue Culture"] *)
-				Mammalian -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:AEqRl9xveX7p"],
-				(* Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"] *)
-				Yeast | Plant | Insect | Fungal -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"]
+				(* microbial BSC *)
+				Bacterial -> microbialBSCModels["Memoization"],
+				(* non microbial BSC *)
+				Mammalian -> nonMicrobialBSCModels["Memoization"],
+				(* microbial BSC *)
+				Yeast | Plant | Insect | Fungal -> microbialBSCModels["Memoization"]
 			};
 
 			(* Generate the primitive. *)
@@ -9467,7 +9467,7 @@ incubateCellsResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myUnresolved
 				Destination -> quantificationAliquotContainerQAP,
 				Amount -> quantificationAliquotVolumeQAP,
 				DestinationWell -> destinationWellQAP,
-				TransferEnvironment -> cellTypes /. cellTypeToBSC,
+				EquivalentTransferEnvironments -> cellTypes /. cellTypeToBSC,
 				KeepSourceCovered -> True,
 				KeepDestinationCovered -> True,
 				SterileTechnique -> True,
@@ -11588,7 +11588,7 @@ IncubateCellsDevices[myInputs: {ObjectP[{Model[Container], Object[Container], Ob
 								MatchQ[desiredShakingRadius, Null|Automatic] && !TrueQ[shakeQ],
 
 							(* If no incubatorDefaultShakingRate, but shakingRadius is informed, it is a custom incubator *)
-							(* NOTE: Definitely a little weird that we are using shaking rate in the shaking radius resolution, however *)
+							(* NOTE: Definitely a little weird that we are using shaking rate in the shaking radius resolution; however,*)
 							(* we don't have specific 'custom' field, so this is a simple way to check *)
 							(* If we are custom incubating, we can either shake or not shake. If we want to shake, make sure our radius is within *)
 							(* the allowed tolerance *)

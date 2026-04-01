@@ -100,7 +100,8 @@ DefineOptions[
 		{Skip->False,False|_String,"Flag these tests as to be skipped when running tests with a description of why."},
 		{Parallel->False,True|False,"Indicates that tests for this symbol can be run in parallel."},
 		{HardwareConfiguration->Standard,Alternatives[Standard,HighRAM],"If computing on the cloud (Manifold), the hardware which should be used to run computations."},
-		{NumberOfParallelThreads->Automatic, (Automatic|Null|RangeP[1,10,1]),"The number of parallel child computation jobs to run."}
+		{NumberOfParallelThreads->Automatic, (Automatic|Null|RangeP[1,10,1]),"The number of parallel child computation jobs to run."},
+		{NamedObjects->{}, {ObjectP[]...},"The named objects created during the unit test run, that should be cleaned up before and after execution."}
 	}
 ];
 
@@ -339,7 +340,8 @@ DefineOptions[
 		{OutputFormat->TestSummary,SingleBoolean|Boolean|TestSummary,"Determines the format of the return value. Boolean returns a pass/fail for each entry. SingleBoolean returns a single pass/fail boolean for all the inputs. TestSummary returns the EmeraldTestSummary object for each input."},
 		{DisplayFunction->InputForm,_Symbol|_Function,"When Verbose->True|Failures, this function is applied to each element for printing the headers."},
 		{TestsToRun->All, IntegrationTests | Sandbox | All, "When TestsToRun->Sandbox, only run tests defined for Sandbox. When TestsToRun->IntegrationTests omit tests defined for Sandbox. Otherwise run all tests."},
-		{ClearMemoization -> True, BooleanP, "Indicate if ClearMemoization[] should be run before SymbolSetUp and after SymbolTearDown. For normal unit testing ClearMemoization should be set to True as temporary test objects can cause severe problems with memoization. However, when RunUnitTest is leveraged for other purposes like VOQ framework, this option may be set to False."}
+		{ClearMemoization -> True, BooleanP, "Indicate if ClearMemoization[] should be run before SymbolSetUp and after SymbolTearDown. For normal unit testing ClearMemoization should be set to True as temporary test objects can cause severe problems with memoization. However, when RunUnitTest is leveraged for other purposes like VOQ framework, this option may be set to False."},
+		{EraseCreatedObjects -> True, BooleanP, "Indicates if all new objects uploaded to Constellation are erased at the end of the tests. Note that named objects specified in the test definition options will be erased *prior* to running the suite in all cases."}
 	}
 ];
 
@@ -612,7 +614,7 @@ Options[runIndividualTests]=Append[Options[RunUnitTest],Sort->True];
 
 runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	{verbose, testsByCategory, category, subcategory,categories, subcategories,sort, showExpression,displayFunction,
-		window, testsBySubCategory, flatSubCategories, sortedTests, sandboxOption, filteredTests, clearMemoization},
+		window, testsBySubCategory, flatSubCategories, sortedTests, sandboxOption, filteredTests, clearMemoization, eraseCreatedObjectsQ},
 
 	verbose = OptionValue[Verbose];
 	category = OptionValue[Category];
@@ -623,6 +625,7 @@ runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	showExpression = OptionValue[ShowExpression];
 	sandboxOption = OptionValue[TestsToRun];
 	clearMemoization = OptionValue[ClearMemoization];
+	eraseCreatedObjectsQ = OptionValue[EraseCreatedObjects];
 
 	categories = If[MatchQ[category,_List|All],
 		category,
@@ -676,10 +679,10 @@ runIndividualTests[tests:{TestP...},identifier_,OptionsPattern[]]:=Module[
 	];
 
 	If[verbose===False,
-		quietTestResults[testsByCategory, identifier, clearMemoization],
+		quietTestResults[testsByCategory, identifier, clearMemoization, eraseCreatedObjectsQ],
 		If[window===True,
-			runTestsInNotebook[testsByCategory, identifier, verbose, displayFunction, clearMemoization, ShowExpression->showExpression],
-			runTestsInline[testsByCategory, identifier, verbose, displayFunction, clearMemoization]
+			runTestsInNotebook[testsByCategory, identifier, verbose, displayFunction, clearMemoization, eraseCreatedObjectsQ, ShowExpression->showExpression],
+			runTestsInline[testsByCategory, identifier, verbose, displayFunction, clearMemoization, eraseCreatedObjectsQ]
 		]
 	]
 ];
@@ -690,16 +693,60 @@ flatTests[testsByCategory_Association] := Apply[
 ];
 
 (* This code first wraps any MessageName[___] with a Hold, looks up the TurnOffMessages option, then replaces any Holds with Offs. *)
-turnOffTestMessages[options_List]:=	Lookup[options /. {message_MessageName :> Hold[message]}, TurnOffMessages, {}] /. {Hold -> Off};
+turnOffTestMessages[options_List] := Module[{messages},
+	messages = Lookup[options /. {message_MessageName :> Hold[message]}, TurnOffMessages, {}];
+
+	ECL`ManifoldEcho[messages, "Switching off messages:"];
+
+	messages /. {Hold -> Off}
+];
 
 (* This code first wraps any MessageName[___] with a Hold, looks up the TurnOffMessages option, then replaces any Holds with On. *)
 (* NOTE: At the end of the test, we must turn the messages back on so that we don't affect other development work done in the same kernel. *)
-turnOnTestMessages[options_List]:=	Lookup[options /. {message_MessageName :> Hold[message]}, TurnOffMessages, {}] /. {Hold -> On};
+turnOnTestMessages[options_List]:= Module[{messages},
+	messages = Lookup[options /. {message_MessageName :> Hold[message]}, TurnOffMessages, {}];
+
+	ECL`ManifoldEcho[messages, "Switching on messages:"];
+
+	messages /. {Hold -> On};
+];
+
+(* Helper to clean up the listed named objects *)
+cleanUpNamedObjects[objects_List] := Module[
+	{flatObjects, existingObjects, eraseResponse},
+
+	flatObjects = Flatten[objects];
+
+	ECL`ManifoldEcho[flatObjects, "Cleaning up named objects:"];
+
+	existingObjects = ECL`PickList[flatObjects, ECL`DatabaseMemberQ[flatObjects]];
+
+	ECL`ManifoldEcho[existingObjects, "Existing named objects:"];
+
+	eraseResponse = ECL`EraseObject[existingObjects, Force -> True, Verbose -> False];
+
+	ECL`ManifoldEcho[eraseResponse, "EraseObject response:"];
+
+	eraseResponse
+];
+
+(* Helper to set the created objects checkpoint at the beginning of a suite *)
+(* Create a unique checkpoint to avoid possibility of a subsequent suite erasing all objects since an earlier suite ran *)
+setUnitTestCreatedObjectsCheckpoint[] := ECL`SetCreatedObjectsCheckpoint[Unique];
+
+(* Helper to clean up the created objects at the end of the suite *)
+eraseUnitTestCreatedObjects[identifier_String] := (
+	(* Perform the erase *)
+	ECL`EraseCreatedObjects[identifier];
+
+	(* Unset the checkpoint *)
+	ECL`UnsetCreatedObjectsCheckpoint[identifier]
+);
 
 (*Execute test functions without any verbose output*)
-quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:BooleanP]:=Module[
+quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:BooleanP, eraseObjectsQ:BooleanP]:=Module[
 	{tests, symbolOptions, symbolSetUpMessages, symbolTearDownMessages, reapedResults, results, variables, definitions,
-		percentCoverage},
+		percentCoverage, createdObjectsCheckpoint},
 
 	tests=flatTests[testsByCategory];
 
@@ -725,6 +772,12 @@ quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:Boo
 	(* Before running SymbolSetUp, turn off any TurnOffMessages. *)
 	turnOffTestMessages[symbolOptions];
 
+	(* And clean up potential named objects *)
+	cleanUpNamedObjects[Lookup[symbolOptions, NamedObjects]];
+
+	(* Set the created objects checkpoint to track everything created during the suite *)
+	createdObjectsCheckpoint = setUnitTestCreatedObjectsCheckpoint[];
+
 	symbolSetUpMessages = EvaluationData[Lookup[symbolOptions, SymbolSetUp]]["MessagesExpressions"];
 
 	reapedResults = Reap[
@@ -746,7 +799,13 @@ quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:Boo
 	(* later: fail with errors if this has problems *)
 	symbolTearDownMessages = EvaluationData[Lookup[symbolOptions, SymbolTearDown]]["MessagesExpressions"];
 
-	(* After running SymbolTearDown, turn back on any TurnOffMessages. *)
+	(* After running SymbolTearDown, clean up created objects if required *)
+	If[eraseObjectsQ,
+		(* Named objects were erased before starting, so they must be included in the created objects list if created by the tests *)
+		eraseUnitTestCreatedObjects[createdObjectsCheckpoint]
+	];
+
+	(* And turn back on any TurnOffMessages *)
 	UnitTest`Private`turnOnTestMessages[symbolOptions];
 
 	(* Clear all these variables so it's like we're scoping them. *)
@@ -796,9 +855,9 @@ quietTestResults[testsByCategory_Association, identifier_, clearMemoizationQ:Boo
 
 (*Runs tests and prints to unit testing notebook their results as they are executed*)
 Options[runTestsInNotebook]={ShowExpression->True};
-runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP, ops:OptionsPattern[]]:=Module[
+runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP, eraseObjectsQ:BooleanP, ops:OptionsPattern[]]:=Module[
 	{testNotebook, symbolOptions,symbolSetUpMessages, reapedResults,symbolTearDownMessages, results, summary, name,
-		tests, variables, definitions, percentCoverage},
+		tests, variables, definitions, percentCoverage, createdObjectsCheckpoint},
 
 	testNotebook=getTestNotebook[];
 	name=ToString[identifier];
@@ -827,6 +886,12 @@ runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failure
 
 	(* Before running SymbolSetUp, turn off any TurnOffMessages. *)
 	turnOffTestMessages[symbolOptions];
+
+	(* And clean up potential named objects *)
+	cleanUpNamedObjects[Lookup[symbolOptions, NamedObjects]];
+
+	(* Set the created objects checkpoint to track everything created during the suite *)
+	createdObjectsCheckpoint = setUnitTestCreatedObjectsCheckpoint[];
 
 	symbolSetUpMessages = EvaluationData[Lookup[symbolOptions, SymbolSetUp]]["MessagesExpressions"];
 
@@ -870,7 +935,13 @@ runTestsInNotebook[testsByCategory_Association,identifier_, verbose:True|Failure
 	(* later: fail with errors if this has problems *)
 	symbolTearDownMessages = EvaluationData[Lookup[symbolOptions, SymbolTearDown]]["MessagesExpressions"];
 
-	(* After running SymbolTearDown, turn back on any TurnOffMessages. *)
+	(* After running SymbolTearDown, clean up created objects if required *)
+	If[eraseObjectsQ,
+		(* Named objects were erased before starting, so they must be included in the created objects list if created by the tests *)
+		eraseUnitTestCreatedObjects[createdObjectsCheckpoint]
+	];
+
+	(* And turn back on any TurnOffMessages *)
 	UnitTest`Private`turnOnTestMessages[symbolOptions];
 
 	(* Clear all these variables so it's like we're scoping them. *)
@@ -943,9 +1014,9 @@ decrementCategoryCell[notebook_NotebookObject,name_String,category_String]:=With
 ];
 
 
-runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP]:=Module[
+runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, displayFunction:_Symbol|_Function, clearMemoizationQ:BooleanP, eraseObjectsQ:BooleanP]:=Module[
 	{symbolOptions, symbolSetUpMessages, reapedResults, symbolTearDownMessages, results, name, tests, runningTest,
-	totalCount, testIndex, maxCategoryLength, tempCell, summary, percentCoverage, variables, definitions},
+	totalCount, testIndex, maxCategoryLength, tempCell, summary, percentCoverage, variables, definitions, createdObjectsCheckpoint},
 
 	name=displayFunction[identifier];
 
@@ -979,6 +1050,12 @@ runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, d
 
 	(* Before running SymbolSetUp, turn off any TurnOffMessages. *)
 	turnOffTestMessages[symbolOptions];
+
+	(* And clean up potential named objects *)
+	cleanUpNamedObjects[Lookup[symbolOptions, NamedObjects]];
+
+	(* Set the created objects checkpoint to track everything created during the suite *)
+	createdObjectsCheckpoint = setUnitTestCreatedObjectsCheckpoint[];
 
 	symbolSetUpMessages = EvaluationData[Lookup[symbolOptions, SymbolSetUp]]["MessagesExpressions"];
 
@@ -1026,7 +1103,13 @@ runTestsInline[testsByCategory_Association,identifier_, verbose:True|Failures, d
 	(* later: fail with errors if this has problems *)
 	symbolTearDownMessages = EvaluationData[Lookup[symbolOptions, SymbolTearDown]]["MessagesExpressions"];
 
-	(* After running SymbolTearDown, turn back on any TurnOffMessages. *)
+	(* After running SymbolTearDown, clean up created objects if required *)
+	If[eraseObjectsQ,
+		(* Named objects were erased before starting, so they must be included in the created objects list if created by the tests *)
+		eraseUnitTestCreatedObjects[createdObjectsCheckpoint]
+	];
+
+	(* And turn back on any TurnOffMessages *)
 	UnitTest`Private`turnOnTestMessages[symbolOptions];
 
 	(* Clear all these variables so it's like we're scoping them. *)
@@ -1438,9 +1521,51 @@ writeCellResult[notebook_NotebookObject, id_String, result : TestResultP, ops:Op
 (*resultToCellGroup*)
 
 
-Options[resultToCellGroup]={ShowExpression->True};
+Options[resultToCellGroup]={ShowExpression->True, NamedObject -> False, Differences -> False};
 resultToCellGroup[result : TestResultP, id_String, OptionsPattern[]] := Module[
-	{},
+	{deferredActualValue, heldExpectedValue, formattedResult, formattedPattern, namedObjectsLookup},
+
+	(* Extract the result and pattern *)
+	(* There is an apparent bug in MM with Defer where you can remove the defer but the expression doesn't behave correctly *)
+	(* You can have two expressions with the same FullForm that behave differently. Work around this by converting to string and back to expression *)
+	deferredActualValue = ToExpression[ToString[FullForm[result[ActualValue]]]];
+	heldExpectedValue = result[ExpectedValue];
+
+	(* Extract the named objects used in the unit test *)
+	namedObjectsLookup = result[ObjectNames] /. _Missing -> {};
+
+	(* Format the result and pattern to highlight mismatches if requested *)
+	{formattedResult, formattedPattern} = Module[{styledResult, styledPattern},
+
+		(* Perform matching analysis which highlights parts of the responses that don't match for MatchQ *)
+		{styledResult, styledPattern} = If[TrueQ[OptionValue[Differences]] && MatchQ[result[EquivalenceFunction], MatchQ] && MatchQ[result[Passed], False],
+			Module[
+				{matchDebuggingResult},
+
+				(* Use DebugMatchQ to try to identify which subparts of the expressions aren't matching *)
+				matchDebuggingResult = With[{exp = deferredActualValue, pat = heldExpectedValue, names = namedObjectsLookup},
+					ReleaseHold[Replace[
+						(* Inject the arguments whilst holding the DebugMatchQ to prevent immediate evaluation *)
+						Hold[ECL`DebugMatchQ[exp, pat, OutputFormat -> Association, Historical -> True, ObjectNames -> names]],
+
+						(* Strip the hold/defer from the expression and pattern so that they are clean when DebugMatchQ evaluates, when the outer hold is release *)
+						{HoldForm[x_] :> x, Defer[y_] :> y},
+						{2}
+					]]
+				];
+
+				Lookup[matchDebuggingResult, {Expression, Pattern}]
+			],
+			{deferredActualValue, heldExpectedValue}
+		];
+
+		(* Perform the named object conversions if required *)
+		If[TrueQ[OptionValue[NamedObject]],
+			ReplaceAll[{styledResult, styledPattern}, Rule@@@namedObjectsLookup],
+			{styledResult, styledPattern}
+		]
+	];
+
 	Cell[
 		CellGroupData[
 			Join[
@@ -1451,10 +1576,33 @@ resultToCellGroup[result : TestResultP, id_String, OptionsPattern[]] := Module[
 					{Cell[BoxData[ToBoxes[result[Expression]]], "TestExpression"]},
 					{}
 				],
-				{
-					Cell[BoxData[ToBoxes[result[ExpectedValue]]], "TestExpectedOutput"],
-					Cell[BoxData[ToBoxes[result[ActualValue]]], "TestOutput"]
-				},
+				(* If styling the output, create the output as a button so that the original expression can be copied without styling *)
+				If[TrueQ[OptionValue[Differences]],
+					With[{expectedCopy = heldExpectedValue, actualCopy = deferredActualValue},
+						{
+							Cell[BoxData[ToBoxes[
+								Button[
+									formattedPattern,
+									CopyToClipboard[Replace[expectedCopy, HoldForm[x_] :> Defer[x]]],
+									Appearance -> None,
+									BaseStyle -> "Output"
+								]
+							]], "TestExpectedOutput"],
+							Cell[BoxData[ToBoxes[
+								Button[
+									formattedResult,
+									CopyToClipboard[actualCopy],
+									Appearance -> None,
+									BaseStyle -> "Output"
+								]
+							]], "TestOutput"]
+						}
+					],
+					{
+						Cell[BoxData[ToBoxes[formattedPattern]], "TestExpectedOutput"],
+						Cell[BoxData[ToBoxes[formattedResult]], "TestOutput"]
+					}
+				],
 				If[result[ExpectedMessages]==={} && result[ActualMessages]==={},
 					{},
 					{
@@ -2043,6 +2191,28 @@ OnLoad[
 				{
 					BoxForm`SummaryItem[{"Message Failures: ", Length[assoc[MessageFailures]]}],
 					BoxForm`SummaryItem[{"Incomplete: ", testCount-Length[assoc[Results]]}]
+				},
+				{
+					BoxForm`SummaryItem[{"Databases: ",
+						Module[{constellationDomains, databases},
+
+							constellationDomains = DeleteDuplicates[Map[#[Database] &, assoc[Results]]];
+
+							databases = Switch[#,
+								"https://constellation.emeraldcloudlab.com", "PRODUCTION >_<",
+								"https://constellation-stage.emeraldcloudlab.com", "Stage",
+								"https://constellation-neutrino0.emeraldcloudlab.com", "Neutrino 0",
+								"https://constellation-neutrino1.emeraldcloudlab.com", "Neutrino 1",
+								"https://constellation-neutrino2.emeraldcloudlab.com", "Neutrino 2",
+								"https://constellation-neutrino3.emeraldcloudlab.com", "Neutrino 3",
+								"https://constellation-neutrino4.emeraldcloudlab.com", "Neutrino 4",
+								"https://constellation-neutrino5.emeraldcloudlab.com", "Neutrino 5",
+								_, "-"
+							] & /@ constellationDomains;
+
+							StringRiffle[databases, ", "]
+						]
+					}]
 				}
 			},
 			StandardForm
@@ -2057,6 +2227,13 @@ OverloadSummaryHead[EmeraldTestSummary];
 (* ::Subsubsection::Closed:: *)
 (*TestFailureNotebook*)
 
+DefineOptions[TestFailureNotebook,
+	Options:> {
+		{NamedObject->False,BooleanP,"Indicates if all object references in the notebook should be converted to named object form for easier debugging, including objects that have already been erased."},
+		{Differences->False,BooleanP,"Indicates if differences between the expected values and actual values should be highlighted in the notebook."}
+	}
+];
+
 Authors[TestFailureNotebook]:={"yanzhe.zhu", "james.kammert"};
 
 (* overload for unit tests *)
@@ -2064,7 +2241,7 @@ TestFailureNotebook[unitTestObject:ObjectP[Object[UnitTest,Function]],ops:Option
 	TestFailureNotebook[Get[DownloadCloudFile[unitTestObject[EmeraldTestSummary],$TemporaryDirectory]],ops]
 ];
 
-TestFailureNotebook[mySummary_EmeraldTestSummary] := Module[
+TestFailureNotebook[mySummary_EmeraldTestSummary, ops:OptionsPattern[TestFailureNotebook]] := Module[
 	{contents, testsFor, passed, successes, resultFailures,
 		timeoutFailures, messageFailures, warningFailures, results,
 		successRate, totalTests, runTime, fakeNotebook},
@@ -2105,7 +2282,7 @@ TestFailureNotebook[mySummary_EmeraldTestSummary] := Module[
 		|>
 	];
 
-	TestSummaryNotebook[fakeNotebook]
+	TestSummaryNotebook[fakeNotebook, ops]
 ];
 
 
@@ -2115,7 +2292,9 @@ TestFailureNotebook[mySummary_EmeraldTestSummary] := Module[
 
 DefineOptions[TestSummaryNotebook,
 	Options:> {
-		{Destination->Automatic,Automatic|Desktop|Cloud,"If Desktop, return a local notebook.  If Cloud, create a CloudObject.  If Automatic, create CloudObject if $CloudEvaluation is True."}
+		{Destination->Automatic,Automatic|Desktop|Cloud,"If Desktop, return a local notebook.  If Cloud, create a CloudObject.  If Automatic, create CloudObject if $CloudEvaluation is True."},
+		{NamedObject->False,BooleanP,"Indicates if all object references in the notebook should be converted to named object form for easier debugging, including objects that have already been erased."},
+		{Differences->False,BooleanP,"Indicates if differences between the expected values and actual values should be highlighted in the notebook."}
 	}
 ];
 
@@ -2142,13 +2321,14 @@ TestSummaryNotebook[summary_EmeraldTestSummary,ops:OptionsPattern[]]:=Module[
 	];
 
 	Switch[destination,
-		Cloud, testSummaryCloudNotebook[summary],
-		Desktop, testSummaryDesktopNotebook[summary]
+		Cloud, testSummaryCloudNotebook[summary, ops],
+		Desktop, testSummaryDesktopNotebook[summary, ops]
 	]
 
 ];
 
-testSummaryNotebookResultCells[results:{TestResultP...}] := Module[{resultsByCategory},
+Options[testSummaryNotebookResultCells]={NamedObject -> False, Differences -> False};
+testSummaryNotebookResultCells[results:{TestResultP...}, ops : OptionsPattern[]] := Module[{resultsByCategory},
 	resultsByCategory = GroupBy[
 		results,
 		#[Category]&
@@ -2168,7 +2348,7 @@ testSummaryNotebookResultCells[results:{TestResultP...}] := Module[{resultsByCat
 					CellGroupData[
 						Prepend[
 							Map[
-								resultToCellGroup[#,CreateUUID[]]&,
+								resultToCellGroup[#,CreateUUID[], ops]&,
 								group
 							],
 
@@ -2189,7 +2369,8 @@ testSummaryNotebookResultCells[results:{TestResultP...}] := Module[{resultsByCat
 	]
 ];
 
-testSummaryDesktopNotebook[summary_EmeraldTestSummary]:=Module[
+Options[testSummaryDesktopNotebook]={NamedObject -> False, Differences -> False};
+testSummaryDesktopNotebook[summary_EmeraldTestSummary, ops : OptionsPattern[]]:=Module[
 	{notebook, name, sandboxResults, manifoldResults, sandboxCells, manifoldCells},
 
 	notebook = NotebookCreate[
@@ -2217,8 +2398,8 @@ testSummaryDesktopNotebook[summary_EmeraldTestSummary]:=Module[
 
 	manifoldResults = Select[summary[Results], Not@TrueQ[#[Sandbox]] &];
 
-	sandboxCells = testSummaryNotebookResultCells[sandboxResults];
-	manifoldCells = testSummaryNotebookResultCells[manifoldResults];
+	sandboxCells = testSummaryNotebookResultCells[sandboxResults, ops];
+	manifoldCells = testSummaryNotebookResultCells[manifoldResults, ops];
 
 	If[Length[manifoldCells]>0,
 		NotebookWrite[notebook, Cell["Integration Test Results", "ResultSummary"]];

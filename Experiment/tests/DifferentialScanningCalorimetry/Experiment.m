@@ -646,11 +646,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "Set the CentrifugeIntensity option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1000*RPM, Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
 			Lookup[options, CentrifugeIntensity],
-			1000*RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
@@ -694,19 +702,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FiltrationType, "Set the FiltrationType option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FiltrationType -> Syringe, Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 6 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FiltrationType -> Syringe, Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options}
 		],
 		Example[{Options, FilterInstrument, "Set the FilterInstrument option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 6 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], Output -> Options];
 			Lookup[options, FilterInstrument],
 			ObjectP[Model[Instrument, SyringePump, "NE-1010 Syringe Pump"]],
 			Variables :> {options}
 		],
 		Example[{Options, Filter, "Set the Filter option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 6 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Output -> Options];
 			Lookup[options, Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables :> {options}
@@ -736,7 +744,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterSyringe, "Set the FilterSyringe option:"},
-			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Output -> Options];
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 6 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables :> {options}
@@ -812,6 +820,14 @@ DefineTests[
 			400 Microliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentDifferentialScanningCalorimetry[Object[Sample, "PNA sample 2 in 2mL tube for ExperimentDifferentialScanningCalorimetry testing"<> $SessionUUID], AliquotAmount -> 400.01 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			400 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
 			options=ExperimentDifferentialScanningCalorimetry[
@@ -1039,11 +1055,12 @@ DefineTests[
 				}];
 
 				(*create all of the models*)
-				dnaModelPacket = UploadSampleModel["Test DNA oligomer model for DSC"<> $SessionUUID,
-					Composition -> {
+				dnaModelPacket = UploadSampleModel[
+					{
 						{0.1 Milli * Molar, Model[Molecule, Oligomer, "Test DNA IM for DSC"<> $SessionUUID]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test DNA oligomer model for DSC"<> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 					Flammable -> False,
@@ -1059,11 +1076,12 @@ DefineTests[
 					Upload -> False
 				];
 
-				pnaModelPacket = UploadSampleModel["Test PNA oligomer model for DSC"<> $SessionUUID,
-					Composition -> {
+				pnaModelPacket = UploadSampleModel[
+					{
 						{0.1 Milli * Molar, Model[Molecule, Oligomer, "Test PNA IM for DSC"<> $SessionUUID]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test PNA oligomer model for DSC"<> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 					Flammable -> False,

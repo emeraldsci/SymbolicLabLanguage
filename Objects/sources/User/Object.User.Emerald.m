@@ -87,14 +87,6 @@ DefineObjectType[Object[User,Emerald], {
 			Description -> "The Emerald employees that this employee directly manages.",
 			Category -> "Company Information"
 		},
-		Department -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> EmeraldDepartmentP,
-			Description -> "The department at Emerald that the user reports to.",
-			Category -> "Organizational Information",
-			Abstract -> True
-		},
 		Site->{
 			Format->Single,
 			Class->Link,
@@ -221,6 +213,16 @@ DefineObjectType[Object[User,Emerald], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
+		TimesheetRecord -> {
+            Format -> Multiple,
+        	Class -> {Date, Date, Link},
+        	Pattern :> {_?DateObjectQ, _?DateObjectQ, _Link},
+        	Relation -> {Null, Null, Object[Timesheet]},
+        	Description -> "Indicates the clock-in and clock-out times for a recorded shift.",
+        	Headers -> {"ClockIn Date","ClockOut Date","Timesheet"},
+        	Category -> "Operations Information",
+        	Developer -> True
+        },
 		AssociatedTickets -> {
 			Format -> Multiple,
 			Class -> {Date, Expression, Link},
@@ -265,6 +267,23 @@ DefineObjectType[Object[User,Emerald], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		ActiveSciOps -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this user is currently on shift on the Scientific Operations team.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		ActiveSciOpsLog -> {
+			Format -> Multiple,
+			Class -> {Date, Boolean},
+			Pattern :> {_?DateObjectQ, BooleanP},
+			Description -> "A log of times when this user was on shift for the Scientific Operations team.",
+			Headers -> {"Date", "Active"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		DateTrained -> {
 			Format -> Single,
 			Class -> Date,
@@ -289,12 +308,13 @@ DefineObjectType[Object[User,Emerald], {
 			Description -> "The customers for whom this employee builds and maintains a partnership. Every customer has at least one assigned ECL employee in this role. ECL employees may oversee multiple customer accounts.",
 			Category -> "Organizational Information"
 		},
-		ErrorRecoveryEvents -> {
+		GuidedCorrectionEvents -> {
 			Format -> Multiple,
 			Class -> {
 				Date -> Date,
 				Procedure -> String,
 				TaskID -> String,
+				CorrectionCategory -> Expression,
 				Subprotocol -> Link,
 				RootProtocol -> Link
 			},
@@ -302,6 +322,7 @@ DefineObjectType[Object[User,Emerald], {
 				Date -> _?DateObjectQ,
 				Procedure -> _String,
 				TaskID -> _String,
+				CorrectionCategory -> GuidedCorrectionCategoryP,
 				Subprotocol -> _Link,
 				RootProtocol -> _Link
 			},
@@ -309,10 +330,11 @@ DefineObjectType[Object[User,Emerald], {
 				Date -> Null,
 				Procedure -> Null,
 				TaskID -> Null,
+				CorrectionCategory -> Null,
 				Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-				RootProtocol -> Alternatives[Object[Protocol][ErrorRecoveryLog, ResponsibleOperator], Object[Maintenance][ErrorRecoveryLog, ResponsibleOperator], Object[Qualification][ErrorRecoveryLog, ResponsibleOperator]]
+				RootProtocol -> Alternatives[Object[Protocol][GuidedCorrectionLog, ResponsibleOperator], Object[Maintenance][GuidedCorrectionLog, ResponsibleOperator], Object[Qualification][GuidedCorrectionLog, ResponsibleOperator]]
 			},
-			Description -> "The error recovery procedures triggered by this ECL employee.",
+			Description -> "The guided correction procedures triggered by this ECL employee.",
 			Category -> "Organizational Information"
 		}
 	}

@@ -90,6 +90,19 @@ DefineTests[ExperimentThawCells,
         Error::InvalidOption
       }
     ],
+    Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If Preparation is set to or required to be Manual, WorkCell cannot be used:"},
+      ExperimentThawCells[
+        Model[Sample, "id:qdkmxz0A88r3"],
+        Preparation -> Manual,
+        WorkCell -> STAR
+      ],
+      $Failed,
+      Messages :> {
+        Error::ConflictingUnitOperationMethodRequirements,
+        Error::WorkCellIsIncompatibleWithMethod,(* This is currently thrown by the framework call as well, we should avoid throw this when visiting in future *)
+        Error::InvalidInput
+      }
+    ],
     Test[{Messages, "ThawInstrumentTemperatureMismatch", "Temperature option cannot be specified if using a ThawSTAR:"},
       ExperimentThawCells[
         Model[Sample, "id:qdkmxz0A88r3"],
@@ -311,11 +324,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "HeLa"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Adherent Mammalian Model 1 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -328,11 +341,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Adherent Mammalian Model 2 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "HEK293"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Adherent Mammalian Model 2 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -345,11 +358,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Suspension Mammalian Model 3 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Mammalian, "SiHa"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Suspension Mammalian Model 3 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -362,11 +375,11 @@ DefineTests[ExperimentThawCells,
         ];
 
         UploadSampleModel[
-          "Test Bacterial Model 4 for ExperimentThawCells "<>$SessionUUID,
-          Composition->{
+          {
             {70 VolumePercent,Model[Cell, Bacteria, "E.coli MG1655"]},
             {30 VolumePercent, Model[Molecule,"Glycerol"]}
           },
+          Name -> "Test Bacterial Model 4 for ExperimentThawCells "<>$SessionUUID,
           IncompatibleMaterials->{None},
           Expires->False,
           DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],

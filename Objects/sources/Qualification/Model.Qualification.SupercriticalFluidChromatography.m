@@ -473,6 +473,29 @@ DefineObjectType[Model[Qualification,SupercriticalFluidChromatography], {
 			Units -> Percent,
 			Description -> "When testing the proportioning valves, the maximum percent relative standard deviation of peak retention times.",
 			Category -> "Gradient Proportioning Test"
+		},
+		PumpHealthTest -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether a check of the system's pressure during the system flush will be performed in this model of qualification.",
+			Category -> "Pump Health Test"
+		},
+		MinPressure -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*PSI],
+			Units -> PSI,
+			Description -> "The minimum mean pressure allowed for segments of the pump health check in this model of qualification.",
+			Category -> "Pump Health Test"
+		},
+		MaxPressureStandardDeviation -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*PSI],
+			Units -> PSI,
+			Description -> "The maximum pressure standard deviation allowed for segments of the pump health check in this model of qualification.",
+			Category -> "Pump Health Test"
 		}
 	}
 }];

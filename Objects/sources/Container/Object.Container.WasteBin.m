@@ -42,6 +42,14 @@ DefineObjectType[Object[Container, WasteBin], {
 			Description -> "The handling station on whose work surface this waste bin is permanently located.",
 			Category -> "Part Specifications"
 		},
+		CuttingStation -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, CuttingStation][WasteBin],
+			Description -> "The cutting station on whose work surface this waste bin is permanently located.",
+			Category -> "Part Specifications"
+		},
 		WasteContainerLabel -> {
 			Format -> Single,
 			Class -> Expression,

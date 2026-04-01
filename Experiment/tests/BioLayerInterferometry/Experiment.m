@@ -15,7 +15,7 @@
 DefineTests[ExperimentBioLayerInterferometry,
   {
     Example[{Basic, "Perform a quantitation bio layer interferometry assay on a single sample with a naked probe surface:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID]],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID]],
       ObjectP[Object[Protocol, BioLayerInterferometry]],
       SetUp:>($CreatedObjects={}),
       TearDown:>(
@@ -26,7 +26,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Basic, "Perform a Kinetics bio layer interferometry assay on multiple samples using a loaded probe:"},
       ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
         },
         LoadingType -> {Load},
@@ -45,7 +45,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Basic, "Perform a Quantitation bio layer interferometry assay on multiple samples:"},
       ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID]
         },
@@ -62,7 +62,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Basic, "Perform a EpitopeBinning bio layer interferometry assay on multiple samples:"},
       ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID]
       },
@@ -82,7 +82,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Basic, "Perform a AssayDevelopment bio layer interferometry assay on multiple samples:"},
       ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID], Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> AssayDevelopment,
@@ -104,14 +104,14 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (*set experiment type*)
     Example[{Options, ExperimentType, "Use the ExperimentType option to set the type of assay to Quantitation:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ExperimentType -> Quantitation, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ExperimentType -> Quantitation, Output -> Options];
       Lookup[options, ExperimentType],
       Quantitation,
       EquivalenceFunction -> MatchQ,
       Variables :> {options}
     ],
     Example[{Options, ExperimentType, "Use the ExperimentType option to set the type of assay to AssayDevelopment:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -121,7 +121,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ExperimentType, "Use the ExperimentType option to set the type of assay to EpitopeBinning:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> EpitopeBinning,
         BinningAntigen -> Object[Sample, "AntigenSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -132,7 +132,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ExperimentType, "Use the ExperimentType option to set the type of assay to Kinetics:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -149,7 +149,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* --------------------------------------- *)
     Example[{Options, Template, "Use a previous BioLayerInterferometry protocol as a template for a new one:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Template -> Object[Protocol,BioLayerInterferometry,"Test Template Protocol for ExperimentBLI" <> $SessionUUID],
         Output -> Options
       ];
@@ -159,7 +159,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, Name, "Use Name option to give a name to the protocol:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Name -> "my BLI protocol",
         Output -> Options
       ];
@@ -169,7 +169,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options,IncubateAliquotDestinationWell,"Indicates the desired position in the corresponding IncubateAliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         IncubateAliquotDestinationWell -> "A1",
         AliquotContainer->Model[Container, Vessel, "2mL Tube"],
         Output -> Options
@@ -180,7 +180,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options,CentrifugeAliquotDestinationWell,"Indicates the desired position in the corresponding CentrifugeAliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         CentrifugeAliquotDestinationWell -> "A1",
         Output -> Options
       ];
@@ -190,7 +190,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options,FilterAliquotDestinationWell,"Indicates the desired position in the corresponding FilterAliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         FilterAliquotDestinationWell -> "A1",
         Output -> Options
       ];
@@ -200,7 +200,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options,DestinationWell,"Indicates the desired position in the corresponding AliquotContainer in which the aliquot samples will be placed:"},
       options=ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DestinationWell -> "A1",
         Output -> Options
       ];
@@ -210,7 +210,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, Instrument, "Set the Instrument for ExperimentBioLayerInterferometry:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Instrument -> Object[Instrument, BioLayerInterferometer, "Test Octet Red96e for ExperimentBLI" <> $SessionUUID],
         Output -> Options
       ];
@@ -220,7 +220,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, BioProbeType, "Set the BioProbeType for ExperimentBioLayerInterferometry:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options
@@ -230,7 +230,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, NumberOfRepeats, "Use the NumberOfRepeats option to request more measurements:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationTime -> 2 Hour,
         NumberOfRepeats -> 6,
@@ -242,7 +242,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, SaveAssayPlate, "Use the SaveAssayPlate option to save the assay plate after experiment:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         SaveAssayPlate -> True,
         Output -> Options];
       Lookup[options, SaveAssayPlate],
@@ -251,7 +251,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, KineticsReferenceType, "Use the KineticsReferenceType option to request a blank for kinetics reference:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsReferenceType -> Blank, ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -260,7 +260,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureBaselineShakeRate,"Use the MeasureBaselineShakeRate option to set shake rate of the plate while bio-probe is immersed in KineticsBaselineBuffer:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureBaselineShakeRate -> 200 RPM,
         MeasureAssociationTime -> 20 Second,
@@ -273,7 +273,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationTime,"Use the MeasureAssociationTime option to set the amount of time for which the bio-probe is immersed in the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureBaselineShakeRate -> 200 RPM,
         MeasureAssociationTime -> 20 Second,
@@ -286,7 +286,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationShakeRate,"Use the MeasureAssociationShakeRate option to set the speed at which the assay plate is shaken while the bio-probe is immersed in the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureBaselineShakeRate -> 200 RPM,
         MeasureAssociationTime -> 20 Second,
@@ -299,7 +299,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationThresholdCriterion,"Use the MeasureAssociationThresholdCriterion option to indicate if the threshold condition for change in bio-layer thickness will trigger the completion of the Association step must be met by any single well, or all of the wells measured in the step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationThresholdCriterion -> All,
         MeasureAssociationThresholdSlope -> 3 Nanometer/Minute,
@@ -312,7 +312,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationThresholdSlope,"Use the MeasureAssociationThresholdSlope option to set the rate of change in bio-layer thickness that will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationThresholdCriterion -> All,
         MeasureAssociationThresholdSlope -> 3 Nanometer/Minute,
@@ -325,7 +325,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationThresholdSlopeDuration,"Use the MeasureAssociationThresholdSlopeDuration option to set the amount of time that a given rate of change in bio-layer thickness must be exceeded to will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationThresholdCriterion -> All,
         MeasureAssociationThresholdSlope -> 3 Nanometer/Minute,
@@ -338,7 +338,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureAssociationAbsoluteThreshold,"Use the MeasureAssociationAbsoluteThreshold option to set the thickness of bio-layer that will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationThresholdCriterion -> All,
         MeasureAssociationAbsoluteThreshold -> 100 Nanometer,
@@ -350,7 +350,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationTime,"Use the MeasureDissociationTime option to set the amount of time that the bio-probe is immersed to measure analyte dissociation:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureDissociationTime -> 15 Minute,
         MeasureDissociationThresholdCriterion -> All,
@@ -364,7 +364,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationShakeRate,"Use the MeasureDissociationShakeRate option to set the speed at which the assay plate is shaken while the bio-probe is immersed in the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureBaselineShakeRate -> 200 RPM,
         MeasureDissociationTime -> 20 Second,
@@ -377,7 +377,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationThresholdCriterion,"Use the MeasureDissociationThresholdCriterion option to indicate if the threshold condition for change in bio-layer thickness will trigger the completion of the Dissociation step must be met by any single well, or all of the wells measured in the step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureDissociationTime -> 15 Minute,
         MeasureDissociationThresholdCriterion -> All,
@@ -391,7 +391,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationThresholdSlope,"Use the MeasureDissociationThresholdSlope option to set the rate of change in bio-layer thickness that will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureDissociationTime -> 15 Minute,
         MeasureDissociationThresholdCriterion -> All,
@@ -405,7 +405,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationThresholdSlopeDuration,"Use the MeasureDissociationThresholdSlopeDuration option to set the amount of time that a given rate of change in bio-layer thickness must be exceeded to will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureDissociationTime -> 15 Minute,
         MeasureDissociationThresholdCriterion -> All,
@@ -419,7 +419,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options,MeasureDissociationAbsoluteThreshold,"Use the MeasureDissociationAbsoluteThreshold option to set the thickness of bio-layer that will trigger the removal of the bio-probe from the sample solution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureDissociationTime -> 15 Minute,
         MeasureDissociationThresholdCriterion -> All,
@@ -434,7 +434,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, KineticsSampleFixedDilutions, "Use the KineticsSampleFixedDilutions option to define direct dilutions for the given sample:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -446,7 +446,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, KineticsSampleSerialDilutions, "Use the KineticsSampleSerialDilutions option to define serial dilutions for the given sample:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsSampleSerialDilutions -> {{{2, "105"}, {2, "106"}, {2, "107"}}},
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -458,7 +458,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, KineticsSampleDiluent, "Use the KineticsSampleDiluent option to define diluent used in direct dilutions for the given sample:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         KineticsSampleDiluent -> Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
@@ -472,7 +472,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, QuantitationParameters, "Set the QuantitationParameters to change a series of modifications on a basic quantitation experiment which are used inform the assay steps and plate layout:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         QuantitationEnzymeSolution -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
@@ -485,7 +485,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, AmplifiedDetectionSolution, "Set the AmplifiedDetectionSolution to specify the solution which contains a species that binds to the immobilized analyte on the bio-probe surface, thereby increasing the thickness of the bio-layer:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         QuantitationEnzymeSolution -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
@@ -498,7 +498,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationEnzymeSolution, "Set the QuantitationEnzymeSolution to specify the solution which contains enzyme used to amplify quantitation results:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         QuantitationEnzymeSolution -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
@@ -511,7 +511,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationStandardSerialDilutions, "Set the AmplifiedDetectionSolution to specify the solution which contains a species that binds to the immobilized analyte on the bio-probe surface, thereby increasing the thickness of the bio-layer:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
         QuantitationStandard -> Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuantitationStandardSerialDilutions -> {{2, "2x standard dilution"},{4, "4x standard dilution"},{8, "8x standard dilution"},{16, "16x standard dilution"},{32, "32x standard dilution"}, {64, "64x standard dilution"},{128,"128x standard dilution"}},
@@ -523,7 +523,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, PreMixSolutions, "Set PreMixSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BinningType -> PreMix,
         ExperimentType -> EpitopeBinning,
         PreMixSolutions -> {{100 Microliter, 100 Microliter, 10 Microliter, "101"}},
@@ -537,7 +537,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
 
     Example[{Options, DetectionLimitFixedDilutions, "Set the DetectionLimitFixedDilutions option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DetectionLimitFixedDilutions -> {{{2, "105"}, {2, "106"}, {2, "107"}}},
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -548,7 +548,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DetectionLimitSerialDilutions, "Set the DetectionLimitSerialDilutions option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DetectionLimitSerialDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -559,7 +559,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DetectionLimitDiluent, "Set the DetectionLimitDiluent option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DetectionLimitFixedDilutions -> {{{2, "105"}, {2, "106"}, {2, "107"}}},
         DetectionLimitDiluent -> Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
@@ -573,7 +573,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, TestInteractionSolutions, "Set TestInteractionSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenInteraction,
         TestInteractionSolutions ->  Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -585,7 +585,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, TestBufferSolutions, "Set TestBufferSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenBuffer,
         TestBufferSolutions -> {Model[Sample, "Milli-Q water"]},
@@ -597,7 +597,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, TestRegenerationSolutions, "Set TestRegenerationSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenRegeneration,
         RegenerationType -> Regenerate,
@@ -611,7 +611,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, TestLoadingSolutions, "Set TestLoadingSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenLoading,
         LoadingType -> {Load},
@@ -624,7 +624,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, TestActivationSolutions, "Set TestActivationSolutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenActivation,
         LoadingType -> {Load, Activate},
@@ -637,7 +637,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, RepeatedSequence, "Use RepeatedSequence option to repeat steps by each bio-probe when regeneration is requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Minute, ShakeRate -> 200 RPM],
           MeasureBaseline[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Minute, ShakeRate -> 200 RPM],
@@ -658,7 +658,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, StandardStorageCondition, "Set the StandardStorageCondition to change the storage condition of the Object[Sample] used as a Standard:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
         Standard -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         StandardStorageCondition -> AmbientStorage,
@@ -670,7 +670,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationStandardStorageCondition, "Set the QuantitationStandardStorageCondition to change the storage condition of the Object[Sample] used as a QuantitationStandard:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
         QuantitationStandard -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         QuantitationStandardStorageCondition -> AmbientStorage,
@@ -682,7 +682,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationStandardStorageCondition, "Automatically resolve the QuantitationStandardStorageCondition when Standard is used as the QuantitationStandard:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
         Standard -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         StandardStorageCondition -> AmbientStorage,
@@ -695,7 +695,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, LoadSolutionStorageCondition, "Set the LoadSolutionStorageCondition to change the storage condition of the Object[Sample] used as a LoadSolution:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadSolution -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         LoadSolutionStorageCondition -> AmbientStorage,
@@ -708,7 +708,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, TestInteractionSolutionsStorageConditions, "Set the TestInteractionSolutionsStorageConditions to change the storage conditions of the Object[Sample]s used as TestInteractionSolutions:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> AssayDevelopment,
@@ -726,7 +726,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, TestLoadingSolutionsStorageConditions, "Set the LoadSolutionStorageConditions to change the storage conditions of the Object[Sample]s used as TestLoadingSoutions:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenLoading,
         LoadingType -> {Load},
@@ -743,7 +743,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationEnzymeSolutionStorageCondition, "Set the QuantitationEnzymeSolutionStorageCondition to change the storage condition of the Object[Sample] used as a QuantitationEnzyme:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         QuantitationEnzymeSolution -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
@@ -756,7 +756,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, BinningAntigenStorageCondition, "Set the BinningAntigenStorageCondition to change the storage condition of the Object[Sample] used as a BinningAntigen:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> EpitopeBinning,
         BinningAntigen -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         BinningAntigenStorageCondition -> AmbientStorage,
@@ -773,7 +773,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* -- GENERAL OPTIONS -- *)
 
     Example[{Options, AcquisitionRate, "Set the AcquisitionRate to increase instrument sensitivity to rapid changes in bio-layer thickness or reduce noise:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         AcquisitionRate -> 10 Hertz,
         Output -> Options];
       Lookup[options, AcquisitionRate],
@@ -782,7 +782,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, PlateCover, "Use the PlateCover option to request that the assay plate be covered during the entire assay:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         MeasureAssociationTime -> 2 Hour,
         NumberOfRepeats -> 6,
@@ -795,7 +795,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::BLIPlateCoverNotRecommended}
     ],
     Example[{Options, Temperature, "Set the temperature of the assay plate using the Temperature setting:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Temperature -> 20 Celsius, Output -> Options];
       Lookup[options, Temperature],
       20 Celsius,
@@ -804,7 +804,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, RecoupSample, "Use RecoupSample to indicate which samples should be recovered after the non-destructive assay:"},
       options = ExperimentBioLayerInterferometry[
-        {Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        {Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]},
         RecoupSample -> {True, False}, Output -> Options];
       Lookup[options, RecoupSample],
@@ -813,7 +813,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ProbeRackEquilibration, "Use the ProbeRackEquilibration option to indicate if the bio-probes should be equilibrated in their storage rack:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ProbeRackEquilibration -> False, Output -> Options];
       Lookup[options, ProbeRackEquilibration],
       False,
@@ -822,68 +822,68 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Warning::NoBLIProbeEquilibration}
     ],
     Example[{Options, ProbeRackEquilibrationTime, "Use the ProbeRackEquilibrationTime option to set the minimum amount of time that probes will be equilibrated prior to use:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ProbeRackEquilibrationTime -> 20 Minute, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ProbeRackEquilibrationTime -> 20 Minute, Output -> Options];
       Lookup[options, ProbeRackEquilibrationTime],
       20 Minute,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, ProbeRackEquilibrationTime, "Automatically resolve the ProbeRackEquilibrationTime if probe rack equilibration is requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ProbeRackEquilibration -> True, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ProbeRackEquilibration -> True, Output -> Options];
       Lookup[options, ProbeRackEquilibrationTime],
       10 Minute,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, ProbeRackEquilibrationBuffer, "Use the ProbeRackEquilibrationBuffer option to indicate the buffer used to equilibrate the probes in the probe rack:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ProbeRackEquilibrationBuffer -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID], Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ProbeRackEquilibrationBuffer -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, ProbeRackEquilibrationBuffer],
       ObjectP[Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, ProbeRackEquilibrationBuffer, "Automatically resolve the ProbeRackEquilibrationBuffer option if probe rack equilibration is requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ProbeRackEquilibration -> True, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ProbeRackEquilibration -> True, Output -> Options];
       Lookup[options, ProbeRackEquilibrationBuffer],
       ObjectP[Model[Sample, StockSolution, "BLI Kinetics Buffer, 1X"]],
       Variables :> {options}
     ],
     Example[{Options, StartDelay, "Set the StartDelay to allow the assay plate to reach the desired temperature before starting the assay:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], StartDelay -> 20 Minute, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], StartDelay -> 20 Minute, Output -> Options];
       Lookup[options, StartDelay],
       20 Minute,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, StartDelay, "Automatically resolve the StartDelay to true if there is no equilibration step requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
       Lookup[options, StartDelay],
       15 Minute,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, StartDelayShake, "Set the StartDelayShake to indicate if the plate is shaken during the delay before the assay starts:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], StartDelayShake-> False, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], StartDelayShake-> False, Output -> Options];
       Lookup[options, StartDelayShake],
       False,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, StartDelayShake, "Automatically resolve the StartDelayShake if a start delay is requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], StartDelay -> 20 Minute, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], StartDelay -> 20 Minute, Output -> Options];
       Lookup[options, StartDelayShake],
       True,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, Equilibrate, "Set the Equilibrate option to include an equilibrate step in which the probes are immersed in :"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
       Lookup[options, Equilibrate],
       False,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, Equilibrate, "Automatically resolve the Equilibrate option based on the value of ProbeRackEquilibration:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ProbeRackEquilibration -> False, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ProbeRackEquilibration -> False, Output -> Options];
       Lookup[options, Equilibrate],
       True,
       EquivalenceFunction -> Equal,
@@ -892,7 +892,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, EquilibrateTime, "Set the EquilibrateTime to dictate the amount of time that the probe will be immersed during the equilibrate step:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         EquilibrateTime -> 2 Minute,
         Output -> Options
       ];
@@ -903,7 +903,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, EquilibrateTime, "Automatically resolve the EquilibrateTime if Equilibrate is True:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Equilibrate -> True,
         Output -> Options
       ];
@@ -914,7 +914,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, EquilibrateBuffer, "Set the EquilibrateBuffer option to indicate the solution which will be used in the equilibrate step:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         EquilibrateBuffer -> Model[Sample, StockSolution, "BLI Kinetics Buffer, 1X"],
         Output -> Options
       ];
@@ -923,41 +923,41 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, EquilibrateBuffer, "Automatically resolve the EquilibrateBuffer if Equilibrate is True:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Equilibrate -> True, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Equilibrate -> True, Output -> Options];
       Lookup[options, EquilibrateBuffer],
       ObjectP[Model[Sample, StockSolution, "BLI Kinetics Buffer, 1X"]],
       Variables :> {options}
     ],
     Example[{Options, EquilibrateShakeRate, "Set the EquilibrateShakeRate option to dictate the speed at which the plate is shaken during the equilibrate step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], EquilibrateShakeRate -> 150 RPM, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], EquilibrateShakeRate -> 150 RPM, Output -> Options];
       Lookup[options, EquilibrateShakeRate],
       150 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, EquilibrateShakeRate, "Automatically resolve the EquilibrateShakeRate option if Equilibrate is True:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Equilibrate -> True, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Equilibrate -> True, Output -> Options];
       Lookup[options, EquilibrateShakeRate],
       1000 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, EquilibrateShakeRate, "Automatically resolve the EquilibrateShakeRate option if Equilibrate is True:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Equilibrate -> False, Output -> Options];
       Lookup[options, EquilibrateShakeRate],
       Null,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, DefaultBuffer, "Set the DefaultBuffer option to dictate the solution which is used as a buffer, baseline, or wash solution in the assay:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], DefaultBuffer -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], DefaultBuffer -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, DefaultBuffer],
       ObjectP[Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, ReuseSolution, "Set the ReuseSolution option to indicate groups of steps which may be performed in a common set of wells:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         RegenerationType -> {Wash, Regenerate},
@@ -971,7 +971,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, ReuseSolution, "Set the ReuseSolution option to indicate groups of steps which may be performed in a common set of wells:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ReuseSolution -> {{Wash}},
         Output -> Options];
       Lookup[options, ReuseSolution],
@@ -980,20 +980,20 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ReuseSolution, "Set the ReuseSolution option to indicate groups of steps which may be performed in a common set of wells:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], ReuseSolution -> Null, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], ReuseSolution -> Null, Output -> Options];
       Lookup[options, ReuseSolution],
       Null,
       EquivalenceFunction -> Equal,
       Variables :> {options}
     ],
     Example[{Options, Blank, "Set the Blank option to indicate a solution that can be used as a blank or negative control, measured in parallel with the samples in:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Blank -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Blank -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, Blank],
       ObjectP[Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, Blank, "Automatically resolve the Blank option based on if a blank or negative control is requested:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsReferenceType -> Blank, ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -1002,7 +1002,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, Standard, "Set the Standard option to indicate a solution which can be used to create a standard curve, or is a positive control measured in parallel with the samples:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], Standard -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], Standard -> Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, Standard],
       ObjectP[Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
@@ -1010,7 +1010,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, DilutionMixVolume, "Set the DilutionMixVolume to indicate the amount of sample that will be in and out of a given dilution or premix solution:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         }, DilutionMixVolume -> 10 Microliter, Output -> Options];
       Lookup[options, DilutionMixVolume],
@@ -1021,7 +1021,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, DilutionNumberOfMixes, "Set the DilutionNumberOfMixes to indicate the number of cycles used to mix a given dilution or premix solution:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         }, DilutionNumberOfMixes -> 2, Output -> Options];
       Lookup[options, DilutionNumberOfMixes],
@@ -1032,7 +1032,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, DilutionMixRate, "Set the DilutionMixRate option to indicate the rate at which DilutionMixVolume is pipetted:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         }, DilutionMixRate -> 100 Microliter/Second, Output -> Options];
       Lookup[options, DilutionMixRate],
@@ -1043,14 +1043,14 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* --- Regeneration specific tests --- *)
     Example[{Options, RegenerationType, "Set the RegenerationType option to indicate the placement and types of steps used to return the probe surface to the measurement ready condition:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], RegenerationType -> {PreCondition, Wash, Neutralize, Regenerate}, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], RegenerationType -> {PreCondition, Wash, Neutralize, Regenerate}, Output -> Options];
       Lookup[options, RegenerationType],
       {PreCondition, Wash, Neutralize, Regenerate},
       Variables :> {options},
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationSolution, "Set the RegenerationSolution option to indicate the solution in which the bio-probes will be immersed during a regeneration step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationSolution -> Object[Sample, "1.85 M NaOH for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate},
         Output -> Options];
@@ -1060,14 +1060,14 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationSolution, "Automatically resolve the RegenerationSolution option based on the RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], RegenerationType -> {Regenerate, Neutralize}, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], RegenerationType -> {Regenerate, Neutralize}, Output -> Options];
       Lookup[options, RegenerationSolution],
       ObjectP[Model[Sample,StockSolution, "2 M HCl"]],
       Variables :> {options},
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationCycles, "Set the RegenerationCycles option to dictate the number of times the regeneration sequence will be repeated in between each measurement set:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationCycles -> 5,
         RegenerationType -> {Regenerate},
         Output -> Options
@@ -1078,7 +1078,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationCycles, "Automatically resolve the RegenerationCycles option based on the value of RegeneartionType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize},
         Output -> Options];
       Lookup[options, RegenerationCycles],
@@ -1087,7 +1087,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationTime, "Set the RegenerationTime option to dictate the amount of time the probe will be immersed in RegenerationSolution per each cycle:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate},
         RegenerationTime -> 10 Second,
         Output -> Options];
@@ -1098,7 +1098,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationTime, "Automatically resolve the RegenerationTime option based on RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition},
         Output -> Options];
       Lookup[options, RegenerationTime],
@@ -1108,7 +1108,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationShakeRate, "Set the RegenerationShakeRate option to dictate the plate shaking rate during a regeneration step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate},
         RegenerationShakeRate -> 150 RPM, Output -> Options];
       Lookup[options, RegenerationShakeRate],
@@ -1118,7 +1118,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, RegenerationShakeRate, "Automatically resolve the RegenerationShakeRate option based on RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition}, Output -> Options];
       Lookup[options, RegenerationShakeRate],
       1000 RPM,
@@ -1127,7 +1127,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationSolution, "Set the NeutralizationSolution option to indicate the solution in which the bio-probes will be immersed during a neutralization step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize},
         NeutralizationSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         Output -> Options];
@@ -1137,7 +1137,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationSolution, "Automatically resolve the NeutralizationSolution option based on the RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize},
         Output -> Options];
       Lookup[options, NeutralizationSolution],
@@ -1146,7 +1146,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationTime, "Set the NeutralizationTime option to dictate the amount of time the probe will be immersed in NeutralizationSolution per each cycle:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Neutralize, Regenerate},
         NeutralizationTime -> 10 Second, Output -> Options];
       Lookup[options, NeutralizationTime],
@@ -1156,7 +1156,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationTime, "Automatically resolve the NeutralizationTime option based on RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition}, Output -> Options];
       Lookup[options, NeutralizationTime],
       5 Second,
@@ -1165,7 +1165,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationShakeRate, "Set the NeutralizationShakeRate option to dictate the plate shaking rate during a neutralization step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize},
         NeutralizationShakeRate -> 150 RPM, Output -> Options];
       Lookup[options, NeutralizationShakeRate],
@@ -1175,7 +1175,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, NeutralizationShakeRate, "Automatically resolve the NeutralizationShakeRate option based on RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition}, Output -> Options];
       Lookup[options, NeutralizationShakeRate],
       1000 RPM,
@@ -1185,7 +1185,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
 
     Example[{Options, WashSolution, "Set the WashSolution option to indicate the solution in which the bio-probes will be immersed during a wash step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Wash},
         WashSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         Output -> Options];
@@ -1196,7 +1196,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, WashSolution, "Automatically resolve the WashSolution option based on the RegenerationType:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash}, Output -> Options];
       Lookup[options, WashSolution],
       ObjectP[Model[Sample, StockSolution, "BLI Kinetics Buffer, 1X"]],
@@ -1205,7 +1205,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, WashTime, "Set the WashTime option to dictate the amount of time the probe will be immersed in WashSolution per each cycle:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType->{Regenerate, Wash},
         WashTime -> 10 Second,
         Output -> Options
@@ -1218,7 +1218,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, WashTime, "Automatically resolve the WashTime option based on RegenerationType:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition},
         Output -> Options
       ];
@@ -1229,7 +1229,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, WashShakeRate, "Set the WashShakeRate option to dictate the plate shaking rate during a neutralization step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash},
         WashShakeRate -> 150 RPM, Output -> Options];
       Lookup[options, WashShakeRate],
@@ -1239,7 +1239,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, WashShakeRate, "Automatically resolve the WashShakeRate option based on RegenerationType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {Regenerate, Neutralize, Wash, PreCondition}, Output -> Options];
       Lookup[options, WashShakeRate],
       1000 RPM,
@@ -1253,7 +1253,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* --- Loading specific tests --- *)
 
     Example[{Options, LoadingType, "Set the LoadingType to indicate the steps that are included in a probe loading sequence:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
@@ -1263,7 +1263,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadSolution, "Set the LoadSolution to indicate the solution used to functionalize the probe surface:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         Output -> Options
@@ -1273,7 +1273,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadShakeRate, "Set the LoadShakeRate option to dictate the plate shaking rate during a load step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadShakeRate -> 150 RPM,
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
@@ -1285,7 +1285,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadShakeRate, "Automatically resolve the LoadShakeRate option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load}, Output -> Options];
       Lookup[options, LoadShakeRate],
@@ -1294,7 +1294,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadTime, "Set the LoadTime option to dictate the amount of time the probe will be immersed in LoadSolution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load}, LoadTime -> 10 Second, Output -> Options];
       Lookup[options, LoadTime],
@@ -1303,7 +1303,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadTime, "Automatically resolve the LoadTime option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load}, Output -> Options];
       Lookup[options, LoadTime],
@@ -1312,7 +1312,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadThresholdCriterion, "Set the LoadThresholdCriterion option to dictate if every well or a single well must meet the threshold condition:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadThresholdCriterion -> All, Output -> Options];
@@ -1322,7 +1322,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadThresholdCriterion, "Automatically resolve the LoadThresholdCriterion option based on the population of other loading parameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadAbsoluteThreshold -> 0.4 Nanometer, Output -> Options];
@@ -1332,7 +1332,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadAbsoluteThreshold, "Set the LoadAbsoluteThreshold option to dictate the change in thickness required to begin the next assay step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadAbsoluteThreshold -> 10.0*Nanometer, Output -> Options];
@@ -1342,7 +1342,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadThresholdSlope, "Set the LoadThresholdSlope option to dictate the rate of change in thickness required to begin the next assay step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load},
         LoadThresholdSlope -> 0.01*Nanometer/Second, LoadThresholdSlopeDuration -> 2 Minute, Output -> Options];
@@ -1352,7 +1352,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, LoadThresholdSlopeDuration, "Set the LoadThresholdSlopeDuration option to dictate the amount of time for which the LoadThreholdSlope condition must be met to begin the next assay step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadThresholdSlopeDuration -> 1.0*Minute, LoadThresholdSlope -> 0.5 Nanometer/Minute, LoadingType -> {Load}, Output -> Options];
       Lookup[options, LoadThresholdSlopeDuration],
@@ -1361,7 +1361,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ActivateSolution, "Set the ActivateSolution to indicate the solution used to activate the probe surface prior to loading:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Activate},
@@ -1371,7 +1371,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ActivateShakeRate, "Set the ActivateShakeRate option to dictate the plate shaking rate during a activate step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Activate},
@@ -1382,7 +1382,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ActivateShakeRate, "Automatically resolve the ActivateShakeRate option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Activate}, Output -> Options];
@@ -1392,7 +1392,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ActivateTime, "Set the ActivateTime option to dictate the amount of time the probe will be immersed in ActivateSolution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Activate},
@@ -1403,7 +1403,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, ActivateTime, "Automatically resolve the ActivateTime option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Activate}, Output -> Options];
@@ -1413,7 +1413,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuenchSolution, "Set the ActivateSolution to indicate the solution used to passivate unreacted sites after loading:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load,Quench},
@@ -1423,7 +1423,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuenchShakeRate, "Set the QuenchShakeRate option to dictate the plate shaking rate during a activate step:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuenchShakeRate -> 150 RPM, LoadingType -> {Load,Quench}, Output -> Options];
@@ -1433,7 +1433,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuenchShakeRate, "Automatically resolve the QuenchShakeRate option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Quench}, Output -> Options];
@@ -1443,7 +1443,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuenchTime, "Set the QuenchTime option to dictate the amount of time the probe will be immersed in QuenchSolution:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuenchTime -> 10 Second, LoadingType -> {Load, Quench}, Output -> Options];
@@ -1453,7 +1453,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuenchTime, "Automatically resolve the QuenchTime option based on LoadingType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         QuenchSolution -> Object[Sample,"ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Quench}, Output -> Options];
@@ -1469,7 +1469,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* --- KINETICS --- *)
     Example[{Options, KineticsBaselineBuffer, "Automatically resolve the KineticsBaselineBuffer option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -1478,7 +1478,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, KineticsDissociationBuffer, "Automatically resolve the KineticsDissociationBuffer option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> Kinetics, Output -> Options];
       Lookup[options, KineticsDissociationBuffer],
@@ -1486,7 +1486,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, KineticsBaselineBuffer, "Set the KineticsBaselineBuffer option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         KineticsBaselineBuffer -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -1496,7 +1496,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, KineticsDissociationBuffer, "Automatically resolve the KineticsDissociationBuffer option based on the value of the:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         KineticsDissociationBuffer -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -1506,7 +1506,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, MeasureBaselineTime, "Automatically resolve the MeasureDissociationTime option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> Kinetics, Output -> Options];
       Lookup[options, MeasureBaselineTime],
@@ -1515,7 +1515,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, MeasureBaselineTime, "Set the MeasureBaselineTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> Kinetics, MeasureBaselineTime -> 1 Minute, Output -> Options];
       Lookup[options, MeasureBaselineTime],
@@ -1525,7 +1525,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     (*special test for pre-qual experiment call*)
     Example[{Options, ExpandedAssaySequencePrimitives, "Run a standard kinetics assay:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics, BioProbeType -> Model[Item, BLIProbe, "SA"], DefaultBuffer -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID], PlateCover -> True, ProbeRackEquilibration -> True,
         MeasureAssociationTime -> 8 Minute, MeasureDissociationTime -> 15 Minute, KineticsSampleSerialDilutions -> {{2,{"dilution 1", "dilution 2", "dilution 3", "dilution 4", "dilution 5", "dilution 6", "dilution 7"}}}, KineticsReferenceType -> Blank,
         LoadSolution -> Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], LoadTime -> 4 Minute, LoadShakeRate -> 1000 RPM, LoadingType -> {Load}, Output-> Options
@@ -1544,14 +1544,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* ---------------------------------------- *)
 
     Example[{Options, QuantitationStandard, "Automatically resolve the QuantitationStandard option based on ExperimentType and the value of Standard:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, Standard -> Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], QuantitationParameters -> {StandardWell}, Output -> Options];
       Lookup[options, QuantitationStandard],
       ObjectP[Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandard, "Set the QuantitationStandard option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {StandardWell},
         QuantitationStandard -> Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
@@ -1561,21 +1561,21 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandardWell, "Automatically resolve the QuantitationStandardWell option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, QuantitationParameters -> {StandardWell}, Standard -> Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, QuantitationStandardWell],
       ObjectP[Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandardWell, "Set the QuantitationStandardWell option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, QuantitationParameters -> {StandardWell}, QuantitationStandardWell -> Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID], Output -> Options];
       Lookup[options, QuantitationStandardWell],
       ObjectP[Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]],
       Variables :> {options}
     ],
     Example[{Options, QuantitateTime, "Automatically resolve the QuantitateTime option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, Output -> Options];
       Lookup[options, QuantitateTime],
       5 Minute,
@@ -1583,7 +1583,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitateTime, "Set the QuantitateTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, QuantitateTime -> 20 Minute, Output -> Options];
       Lookup[options, QuantitateTime],
       20 Minute,
@@ -1591,7 +1591,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitateShakeRate, "Automatically resolve the QuantitateShakeRate option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, Output -> Options];
       Lookup[options, QuantitateShakeRate],
       1000 RPM,
@@ -1599,7 +1599,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitateShakeRate, "Set the QuantitateShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation, QuantitateShakeRate -> 500 RPM, Output -> Options];
       Lookup[options, QuantitateShakeRate],
       500 RPM,
@@ -1607,7 +1607,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, AmplifiedDetectionTime, "Automatically resolve the AmplifiedDetectionTime option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
@@ -1620,7 +1620,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, AmplifiedDetectionTime, "Set the AmplifiedDetectionTime option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection},
         AmplifiedDetectionTime -> 10 Minute,
@@ -1632,7 +1632,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, AmplifiedDetectionShakeRate, "Automatically resolve the AmplifiedDetectionShakeRate option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
@@ -1643,10 +1643,10 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, AmplifiedDetectionShakeRate, "Set the AmplifiedDetectionShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection},
-        AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         AmplifiedDetectionShakeRate -> 500 RPM,
         Output -> Options];
       Lookup[options, AmplifiedDetectionShakeRate],
@@ -1656,7 +1656,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationEnzymeBuffer, "Automatically resolve the QuantitationEnzymeBuffer option based on ExperimentType and QuantitationParameters:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         QuantitationEnzymeSolution -> Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -1669,7 +1669,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationEnzymeBuffer, "Set the QuantitationEnzymeBuffer option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -1682,7 +1682,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationEnzymeShakeRate, "Automatically resolve the QuantitationEnzymeShakeRate option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {EnzymeLinked, AmplifiedDetection},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -1694,7 +1694,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationEnzymeShakeRate, "Set the QuantitationEnzymeShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection, EnzymeLinked},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -1707,7 +1707,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationEnzymeTime, "Automatically resolve the QuantitationEnzymeTime option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection, EnzymeLinked},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -1719,7 +1719,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationEnzymeTime, "Set the QuantitationEnzymeTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {AmplifiedDetection, EnzymeLinked},
         AmplifiedDetectionSolution -> Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
@@ -1731,7 +1731,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandardDiluent, "Automatically resolve the QuantitationStandardDiluent option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationStandard -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
@@ -1742,7 +1742,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandardDiluent, "Set the QuantitationStandardDiluent option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationStandard -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
@@ -1753,7 +1753,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, QuantitationStandardFixedDilutions, "Automatically resolve the QuantitationStandardFixedDilutions option based on ExperimentType and QuantitationParameters:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationStandard -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
         QuantitationParameters -> {StandardCurve},
@@ -1774,7 +1774,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, QuantitationStandardFixedDilutions, "Set the QuantitationStandardFixedDilutions option:"},
       options = ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {StandardCurve},
         QuantitationStandard -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
@@ -1794,7 +1794,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningType, "Automatically resolve the BinningType option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1811,7 +1811,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningType, "Set the BinningType option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1828,7 +1828,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningControlWell, "Automatically resolve the BinningControlWell option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1845,7 +1845,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningControlWell, "Set the BinningControlWell option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1865,7 +1865,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyTime, "Automatically resolve the LoadAntibodyTime option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1881,7 +1881,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyTime, "Set the LoadAntibodyTime option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1898,7 +1898,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyShakeRate, "Automatically resolve the LoadAntibodyShakeRate option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1915,7 +1915,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyShakeRate, "Set the LoadAntibodyShakeRate option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1932,7 +1932,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyThresholdCriterion, "Automatically resolve the LoadAntibodyThresholdCriterion option based on ExperimentType and the value of LoadAntibodyAbsoluteThreshold and LoadAntibodyThresholdSlope:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1949,7 +1949,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyAbsoluteThreshold, "Set the LoadAntibodyAbsoluteThreshold option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1966,7 +1966,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyThresholdSlope, "Set the LoadAntibodyThresholdSlope option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -1984,7 +1984,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyThresholdSlopeDuration, "Set the LoadAntibodyThresholdSlopeDuration option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2002,7 +2002,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntibodyThresholdCriterion, "Set the LoadAntibodyThresholdCriterion option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2021,7 +2021,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningQuenchTime, "Automatically resolve the BinningQuenchTime option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2037,7 +2037,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningAntigen, "Set BinningAntigen option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2053,7 +2053,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningQuenchSolution, "Set the BinningQuenchSolution option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2072,7 +2072,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningQuenchTime, "Set the BinningQuenchTime option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2091,7 +2091,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningQuenchShakeRate, "Automatically resolve the BinningQuenchShakeRate option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2108,7 +2108,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, BinningQuenchShakeRate, "Set the BinningQuenchShakeRate option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2129,7 +2129,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenTime, "Automatically resolve the LoadAntigenTime option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2145,7 +2145,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenTime, "Set the BinningQuenchTime option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2162,7 +2162,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenShakeRate, "Automatically resolve the LoadAntigenShakeRate option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2178,7 +2178,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenShakeRate, "Set the LoadAntigenShakeRate option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2195,7 +2195,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenAbsoluteThreshold, "Set LoadAntigenAbsoluteThreshold options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2212,7 +2212,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenThresholdSlope, "Set LoadAntigenThresholdSlope options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2230,7 +2230,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenThresholdSlopeDuration, "Set LoadAntigenThresholdSlopeDuration options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2248,7 +2248,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenThresholdCriterion, "Automatically resolve the LoadAntigenThresholdCriterion option based on ExperimentType and the value of LoadAntigenAbsoluteThreshold and LoadAntigenThresholdSlope:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2265,7 +2265,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, LoadAntigenThresholdCriterion, "Set the LoadAntigenThresholdCriterion option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2284,7 +2284,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineBuffer, "Automatically resolve the CompetitionBaselineBuffer option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2299,7 +2299,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineBuffer, "Set the CompetitionBaselineBuffer option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2315,7 +2315,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineTime, "Automatically resolve the CompetitionBaselineTime option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2331,7 +2331,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineTime, "Set the CompetitionBaselineTime option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2348,7 +2348,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineShakeRate, "Automatically resolve the CompetitionBaselineShakeRate option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2364,7 +2364,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionBaselineShakeRate, "Set the CompetitionBaselineShakeRate option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2383,7 +2383,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionTime, "Automatically resolve the CompetitionTime option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2399,7 +2399,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionTime, "Set the CompetitionTime option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2416,7 +2416,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionShakeRate, "Automatically resolve the CompetitionShakeRate option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2432,7 +2432,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionShakeRate, "Set the CompetitionShakeRate option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2449,7 +2449,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionThresholdCriterion, "Automatically resolve the CompetitionThresholdCriterion option based on ExperimentType and the value of LoadAntigenAbsoluteThreshold and LoadAntigenThresholdSlope:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2466,7 +2466,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionAbsoluteThreshold, "Set the CompetitionAbsoluteThreshold options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2483,7 +2483,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionThresholdSlope, "Set the CompetitionThresholdSlope options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2501,7 +2501,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionThresholdSlopeDuration, "Set the CompetitionThresholdSlopeDuration options:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2519,7 +2519,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, CompetitionThresholdCriterion, "Set the CompetitionThresholdCriterion option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2538,7 +2538,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, PreMixDiluent, "Automatically resolve the PreMixDiluent option based on ExperimentType:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2553,7 +2553,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, PreMixDiluent, "Set the PreMixDiluent option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2575,7 +2575,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (*set the AssayDevelopment Type*)
     Example[{Options, DevelopmentType, "Automatically resolve the DevelopmentType option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment, Output -> Options];
       Lookup[options, DevelopmentType],
@@ -2587,7 +2587,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, DevelopmentType, "Set the DevelopmentType option:"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -2611,7 +2611,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentReferenceWell, "Set DevelopmentReferenceWell option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment,
         DevelopmentReferenceWell -> Standard,
@@ -2625,7 +2625,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* parameters for DevelopmentBaseline *)
     Example[{Options, DevelopmentBaselineTime, "Automatically resolve the DevelopmentBaselineTime option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2635,7 +2635,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentBaselineTime, "Set the DevelopmentBaselineTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentBaselineTime -> 20 Minute,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2646,7 +2646,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentBaselineShakeRate, "Automatically resolve the DevelopmentBaselineShakeRate option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2656,7 +2656,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentBaselineShakeRate, "Set the DevelopmentBaselineShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         DevelopmentBaselineShakeRate -> 500 RPM, Output -> Options];
@@ -2668,7 +2668,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* parameters for DevelopmentAssociation *)
     Example[{Options, DevelopmentAssociationTime, "Automatically resolve the DevelopmentAssociationTime option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2678,7 +2678,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationTime, "Set the DevelopmentAssociationTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         DevelopmentAssociationTime -> 20 Minute, Output -> Options];
@@ -2688,7 +2688,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationShakeRate, "Automatically resolve the DevelopmentAssociationShakeRate option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2698,7 +2698,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationShakeRate, "Set the DevelopmentAssociationShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentAssociationShakeRate -> 500 RPM,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2709,7 +2709,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationThresholdCriterion, "Automatically resolve the DevelopmentAssociationThresholdCriterion option based on ExperimentType and the value of DevelopmentAbsoluteThreshold and DevelopmentThresholdSlope:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentAssociationAbsoluteThreshold -> 0.5 Nanometer,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment, Output -> Options];
@@ -2719,7 +2719,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationThresholdCriterion, "Set the DevelopmentAssociationThresholdCriterion option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         DevelopmentAssociationThresholdCriterion -> Single, Output -> Options];
@@ -2729,7 +2729,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationAbsoluteThreshold, "Set the DevelopmentAssociationAbsoluteThreshold option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentAssociationAbsoluteThreshold -> 0.5 Nanometer,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment, Output -> Options];
@@ -2739,7 +2739,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationThresholdSlope, "Set the DevelopmentAssociationThresholdSlope option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentAssociationThresholdSlope -> 5 Nanometer/Minute,
         DevelopmentAssociationThresholdSlopeDuration -> 1 Minute,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2750,7 +2750,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentAssociationThresholdSlopeDuration, "Set the DevelopmentAssociationThresholdSlopeDuration option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentAssociationThresholdSlope -> 5 Nanometer/Minute,
         DevelopmentAssociationThresholdSlopeDuration -> 1 Minute,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2763,7 +2763,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* parameters for DevelopmentDissociation *)
     Example[{Options, DevelopmentDissociationTime, "Automatically resolve the DevelopmentDissociationTime option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2773,7 +2773,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationTime, "Set the DevelopmentDissociationTime option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         DevelopmentDissociationTime -> 20 Minute, Output -> Options];
@@ -2783,7 +2783,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationShakeRate, "Automatically resolve the DevelopmentDissociationShakeRate option based on ExperimentType:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2793,7 +2793,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationShakeRate, "Set the DevelopmentDissociationShakeRate option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         DevelopmentDissociationShakeRate -> 500 RPM, Output -> Options];
@@ -2803,7 +2803,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationThresholdCriterion, "Automatically resolve the DevelopmentDissociationThresholdCriterion option based on ExperimentType and the value of DevelopmentDissociationAbsoluteThreshold and DevelopmentDissociationThresholdSlope:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentDissociationAbsoluteThreshold -> 0.5 Nanometer,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment, Output -> Options];
@@ -2813,7 +2813,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationThresholdCriterion, "Set the DevelopmentDissociationThresholdCriterion option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment, DevelopmentDissociationThresholdCriterion -> Single,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Output -> Options];
@@ -2823,7 +2823,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationAbsoluteThreshold, "Set the DevelopmentDissociationAbsoluteThreshold option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentDissociationAbsoluteThreshold -> 0.5 Nanometer,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> AssayDevelopment, Output -> Options];
@@ -2833,7 +2833,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationThresholdSlope, "Set the DevelopmentDissociationThresholdSlope option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentDissociationThresholdSlope -> 5 Nanometer/Minute,
         DevelopmentDissociationThresholdSlopeDuration -> 1 Minute,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2844,7 +2844,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, DevelopmentDissociationThresholdSlopeDuration, "Set the DevelopmentDissociationThresholdSlopeDuration option:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         DevelopmentDissociationThresholdSlope -> 5 Nanometer/Minute,
         DevelopmentDissociationThresholdSlopeDuration -> 1 Minute,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -2861,7 +2861,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* basic examples with loading, regen, etc *)
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Regeneration/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {PreCondition, Regenerate, Neutralize, Wash},
         RegenerationCycles -> 1,
         ExperimentType -> Kinetics,
@@ -2874,7 +2874,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Loading/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         ActivateSolution -> Object[Sample,"ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
@@ -2888,7 +2888,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Equilibrate/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         Equilibrate -> True,
@@ -2902,14 +2902,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation,
@@ -2923,14 +2923,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples with Standard and Blank):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation,
@@ -2945,14 +2945,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, AssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples with Standard, Blank, and StandardCurve):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation,
@@ -2971,7 +2971,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* ---------------------------------------------------- *)
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Regeneration/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         RegenerationType -> {PreCondition, Regenerate, Neutralize, Wash},
         RegenerationCycles -> 1,
         ExperimentType -> Kinetics,
@@ -2985,7 +2985,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::UnneededBLIProbeRegeneration}
     ],
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Loading/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics, LoadSolution -> Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],
         LoadingType -> {Load, Quench, Activate},
         ActivateSolution -> Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
@@ -3000,7 +3000,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Equilibrate/Kinetics):"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         ExperimentType -> Kinetics,
         Equilibrate -> True,
@@ -3014,14 +3014,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation, Output -> Options
@@ -3034,14 +3034,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples with Standard and Blank):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation, QuantitationParameters -> {StandardWell, BlankWell},
@@ -3055,14 +3055,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Options, ExpandedAssaySequencePrimitives, "Automatically resolve the AssaySequencePrimitives based on options (Basic Quantitation with 9 samples with Standard, Blank, and StandardCurve):"},
       options = ExperimentBioLayerInterferometry[
         {
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 5 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 6 (20 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID],
-          Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
         },
         ExperimentType -> Quantitation,
@@ -3082,7 +3082,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (*with sharing it should not use more than 1.120 mL*)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives with direct primitive input for ExperimentType -> Kinetics:"},
-      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], 3],
+      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], 3],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 5 Second, ShakeRate -> 1000 RPM],
           ActivateSurface[ActivationSolutions -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 10 Second, ShakeRate -> 1000 RPM],
@@ -3110,7 +3110,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives with direct primitive input for ExperimentType -> Quantitation:"},
-      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], 21],
+      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], 21],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 4], Time -> 5 Second, ShakeRate -> 1000 RPM],
           ActivateSurface[ActivationSolutions -> ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 7 (20 mL)" <> $SessionUUID], 8], Time -> 10 Second, ShakeRate -> 1000 RPM],
@@ -3139,14 +3139,14 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* this should also be fixed so that only the number of wells that are required are filled. Currently it fills all the wells - blanks *)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives with direct primitive input for ExperimentType -> EpitopeBinning:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 3], Time -> 5 Second, ShakeRate -> 1000 RPM],
           LoadSurface[LoadingSolutions -> {
-            Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+            Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID]
           }, Time -> 10 Second, ShakeRate -> 1000 RPM],
@@ -3169,7 +3169,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives with direct primitive input for ExperimentType -> AssayDevelopment:"},
-      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], 2],
+      options = ExperimentBioLayerInterferometry[ConstantArray[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], 2],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 5 Second, ShakeRate -> 1000 RPM],
           LoadSurface[LoadingSolutions -> ConstantArray[Object[Sample, "LoadingSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 10 Second, ShakeRate -> 1000 RPM],
@@ -3190,7 +3190,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives with direct primitive input for ExperimentType -> Kinetics to run a typical kinetics assay on 4 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID]
@@ -3231,7 +3231,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> Kinetics, specifying dilutions with the KineticsSampleSerialDilutions for one sample:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
@@ -3257,7 +3257,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> Kinetics, specifying dilutions with the KineticsSampleFixedDilutions for one sample:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
@@ -3284,7 +3284,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* detectionlimit dilutions *)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> AssayDevelopment, specifying dilutions with the DetectionLimitSerialDilutions for two samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
@@ -3309,7 +3309,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> AssayDevelopment, specifying dilutions with the DetectionLimitFixedDilutions for two samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
@@ -3336,7 +3336,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* quantitation standard curve *)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> Quantitation, specifying the standard curve with QuantitationStandardSerialDilutions for 7 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3366,7 +3366,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> Quantitation, specifying the standard curve with QuantitationStandardFixedDilutions for 7 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3398,7 +3398,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* epitope binning - premix, tandem, and sandwich*)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> EpitopeBinning, specifying the PreMixSolutions for 7 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3409,7 +3409,7 @@ DefineTests[ExperimentBioLayerInterferometry,
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 10 Second, ShakeRate -> 1000 RPM],
           LoadSurface[LoadingSolutions -> {
-            Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+            Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3453,7 +3453,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* epitope binning - sandwich*)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> EpitopeBinning and BinningType -> Sandwich for 7 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3464,7 +3464,7 @@ DefineTests[ExperimentBioLayerInterferometry,
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 10 Second, ShakeRate -> 1000 RPM],
           LoadSurface[LoadingSolutions -> {
-            Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+            Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3499,7 +3499,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (*tandem*)
     Example[{Options, ExpandedAssaySequencePrimitives, "Set the AssaySequencePrimitives for ExperimentType -> EpitopeBinning and BinningType -> Tandem for 7 samples:"},
       options = ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3512,7 +3512,7 @@ DefineTests[ExperimentBioLayerInterferometry,
           LoadSurface[LoadingSolutions -> ConstantArray[Object[Sample, "AntigenSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Blanks -> {}, Time -> 1 Minute, ShakeRate -> 400 RPM],
           Wash[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID], 8], Time -> 30 Second, ShakeRate -> 400 RPM],
           LoadSurface[LoadingSolutions -> {
-            Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+            Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
             Object[Sample, "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -3646,11 +3646,19 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment or any aliquoting:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1000*RPM, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
       Lookup[options, CentrifugeIntensity],
-      1000*RPM,
+      1000 RPM,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+      options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+      Lookup[options, CentrifugeIntensity],
+      1000 RPM,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::CentrifugePrecision}
     ],
     (* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
     Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
@@ -3719,7 +3727,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       }
     ],
     Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment or any aliquoting:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], PrefilterMaterial -> GxF, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], PrefilterMaterial -> GxF, Output -> Options];
       Lookup[options, PrefilterMaterial],
       GxF,
       Variables :> {options}
@@ -3734,7 +3742,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       }
     ],
     Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment or any aliquoting:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
       Lookup[options, PrefilterPoreSize],
       1.*Micrometer,
       Variables :> {options}
@@ -3746,7 +3754,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Variables :> {options}
     ],
     Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
       Lookup[options, FilterHousing],
       ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
       Variables :> {options}
@@ -3829,6 +3837,14 @@ DefineTests[ExperimentBioLayerInterferometry,
       0.28*Milliliter,
       EquivalenceFunction -> Equal,
       Variables :> {options}
+    ],
+    Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+      options = ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], AliquotAmount -> 0.2811 Milliliter, Output -> Options];
+      Lookup[options, AliquotAmount],
+      0.281 Milliliter,
+      EquivalenceFunction -> Equal,
+      Variables :> {options},
+      Messages :> {Warning::AliquotAmountPrecision}
     ],
     Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
       options = ExperimentBioLayerInterferometry[Object[Sample,"ExperimentBLI New Test Chemical 8 (1.5 mL)" <> $SessionUUID], AssayVolume -> 0.28*Milliliter, Output -> Options];
@@ -3973,7 +3989,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Options,PreparatoryUnitOperations,"Specify a prepared quantitation standard for a bio layer interferometry assay:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationStandard -> "blank",
         QuantitationParameters -> {StandardCurve},
         PreparatoryUnitOperations->{
@@ -4103,7 +4119,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "BLIMissingTime", "If a required Time value is missing, and error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitateTime -> Null
       ],
@@ -4111,7 +4127,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Error::InvalidResolvedBLIPrimitives,Error::BLIMissingTime, Error::InvalidOption}
     ],
     Example[{Messages, "BLIUnspecifiedQuantitationStandard", "If the QuantitationStandard is required for StandardCurve or StandardWell, it must be informed:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationParameters -> {StandardCurve}
       ],
@@ -4122,7 +4138,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* if a primitive holds multiple solution sets and they do not all match in length, then it will only expand around the longest one. Also it does not respect the rule of expandign the samples first. *)
     Example[{Messages, "UserBLIPrimitivesTooManySolutions", "If multiple primitives are specified with greater than 8 solutions, the expanded primitives cannot be generated and an error is thrown:"},
       ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         AssaySequencePrimitives -> {
@@ -4139,7 +4155,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "MissingBLIShakeRate", "If a required ShakeRate is missing, and error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitateShakeRate -> Null
       ],
@@ -4150,7 +4166,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (*dilution warnings*)
     Example[{Messages, "BLIConflictingKineticsDilutions", "If there are conflicting dilutions for a given sample, an error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         KineticsSampleSerialDilutions -> {{{2, "105"}, {2, "106"}, {2, "107"}}},
         ExperimentType -> Kinetics,
@@ -4160,7 +4176,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Error::BLIConflictingKineticsDilutions, Error::InvalidOption}
     ],
     Example[{Messages, "BLIConflictingDevelopmentDilutions", "If there are conflicting dilutions for a given sample, an error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment, DetectionLimitSerialDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         DetectionLimitFixedDilutions -> {{{2, "105"}, {2, "106"}, {2, "107"}}},
         BioProbeType -> Model[Item, BLIProbe, "SA"]
@@ -4170,7 +4186,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "BLIMissingKineticsDiluent", "If KineticsSampleSerialDilutions or KineticsSampleFixedDilutions are populated but KineticsSampleDiluent is not provided, an error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         KineticsSampleDiluent -> Null,
         ExperimentType -> Kinetics,
@@ -4181,7 +4197,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "BLIMissingDevelopmentDiluents", "If DetectionLimitSerialDilutions or DetectionLimitFixedDilutions are populated but DetectionLimitDiluent is not provided, an error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DetectionLimitSerialDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}},
         DetectionLimitDiluent -> Null,
@@ -4192,7 +4208,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "BLIMissingPreMixDiluent", "If PreMixSolutions require dilution and the PreMixDiluent is not provided, an error will be thrown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BinningType -> PreMix,
         ExperimentType -> EpitopeBinning,
         PreMixSolutions -> {{100 Microliter, 100 Microliter, 10 Microliter, "101"}},
@@ -4206,7 +4222,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLIDuplicateDilutionNames", "If solution names are not unique (between two dilution options), an error will be thrown:"},
       ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         Object[Sample, "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID]
       },
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "102"}, {10, "103"}}, Null},
@@ -4219,7 +4235,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     ],
     Example[{Messages, "BLIDuplicateDilutionNames", "If solution names are not unique (within a set of dilutions), an error will be thrown:"},
       ExperimentBioLayerInterferometry[{
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID]
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID]
       },
         KineticsSampleFixedDilutions -> {{{2, "101"}, {5, "101"}, {10, "102"}}},
         ExperimentType -> Kinetics,
@@ -4231,7 +4247,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     (* plate overload, too many probes, etc *)
     Example[{Messages, "BLIRepeatedSequenceMismatch", "If RepeatedSequence is inconsistent with user specified AssaySequencePrimitives, an error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Minute, ShakeRate -> 200 RPM],
           MeasureBaseline[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Minute, ShakeRate -> 200 RPM],
@@ -4246,7 +4262,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::BLIPrimitiveOverride, Error::BLIRepeatedSequenceMismatch, Error::InvalidOption}
     ],
     Example[{Messages, "BLIForbiddenRepeatedSequence", "If RepeatedSequence is specified without AssaySequencePrimitives, an error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         RepeatedSequence -> {MeasureBaseline, Quantitate, MeasureDissociation}
@@ -4260,7 +4276,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* ---------------- *)
 
     Example[{Messages, "UnusedOptionValuesBLIPrimitiveInput", "If AssaySequencePrimitives are informed, they will override other inputs such as ShakeRates, Times, Threshold parameters and some Solutions:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         AssaySequencePrimitives -> {
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Second, ShakeRate -> 200 RPM],
           MeasureBaseline[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Second, ShakeRate -> 200 RPM],
@@ -4281,7 +4297,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::BLIPrimitiveOverride, Warning::UnusedOptionValuesBLIPrimitiveInput}
     ],
     Example[{Messages, "UnusedOptionValuesBLIPrimitiveInput", "If ExpandedAssaySequencePrimitives are informed, they will override other inputs such as ShakeRates, Times, Threshold parameters and some Solutions:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExpandedAssaySequencePrimitives -> {{
           Equilibrate[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Second, ShakeRate -> 200 RPM],
           MeasureBaseline[Buffers -> ConstantArray[Object[Sample, "BlankSolution for ExperimentBLI Test (20 mL)" <> $SessionUUID],8], Time -> 20 Second, ShakeRate -> 200 RPM],
@@ -4303,7 +4319,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages :> {Warning::BLIPrimitiveOverride, Warning::UnusedOptionValuesBLIPrimitiveInput}
     ],
     Example[{Messages, "UnusedBLIOptionValuesQuantitation", "If parameters for a different ExperimentType are specified, and error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         MeasureAssociationTime -> 100 Second
       ],
@@ -4316,7 +4332,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Error::UnusedBLIOptionValuesQuantitation, Error::InvalidOption}
     ],
     Example[{Messages, "UnusedBLIOptionValuesKinetics", "If parameters for a different ExperimentType are specified, and error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Kinetics,
         QuantitateShakeRate -> 1000 RPM,
         BioProbeType -> Model[Item, BLIProbe, "SA"]
@@ -4330,7 +4346,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Error::UnusedBLIOptionValuesKinetics, Error::InvalidOption}
     ],
     Example[{Messages, "UnusedBLIOptionValuesEpitopeBinning", "If parameters for a different ExperimentType are specified, and error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> EpitopeBinning,
         MeasureAssociationTime -> 100 Second,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
@@ -4345,7 +4361,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Error::UnusedBLIOptionValuesEpitopeBinning, Error::InvalidOption}
     ],
     Example[{Messages, "UnusedBLIOptionValuesAssayDevelopment", "If parameters for a different ExperimentType are specified, and error will be thrown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         BioProbeType -> Model[Item, BLIProbe, "SA"],
         MeasureDissociationTime -> 100 Second
@@ -4361,7 +4377,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     Example[{Messages, "UserBLIPrimitivesTooManySolutions", "If more solutions are specified in direct primitive input than can be expanded without ambiguity, an error will be thrown:"},
       ExperimentBioLayerInterferometry[
         {
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID]
         },
@@ -4382,7 +4398,7 @@ DefineTests[ExperimentBioLayerInterferometry,
       Messages:>{Warning::BLIPrimitiveOverride, Error::UserBLIPrimitivesTooManySolutions, Error::InvalidOption}
     ],
     Example[{Messages, "BLIProbeApplicationMismatch", "If the probe RecommendedApplication does not match the ExperimentType, a warning will be shown:"},
-      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+      ExperimentBioLayerInterferometry[Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         BioProbeType -> Model[Item, BLIProbe, "SA"]
       ],
@@ -4399,7 +4415,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLIQuantitationEnzymeStorageConditionMismatch", "If the storage condition is specified for QuantitationEnzymeSolution but QuantitationEnzymeSolution is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         QuantitationEnzymeSolutionStorageCondition -> AmbientStorage
       ],
@@ -4414,7 +4430,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLILoadSolutionStorageConditionMismatch", "If the storage condition is specified for LoadSolution but LoadSolution is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         LoadSolutionStorageCondition -> AmbientStorage
       ],
       $Failed,
@@ -4428,7 +4444,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLIStandardStorageConditionMismatch", "If the storage condition is specified for Standard but Standard is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         StandardStorageCondition -> AmbientStorage
       ],
       $Failed,
@@ -4442,7 +4458,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLIQuantitationStandardStorageConditionMismatch", "If the storage condition is specified for QuantitationStandard but QuantitationStandard is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         QuantitationStandardStorageCondition -> AmbientStorage
       ],
       $Failed,
@@ -4456,7 +4472,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLIBinningAntigenStorageConditionMismatch", "If the storage condition is specified for BinningAntigen but BinningAntigen is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         BinningAntigenStorageCondition -> AmbientStorage
       ],
       $Failed,
@@ -4470,7 +4486,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLITestInteractionSolutionsStorageConditionMismatch", "If the storage condition is specified for TestInteractionSolutions but TestInteractionSolutions is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         TestInteractionSolutionsStorageConditions -> AmbientStorage
       ],
       $Failed,
@@ -4484,7 +4500,7 @@ DefineTests[ExperimentBioLayerInterferometry,
 
     Example[{Messages, "BLITestLoadingSolutionsStorageConditionMismatch", "If the storage condition is specified for TestLoadingSolutions but TestLoadingSolutions is not specified or resolvable, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> Quantitation,
         TestLoadingSolutionsStorageConditions -> {AmbientStorage, AmbientStorage}
       ],
@@ -4504,7 +4520,7 @@ DefineTests[ExperimentBioLayerInterferometry,
     (* bad test loading solution length *)
     Example[{Messages, "BLITestLoadingSolutionsStorageConditionLengthMismatch", "If the length of TestLoadingSolutionsStorageCondition does not match the length of TestLoadingSolutions, an error will be shown:"},
       ExperimentBioLayerInterferometry[
-        Object[Sample, "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+        Object[Sample, "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
         ExperimentType -> AssayDevelopment,
         DevelopmentType -> ScreenLoading,
         LoadingType -> {Load},
@@ -4555,7 +4571,7 @@ DefineTests[ExperimentBioLayerInterferometry,
           Object[Container, Vessel, "Test container regen2 for ExperimentBLI tests" <> $SessionUUID],
           Object[Container, Plate,"Test assay plate for ExperimentBLI" <> $SessionUUID],
           Object[Container, Plate, "Test probe rack plate for ExperimentBLI" <> $SessionUUID],
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],
@@ -4767,7 +4783,7 @@ DefineTests[ExperimentBioLayerInterferometry,
           },
           InitialAmount ->
               {
-                40*Milliliter,
+                50*Milliliter,
                 40*Milliliter,
                 40*Milliliter,
                 40*Milliliter,
@@ -4783,7 +4799,7 @@ DefineTests[ExperimentBioLayerInterferometry,
               },
           Name ->
               {
-                "ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID,
+                "ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID,
                 "ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID,
                 "ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID,
                 "ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID,
@@ -4858,7 +4874,7 @@ DefineTests[ExperimentBioLayerInterferometry,
           Object[Container, Vessel, "Test container regen2 for ExperimentBLI tests" <> $SessionUUID],
           Object[Container, Plate,"Test assay plate for ExperimentBLI" <> $SessionUUID],
           Object[Container, Plate, "Test probe rack plate for ExperimentBLI" <> $SessionUUID],
-          Object[Sample,"ExperimentBLI New Test Chemical 1 (20 mL)" <> $SessionUUID],
+          Object[Sample,"ExperimentBLI New Test Chemical 1 (50 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 2 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 3 (20 mL)" <> $SessionUUID],
           Object[Sample,"ExperimentBLI New Test Chemical 4 (20 mL)" <> $SessionUUID],

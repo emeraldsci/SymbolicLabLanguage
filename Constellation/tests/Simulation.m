@@ -943,4 +943,25 @@ DefineTests[
 			Messages :> {Error::InvalidSimulation}
 		]
 	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(* SimulatedObjectQ *)
+
+DefineTests[
+	SimulatedObjectQ,
+	{
+		Example[{Basic, "Returns True if the object is a simulated object:"},
+			SimulatedObjectQ[SimulateCreateID[Object[Sample]]],
+			True
+		],
+		Example[{Basic, "Returns False if the object is not a simulated object:"},
+			SimulatedObjectQ[Model[Sample, "Milli-Q water"]],
+			False
+		],
+		Example[{Basic, "Takes a list of objects as an input:"},
+			SimulatedObjectQ[{Link[Model[Container, Vessel, "2mL Tube"]], <|Object -> SimulateCreateID[Object[User]]|>}],
+			{False, True}
+		]
+	}
 ]

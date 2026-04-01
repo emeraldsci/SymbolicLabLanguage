@@ -40,7 +40,10 @@ DefineTests[
 				HighCalibrationBuffer->Model[Sample,"id:1ZA60vwjbbV8"]
 			],
 			ObjectP[Object[Protocol,MeasurepH]],
-			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
+			Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]},
+			Messages :>{
+				Warning::CalibrationWaterWashSolution
+			}
 		],
 		Example[{Basic,"Setting Aliquot->True will take an aliquot of your sample for pH Measurement - this is often used to prevent sample contamination when using an immersion probe. The option RecoupSample->True can be set if the aliquotted sample should be recouped after measurement:"},
 			ExperimentMeasurepH[Object[Container,Vessel,"Test container 2 for ExperimentMeasurepH " <> $SessionUUID],Aliquot->True,AliquotAmount->25Milliliter,RecoupSample->True],
@@ -267,13 +270,24 @@ DefineTests[
 				EquivalenceFunction->Equal,
 		  Variables :> {options}
 		],
+		Example[{Options,HighCalibrationWashSolution,"Resolve calibation wash solution based on given calibration buffer Model:"},
+			options=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],HighCalibrationBuffer->Model[Sample,"Reference Buffer - pH 11.00"],Output->Options];
+			Lookup[options,HighCalibrationWashSolution],
+			ObjectP[Model[Sample,"Reference Buffer - pH 11.00"]],
+			Variables :> {options}
+		],
+		Example[{Options,HighCalibrationWashSolution,"If calibration buffer or wash solution is not in sachet, resource sample in 15 mL tube:"},
+			protocol=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],HighCalibrationBuffer->Model[Sample,"Reference Buffer - pH 11.00"]];
+			Download[Cases[Download[protocol, RequiredResources], {_, ProbeHighCalibrationWashSolution, _, _}][[1, 1]], Amount],
+			EqualP[4 Milliliter],
+			Variables :> {protocol}
+		],
 		Example[{Options,Name,"Measure the pH of a single liquid sample with a Name specified for the protocol:"},
 		  options=ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],Name->"Measure pH with 1 min acquisition.",AcquisitionTime->1 Minute,Output->Options];
 		  Lookup[options,Name],
 		  "Measure pH with 1 min acquisition.",
 		  Variables:>{options}
 		],
-
 		Example[{Options,Template,"A template protocol whose methodology should be reproduced in running this experiment. Option values will be inherited from the template protocol, but can be individually overridden by directly specifying values for those options to this Experiment function:"},
 			options=ExperimentMeasurepH[
 				Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],
@@ -318,6 +332,93 @@ DefineTests[
 			ObjectP[Model[Sample, "Milli-Q water"]],
 			Variables :> {protocol}
 		],
+		Example[{Options, MeasurementTemperature, "Set the temperature for pH measurement:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 26 Celsius
+			];
+			Download[protocol, NominalTemperature],
+			EqualP[26 Celsius],
+			Variables :> {protocol}
+		],
+		Example[{Options, MinTemperature, "Set the temperature tolerance for pH measurement:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 28 Celsius,
+				MinTemperature -> 26 Celsius
+			];
+			Download[protocol, MinTemperature],
+			EqualP[26 Celsius],
+			Variables :> {protocol}
+		],
+		Example[{Options, MaxTemperature, "Set the temperature tolerance for pH measurement:"},
+			protocol = ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 27 Celsius,
+				MaxTemperature -> 29 Celsius
+			];
+			Download[protocol, MaxTemperature],
+			EqualP[29 Celsius],
+			Variables :> {protocol}
+		],
+
+		Example[{Messages, "InvalidTemperatureRange", "If the tolerance temperature specified is not valid, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 25 Celsius,
+				MinTemperature -> 27 Celsius,
+				MaxTemperature -> 29 Celsius
+			],
+			$Failed,
+			Messages :> {Error::InvalidTemperatureRange , Error::InvalidOption}
+		],
+		Example[{Messages, "TemperatureControlConflict", "If the tolerance temperature is specified but measurement temperature is Ambient, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> Ambient,
+				MinTemperature -> 27 Celsius,
+				MaxTemperature -> 29 Celsius
+			],
+			$Failed,
+			Messages :> {Error::TemperatureControlConflict , Error::InvalidOption}
+		],
+		Example[{Messages, "TemperatureControlInstrumentMissing", "If temperature control is required but heat block is rejected, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 25 Celsius,
+				TemperatureControlInstrument -> Null
+			],
+			$Failed,
+			Messages :> {Error::TemperatureControlInstrumentConflict, Error::InvalidOption}
+		],
+		Example[{Messages, "TemperatureControlInstrumentConflict", "If temperature control is required but pH meter without heat block is requested, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 25 Celsius,
+				Instrument -> Model[Instrument, pHMeter, "SevenExcellence (for pH)"]
+			],
+			$Failed,
+			Messages :> {Error::TemperatureControlInstrumentMissing, Error::InvalidOption}
+		],
+		Example[{Messages, "SampleContainerHeatBlockIncompatible", "If temperature control is required but sample container is not compatible with heat block, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID],
+				MeasurementTemperature -> 25 Celsius
+			],
+			$Failed,
+			Messages :> {Error::SampleContainerHeatBlockIncompatible, Error::InvalidOption}
+		],
+		Example[{Messages, "BufferContainerHeatBlockIncompatible", "If temperature control is required but buffer container is not compatible with heat block, return an error message:"},
+			ExperimentMeasurepH[
+				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
+				HighCalibrationBuffer -> Object[Sample, "Stock pH 10 calibration solution for ExperimentMeasurepH " <> $SessionUUID],
+				HighCalibrationWashSolution -> Model[Sample, "Reference buffer, pH 10"],
+				MeasurementTemperature -> 25 Celsius
+			],
+			$Failed,
+			Messages :> {Error::BufferContainerHeatBlockIncompatible, Error::InvalidOption}
+		],
+
 		Example[{Messages, "Error::VerificationStandardOptionsRequired", "If options related to calibration verification standard are Null but a VerificationStandard was specified an error is thrown:"},
 			ExperimentMeasurepH[
 				Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID],
@@ -472,7 +573,10 @@ DefineTests[
 			];
 			Download[protocol,ProbeLowCalibrationBuffer],
 			ObjectP[Model[Sample, StockSolution, "70% Ethanol"]],
-			Variables :> {protocol}
+			Variables :> {protocol},
+			Messages:>{
+				Warning::CalibrationWaterWashSolution
+			}
 		],
 
 		(*incubate options*)
@@ -564,6 +668,14 @@ DefineTests[
 			1000*RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -713,6 +825,14 @@ DefineTests[
 			20*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], AliquotAmount -> 20.001 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			20 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID], AssayVolume -> 20*Milliliter, Output -> Options];
@@ -1064,6 +1184,7 @@ DefineTests[
 			ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],LowCalibrationBuffer->Object[Sample,"Test Medium calibration solution with no pH value for ExperimentMeasurepH " <> $SessionUUID],HighCalibrationBuffer->Object[Sample,"Another test calibration solution with no pH Value for ExperimentMeasurepH " <> $SessionUUID]],
 			$Failed,
 			Messages:>{
+				Warning::CalibrationWaterWashSolution,
 				Error::LowAndHighpHValuesMustBeSpecified,
 				Error::InvalidOption}
 		],
@@ -1071,6 +1192,7 @@ DefineTests[
 			ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],MediumCalibrationBuffer->Object[Sample,"Test Medium calibration solution with no pH value for ExperimentMeasurepH " <> $SessionUUID]],
 			$Failed,
 			Messages:>{
+				Warning::CalibrationWaterWashSolution,
 				Error::MediumCalibrationOptionsRequiredTogether,
 				Error::InvalidOption
 			}
@@ -1177,6 +1299,21 @@ DefineTests[
 				Error::InvalidInput
 			}
 		],
+		Example[{Messages,"CalibrationWaterWashSolution","Give a warning if calibration wash solution is not specified and will be resolved to water:"},
+			ExperimentMeasurepH[Object[Sample, "Test water sample for ExperimentMeasurepH " <> $SessionUUID], SecondaryWashSolution -> Null,
+				LowCalibrationBuffer -> "wash",
+				LowCalibrationBufferpH -> 6,
+				PreparatoryUnitOperations -> {
+					LabelContainer[Label -> "50mL Tube",
+					Container -> Model[Container, Vessel, "50mL Tube"]],
+					Transfer[Source -> Model[Sample, StockSolution, "70% Ethanol"], Destination -> "50mL Tube", Amount -> 50 Milliliter],
+					LabelSample[Label -> "wash", Sample -> {"A1", "50mL Tube"}]}
+			],
+			ObjectP[Object[Protocol, MeasurepH]],
+			Messages:>{
+				Warning::CalibrationWaterWashSolution
+			}
+		],
 		Example[{Options,ProbeType,"Indicate you'd like to use the surface probe:"},
 			ExperimentMeasurepH[Object[Sample,"Test water sample for ExperimentMeasurepH " <> $SessionUUID],ProbeType->Surface][Probes][ProbeType],
 			{Surface}
@@ -1210,7 +1347,7 @@ DefineTests[
 			],
 			Surface,
 			Messages:>{
-				Warning::OptionContainsUnusableObject
+				Warning::OptionContainsUnsuitableObject
 			}
 		],
 		Test["Resolve calibration buffer rack and calibration wash solution rack:",

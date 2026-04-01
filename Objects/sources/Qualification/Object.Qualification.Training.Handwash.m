@@ -57,6 +57,17 @@ DefineObjectType[Object[Qualification,Training,Handwash], {
       Description -> "Fume hood used during cleaning of labware.",
       Category -> "Cleaning"
     },
+		Funnel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Part, Funnel],
+				Model[Part, Funnel]
+			],
+			Description -> "Funnel used during cleaning of labware.",
+			Category -> "Cleaning"
+		},
     ThermoplasticWrap -> {
       Format -> Single,
       Class -> Link,

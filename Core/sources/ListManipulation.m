@@ -666,6 +666,9 @@ ParseLog[myObjects:{ObjectP[]..},myField:_Symbol,myOptions:OptionsPattern[ParseL
 		{_,ProtocolLog},
 		{1,2,3,3,False,False,{Exit},False},
 
+		{_,ActiveSciOpsLog},
+		{1,2,2,2,True,False,{False},Null},
+
 		(* Otherwise, let's just guess *)
 		{_,_},
 		{1,2,2,2,True,False,{},Null}

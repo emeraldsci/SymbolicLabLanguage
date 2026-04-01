@@ -47,6 +47,14 @@ DefineObjectType[Object[Instrument, Dishwasher], {
 			Pattern :> {GreaterP[0*Meter],GreaterP[0*Meter],GreaterP[0*Meter]},
 			Description -> "The size of space inside the dishwasher in the form of: {X Direction (Width),Y Direction (Depth),Z Direction (Height)}.",
 			Category -> "Dimensions & Positions"
+		},
+		ContainerPlacements -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the movement of racks and labware into this dishwasher is regulated by explicitly compiled placements. When set to False, movements into the dishwasher are only validated by the usual footprint system.",
+			Category -> "General",
+			Developer -> True
 		}
 	}
 }];

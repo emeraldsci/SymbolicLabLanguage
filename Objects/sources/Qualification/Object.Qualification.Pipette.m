@@ -42,6 +42,17 @@ DefineObjectType[Object[Qualification,Pipette], {
 			Description -> "The instrument used to measure the weight of the containers.",
 			Category -> "General"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the container weights are measured.",
+			Category -> "General"
+		},
 		TransferContainers -> {
 			Format -> Multiple,
 			Class -> Link,

@@ -63,7 +63,14 @@ DefineObjectType[Object[Instrument, DissolutionApparatus], {
 			Description -> "The digital gauge measuring the pressure on the instrument side of the regulator for the Helium gas tank.",
 			Category -> "Sensor Information"
 		},
-
+		VolumetricFlowRateSensor -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sensor][DevicesMonitored],
+			Description -> "The device measuring the volumetric flow rate of Helium flowing into the instrument, after the valve.",
+			Category -> "Sensor Information"
+		},
 		DissolutionVesselCaps -> {
 			Format -> Multiple,
 			Class -> Link,

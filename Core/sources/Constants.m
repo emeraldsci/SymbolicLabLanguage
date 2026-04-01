@@ -85,6 +85,15 @@ If[StringStartsQ[$OperatingSystem,"Mac"],
 Off[FrontEndObject::notavail];
 
 (* ::Subsubsection::Closed:: *)
+(*SafeNow*)
+(* Does the same thing as Now but can't be Blocked/Stubbed directly due to Locked attribute *)
+(* Make definition conditional on Locked attribute to ensure that reload works *)
+If[!MemberQ[Attributes[SafeNow], Locked],
+	SafeNow[] := DateObject[];
+	SetAttributes[SafeNow, Locked]
+];
+
+(* ::Subsubsection::Closed:: *)
 (*$EmeraldPath*)
 
 
@@ -1139,14 +1148,6 @@ DefineConstant[
 	"Indicates if ValidUploadLocationQ will require that the Model of the moved Object has Dimensions populated when called in Engine."
 ];
 
-(* ::Subsubsection::Closed:: *)
-(*$CountLiquidParticlesAllowHandSwirl*)
-
-DefineConstant[
-	$CountLiquidParticlesAllowHandSwirl,
-	False
-];
-
 
 (* ::Subsubsection::Closed:: *)
 (*$MaxConsolidationNumber*)
@@ -1467,4 +1468,31 @@ DefineConstant[
 	$pHProbeElectrolyteModel,
 	Model[Sample, "id:N80DNjkL70dN"],
 	"The KCl Model that is used for pH probe electrolyte."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$DefaultWeightStabilityDuration*)
+
+DefineConstant[
+	$DefaultWeightStabilityDuration,
+	1 Minute,
+	"The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable when measuring weight of solid or covered liquid samples."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$LiquidDefaultWeightStabilityDuration*)
+
+DefineConstant[
+	$LiquidDefaultWeightStabilityDuration,
+	10 Second,
+	"The duration for which the balance reading needs to stay within a range defined by MaxWeightVariation before being considered stable when measuring weight of uncovered liquid samples."
+];
+
+(* ::Subsubsection::Closed:: *)
+(*$LiquidDefaultToleranceFactor*)
+
+DefineConstant[
+	$LiquidDefaultWeightToleranceFactor,
+	5,
+	"The factor to which the balance default variation multiplies to determine the max allowed amplitude the balance readings can fluctuate with for a duration before being considered stable."
 ];

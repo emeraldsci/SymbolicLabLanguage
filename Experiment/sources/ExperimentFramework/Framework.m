@@ -37,10 +37,10 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 	fields = Switch[type,
 		Object[Sample],
 			{
-				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, SampleHandling, Composition,
+				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, BiohazardDisposal, SampleHandling, Composition,
 				Analytes, Solvent, MassConcentration, Concentration, Volume, Mass, Count, Status, Model, Position,
 				Container, Living, Sterile, StorageCondition, MeltingPoint, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
-				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Sachet, SolidUnitWeight,
+				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Capsule, Sachet, SolidUnitWeight,
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
@@ -50,7 +50,7 @@ SamplePreparationCacheFields[type_,ops:OptionsPattern[]]:=Module[{fields, safeOp
 			{
 				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
-				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
+				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Capsule, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
 				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
@@ -296,8 +296,9 @@ DefineOptions[checkObjectsInOptions,
 ];
 (* Message *)
 
-Warning::OptionContainsUnusableObject = "The following options contain specified object instances that have a
-defective state and will require troubleshooting in the lab:`1` To avoid potential delays in processing, please consider using a Model instead.";
+Warning::OptionContainsUnsuitableObject = "The following options contain specified object instances that have a
+problematic state and might require troubleshooting in the lab:`1`. These samples may be either missing or expired. If expired, the samples can still be used in the protocol, but may negatively affect your results.
+To avoid potential delays in processing, please consider using a Model instead.";
 
 checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]] := Module[
 	{typesToCheck, optionObjects, simulation, objectPackets, defectiveOptionClauses},
@@ -374,8 +375,8 @@ checkObjectsInOptions[myOptions:{_Rule...}, mySimulationOps: Rule[Simulation, _]
 		myOptions
 	];
 	(* If we have any defective object in options, join all clauses *)
-	If[MatchQ[defectiveOptionClauses, {(_String)..}],
-		Message[Warning::OptionContainsUnusableObject, StringJoin[Sequence@@defectiveOptionClauses]]
+	If[MatchQ[defectiveOptionClauses, {(_String)..}] && !MatchQ[$ECLApplication, Engine],
+		Message[Warning::OptionContainsUnsuitableObject, StringJoin[Sequence@@defectiveOptionClauses]]
 	]
 ];
 
@@ -809,7 +810,8 @@ fastAssocPacketLookup[myFastAssoc_Association, myObjects:{ObjectP[]..},myFields:
 (* Authors definition for Experiment`Private`fastAssocLookup *)
 Authors[Experiment`Private`fastAssocPacketLookup]:={"steven"};
 
-repeatedFastAssocLookup::RecursionTerminated="repeatedFastAssocLookup has completed 40 iterations of looking up the value of `1` at field `2`, and has did not terminate.  An infinite loop is suspected; please check to make sure this effort does in fact terminate.";
+$fastAssocLookupRecursionLimit = 40;
+repeatedFastAssocLookup::RecursionTerminated="repeatedFastAssocLookup has completed "<>ToString[$fastAssocLookupRecursionLimit]<>" iterations of looking up the value of `1` at field `2`, and did not terminate. An infinite loop is suspected; please check to make sure this effort does in fact terminate.";
 
 
 
@@ -820,7 +822,7 @@ repeatedFastAssocLookup[myEmptyCacheAssociation:<||>,___]:={};
 (* This works with simple recursion (Repeated[Container] or Repeated[ParentProtocol]) as well as complicated ones like Repeated[Contents[[All, 2]]]. *)
 (* also only works on single fields *)
 repeatedFastAssocLookup[myFastAssoc_Association, myObject:ObjectP[], myField:(_Symbol | _Field)]:=Module[
-	{runningList, initialParent, nextParent},
+	{runningList, initialParent, nextParent, nextParentValue},
 
 	(* figure out what the first iteration of this field is; we are going to constantly change nextParent and append to runningList *)
 	runningList = {};
@@ -828,12 +830,13 @@ repeatedFastAssocLookup[myFastAssoc_Association, myObject:ObjectP[], myField:(_S
 	nextParent = initialParent;
 
 	(* setting limit of this to 40; any more and I'm assuming I'm in a recursive loop and don't want that *)
-	While[MatchQ[nextParent, ListableP[ObjectP[]]] && Length[runningList] < 40,
+	While[MatchQ[nextParent, ListableP[ObjectP[], $fastAssocLookupRecursionLimit]] && Length[runningList] < $fastAssocLookupRecursionLimit,
 		AppendTo[runningList, nextParent];
-		nextParent = fastAssocLookup[myFastAssoc, nextParent, myField];
+		nextParentValue = fastAssocLookup[myFastAssoc, Flatten[{nextParent}], myField];
+		nextParent = nextParent /. AssociationThread[Flatten[{nextParent}], nextParentValue];
 	];
 
-	If[Length[runningList] >= 20,
+	If[Length[runningList] >= $fastAssocLookupRecursionLimit,
 		Message[repeatedFastAssocLookup::RecursionTerminated, myObject, myField]
 	];
 
@@ -1807,7 +1810,7 @@ simulateSamplePreparationPacketsNew[myFunction_Symbol,mySamples:ListableP[Listab
 	(* Experiments should call sanitizeInput first by itself. Do not throw the message again *)
 	{samplesByID, experimentOptionsByIDWithPreparedModel} = Quiet[
 		sanitizeInputs[mySamples, flatOptions, Simulation -> simulation],
-		Warning::OptionContainsUnusableObject
+		Warning::OptionContainsUnsuitableObject
 	];
 
 	(* sanitizeInputs will throw the message itself; just need to return $Failed here  *)
@@ -5370,7 +5373,7 @@ resolveAliquotOptions[myFunction_,mySamples:{ListableP[NonSelfContainedSampleP].
 	output = ToList[outputSpecification];
 
 	(* get the NumberOfReplicates option from myOptions; if it isn't there, then resolve to 1 *)
-	numReplicates = Lookup[mySamplePrepOptions, NumberOfReplicates, 1] /. {Null -> 1};
+	numReplicates = Lookup[mySamplePrepOptions, NumberOfReplicates, 1] /. {Null|Automatic -> 1};
 
 	(* figure out if we are gathering tests or not *)
 	gatherTests = MemberQ[output, Tests];
@@ -6105,10 +6108,70 @@ resolveAliquotOptions[myFunction_,mySamples:{ListableP[NonSelfContainedSampleP].
 	StartUniqueLabelsSession[];
 
 	(* call the ExperimentAliquot resolver *)
+	(* Quiet AliquotAmountPrecision and rethrow this warning if needed *)
 	{resolvedAliquotedAliquotOptions, aliquotResolutionTests} = Which[
-		MatchQ[aliquotedSamples, {}], {{}, {}},
-		gatherTests, ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]],
-		True, {ExperimentAliquot[aliquotedSamples, ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]], Null}
+		MatchQ[aliquotedSamples, {}],
+			{{}, {}},
+		gatherTests,
+			ExperimentAliquot[
+				aliquotedSamples,
+				ReplaceRule[renamedAliquotOptions, {Output -> {Options, Tests}, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+			],
+		True,
+			{
+				Quiet[
+					ExperimentAliquot[
+						aliquotedSamples,
+						ReplaceRule[renamedAliquotOptions, {Output -> Options, Cache -> cache, Simulation -> updatedSimulation, EnableSamplePreparation -> True}]
+					],
+					{Warning::AliquotAmountPrecision}
+				],
+				Null
+			}
+	];
+
+	If[!MatchQ[aliquotedSamples, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{flattenedInputAmounts, flattenedResolvedAmounts, roundedAmountWarningQs},
+			flattenedInputAmounts = Flatten@Lookup[renamedAliquotOptions, Amount, Automatic];
+			flattenedResolvedAmounts = Flatten@Lookup[resolvedAliquotedAliquotOptions, Amount];
+			roundedAmountWarningQs = If[Length[flattenedInputAmounts] == Length[flattenedResolvedAmounts],
+				MapThread[
+					Function[{amount, roundedAmount},
+						Which[
+							!MassQ[amount] && !VolumeQ[amount],
+								False,
+							MatchQ[amount, Except[Automatic|All]] && MatchQ[roundedAmount, Except[All]] && EqualQ[amount, roundedAmount],
+								False,
+							True,
+								Module[{achievalbeResolution},
+									achievalbeResolution = Quiet[Check[AchievableResolution[amount], $Failed,Error::MinimumAmount], {Error::MinimumAmount, Warning::AmountRounded}];
+									If[MatchQ[achievalbeResolution, $Failed],
+										(* If we are throwing min amount warning, no need to throw AliquotAmountPrecision warning as well*)
+										False,
+										True
+									]
+							]
+						]
+					],
+					{flattenedInputAmounts, flattenedResolvedAmounts}
+				],
+				(* If samples are pooled, do not throw warning *)
+				{False}
+			];
+			(* Note:this warning is essentially the same as what ExperimentAliquot throws. We quiet the warning in ExperimentAliquot and throw it here so we can have the correct option name *)
+			If[MemberQ[roundedAmountWarningQs, True],
+				Message[
+					Warning::AliquotAmountPrecision,
+					(*1*)StringJoin[
+						"AliquotAmount ",
+						isOrAre[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]]]
+					],
+					(*2*)Experiment`Private`joinClauses[PickList[flattenedInputAmounts, roundedAmountWarningQs]],
+					(*3*)pluralize[DeleteDuplicates[PickList[flattenedInputAmounts, roundedAmountWarningQs]], "exceeds", "exceed"],
+					(*4*)Experiment`Private`joinClauses[PickList[flattenedResolvedAmounts, roundedAmountWarningQs]]
+				]
+			]
+		]
 	];
 
 	(* End the new label session. *)
@@ -6530,6 +6593,80 @@ expandNumberOfReplicates[myFunction_Symbol,mySamples_List,myOptions_List]:=Modul
 		(* Return our expanded samples and options. *)
 		{expandedSamples,expandedOptions}
 	]
+];
+
+(*expandNumberOfReplicates*)
+
+(* This error is useful for developers. Ideally the user will never see this, but in the event of a bug in an Experiment function return a user-facing apprioriate error message. *)
+Error::InvalidReplicatePositions = "Replicate positions are either missing or repeated. Please contact ECL personnel for support.";
+
+(* Given myFunction, mySamples, and myOptions: returns a list of expanded samples and options, according to indicated positions of replicates. *)
+(* Assumes the myOptions is already expanded and that the only index-matching of inputs is to the samples. *)
+expandNumberOfReplicates[myFunction_Symbol, mySamplesAndReplicatePositions:{{_, {__Integer}}..},myOptions_List]:=Module[
+	{mySamples, myReplicatePositions, optionDefinitions,expandedOptions,optionDefinition,inputMatchedBoolean,expandedSamples,expansionLength, expandedOption},
+
+	(* Parse the samples and positions from the mySamplesAndReplicatePositions input. *)
+	mySamples = mySamplesAndReplicatePositions[[All, 1]];
+	myReplicatePositions = mySamplesAndReplicatePositions[[All, 2]];
+
+	(* Find the largest position to expand to. *)
+	expansionLength = Max[Flatten[myReplicatePositions]];
+
+	(* Quick check for errors to ensure all the placeholder values below will be replaced and they won't be replaced more than once. *)
+	If[!MatchQ[Sort[Flatten[myReplicatePositions]], Range[expansionLength]],
+		Message[Error::InvalidReplicatePositions];
+		(* Do not expand if the replicate position inputs are invalid. *)
+		Return[{mySamples, myOptions}]
+	];
+
+	(* Expand the Samples *)
+
+	(* Initialize a placeholder list for the expanded samples. *)
+	expandedSamples = ConstantArray[PlaceholderForExpandNumberOfReplicates, expansionLength];
+
+	(* For each sample and replicate position list: *)
+	MapThread[Function[{sample, replicatePositions},
+		(* Overwrite the placeholder value with the sample at the indicated positions. *)
+		Map[(expandedSamples[[#]] = sample)&, replicatePositions]
+	],
+		{mySamples, myReplicatePositions}
+	];
+
+	(* Expand the index matched options. *)
+
+	(* Get the option definition for myFunction. *)
+	optionDefinitions=OptionDefinition[myFunction];
+
+	(* For each option: *)
+	expandedOptions=Function[{option},
+		(* Lookup the option definition. *)
+		optionDefinition=SelectFirst[optionDefinitions,MatchQ[#["OptionSymbol"],option[[1]]]&];
+
+		(* Check if the option is index matched. *)
+		inputMatchedBoolean=MatchQ[Lookup[optionDefinition,"IndexMatchingInput"],_String];
+
+		(* If our option is index matched to the input (assume it's the samples), then expand them. *)
+		If[inputMatchedBoolean,
+			(* To expand, initialize a placeholder list for the expanded option values. *)
+			expandedOption = ConstantArray[PlaceholderForExpandNumberOfReplicates, expansionLength];
+
+			(* For each sample and replicate position list: *)
+			MapThread[Function[{optionValue, replicatePositions},
+				(* Overwrite the placeholder value with the optional value at the indicated positions. *)
+				Map[(expandedOption[[#]] = optionValue)&, replicatePositions]
+			],
+				{option[[2]], myReplicatePositions}
+			];
+
+			(* Return a rule with the option key pointing to the expanded option values. *)
+			option[[1]] -> expandedOption,
+			(* If the option was not index-matching, do nothing. *)
+			option
+		]
+	] /@ myOptions;
+
+	(* Return our expanded samples and options. *)
+	{expandedSamples, expandedOptions}
 ];
 
 
@@ -7345,14 +7482,14 @@ populateWorkingAndAliquotSamples[myProtocol:ObjectP[Object[Protocol]]]:=Module[
 (* ::Subsection::Closed:: *)
 (*populatePreparedSamples*)
 
-Error::MissingDefineName="The following define name(s), `1`, were missing from the LabeledObjects map in the Object[Protocol, Manual/RoboticSamplePreparation]. The Prepared Samples cannot be updated.";
+Error::MissingDefineName = "The following define name(s), `1`, were missing from the LabeledObjects map in the Object[Protocol, Manual/RoboticSamplePreparation]. The Prepared Samples cannot be updated.";
+Error::NoSamplePreparationProtocol = "There is no SamplePreparationProtocols associated with `1`. Please check if the SamplePreparation loop is completed.";
 
 DefineOptions[populatePreparedSamples,
-	SharedOptions:>{
+	SharedOptions :> {
 		CacheOption,
 		UploadOption,
 		SimulationOption,
-
 		{Protocol -> Null, Null | ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}], "The protocol for which this exporter is creating the liquid handler procedure."}
 	}
 ];
@@ -7362,141 +7499,185 @@ DefineOptions[populatePreparedSamples,
 (* 2) UnitOperation object inside of SP protocol. *)
 (* NOTE: When this function is called on an Object[UnitOperation], it will directly pull the LabeledObjects field from the Protocol *)
 (* field from the unit operation. *)
-populatePreparedSamples[myProtocol:ObjectP[{Object[Protocol], Object[UnitOperation]}], myOptions:OptionsPattern[]]:=Module[
-	{safeOptions,protocolPacket,samplePreparationProtocol,labeledObjects,preparedSamplesMap,
-		labeledObjectRules,preparedSampleDefineNames,preparedSamples,rawPreparedSamplePositions,replacedDefineNames,preparedSamplePositions,
-		preparedSampleFieldNames,protocolPacketWithPreparedSampleFields,protocolPacketWithoutLinkIDs,preparedSamplesWithLinks,samplePositionsWithKeyedFields,fieldName,
-		fullFieldRelation,relevantRelationPart,relationFieldList,relationFieldSymbols,possibleBacklinks,preparedSampleTypes,replacedProtocolPacket,
-		changeProtocolPacket,preparedSampleContainerPositions,containerContentCache,preparedSamplesConsideringContainers,containerPacket,containerContents,
-		updateWorkingSamples,updateWorkingContainers,changePacket,updateNestedIndexMatchingSamplesIn},
+populatePreparedSamples[myProtocol: ObjectP[{Object[Protocol], Object[UnitOperation]}], myOptions: OptionsPattern[]] := Module[
+	{
+		safeOptions, simulation, cache, protocolPacket, samplePreparationProtocol, labeledObjects, containerContentCache,
+		sampleContainerCache, preparedSamplesMap, labeledObjectRules, preparedSampleDefineNames, replacedDefineNames,
+		preparedSamples, rawPreparedSamplePositions, preparedSampleContainerPositions, preparedSamplesConsideringContainers,
+		preparedSampleFieldNames, preparedSamplePositions, protocolPacketWithPreparedSampleFields, protocolPacketWithoutLinkIDs,
+		preparedSamplesWithLinks, samplePositionsWithKeyedFields, replacedProtocolPacket, changeProtocolPacket,
+		updateWorkingSamples, updateWorkingContainers, updateNestedIndexMatchingSamplesIn, changePacket
+	},
 
 	(* Get our safe options. *)
-	safeOptions=SafeOptions[populatePreparedSamples, ToList[myOptions]];
+	safeOptions = SafeOptions[populatePreparedSamples, ToList[myOptions]];
+	{simulation, cache} = Lookup[safeOptions, {Simulation, Cache}];
 
 	(* The way to get to LabeledObjects is different for an Object[Protocol] (via PreparatoryUnitOperations) vs an *)
 	(* Object[UnitOperation] inside of SP. *)
-	{protocolPacket,samplePreparationProtocol,labeledObjects,containerContentCache}=Which[
+	{protocolPacket, samplePreparationProtocol, labeledObjects, containerContentCache, sampleContainerCache} = Which[
 		(* Using the SP PreparatoryUnitOperations system. *)
 		MatchQ[myProtocol, ObjectP[Object[Protocol]]],
-		Module[{lastSamplePreparationProtocol},
-			(* Get the value of the last sample preparation protocol. *)
-			lastSamplePreparationProtocol=Download[
-				myProtocol,
-				SamplePreparationProtocols[[-1]],
-				Simulation->Lookup[safeOptions, Simulation]
-			];
+			Module[{lastSamplePreparationProtocol},
+				(* Get the value of the last sample preparation protocol. *)
+				lastSamplePreparationProtocol = Quiet[
+					Download[
+						myProtocol,
+						SamplePreparationProtocols[[-1]],
+						Simulation -> simulation
+					],
+					{Download::Part}
+				];
 
-			If[MatchQ[lastSamplePreparationProtocol, ObjectP[Object[Notebook, Script]]],
-				(* NOTE: If we have a script, we're guaranteed to only have SP subprotocols. *)
-				Module[
-					{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, containerContentCacheList},
-					(* NOTE: If we have a script protocol, we have to traverse into the protocols that the script kicks off *)
-					(* to get the labeled objects. *)
-					{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, containerContentCacheList}=Quiet[
-						Download[
-							myProtocol,
+				Which[
+					!MatchQ[lastSamplePreparationProtocol, ObjectP[]],
+					(* NOTE: If there is no SamplePreparationProtocols, we will throw an error. *)
+						{
+							<||>,
+							Null,
+							{},
+							{},
+							{}
+						},
+					MatchQ[lastSamplePreparationProtocol, ObjectP[Object[Notebook, Script]]],
+						(* NOTE: If we have a script, we're guaranteed to only have SP subprotocols. *)
+						Module[
+							{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, containerContentCacheList, sampleContainerCacheList},
+							(* NOTE: If we have a script protocol, we have to traverse into the protocols that the script kicks off *)
+							(* to get the labeled objects. *)
+							{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, containerContentCacheList, sampleContainerCacheList} = Quiet[
+								Download[
+									myProtocol,
+									{
+										Packet[PreparedSamples, NestedIndexMatchingSamplesIn],
+										SamplePreparationProtocols[[-1]],
+										SamplePreparationProtocols[[-1]][Protocols][LabeledObjects],
+										Packet[SamplePreparationProtocols[[-1]][Protocols][LabeledObjects][[All, 2]][Contents]],
+										Packet[SamplePreparationProtocols[[-1]][Protocols][LabeledObjects][Container]]
+									},
+									Cache -> cache,
+									Simulation -> simulation
+								],
+								{Download::FieldDoesntExist, Download::NotLinkField}
+							];
+
 							{
-								Packet[PreparedSamples,NestedIndexMatchingSamplesIn],
-								SamplePreparationProtocols[[-1]],
-								SamplePreparationProtocols[[-1]][Protocols][LabeledObjects],
-								Packet[SamplePreparationProtocols[[-1]][Protocols][LabeledObjects][[All,2]][Contents]]
-							},
-							Cache->Lookup[safeOptions, Cache],
-							Simulation->Lookup[safeOptions, Simulation]
+								tempProtocolPacket,
+								tempSamplePreparationProtocol,
+								Flatten[labeledObjectsList, 1],
+								Cases[Flatten[containerContentCacheList], PacketP[]],
+								Cases[Flatten[sampleContainerCacheList], PacketP[]]
+							}
 						],
-						{Download::FieldDoesntExist, Download::NotLinkField}
-					];
-
-					{
-						tempProtocolPacket,
-						tempSamplePreparationProtocol,
-						Flatten[labeledObjectsList,1],
-						Cases[Flatten[containerContentCacheList], PacketP[]]
-					}
-				],
-				Module[{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, definedObjectsList, labeledObjectsContainerContentCacheList, definedObjectsContainerContentCacheList},
-					(* NOTE: We have to handle both DefinedObjects and LabeledObjects here. *)
-					{tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, definedObjectsList, labeledObjectsContainerContentCacheList, definedObjectsContainerContentCacheList}=Quiet[
-						Download[
-							myProtocol,
+					True,
+						Module[
 							{
-								Packet[PreparedSamples,NestedIndexMatchingSamplesIn],
-								SamplePreparationProtocols[[-1]],
-								SamplePreparationProtocols[[-1]][LabeledObjects],
-								SamplePreparationProtocols[[-1]][DefinedObjects],
-								Packet[SamplePreparationProtocols[[-1]][LabeledObjects][[All,2]][Contents]],
-								Packet[SamplePreparationProtocols[[-1]][DefinedObjects][[All,2]][Contents]]
+								tempProtocolPacket, tempSamplePreparationProtocol, labeledObjectsList, definedObjectsList, labeledObjectsContainerContentCacheList,
+								definedObjectsContainerContentCacheList, labeledObjectsContainerCacheList, definedObjectsContainerCacheList
 							},
-							Cache->Lookup[safeOptions, Cache],
-							Simulation->Lookup[safeOptions, Simulation]
-						],
-						{Download::FieldDoesntExist, Download::NotLinkField}
-					];
+							(* NOTE: We have to handle both DefinedObjects and LabeledObjects here. *)
+							{
+								tempProtocolPacket,
+								tempSamplePreparationProtocol,
+								labeledObjectsList,
+								definedObjectsList,
+								labeledObjectsContainerContentCacheList,
+								definedObjectsContainerContentCacheList,
+								labeledObjectsContainerCacheList,
+								definedObjectsContainerCacheList
+							} = Quiet[
+								Download[
+									myProtocol,
+									{
+										Packet[PreparedSamples, NestedIndexMatchingSamplesIn],
+										SamplePreparationProtocols[[-1]],
+										SamplePreparationProtocols[[-1]][LabeledObjects],
+										SamplePreparationProtocols[[-1]][DefinedObjects],
+										Packet[SamplePreparationProtocols[[-1]][LabeledObjects][[All, 2]][Contents]],
+										Packet[SamplePreparationProtocols[[-1]][DefinedObjects][[All, 2]][Contents]],
+										Packet[SamplePreparationProtocols[[-1]][LabeledObjects][Container]],
+										Packet[SamplePreparationProtocols[[-1]][DefinedObjects][Container]]
+									},
+									Cache -> cache,
+									Simulation -> simulation
+								],
+								{Download::FieldDoesntExist, Download::NotLinkField}
+							];
 
-					{
-						tempProtocolPacket,
-						tempSamplePreparationProtocol,
-						If[!MatchQ[labeledObjectsList, $Failed],
-							labeledObjectsList,
-							definedObjectsList
-						],
-						If[!MatchQ[labeledObjectsContainerContentCacheList, $Failed],
-							Cases[Flatten[labeledObjectsContainerContentCacheList], PacketP[]],
-							Cases[Flatten[definedObjectsContainerContentCacheList], PacketP[]]
+							{
+								tempProtocolPacket,
+								tempSamplePreparationProtocol,
+								If[!MatchQ[labeledObjectsList, $Failed],
+									labeledObjectsList,
+									definedObjectsList
+								],
+								If[!MatchQ[labeledObjectsContainerContentCacheList, $Failed],
+									Cases[Flatten[labeledObjectsContainerContentCacheList], PacketP[]],
+									Cases[Flatten[definedObjectsContainerContentCacheList], PacketP[]]
+								],
+								If[!MatchQ[labeledObjectsContainerCacheList, $Failed],
+									Cases[Flatten[labeledObjectsContainerCacheList], PacketP[]],
+									Cases[Flatten[definedObjectsContainerCacheList], PacketP[]]
+								]
+							}
 						]
-					}
 				]
-			]
-		],
+			],
 		(* Using the UnitOperation system, but not a sub unit operation. *)
 		!MatchQ[Lookup[safeOptions, Protocol], ObjectP[]],
-		Quiet[
-			Download[
-				myProtocol,
-				{
-					Packet[PreparedSamples,NestedIndexMatchingSamplesIn],
-					Protocol,
-					Protocol[LabeledObjects],
-					Packet[Protocol[LabeledObjects][[All,2]][Contents]]
-				},
-				Simulation->Lookup[safeOptions, Simulation]
+			Quiet[
+				Download[
+					myProtocol,
+					{
+						Packet[PreparedSamples, NestedIndexMatchingSamplesIn],
+						Protocol,
+						Protocol[LabeledObjects],
+						Packet[Protocol[LabeledObjects][[All, 2]][Contents]],
+						Packet[Protocol[LabeledObjects][Container]]
+					},
+					Simulation -> simulation
+				],
+				{Download::FieldDoesntExist, Download::NotLinkField}
 			],
-			{Download::FieldDoesntExist, Download::NotLinkField}
-		],
 		(* Using the UnitOperation system, is a sub unit operations (so the Protocol field isn't filled out). *)
 		True,
-		First/@Quiet[
-			Download[
-				{
-					myProtocol,
-					Lookup[safeOptions, Protocol],
-					Lookup[safeOptions, Protocol],
-					Lookup[safeOptions, Protocol]
-				},
-				{
-					{Packet[PreparedSamples,NestedIndexMatchingSamplesIn]},
-					{Object},
-					{LabeledObjects},
-					{Packet[LabeledObjects[[All,2]][Contents]]}
-				},
-				Simulation->Lookup[safeOptions, Simulation]
-			],
-			{Download::FieldDoesntExist, Download::NotLinkField}
-		]
+			First/@Quiet[
+				Download[
+					{
+						myProtocol,
+						Lookup[safeOptions, Protocol],
+						Lookup[safeOptions, Protocol],
+						Lookup[safeOptions, Protocol],
+						Lookup[safeOptions, Protocol]
+					},
+					{
+						{Packet[PreparedSamples, NestedIndexMatchingSamplesIn]},
+						{Object},
+						{LabeledObjects},
+						{Packet[LabeledObjects[[All, 2]][Contents]]},
+						{Packet[LabeledObjects[Container]]}
+					},
+					Simulation -> simulation
+				],
+				{Download::FieldDoesntExist, Download::NotLinkField}
+			]
 	];
 
 	(* The last sample preparation protocol that we have executed should be a ManualSamplePreparation. *)
 	(* If this isn't the case, error out. (Only check the last in case things were troubleshot). *)
-	If[!MatchQ[samplePreparationProtocol,ObjectP[{Object[Notebook, Script], Object[Protocol,ManualSamplePreparation], Object[Protocol,RoboticSamplePreparation], Object[Protocol,ManualCellPreparation], Object[Protocol,RoboticCellPreparation]}]],
-		Message[Error::NoSamplePreparationProtocol];
+	If[!MatchQ[samplePreparationProtocol, ObjectP[{Object[Notebook, Script], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualCellPreparation], Object[Protocol, RoboticCellPreparation]}]],
+		Message[
+			Error::NoSamplePreparationProtocol,
+			ObjectToString[myProtocol, Cache -> cache, Simulation -> simulation]
+		];
 		Return[$Failed];
 	];
 
 	(* Get the PreparedSamples map. *)
-	preparedSamplesMap=Lookup[protocolPacket,PreparedSamples];
+	preparedSamplesMap = Lookup[protocolPacket, PreparedSamples];
 
 	(* Look at the PreparedSamples map. If there is nothing to map, then return early. *)
-	If[Length[preparedSamplesMap]==0||MatchQ[preparedSamplesMap,{}],
+	If[Length[preparedSamplesMap] == 0 || MatchQ[preparedSamplesMap, {}],
 		If[MatchQ[Lookup[safeOptions, Upload], False],
 			Return[{}],
 			Return[myProtocol]
@@ -7508,163 +7689,234 @@ populatePreparedSamples[myProtocol:ObjectP[{Object[Protocol], Object[UnitOperati
 	(* -- Get the prepared samples that we should fill in and the positions to fill them in. -- *)
 
 	(* Convert the LabeledObjects field (which is now {{name,object}..}) to an association (<|(name->object)..|>) with
-	later labels replacing identical earlier ones *)
-	labeledObjectRules=AssociationThread[labeledObjects[[All,1]],labeledObjects[[All,2]]];
+	later labels replacing identical earlier ones. If only SamplesIn or ContainersIn are in the labeledObjects, populate the other one *)
+	labeledObjectRules = Module[{preparedSamplesInLabel, preparedContainersInLabel, preparedSampleToContainerLabelRules},
+		preparedSamplesInLabel = Cases[Lookup[protocolPacket, PreparedSamples], {sampleLabel_String, SamplesIn, _, _, _} :> sampleLabel];
+		preparedContainersInLabel = Cases[Lookup[protocolPacket, PreparedSamples], {sampleContainerLabel_String, ContainersIn, _, _, _} :> sampleContainerLabel];
+		preparedSampleToContainerLabelRules = If[EqualQ[Length[preparedSamplesInLabel], Length[preparedContainersInLabel]],
+			Thread[preparedSamplesInLabel -> preparedContainersInLabel],
+			{}
+		];
+		If[Or[
+			MatchQ[preparedSampleToContainerLabelRules, {}],
+			SubsetQ[labeledObjects[[All, 1]], Flatten[{preparedSamplesInLabel, preparedContainersInLabel}]]
+		],
+			AssociationThread[labeledObjects[[All, 1]], labeledObjects[[All, 2]]],
+			(* If any SamplesIn or ContainersIn have labels partially exist in LabelObjects, we need to add the other half here *)
+			(* Since for example, if SampleLabel is replaced to an Object, SampleContainerLabel should be also replaced to the container of the replaced SampleLabel object *)
+			Association[Flatten@Map[
+				Function[{singleLabeledObjectList},
+					Module[{sampleInQ, containerInQ, relatedSampleToContainerLabelRule, additionalInputRule},
+						sampleInQ = MemberQ[preparedSamplesInLabel, singleLabeledObjectList[[1]]];
+						containerInQ = MemberQ[preparedContainersInLabel, singleLabeledObjectList[[1]]];
+						relatedSampleToContainerLabelRule = Which[
+							!TrueQ[sampleInQ] && !TrueQ[containerInQ], Null,
+							TrueQ[sampleInQ], FirstOrDefault@Select[preparedSampleToContainerLabelRules, First[#] === singleLabeledObjectList[[1]]&],
+							True, FirstOrDefault@Select[preparedSampleToContainerLabelRules, Last[#] === singleLabeledObjectList[[1]]&]
+						];
+						additionalInputRule = Which[
+							Or[
+								NullQ[relatedSampleToContainerLabelRule],
+								SubsetQ[labeledObjects[[All, 1]], Flatten[{relatedSampleToContainerLabelRule[[1]], relatedSampleToContainerLabelRule[[2]]}]]
+							],
+								Nothing,
+							TrueQ[sampleInQ],
+								Module[{replacedSampleObject, sampleContainerObject},
+									replacedSampleObject = Download[singleLabeledObjectList[[2]], Object];
+									sampleContainerObject = Download[Lookup[FirstCase[sampleContainerCache, PacketP[replacedSampleObject]], Container, Null], Object];
+									relatedSampleToContainerLabelRule[[2]] -> sampleContainerObject
+								],
+							True,
+								Module[{replacedContainerObject, sampleObject},
+									replacedContainerObject = Download[singleLabeledObjectList[[2]], Object];
+									(* If only SampleContainerLabel is specified, Sample is default to the sample in A1 position of the container. *)
+									sampleObject = Download[FirstCase[Lookup[FirstCase[containerContentCache, PacketP[replacedContainerObject]], Contents], {"A1", sample_} :> sample], Object];
+									relatedSampleToContainerLabelRule[[1]] -> sampleObject
+								]
+						];
+						{
+							singleLabeledObjectList[[1]] -> singleLabeledObjectList[[2]],
+							additionalInputRule
+						}
+					]
+				],
+				labeledObjects
+				]
+			]
+		]
+	];
 
 	(* Get the define names of our prepared samples. *)
-	preparedSampleDefineNames=preparedSamplesMap[[All,1]];
+	preparedSampleDefineNames = preparedSamplesMap[[All, 1]];
 
 	(* Replace our define names with the actual objects. *)
-	replacedDefineNames=preparedSampleDefineNames/.labeledObjectRules;
+	replacedDefineNames = preparedSampleDefineNames/.labeledObjectRules;
+
+	(* At this point, all strings should have been replaced to objects. *)
+	If[MemberQ[replacedDefineNames, _String],
+		Message[
+			Error::MissingDefineName,
+			Cases[replacedDefineNames, _String]
+		];
+		Return[$Failed];
+	];
 
 	(* Get our prepared samples (without links) index-matched to their positions. *)
-	preparedSamples=Download[replacedDefineNames,Object];
+	preparedSamples = Download[replacedDefineNames, Object];
 
 	(* Get the positions that each of our objects should be inserted in. *)
 	(* Get rid of the first and last indices. *)
-	rawPreparedSamplePositions=Most[Rest[#]]&/@preparedSamplesMap;
+	rawPreparedSamplePositions = Most[Rest[#]]& /@ preparedSamplesMap;
 
 	(* Get the container indices of our prepared samples. *)
-	preparedSampleContainerPositions=Last[#]&/@preparedSamplesMap;
+	preparedSampleContainerPositions = Last[#]& /@ preparedSamplesMap;
 
 	(* Swap out our prepared containers with prepared samples if we were asked to do so by RequireResources. *)
-	preparedSamplesConsideringContainers=MapThread[
-		Function[{preparedSample,containerPosition},
+	preparedSamplesConsideringContainers = MapThread[
+		Function[{preparedSample, containerPosition},
 			(* Skip over this if there is no container position. *)
-			If[MatchQ[containerPosition,Null],
+			If[MatchQ[containerPosition, Null],
 				preparedSample,
 				(* Otherwise, we have a container that needs dereferencing. *)
-
-				(* Get the container's packet. *)
-				containerPacket=fetchPacketFromCache[preparedSample,Flatten[containerContentCache]];
-
-				(* Lookup the Contents. *)
-				containerContents=Lookup[containerPacket,Contents];
-
-				(* Get the sample with the given position. *)
-				Download[FirstCase[containerContents,{containerPosition,_},{$Failed,$Failed}][[2]],Object]
+				Module[{containerPacket, containerContents},
+					(* Get the container's packet. *)
+					containerPacket = fetchPacketFromCache[preparedSample, Flatten[containerContentCache]];
+					(* Lookup the Contents. *)
+					containerContents = Lookup[containerPacket, Contents];
+					(* Get the sample with the given position. *)
+					Download[FirstCase[containerContents, {containerPosition,_}, {$Failed, $Failed}][[2]], Object]
+				]
 			]
 		],
-		{preparedSamples,preparedSampleContainerPositions}
+		{preparedSamples, preparedSampleContainerPositions}
 	];
 
 	(* Get the names of the fields where we need to replace our samples. *)
-	preparedSampleFieldNames=First/@rawPreparedSamplePositions;
+	preparedSampleFieldNames = First /@ rawPreparedSamplePositions;
 
 	(* We have to wrap the first index (the field) with Key[...] and get rid of any Nulls. *)
-	preparedSamplePositions=({Key[#[[1]]],Sequence@@Rest[#]}/.{Null->Nothing}&)/@rawPreparedSamplePositions;
+	preparedSamplePositions = ({Key[#[[1]]],Sequence@@Rest[#]}/.{Null->Nothing}&) /@ rawPreparedSamplePositions;
 
 	(* Re-download our protocol packet with these field names. We do a _separate_ download here because it is faster than downloading the entire protocol packet. *)
-	protocolPacketWithPreparedSampleFields=With[{insertMe=Packet@@preparedSampleFieldNames},Download[myProtocol,insertMe,Simulation->Lookup[safeOptions, Simulation]]];
+	protocolPacketWithPreparedSampleFields = With[{insertMe = Packet@@preparedSampleFieldNames},
+		Download[myProtocol, insertMe, Simulation -> simulation]
+	];
 
 	(* Every link that we download from Constellation will already have a link ID. Remove these link IDs in order to re-upload. *)
 	(* Note: Named fields (in associations) will not evaluate our Most[...] but the field values will be de-reference inside of the Upload code and the values will be evaluated. *)
-	protocolPacketWithoutLinkIDs=protocolPacketWithPreparedSampleFields/.{link_Link:>RemoveLinkID[link]};
+	protocolPacketWithoutLinkIDs = protocolPacketWithPreparedSampleFields/.{link_Link:>RemoveLinkID[link]};
 
 	(* For each prepared sample that we're in-situ replacing, decide if we need to convert our object into a link, with a potential backlink. *)
-	preparedSamplesWithLinks=MapThread[
-		Function[{preparedSample,position,containerLocation},
-			(* Note: This code is borrowed from RequireResources. Thanks Steven. *)
-			(* Get the field name that we're putting this prepared samples in. *)
-			fieldName=First[position];
+	preparedSamplesWithLinks = MapThread[
+		Function[{preparedSample, position},
+			Module[
+				{fieldName, fullFieldRelation, relevantRelationPart, relationFieldList, relationFieldSymbols, possibleBacklinks,preparedSampleTypes},
+				(* Note: This code is borrowed from RequireResources. Thanks Steven. *)
+				(* Get the field name that we're putting this prepared samples in. *)
+				fieldName = First[position];
 
-			(* get the relation definition for the field name, using the packet to figure out the type *)
-			fullFieldRelation=LookupTypeDefinition[Lookup[protocolPacket,Type][fieldName],Relation];
+				(* get the relation definition for the field name, using the packet to figure out the type *)
+				fullFieldRelation = LookupTypeDefinition[Lookup[protocolPacket, Type][fieldName], Relation];
 
-			(* get the part of the relation that we actually care about; if the field we are dealing with is indexed, we need to get the right piece of the relation *)
-			relevantRelationPart=Switch[{position,SingleFieldQ[Lookup[protocolPacket,Type][fieldName]]},
-				(* either an indexed single or flat multiple; can tell based on full relation being a list or not *)
-				{{_Symbol, _Integer},_},If[ListQ[fullFieldRelation],
-					fullFieldRelation[[Last[position]]],
-					fullFieldRelation
-				],
-				(* named single *)
-				{{_Symbol, PatternUnion[_Symbol, Except[Null]]},True},Lookup[fullFieldRelation,Last[position]],
-				(* indexed multiple *)
-				{{_Symbol, _Integer, _Integer},_},fullFieldRelation[[Last[position]]],
-				(* named multiple *)
-				{{_Symbol, _Integer, PatternUnion[_Symbol, Except[Null]]},_},Lookup[fullFieldRelation,Last[position]],
-				(* indexed single *)
-				{{_Symbol, _Integer, Null},True}, fullFieldRelation[[position[[2]]]],
-				(* anything else we have a flat Relation already *)
-				_,fullFieldRelation
-			];
+				(* get the part of the relation that we actually care about; if the field we are dealing with is indexed, we need to get the right piece of the relation *)
+				relevantRelationPart = Switch[{position, SingleFieldQ[Lookup[protocolPacket, Type][fieldName]]},
+					(* either an indexed single or flat multiple; can tell based on full relation being a list or not *)
+					{{_Symbol, _Integer}, _}, If[ListQ[fullFieldRelation],
+						fullFieldRelation[[Last[position]]],
+						fullFieldRelation
+					],
+					(* named single *)
+					{{_Symbol, PatternUnion[_Symbol, Except[Null]]}, True}, Lookup[fullFieldRelation, Last[position]],
+					(* indexed multiple *)
+					{{_Symbol, _Integer, _Integer}, _}, fullFieldRelation[[Last[position]]],
+					(* named multiple *)
+					{{_Symbol, _Integer, PatternUnion[_Symbol, Except[Null]]}, _}, Lookup[fullFieldRelation, Last[position]],
+					(* indexed single *)
+					{{_Symbol, _Integer, Null}, True}, fullFieldRelation[[position[[2]]]],
+					(* anything else we have a flat Relation already *)
+					_, fullFieldRelation
+				];
 
-			(* convert this alternatives into a List, if it isn't already *)
-			relationFieldList=If[MatchQ[relevantRelationPart,_Alternatives],
-				List@@relevantRelationPart,
-				ToList[relevantRelationPart]
-			];
-			(* get the backlink field symbols (sans duplicates), if any, from each of the possible relation fields; there is no backlink if this is an empty list *)
-			relationFieldSymbols=DeleteDuplicates@Map[
-				If[MatchQ[#,TypeP[]],
-					Nothing,
-					{Head[#],First[#]}
-				]&,
-				relationFieldList
-			];
+				(* convert this alternatives into a List, if it isn't already *)
+				relationFieldList = If[MatchQ[relevantRelationPart, _Alternatives],
+					List@@relevantRelationPart,
+					ToList[relevantRelationPart]
+				];
+				(* get the backlink field symbols (sans duplicates), if any, from each of the possible relation fields; there is no backlink if this is an empty list *)
+				relationFieldSymbols = DeleteDuplicates@Map[
+					If[MatchQ[#,TypeP[]],
+						Nothing,
+						{Head[#],First[#]}
+					]&,
+					relationFieldList
+				];
 
-			(* Get the type and supertypes of this prepared sample. *)
-			preparedSampleTypes=NestWhileList[Most,preparedSample[Type],(Length[#]>1&)];
+				(* Get the type and supertypes of this prepared sample. *)
+				preparedSampleTypes = NestWhileList[Most,preparedSample[Type], (Length[#]>1&)];
 
-			(* Based on the type of the prepared object, get the corresponding back link we should use. *)
-			possibleBacklinks=Cases[relationFieldSymbols,{Alternatives@@preparedSampleTypes,_}];
+				(* Based on the type of the prepared object, get the corresponding back link we should use. *)
+				possibleBacklinks = Cases[relationFieldSymbols, {Alternatives@@preparedSampleTypes,_}];
 
-			(* Are there possible backlinks to use? *)
-			If[Length[possibleBacklinks]>0,
-				(* Yes. Use the first one. *)
-				Link[preparedSample,Last[First[possibleBacklinks]]],
-				(* No. No backlink required. *)
-				Link[preparedSample]
+				(* Are there possible backlinks to use? *)
+				If[Length[possibleBacklinks] > 0,
+					(* Yes. Use the first one. *)
+					Link[preparedSample, Last[First[possibleBacklinks]]],
+					(* No. No backlink required. *)
+					Link[preparedSample]
+				]
 			]
 		],
-		{preparedSamplesConsideringContainers,rawPreparedSamplePositions,preparedSampleContainerPositions}
+		{preparedSamplesConsideringContainers, rawPreparedSamplePositions}
 	];
 
 	(* need to wrap Key around the subfield when dealing with named single or multiple to work with ReplacePart *)
-	samplePositionsWithKeyedFields=preparedSamplePositions/.{field:Key[_Symbol],pos___,subField_Symbol}:>{field,pos,Key[subField]};
+	samplePositionsWithKeyedFields = preparedSamplePositions/.{field:Key[_Symbol],pos___,subField_Symbol}:>{field,pos,Key[subField]};
 
 	(* Use our prepared samples (with links) to replace them into our packet. *)
-	replacedProtocolPacket=ReplacePart[protocolPacketWithoutLinkIDs,MapThread[#1->#2&,{samplePositionsWithKeyedFields,preparedSamplesWithLinks}]];
+	replacedProtocolPacket = ReplacePart[protocolPacketWithoutLinkIDs, MapThread[#1 -> #2&, {samplePositionsWithKeyedFields, preparedSamplesWithLinks}]];
 
 	(* Wrap any multiple fields in Replace[...]. *)
-	changeProtocolPacket=Function[{fieldRule},
-		(* If we have a multiple field, use Replace[...] *)
-		If[MatchQ[Lookup[LookupTypeDefinition[Lookup[protocolPacket,Type],First[fieldRule]],Format],Multiple],
-			Replace[First[fieldRule]]->Last[fieldRule],
-			fieldRule
-		]
-	]/@Normal[replacedProtocolPacket];
+	changeProtocolPacket = Map[
+		Function[{fieldRule},
+			(* If we have a multiple field, use Replace[...] *)
+			If[MatchQ[Lookup[LookupTypeDefinition[Lookup[protocolPacket, Type], First[fieldRule]], Format], Multiple],
+				Replace[First[fieldRule]] -> Last[fieldRule],
+				fieldRule
+			]
+		],
+		Normal[replacedProtocolPacket]
+	];
 
 	(* If changing SamplesIn/ContainersIn, also change WorkingSamples/WorkingContainers. *)
 	(* This is because we do not (on purpose) create resources for our WorkingSamples/WorkingContainers so they do not get updated. *)
-	updateWorkingSamples=If[KeyExistsQ[changeProtocolPacket,Replace[SamplesIn]],
-		Replace[WorkingSamples]->Link[Lookup[changeProtocolPacket,Replace[SamplesIn]]], (* WorkingSamples has no backlink. *)
+	updateWorkingSamples = If[KeyExistsQ[changeProtocolPacket, Replace[SamplesIn]],
+		Replace[WorkingSamples] -> Link[Lookup[changeProtocolPacket, Replace[SamplesIn]]], (* WorkingSamples has no backlink. *)
 		Nothing
 	];
 
-	updateWorkingContainers=Which[
-		KeyExistsQ[changeProtocolPacket,Replace[ContainersIn]],
-		{Replace[WorkingContainers] -> Link[Lookup[changeProtocolPacket, Replace[ContainersIn]]]}, (* WorkingContainers has no backlink. *)
+	updateWorkingContainers = Which[
+		KeyExistsQ[changeProtocolPacket, Replace[ContainersIn]],
+			{Replace[WorkingContainers] -> Link[Lookup[changeProtocolPacket, Replace[ContainersIn]]]}, (* WorkingContainers has no backlink. *)
 
 		(* If there were no defined objects that had to go into ContainersIn, but we are updating SamplesIn, make sure WorkingContainers is the duplicate free list of the new SamplesIn containers *)
-		KeyExistsQ[changeProtocolPacket,Replace[SamplesIn]],
-		With[{newContainersIn = Download[Lookup[changeProtocolPacket,Replace[SamplesIn]],Container[Object]]},
-			{
-				Replace[WorkingContainers] -> Link[DeleteDuplicates[newContainersIn]],
-				Replace[ContainersIn] -> Link[newContainersIn, Protocols]
-			}
-		],
-		True, {}
+		KeyExistsQ[changeProtocolPacket, Replace[SamplesIn]],
+			With[{newContainersIn = Download[Lookup[changeProtocolPacket, Replace[SamplesIn]], Container[Object]]},
+				{
+					Replace[WorkingContainers] -> Link[DeleteDuplicates[newContainersIn]],
+					Replace[ContainersIn] -> Link[newContainersIn, Protocols]
+				}
+			],
+		True,
+			{}
 	];
 
-	updateNestedIndexMatchingSamplesIn = If[MemberQ[Flatten@ToList@Lookup[protocolPacket,NestedIndexMatchingSamplesIn],_String],
-		Module[{currentFieldContents,newFieldContents},
+	updateNestedIndexMatchingSamplesIn = If[MemberQ[Flatten@ToList@Lookup[protocolPacket, NestedIndexMatchingSamplesIn], _String],
+		Module[{currentFieldContents, newFieldContents},
 			(* grad labels, apply them to the field and return *)
-			currentFieldContents = Lookup[protocolPacket,NestedIndexMatchingSamplesIn];
-			newFieldContents = ReplaceAll[currentFieldContents/.labeledObjectRules,x:LinkP[]:>Download[x,Object]];
+			currentFieldContents = Lookup[protocolPacket, NestedIndexMatchingSamplesIn];
+			newFieldContents = ReplaceAll[currentFieldContents/.labeledObjectRules, x:LinkP[]:>Download[x,Object]];
 			(* if we are not updating the field, return now *)
-			If[MatchQ[currentFieldContents,newFieldContents],Return[{},Module]];
+			If[MatchQ[currentFieldContents, newFieldContents], Return[{},Module]];
 			{
 				Replace[NestedIndexMatchingSamplesIn] -> newFieldContents
 			}
@@ -7673,7 +7925,7 @@ populatePreparedSamples[myProtocol:ObjectP[{Object[Protocol], Object[UnitOperati
 	];
 
 	(* Create our change packet. *)
-	changePacket=Association@Join[changeProtocolPacket,{updateWorkingSamples},{updateWorkingContainers},{updateNestedIndexMatchingSamplesIn}];
+	changePacket = Association@Join[changeProtocolPacket, {updateWorkingSamples}, {updateWorkingContainers}, {updateNestedIndexMatchingSamplesIn}];
 
 	(* Return. *)
 	If[MatchQ[Lookup[safeOptions, Upload], False],
@@ -7689,7 +7941,8 @@ populatePreparedSamples[myProtocol:ObjectP[{Object[Protocol], Object[UnitOperati
 DefineOptions[resolvePostProcessingOptions,
 	Options :> {
 		{Sterile -> False, BooleanP, "Indicates if the samples are expected to be sterile at the time of post processing."},
-		{Living -> False, BooleanP, "Indicates if the samples are expected to be living at the time of post processing."}
+		{Living -> False, BooleanP, "Indicates if the samples are expected to be living at the time of post processing."},
+		{AllowAsepticImageSample -> True, BooleanP, "Indicates if ImageSample resolves to True in order to image samples during aseptic handling when any biosafety cabinet is used as the handling environment. Imaging inside biosafety cabinets can be disabled by setting this option to False if the experiment is extremely time-sensitive."}
 	}
 ];
 
@@ -7700,18 +7953,21 @@ Error::PostProcessingLivingSamples = "The post-processing option `1` is set to T
 resolvePostProcessingOptions[myExperimentOptions : {(_Rule | RuleDelayed)...}, myOptions : OptionsPattern[]] := Module[
 	{safeOps, living, sterile, parentProtocol, parentPacket, listedGrandparentPackets, listedAncestorPackets, imageSample, measureVolume,
 		measureWeight, inheritOption, resolvedImageSample, resolvedMeasureVolume, resolvedMeasureWeight, preparation,
-		simulation},
+		simulation,
+		allowAsepticImageSample, transferEnvironments, bscUsedQ},
 
 	(* Get the safe options*)
 	safeOps = SafeOptions[resolvePostProcessingOptions, ToList@myOptions];
 
 	(*Grab living/sterile options*)
-	{living, sterile} = Lookup[safeOps, {Living, Sterile}];
+	{living, sterile, allowAsepticImageSample} = Lookup[safeOps, {Living, Sterile, AllowAsepticImageSample}];
 
 	(* Get the parent protocol listed in the option *)
 	parentProtocol = Lookup[myExperimentOptions, ParentProtocol, Null];
 	preparation = Lookup[myExperimentOptions, Preparation, Manual];
-
+	(* Lookup the specified options *)
+	(* Note: this is what we think are suffient to look for in options for now. Please add to the list if there is BSC usage in another field that we are interested in taking images inside the BSC. *)
+	transferEnvironments = Lookup[myExperimentOptions, {TransferEnvironment, HandlingEnvironment}, Null];
 	(* this is because SampleManipulation has a Simulation option that is a boolean*)
 	simulation = Replace[Lookup[myExperimentOptions, Simulation, Null], BooleanP -> Null, {0}];
 
@@ -7731,6 +7987,8 @@ resolvePostProcessingOptions[myExperimentOptions : {(_Rule | RuleDelayed)...}, m
 			Download::FieldDoesntExist
 		]
 	];
+	(* Evaluate if any BSC is used *)
+	bscUsedQ = MemberQ[Flatten[ToList[transferEnvironments]], ObjectP[{Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]}]];
 
 	(* Get the full recursive list of ParentProtocol packets, include our direct parent *)
 	listedAncestorPackets = Prepend[Flatten[listedGrandparentPackets, 1], parentPacket];
@@ -7740,7 +7998,12 @@ resolvePostProcessingOptions[myExperimentOptions : {(_Rule | RuleDelayed)...}, m
 
 	(* == Define Function: inheritOption == *)
 	(* resolve option by looking at root protocol's value *)
-	inheritOption[option_Symbol, field_Symbol] := Module[{resolvedOption},
+	inheritOption[option_Symbol, field_Symbol] := Module[{resolvedOption, inheritedValue, asepticImageSampleQ},
+		(* Determine the inherited value for resolver *)
+		inheritedValue = MatchQ[Lookup[Last[listedAncestorPackets], field], True | $Failed];
+		(* A boolean indicating if we are resolving for imaging in BSCs. Used for resolving and error checking. *)
+		asepticImageSampleQ = bscUsedQ && MatchQ[field, ImageSample];
+
 		(* Resolve the option *)
 		resolvedOption = Which[
 			(* If the option wasn't sent in, use indicate with None keyword *)
@@ -7751,6 +8014,10 @@ resolvePostProcessingOptions[myExperimentOptions : {(_Rule | RuleDelayed)...}, m
 
 			(* Default to False if Preparation->Robotic *)
 			MatchQ[preparation, Robotic], Null,
+
+			(* If there is BSC used as transfer environment, make an exception for ImageSample, since we have capability to image inside BSCs. Check the AllowAsepticImageSample sent from the experiment. *)
+			(* For ImageSample, if any BSC is used as TransferEnvironment, the experiment default aseptic ImageSample  to True, and meanwhile there is no parent or the value inherited from root protocol is also True.  *)
+			asepticImageSampleQ, And[allowAsepticImageSample, NullQ[parentProtocol] || inheritedValue],
 
 			(* Set to False if Living or Sterile option is set to True*)
 			MemberQ[{living, sterile}, True], False,
@@ -7764,14 +8031,14 @@ resolvePostProcessingOptions[myExperimentOptions : {(_Rule | RuleDelayed)...}, m
 		];
 
 		(* Error checking: warning if Sterile->True and user specified postprocessing to be True *)
-		If[TrueQ[sterile] && TrueQ[resolvedOption] && !MatchQ[$ECLApplication,Engine],
+		If[TrueQ[sterile] && TrueQ[resolvedOption] && !asepticImageSampleQ && !MatchQ[$ECLApplication,Engine],
 			Message[Warning::PostProcessingSterileSamples, field];
 		];
 
 		(* Return the resolved Option*)
   		(* We need to turn this error checking off in engine for cases where sample prep experiment, e.g. ExperimentAliquot, is called through a Subprotocol task. It would look back to root protocol's value which might not always be true even if we are dealing with living samples. *)
     		(* Here although turning off the error checking, we still expect ExperimentImageSample/MeasureVolume/MeasureWeight to filter living samples out, and only do imaging/measurments on non-living/sterile samples *)
-		If[TrueQ[living] && TrueQ[resolvedOption] && !MatchQ[$ECLApplication,Engine],
+		If[TrueQ[living] && TrueQ[resolvedOption] && !asepticImageSampleQ && !MatchQ[$ECLApplication,Engine],
 			Message[Error::PostProcessingLivingSamples, field];
 			$Failed,
 			resolvedOption

@@ -172,6 +172,15 @@ DefineTests[
 			TimeConstraint -> 240,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 * RPM,
+			EquivalenceFunction -> Equal,
+			TimeConstraint -> 240,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
 			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], CentrifugeTime -> 5 * Minute, Output -> Options];
@@ -347,6 +356,15 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			TimeConstraint -> 240,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], AliquotAmount -> 0.10101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			101 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentAlphaScreen[Object[Sample, "Test sample 8 for ExperimentAlphaScreen" <> $SessionUUID], AssayVolume -> 0.1 * Milliliter, Output -> Options];
@@ -1966,8 +1984,12 @@ DefineTests[
 
 			(* Creating a water testing sample for filter options *)
 			naclSolutionSample = CreateID[Object[Sample]];
-			naclSolutionSamplePackets = With[{naclSolutionModel = UploadSampleModel["1M NaCl test solution for ExperimentAlphaScreen" <> $SessionUUID,
-				Composition -> {{1Molar, Model[Molecule, "Sodium Chloride"]}, {100VolumePercent, Model[Molecule, "Water"]}},
+			naclSolutionSamplePackets = With[{naclSolutionModel = UploadSampleModel[
+				{
+					{1 Molar, Model[Molecule, "Sodium Chloride"]},
+					{100 VolumePercent, Model[Molecule, "Water"]}
+				},
+				Name -> "1M NaCl test solution for ExperimentAlphaScreen" <> $SessionUUID,
 				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 				Expires -> False,
 				State -> Liquid,

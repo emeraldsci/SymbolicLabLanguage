@@ -40,6 +40,15 @@ DefineObjectType[Object[Report, Certificate, Analysis],{
 		},
 
 		(**Certified Data Fields**)
+		(* General *)
+		LinearityTest -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> And[GreaterEqualP[0],LessEqual[1]],
+			Units -> None,
+			Description -> "The certified linear regression R^2 value of this material when plotting a series of instrument outputs vs. a series of independent measurement variables or the contents of this container.",
+			Category -> "Certification Information"
+		},
 		(*Fields for Static Light Scattering*)
 		PolymerMolecularWeight->{
 			Format->Single,
@@ -91,6 +100,15 @@ DefineObjectType[Object[Report, Certificate, Analysis],{
 			Pattern :> {Substance->_Link|Null, Wavelength->GreaterP[0*Nanometer]},
 			Relation -> {Substance->Model[Sample]|Model[Molecule]|Null, Wavelength->Null},
 			Description -> "A list of the certified wavelengths measured for specific substances contained in the certified material; use Null if the substance is unspecified.",
+			Category -> "Certification Information"
+		},
+		(* Fields for qPCR validation *)
+		TwoFoldDiscriminationTest -> {
+			Format -> Single,
+			Class -> {Real, Real},
+			Pattern :> {GreaterEqualP[0],GreaterEqualP[0]},
+			Headers -> {"Average 10K Copy Number - 3 Stdev", "Average 5K Copy Number + 3 Stdev"},
+			Description -> "Certified values for the average copy number of 10 kbp oligomer can be distinguished from the average copy number of 5 kbp oligomer. The value of three standard deviations below the mean of the 10 K copies should be greater than the value of three standard deviations above the 5 K copies.",
 			Category -> "Certification Information"
 		}
 	}

@@ -141,27 +141,34 @@ FastExport[myFilePath:FilePathP, myContent_, myFileType:FastFileTypeP, ops:Optio
 
 	(* OpenWrite or Export file based on the specified file type *)
 	(* OpenWrite has been shown to be somewhat faster for text files, so use it in those cases *)
-	If[myFileType === "Text",
-		(
-			(* Create file if it does not already exist *)
-			Quiet[CreateFile[myFilePath], {CreateFile::filex, CreateFile::eexist}];
+	(* In Wolfram 14.2 an Export bug was introduced when exporting csv/tsv files. "Backend" -> "Table" and MissingValuePattern -> None need to be added to Export calls. *)
+	(* See https://redmine.wolfram.com/redmine/issues/3974 *)
+	Which[
+		myFileType === "Text",
+			(
+				(* Create file if it does not already exist *)
+				Quiet[CreateFile[myFilePath], {CreateFile::filex, CreateFile::eexist}];
 
-			(* Open the stream to which the string will be written *)
-			outputStream=OpenWrite[myFilePath, PassOptions[OpenWrite, safeOps]];
+				(* Open the stream to which the string will be written *)
+				outputStream=OpenWrite[myFilePath, PassOptions[OpenWrite, safeOps]];
 
-			(* Write input string to steam *)
-			WriteString[outputStream, myContent];
+				(* Write input string to steam *)
+				WriteString[outputStream, myContent];
 
-			(* Close stream *)
-			Close[outputStream];
+				(* Close stream *)
+				Close[outputStream];
 
-			(* Return filepath *)
-			myFilePath
-		),
-		If[myFileType === "CSV" && MatchQ[csvQuote, _String],
+				(* Return filepath *)
+				myFilePath
+			),
+		MatchQ[myFileType, "CSV" | "TSV"] && MatchQ[csvQuote, _String] && $VersionNumber >= 14.2,
+			Export[myFilePath, myContent, myFileType, "TextDelimiters" -> csvQuote, "Backend" -> "Table", MissingValuePattern -> None],
+		myFileType === "CSV" && MatchQ[csvQuote, _String],
 			Export[myFilePath, myContent, myFileType, "TextDelimiters" -> csvQuote],
+		MatchQ[myFileType, "CSV" | "TSV"] && $VersionNumber >= 14.2,
+			Export[myFilePath, myContent, myFileType, "Backend" -> "Table", MissingValuePattern -> None],
+		True,
 			Export[myFilePath, myContent, myFileType]
-		]
 	]
 ];
 
@@ -282,7 +289,14 @@ FastImport[myFullFilePath:FilePathP, myFileType:FastFileTypeP, myOps:OptionsPatt
 	]
 ];
 
-
+(* NOTE: this is the annoying result of bad behavior introduced into Import in MM 14.2 *)
+(* essentially, even if $CharacterEncoding is "WindowsANSI" (which it should be), Import[file, "CSV"] will still set CharacterEncoding -> "UTF-8" by default *)
+(* this causes erroneous messages to be thrown; the whole point of a $ global variable is to not need us to set these options *)
+(* however, it does seem like the actual Import call is happening correctly.  Which tells me that just globally quieting this message will "solve" the problem *)
+(* separately, there is a redmine ticket about this bad behavior.  If that ever gets resolved, then we can remove this Off; I admit this feels super jank *)
+(* redmine ticket here: https://redmine.wolfram.com/redmine/issues/4002 *)
+(* note that I'm also doing this in Packager.m; seemingly this makes a difference when loading from distro or locally; once you remove this because it is nonsense, you should remove it from there too*)
+Off[$CharacterEncoding::utf8];
 
 (* ::Subsubsection::Closed:: *)
 (*xmlFileQ*)
@@ -749,8 +763,8 @@ GroupByTotal[myInput:Alternatives[{Alternatives[NumericP, MassP, VolumeP, AreaP]
 		Return[$Failed]
 	];
 
-	(* if there were only zero values, then there is no need to go further*)
-	If[Length[zeroValues] == Length[labeledInput], Return[{Flatten[myInput]}]];
+	(* If there were only zero values, then return the entire input in a single bin (i.e. list). *)
+	If[Length[zeroValues] == Length[labeledInput], Return[{myInput}]];
 
 
 	(*check to make sure that none of the values in the input aren't larger then the target total (this prevents the KnapsackSolve error which is less the informative) *)
@@ -781,7 +795,7 @@ GroupByTotal[myInput:{}, myGroupings_, myTargetTotal:Alternatives[NumericP, Mass
 
 	(* determine how many grouping there are*)
 	groupingsNumber=Length[myGroupings];
-	sortedGroupings=Join[First[myGroupings], SortBy[Rest[myGroupings], -Total[#[[All, 2]]]&]];
+	sortedGroupings=Join[{firstGroup}, SortBy[Rest[myGroupings], -Total[#[[All, 2]]]&]];
 
 	(* return different things depending on whether there is a zero value and how many grouping there are *)
 	Switch[{hasZero, groupingsNumber},
@@ -953,8 +967,8 @@ KeyReplace[assoc_Association, rules:{_Rule...}] := KeyMap[ReplaceAll[rules], ass
 
 (* Other Input Formats *)
 KeyReplace[assoc_Association, rule_Rule] := KeyReplace[assoc, {rule}];
-KeyReplace[assoc:{_Association..}, rule:_Rule] := KeyReplace[#, {rule}]& /@ assoc;
-KeyReplace[assoc:{_Association..}, rules:{_Rule...}] := KeyReplace[#, rules]& /@ assoc;
+KeyReplace[assoc:{_Association...}, rule:_Rule] := KeyReplace[#, {rule}]& /@ assoc;
+KeyReplace[assoc:{_Association...}, rules:{_Rule...}] := KeyReplace[#, rules]& /@ assoc;
 
 (* ::Subsection::Closed:: *)
 (*Geometry and Trigonometry*)
@@ -1218,7 +1232,12 @@ $ObjectBuilders=<|
 	Model[Item, Column] -> UploadColumn,
 	Model[Container, Vessel] -> UploadContainerModel,
 	Model[Container, Plate] -> UploadContainerModel,
-	Model[Container, ExtractionCartridge] -> UploadContainerModel
+	Model[Container, ExtractionCartridge] -> UploadContainerModel,
+	Model[Container] -> UploadContainerModel,
+	Model[Item, Cap] -> UploadCoverModel,
+	Model[Item, Lid] -> UploadCoverModel,
+	Model[Item, PlateSeal] -> UploadCoverModel,
+	Model[ProprietaryFormulation] -> UploadProprietaryFormulation
 |>;
 
 
@@ -1352,6 +1371,7 @@ $CommandBuilderFunctions = <|
 			"ExperimentCoulterCount",
 			"ExperimentCyclicVoltammetry",
 			"ExperimentDynamicFoamAnalysis",
+			"ExperimentKarlFischerTitration",
 			"ExperimentImageSample",
 			"ExperimentMeasureConductivity",
 			"ExperimentMeasureContactAngle",
@@ -1486,11 +1506,12 @@ $CommandBuilderFunctions = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1535,7 +1556,6 @@ $CommandBuilderFunctions = <|
 	"Analysis" -> <|
 		"Numerics" -> {
 			"AnalyzePeaks",
-			"AdvancedAnalyzePeaks",
 			"AnalyzeFit",
 			"AnalyzeClusters",
 			"AnalyzeSmoothing",
@@ -1603,7 +1623,8 @@ $CommandBuilderFunctions = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -1777,6 +1798,7 @@ $CommandBuilderFunctionsDev = <|
 			"ExperimentCoulterCount",
 			"ExperimentCyclicVoltammetry",
 			"ExperimentDynamicFoamAnalysis",
+			"ExperimentKarlFischerTitration",
 			"ExperimentImageSample",
 			"ExperimentMeasureConductivity",
 			"ExperimentMeasureContactAngle",
@@ -1910,11 +1932,12 @@ $CommandBuilderFunctionsDev = <|
 			"PlotDigitalPCR"
 		},
 		"Sample Preparation and Diagnostics" -> {
-			"PlotConductivity",
 			"PlotpH",
-			"PlotSensor",
-			"PlotVacuumEvaporation",
 			"PlotVolume",
+			"PlotSensor",
+			"PlotWeighingTimeline",
+			"PlotConductivity",
+			"PlotVacuumEvaporation",
 			"PlotDissolvedOxygen",
 			"PlotCoulterCount"
 		},
@@ -1961,7 +1984,6 @@ $CommandBuilderFunctionsDev = <|
 	"Analysis" -> <|
 		"Numerics" -> {
 			"AnalyzePeaks",
-			"AdvancedAnalyzePeaks",
 			"AnalyzeFit",
 			"AnalyzeClusters",
 			"AnalyzeSmoothing",
@@ -2030,7 +2052,8 @@ $CommandBuilderFunctionsDev = <|
 			"DefineTags",
 			"DefineComposition",
 			"DefineSolvent",
-			"DefineEHSInformation"
+			"DefineEHSInformation",
+			"UploadSampleProperties"
 		},
 		"Defining Model Fulfillment" -> {
 			"UploadSampleModel",
@@ -2043,7 +2066,8 @@ $CommandBuilderFunctionsDev = <|
 			"UploadCompanySupplier",
 			"UploadCompanyService",
 			"UploadReferenceElectrodeModel",
-			"UploadContainerModel"
+			"UploadContainerModel",
+			"UploadCoverModel"
 		},
 		"Defining Sample Components" -> {
 			"UploadMolecule",
@@ -2075,7 +2099,11 @@ $CommandBuilderFunctionsDev = <|
 		},
 		"Defining Manifold Jobs" -> {"Compute"},
 		"Verifying User-Created Objects" -> {
-			"UploadVerifiedContainerModel"
+			"VerifyObjects",
+			"UploadVerifiedContainerModel",
+			"UploadVerifiedCoverModel",
+			"UploadVerifiedSampleModel",
+			"UploadVerifiedMolecule"
 		}
 	|>,
 	"Search" -> <||>

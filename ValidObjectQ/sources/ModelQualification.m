@@ -1230,10 +1230,26 @@ validModelQualificationIonChromatographyQTests[packet:PacketP[Model[Qualificatio
 validModelQualificationKarlFischerTitratorQTests[packet:PacketP[Model[Qualification, KarlFischerTitrator]]]:= {
 	NotNullFieldTest[
 		packet,
-		{TitrationTechnique, SamplingMethods}
+		{TitrationTechnique, SamplingMethods, Standard, StandardAmount, Samples, SampleAmount, NumberOfStandards, NominalStandardWaterContent}
+	],
+
+	Test["If SamplingMethod is Headspace, then Temperatures and StandardTemperature must not be Null:",
+		If[MatchQ[Lookup[packet, SamplingMethod], Headspace],
+			TemperatureQ[Lookup[packet, StandardTemperature]] && MatchQ[Lookup[packet, Temperatures], {TemperatureP..}],
+			True
+		],
+		True
+	],
+
+	(* conceivably we could have a Liquid titrating Coulometric instrument, but we don't support that when I wrote this test; if we do support it later feel free to remove it *)
+	Test["TitrationTechnique and SamplingMethod must agree (Coulometric with Headspace, and Volumetric with Liquid):",
+		MatchQ[
+			Lookup[packet, {TitrationTechnique, SamplingMethod}],
+			{Coulometric, Headspace} | {Volumetric, Liquid}
+		],
+		True
 	]
 };
-
 
 
 (* ::Subsection::Closed:: *)
@@ -1950,6 +1966,24 @@ validModelQualificationPressureManifoldQTests[packet:PacketP[Model[Qualification
 	]
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelQualificationPlateWasherQTests*)
+
+
+validModelQualificationPlateWasherQTests[packet:PacketP[Model[Qualification, PlateWasher]]] := {
+
+	(* Required fields *)
+	NotNullFieldTest[
+		packet,
+		{PreparatoryUnitOperations}
+	],
+
+	(* the target should be of the right instrument type *)
+	Test["The target must be a Model[Instrument,PlateWasher]:",
+		Lookup[packet, Targets],
+		{LinkP[Model[Instrument, PlateWasher]]...}
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -2731,6 +2765,7 @@ registerValidQTestFunction[Model[Qualification, PlateSealer],validModelQualifica
 registerValidQTestFunction[Model[Qualification, PortableCooler],validModelQualificationPortableCoolerQTests];
 registerValidQTestFunction[Model[Qualification, PortableHeater],validModelQualificationPortableHeaterQTests];
 registerValidQTestFunction[Model[Qualification, PressureManifold],validModelQualificationPressureManifoldQTests];
+registerValidQTestFunction[Model[Qualification, PlateWasher], validModelQualificationPlateWasherQTests];
 registerValidQTestFunction[Model[Qualification, ProteinCapillaryElectrophoresis],validModelQualificationProteinCapillaryElectrophoresisQTests];
 registerValidQTestFunction[Model[Qualification, qPCR],validModelQualificationqPCRQTests];
 registerValidQTestFunction[Model[Qualification, DigitalPCR],validModelQualificationDigitalPCRQTests];

@@ -1797,7 +1797,7 @@ DefineTests[
 				{0, Infinity},
 				2
 			],
-			{{"\"Total Tests: \"", "2"}, {"\"Successes: \"", "2"}},
+			{{"\"Total Tests: \"", "3"}, {"\"Successes: \"", "2"}},
 			Variables:>{notebook},
 			TearDown:>NotebookClose[notebook]
 		],
@@ -1809,7 +1809,48 @@ DefineTests[
 				Cell[category:_, "TestCategory", ___] :> category,
 				{0, Infinity}
 			],
-			{"Basic"},
+			{"Basic", "Additional"},
+			Variables:>{notebook},
+			TearDown:>NotebookClose[notebook]
+		],
+
+		Example[{Options, NamedObject, "Display all object references in their named form:"},
+			notebook=TestSummaryNotebook[summary, NamedObject -> True],
+			_NotebookObject,
+			(*
+			This more detailed test sadly doesn't work on manifold
+			notebookContents = NotebookImport[notebook, _ -> "HeldExpression"];
+			{
+				MemberQ[
+					notebookContents,
+					ECL`IDObjectReferenceP[],
+					{0, Infinity}
+				],
+				MemberQ[
+					notebookContents,
+					ECL`NamedObjectReferenceP[],
+					{0, Infinity}
+				]
+			},
+			{
+				False,
+				True
+			},*)
+			Variables:>{notebook, notebookContents},
+			TearDown:>NotebookClose[notebook]
+		],
+
+		Example[{Options, Differences, "Highlight the specific sub-parts of complex actual and expected values that fail MatchQ:"},
+			notebook=TestSummaryNotebook[summary, Differences -> True],
+			_NotebookObject,
+			(*
+			This more detailed test sadly doesn't work on manifold
+			Count[
+				NotebookImport[notebook, _ -> "HeldExpression"],
+				Style[___],
+				{0, Infinity}
+			],
+			GreaterEqualP[1, 1],*)
 			Variables:>{notebook},
 			TearDown:>NotebookClose[notebook]
 		]
@@ -1837,7 +1878,10 @@ DefineTests[
 					Rule[ExecutionTime,0.000883`],
 					Rule[EquivalenceFunction,MatchQ],
 					Rule[Outcome,"Success"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]],
 				EmeraldTestResult[Association[
 					Description -> "Extract the Actual Value from EmeraldTestResult:",
@@ -1857,10 +1901,37 @@ DefineTests[
 					Rule[ExecutionTime,0.000566`],
 					Rule[EquivalenceFunction,MatchQ],
 					Rule[Outcome,"Success"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]]
 			]],
-			Rule[ResultFailures,List[]],
+			Rule[ResultFailures,List[
+				EmeraldTestResult[Association[
+					Description -> "Match the object reference:",
+					Rule[Category,Additional],
+					Rule[SubCategory,Null],
+					Rule[Expression,HoldForm[
+						RunTest[
+							Test["Object test:",Object[User, Emerald, Developer, "id:54n6evLeqPd9"],Object[User, Emerald, Developer, "david.ascough"]]
+						][ActualValue]
+					]],
+					Rule[ActualValue,Defer[Defer[Object[User, Emerald, Developer, "id:54n6evLeqPd9"]]]],
+					Rule[Passed,True],
+					Rule[ExpectedValue,HoldForm[Defer[Object[User, Emerald, Developer, "david.ascough"]]]],
+					Rule[ExpectedMessages,List[]],
+					Rule[ActualMessages,List[]],
+					Rule[TimeConstraint,60],
+					Rule[ExecutionTime,0.000566`],
+					Rule[EquivalenceFunction,MatchQ],
+					Rule[Outcome,"ResultFailure"],
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
+				]]
+			]],
 			Rule[TimeoutFailures,List[]],
 			Rule[MessageFailures,List[]],
 			Rule[Results, List[
@@ -1882,7 +1953,10 @@ DefineTests[
 					Rule[ExecutionTime,0.000883`],
 					Rule[EquivalenceFunction,MatchQ],
 					Rule[Outcome,"Success"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]],
 				EmeraldTestResult[Association[
 					Description -> "Extract the Actual Value from EmeraldTestResult:",
@@ -1902,7 +1976,33 @@ DefineTests[
 					Rule[ExecutionTime,0.000566`],
 					Rule[EquivalenceFunction,MatchQ],
 					Rule[Outcome,"Success"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
+				]],
+				EmeraldTestResult[Association[
+					Description -> "Match the object reference:",
+					Rule[Category,Additional],
+					Rule[SubCategory,Null],
+					Rule[Expression,HoldForm[
+						RunTest[
+							Test["Object test:",Object[User, Emerald, Developer, "id:54n6evLeqPd9"],Object[User, Emerald, Developer, "david.ascough"]]
+						][ActualValue]
+					]],
+					Rule[ActualValue,Defer[Defer[Object[User, Emerald, Developer, "id:54n6evLeqPd9"]]]],
+					Rule[Passed,True],
+					Rule[ExpectedValue,HoldForm[Defer[Object[User, Emerald, Developer, "david.ascough"]]]],
+					Rule[ExpectedMessages,List[]],
+					Rule[ActualMessages,List[]],
+					Rule[TimeConstraint,60],
+					Rule[ExecutionTime,0.000566`],
+					Rule[EquivalenceFunction,MatchQ],
+					Rule[Outcome,"ResultFailure"],
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]]
 			]],
 			Rule[SuccessRate,Quantity[100.`,"Percent"]],
@@ -1921,7 +2021,10 @@ DefineTests[
 					Rule[FatalFailure,False],
 					Rule[TimeConstraint,60],
 					Rule[ID,"d6fed3cf-2bd1-463c-8fb4-7ba4a4061ff9"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]],
 				EmeraldTest[Association[
 					Description -> "Extract the Actual Value from EmeraldTestResult:",
@@ -1937,7 +2040,33 @@ DefineTests[
 					Rule[FatalFailure,False],
 					Rule[TimeConstraint,60],
 					Rule[ID,"282296e7-2a67-4a73-b740-df0b8904532c"],
-					Rule[Sandbox, False]
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
+				]],
+				EmeraldTestResult[Association[
+					Description -> "Match the object reference:",
+					Rule[Category,Additional],
+					Rule[SubCategory,Null],
+					Rule[Expression,HoldForm[
+						RunTest[
+							Test["Object test:",Object[User, Emerald, Developer, "id:54n6evLeqPd9"],Object[User, Emerald, Developer, "david.ascough"]]
+						][ActualValue]
+					]],
+					Rule[ActualValue,Defer[Defer[Object[User, Emerald, Developer, "id:54n6evLeqPd9"]]]],
+					Rule[Passed,True],
+					Rule[ExpectedValue,HoldForm[Defer[Object[User, Emerald, Developer, "david.ascough"]]]],
+					Rule[ExpectedMessages,List[]],
+					Rule[ActualMessages,List[]],
+					Rule[TimeConstraint,60],
+					Rule[ExecutionTime,0.000566`],
+					Rule[EquivalenceFunction,MatchQ],
+					Rule[Outcome,"ResultFailure"],
+					Rule[Sandbox, False],
+					Rule[SessionUUID, $SessionUUID],
+					Rule[Database, "https://constellation-stage.emeraldcloudlab.com"],
+					Rule[ObjectNames, {{Object[User, Emerald, Developer, "id:54n6evLeqPd9"], Object[User, Emerald, Developer, "david.ascough"]}}]
 				]]
 			]],
 			Rule[RunTime,Quantity[0.001989`,"Seconds"]]

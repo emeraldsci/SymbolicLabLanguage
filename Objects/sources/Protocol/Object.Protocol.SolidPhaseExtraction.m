@@ -259,7 +259,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterP[0 Kelvin],
-				Description -> "For each member of SampleExpression, the environmental temperature where the Instrument is set up for ExperimentSolidPhaseExtraction to be performed. The solutions' temperture can be different from ExtractionTemperature.",
+				Description -> "For each member of SampleExpression, the environmental temperature where the Instrument is set up for ExperimentSolidPhaseExtraction to be performed. The solutions' temperature can be different from ExtractionTemperature.",
 				Category -> "Instrument Setup",
 				IndexMatching -> SampleExpression
 			},
@@ -357,12 +357,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "PreFlush",
 				IndexMatching -> SampleExpression
 			},
-			PreFlushingSolutionDrainTime -> {
+			PreFlushingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for PreFlushingSolution to be flushed through the sorbent.",
+				Category -> "PreFlush",
+				IndexMatching -> SampleExpression
+			},
+			PreFlushingSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after PreFlushingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "PreFlush",
+				IndexMatching -> SampleExpression
+			},
+			PreFlushingSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the PreFlushingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "PreFlush",
 				IndexMatching -> SampleExpression
 			},
@@ -374,7 +392,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "PreFlush",
 				IndexMatching -> SampleExpression
 			},
-			MaxPreFlushingSolutionDrainTime -> {
+			MaxPreFlushingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -509,12 +527,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Equilibration",
 				IndexMatching -> SampleExpression
 			},
-			ConditioningSolutionDrainTime -> {
+			ConditioningTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for ConditioningSolution to be flushed through the sorbent.",
+				Category -> "Equilibration",
+				IndexMatching -> SampleExpression
+			},
+			ConditioningSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after ConditioningSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Equilibration",
+				IndexMatching -> SampleExpression
+			},
+			ConditioningSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the ConditioningSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "Equilibration",
 				IndexMatching -> SampleExpression
 			},
@@ -526,7 +562,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Equilibration",
 				IndexMatching -> SampleExpression
 			},
-			MaxConditioningSolutionDrainTime -> {
+			MaxConditioningTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -653,12 +689,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			WashingSolutionDrainTime -> {
+			WashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for WashingSolution to be flushed through the sorbent.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			WashingSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after WashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			WashingSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the WashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
@@ -670,7 +724,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			MaxWashingSolutionDrainTime -> {
+			MaxWashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -805,12 +859,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			SecondaryWashingSolutionDrainTime -> {
+			SecondaryWashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for SecondaryWashingSolution to be flushed through the sorbent.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			SecondaryWashingSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after SecondaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			SecondaryWashingSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the SecondaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
@@ -822,7 +894,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			MaxSecondaryWashingSolutionDrainTime -> {
+			MaxSecondaryWashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -957,12 +1029,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			TertiaryWashingSolutionDrainTime -> {
+			TertiaryWashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for TertiaryWashingSolution to be flushed through the sorbent.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			TertiaryWashingSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after TertiaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Washing",
+				IndexMatching -> SampleExpression
+			},
+			TertiaryWashingSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the TertiaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
@@ -974,7 +1064,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Washing",
 				IndexMatching -> SampleExpression
 			},
-			MaxTertiaryWashingSolutionDrainTime -> {
+			MaxTertiaryWashingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -1112,12 +1202,30 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Elution",
 				IndexMatching -> SampleExpression
 			},
-			ElutingSolutionDrainTime -> {
+			ElutingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
 				Units -> Minute,
 				Description -> "For each member of SampleExpression, the amount of time for ElutingSolution to be flushed through the sorbent.",
+				Category -> "Elution",
+				IndexMatching -> SampleExpression
+			},
+			ElutingSolutionDrainTime -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterEqualP[0 Minute],
+				Units -> Minute,
+				Description -> "For each member of SampleExpression, the amount of time to wait after ElutingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Elution",
+				IndexMatching -> SampleExpression
+			},
+			ElutingSolutionPipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the ElutingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 				Category -> "Elution",
 				IndexMatching -> SampleExpression
 			},
@@ -1129,7 +1237,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Elution",
 				IndexMatching -> SampleExpression
 			},
-			MaxElutingSolutionDrainTime -> {
+			MaxElutingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -1274,7 +1382,7 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Loading",
 				IndexMatching -> SampleExpression
 			},
-			LoadingSampleDrainTime -> {
+			LoadingTime -> {
 				Format -> Multiple,
 				Class -> Expression,
 				Pattern :> (GreaterEqualP[0 Minute] | Null) | {(GreaterEqualP[0 Minute] | Null)..},
@@ -1282,15 +1390,32 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Category -> "Loading",
 				IndexMatching -> SampleExpression
 			},
+			LoadingSampleDrainTime -> {
+				Format -> Multiple,
+				Class -> Expression,
+				Pattern :> (GreaterEqualP[0 Minute] | Null) | {(GreaterEqualP[0 Minute] | Null)..},
+				Description -> "For each member of SampleExpression, the amount of time to wait after LoadingSample has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+				Category -> "Loading",
+				IndexMatching -> SampleExpression
+			},
+			LoadingSamplePipettingMethod -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Model[Method, Pipetting],
+				Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the sample when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+				Category -> "Loading",
+				IndexMatching -> SampleExpression
+			},
 			LoadingSampleUntilDrained -> {
 				Format -> Multiple,
 				Class -> Expression,
 				Pattern :> BooleanP,
-				Description -> "For each member of SampleExpression, Indicates if LoadingSample is continually flushed through the cartridge in cycle of every LoadingSampleDrainTime until it is drained entirely, or until MaxLoadingSampleDrainTime has been reached.",
+				Description -> "For each member of SampleExpression, Indicates if LoadingSample is continually flushed through the cartridge in cycle of every LoadingTime until it is drained entirely, or until MaxLoadingTime has been reached.",
 				Category -> "Loading",
 				IndexMatching -> SampleExpression
 			},
-			MaxLoadingSampleDrainTime -> {
+			MaxLoadingTime -> {
 				Format -> Multiple,
 				Class -> Real,
 				Pattern :> GreaterEqualP[0 Minute],
@@ -1755,6 +1880,14 @@ DefineObjectType[Object[Protocol, SolidPhaseExtraction],
 				Headers -> {"Cartridge", "Placement"},
 				Category -> "Placements",
 				Developer -> True,
+				IndexMatching -> SampleExpression
+			},
+			CartridgePosition -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> WellP,
+				Description -> "For each member of SampleExpression, the well position within the ExtractionCartridge where the pooled SamplesIn will be placed.",
+				Category -> "General",
 				IndexMatching -> SampleExpression
 			},
 			PreFlushingContainerOutPlacements -> {

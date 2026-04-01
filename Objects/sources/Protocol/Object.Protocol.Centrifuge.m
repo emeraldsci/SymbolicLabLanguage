@@ -19,6 +19,17 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			Description -> "The balance instrument used to weigh the input containers to ensure the centrifuge is balanced properly.",
 			Category -> "Centrifuge Balancing"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the input containers are weighed.",
+			Category -> "Centrifuge Balancing"
+		},
 		ContainerWeights -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -190,6 +201,25 @@ DefineObjectType[Object[Protocol, Centrifuge], {
 			],
 			Description -> "The centrifuge buckets attached to the rotors used for this centrifugation.",
 			Category -> "Centrifuge Setup"
+		},
+		BucketCovers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item, Lid],
+				Model[Item, Lid]
+			],
+			Description -> "The covers for the centrifuge buckets used for this centrifugation.",
+			Category -> "Centrifuge Setup"
+		},
+		TransferEnvironments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]],
+			Description -> "The biosafety cabinet in which biohazardous samples are loaded into and removed from the bucket.",
+			Category -> "General"
 		},
 		CentrifugeAdapters -> {
 			Format -> Multiple,

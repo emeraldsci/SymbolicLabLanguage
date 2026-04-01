@@ -521,6 +521,13 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "Indicates if the SampleLink are loaded by a robotic liquid handler or manually into the assay container.",
 		Category -> "General"
 	},
+	MaxLoadingRetries->{
+		Format->Single,
+		Class->Integer,
+		Pattern:>GreaterEqualP[1,1],
+		Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+		Category->"General"
+	},
 	BlankLabel -> {
 		Format -> Multiple,
 		Class -> String,
@@ -555,7 +562,17 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "For each member of SampleLink, indicates if the aliquot used to measure the absorbance should be returned to source container after each reading.",
 		Category -> "Data Processing",
 		IndexMatching -> SampleLink
+	},
+
+	(* -- Sample Post-Processing -- *)
+	ImageMicrofluidicPlate -> {
+		Format -> Single,
+		Class -> Expression,
+		Pattern :> Alternatives[PreRead, PostRead, All],
+		Description -> "When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+		Category -> "Sample Post-Processing"
 	}
+
 };
 $ObjectUnitOperationPlateReaderKineticInjectionFields = {
 	TertiaryInjectionSample -> {
@@ -722,13 +739,6 @@ $ObjectUnitOperationFluorescenceIntensityFields = {
 		Description->"For each member of ExcitationWavelength, the gain which should be applied to the signal reaching the primary detector during the excitation scan. This may be specified either as a direct voltage, or as a percentage (which indicates that the gain should be set such that the AdjustmentSample fluoresces at that percentage of the instrument's dynamic range).",
 		IndexMatching -> ExcitationWavelength,
 		Category -> "Optics"
-	},
-	MicrofluidicChipLoading -> {
-		Format -> Single,
-		Class -> Expression,
-		Pattern :> Alternatives[Robotic, Manual],
-		Description -> "The loading method for microfluidic chips.",
-		Category -> "General"
 	}
 };
 

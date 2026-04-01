@@ -422,9 +422,11 @@ importCloudFile[cloudFile:EmeraldCloudFileP, ops:OptionsPattern[]]:=Module[
 		
 		(* if the extension is xlsx, update the Format, otherwise leave Indeterminate *)
 		Switch[keyExtension,
-				"xlsx", "XLSX",
-				"docx", "docxFile",
-				_, Indeterminate
+			"xlsx", "XLSX",
+			"docx", "docxFile",
+			"csv", "CSV",
+			"tsv", "TSV",
+			_, Indeterminate
 			
 		]
 	];
@@ -455,6 +457,9 @@ importCloudFile[cloudFile:EmeraldCloudFileP, ops:OptionsPattern[]]:=Module[
 						(* clean up the extracted files *)
 						Quiet[DeleteFile[docxFilePaths]];
 						importedDocxFiles,
+					(* In Wolfram 14.2 - there are bugs when importing and exporting CSV and TSV, necessitating the additional options *)
+					"CSV" | "TSV",
+						Import[path, format, "Backend" -> "Table", MissingValuePattern -> None],
 					(* anything else, import that format specifically *)
 					_,
 						Import[path, format]

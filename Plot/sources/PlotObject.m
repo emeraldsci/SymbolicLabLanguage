@@ -528,6 +528,29 @@ plotObject[in:Alternatives[
 	PatternSequence[{{ObjectP[Object[Data,Volume]]..}..},{{ObjectP[Object[Data,Volume]]..}..}]
 ],ops:OptionsPattern[PlotVolume]]:=	PlotVolume[in,ops]
 
+(* ::Subsubsection:: *)
+(*Object[Data,Vibration]*)
+
+
+plotObject[in:plotInputPattern[Object[Data,Vibration]],ops:OptionsPattern[PlotVibration]]:=
+		PlotVibration[in,ops]
+
+plotObject[in:Alternatives[
+	PatternSequence[{ObjectP[Object[Data,Vibration]]..},{ObjectP[Object[Data,Vibration]]..}],
+	PatternSequence[{{ObjectP[Object[Data,Vibration]]..}..},{{ObjectP[Object[Data,Vibration]]..}..}]
+],ops:OptionsPattern[PlotVibration]]:=	PlotVibration[in,ops]
+
+(* ::Subsubsection:: *)
+(*Object[Data,VolumetricFlowRate]*)
+
+
+plotObject[in:plotInputPattern[Object[Data,VolumetricFlowRate]],ops:OptionsPattern[PlotSensor]]:=
+		PlotSensor[in,ops]
+
+plotObject[in:Alternatives[
+	PatternSequence[{ObjectP[Object[Data,VolumetricFlowRate]]..},{ObjectP[Object[Data,VolumetricFlowRate]]..}],
+	PatternSequence[{{ObjectP[Object[Data,VolumetricFlowRate]]..}..},{{ObjectP[Object[Data,VolumetricFlowRate]]..}..}]
+],ops:OptionsPattern[PlotSensor]]:=	PlotSensor[in,ops]
 
 
 (* ::Subsubsection:: *)
@@ -564,6 +587,9 @@ plotObject[Volume,in:Alternatives[
 	PatternSequence[{{_?DistanceQ..}..},{{_?DistanceQ..}..}]
 ],ops:OptionsPattern[PlotVolume]]:=	PlotVolume[in,ops]
 
+plotObject[plotInputPattern[Object[Data,Vibration]],ops:OptionsPattern[PlotVibration]]:=	PlotVibration[in,ops]
+
+plotObject[plotInputPattern[Object[Data,VolumetricFlowRate]],ops:OptionsPattern[PlotSensor]]:=	PlotSensor[in,ops]
 
 
 (* ::Subsubsection:: *)
@@ -606,7 +632,6 @@ plotObject[
 	in:(ObjectP[Object[Data,DissolvedOxygen]]|{ObjectP[Object[Data, DissolvedOxygen]]..}),
 	ops:OptionsPattern[PlotDissolvedOxygen]
 ]:=PlotDissolvedOxygen[in,ops];
-
 
 (* ::Subsubsection:: *)
 (*Trajectory*)
@@ -671,7 +696,6 @@ plotObject[myDataObject:plotInputPattern[Object[Data,XRayDiffraction]], ops:Opti
 plotObject[in:plotInputPattern[Object[Data,DNASequencing]],ops:OptionsPattern[PlotDNASequencing]]:=PlotDNASequencing[in,ops];
 
 plotObject[DNASequencing,xy:(CoordinatesP|{CoordinatesP..}|{{CoordinatesP..}..}),ops:OptionsPattern[PlotDNASequencing]]:=PlotDNASequencing[xy,ops];
-
 
 (* ::Subsubsection:: *)
 (*Object[Simulation, ReactionMechanism]*)
@@ -1151,7 +1175,6 @@ plotObject[input:ListableP[ObjectP[Object[Analysis, StandardCurve]]], ops:Option
 plotObject[input:ListableP[ObjectP[Object[Analysis, DNASequencing]]], ops:OptionsPattern[PlotDNASequencingAnalysis]]:=PlotDNASequencingAnalysis[input, ops];
 
 plotObject[input:ListableP[ObjectP[Object[Analysis, Smoothing]]], ops:OptionsPattern[PlotSmoothing]] := PlotSmoothing[input, ops];
-
 (* Plot ImageFile of these types *)
 plotObject[input:ListableP[ObjectP[{Object[Instrument],Model[Instrument], Object[Part], Model[Part], Object[Sensor], Model[Sensor], Object[Item], Model[Item], Object[Plumbing], Model[Plumbing], Object[Wiring], Model[Wiring], Object[Product]}]],ops:OptionsPattern[plotCloudFile]]:=plotCloudFile[input,ops];
 
@@ -1160,6 +1183,10 @@ plotObject[input:ListableP[ObjectP[Model[Container]]], ops:OptionsPattern[PlotIm
 plotObject[input:ListableP[ObjectP[Object[Data, Appearance]]], ops:OptionsPattern[PlotImage]] := PlotImage[input, ops];
 
 plotObject[input:ListableP[ObjectP[Object[Data, Volume]]], ops:OptionsPattern[PlotVolume]] := PlotVolume[ToList[input], ops];
+
+plotObject[input:ListableP[ObjectP[Object[Data, Vibration]]], ops:OptionsPattern[PlotVibration]] := PlotVibration[ToList[input], ops];
+
+plotObject[input:ListableP[ObjectP[Object[Data, VolumetricFlowRate]]], ops:OptionsPattern[PlotSensor]] := PlotSensor[ToList[input], ops];
 
 plotObject[image:ListableP[_Image | _Graphics | EmeraldCloudFileP],ops:OptionsPattern[PlotImage]]:=PlotImage[image,ops];
 
@@ -1381,7 +1408,7 @@ dataPlots={
 	PlotGasChromatographyMethod,PlotGradient,PlotIRSpectroscopy,PlotLuminescenceKinetics,
 	PlotLuminescenceSpectroscopy,PlotMassSpectrometry, PlotMeasureMeltingPoint, PlotMicroscope, PlotNephelometry, PlotNephelometryKinetics, PlotNMR,PlotNMR2D,
 	PlotPAGE,PlotpH,PlotPowderXRD,PlotCrystallizationImagingLog,PlotqPCR,PlotDigitalPCR,PlotRamanSpectroscopy,PlotSensor,
-	PlotSurfaceTension,PlotTLC,PlotVacuumEvaporation,PlotVolume,PlotWestern,PlotCircularDichroism,
+	PlotSurfaceTension,PlotTLC,PlotVacuumEvaporation,PlotVolume,PlotVibration,PlotWestern,PlotCircularDichroism,
 	PlotChromatographyMassSpectra,PlotDynamicFoamAnalysis,PlotAdjustpH
 };
 

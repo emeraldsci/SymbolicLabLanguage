@@ -158,7 +158,7 @@ DefineTests[EmeraldDateListPlot,
 				FrameLabel->{Automatic,"Estimated Price of Toilet Paper (USD)"},
 				Filling->Bottom,
 				FillingStyle->Gray,
-				Prolog->Inset[Import["ExampleData/spikey.tiff"]]
+				Prolog->Inset[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]]
 			],
 			ValidGraphicsP[]
 		],
@@ -167,7 +167,7 @@ DefineTests[EmeraldDateListPlot,
 				FrameLabel->{Automatic,"Estimated Price of Toilet Paper (USD)"},
 				Filling->Bottom,
 				FillingStyle->Gray,
-				Epilog->Inset[Framed@Import["ExampleData/spikey.tiff"]]
+				Epilog->Inset[Framed@ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]]
 			],
 			ValidGraphicsP[]
 		],

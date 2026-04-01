@@ -1950,7 +1950,6 @@ validModelPartTybeBlockQTests[packet:PacketP[Model[Part, TubeBlock]]]:={
 };
 
 
-
 (* ::Subsection:: *)
 (* Test Registration *)
 

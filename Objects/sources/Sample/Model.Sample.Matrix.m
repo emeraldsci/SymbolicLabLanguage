@@ -44,6 +44,35 @@ $ModelSampleStockSolutionSharedFields={
 		Category->"Formula",
 		Abstract->True
 	},
+
+	(* --- PreRinse Labware --- *)
+	PreRinseLabware->{
+		Format -> Single,
+		Class -> Boolean,
+		Pattern :> BooleanP,
+		Description -> "Indicates if labware used for transfers are rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+		Category->"PreRinse Labware"
+	},
+	NumberOfPreRinses->{
+		Format -> Single,
+		Class -> Integer,
+		Pattern :> GreaterEqualP[0],
+		Units -> None,
+		Description -> "The number of times labware used for transfers are rinsed with PreRinseSolution before use with the source sample.",
+		Category->"PreRinse Labware"
+	},
+	PreRinseSolution->{
+		Format -> Single,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Alternatives[
+			Model[Sample],
+			Object[Sample]
+		],
+		Description -> "The solution that is used to rinse labware used for transfers (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+		Category->"PreRinse Labware"
+	},
+
 	FillToVolumeMethod->{
 		Format->Single,
 		Class->Expression,

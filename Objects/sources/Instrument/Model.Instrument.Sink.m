@@ -8,6 +8,13 @@ DefineObjectType[Model[Instrument, Sink], {
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {
-
+		WaterGenerated -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Sample],
+			Description -> "The type of water that this instrument dispenses.",
+			Category -> "Instrument Specifications"
+		}
 	}
 }];

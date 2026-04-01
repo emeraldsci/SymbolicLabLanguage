@@ -202,6 +202,16 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Object[Protocol]]
 		],
+		Example[{Additional, "We can allow a type if we can find a filter for it and there's no other conflicts, even though it is not the preferred based on sample volume:"},
+			ExperimentFilter[
+				(* 500mL is preferred to run with Vacuum, but there is no nylon filter for vacuum, it will have to go through PeristalticPump *)
+				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
+				MembraneMaterial -> Nylon, Output -> Options
+			],
+			KeyValuePattern[
+				FiltrationType -> PeristalticPump
+			]
+		],
 		Test["We can produce an RSP filter protocol using VSpin:", 
 			Download[
 				ExperimentFilter[{Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID]},
@@ -297,6 +307,22 @@ DefineTests[ExperimentFilter,
 			$Failed,
 			Stubs :> {$DeveloperSearch = False},
 			Messages :> {Warning::SterileContainerRecommended, Error::CollectionContainerNoCounterweights, Error::CollectionContainerPlateMismatch, Error::InvalidOption}
+		],
+		Test["Return an error if WorkCell is specified, but Manual preparation is required or specified:",
+			ExperimentFilter[
+				Model[Sample, "Milli-Q water"],
+				AliquotAmount -> 0.2 Milliliter,
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, PES, 0.22um, 0.3mL"],
+				Intensity -> 500 RPM,
+				Preparation -> Manual,
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::InvalidOption
+			}
 		],
 		(* ===Options=== *)
 		Example[{Options, Upload, "Indicates if the protocols generated should be placed InCart after execution to be confirmed at a later time:"},
@@ -917,7 +943,7 @@ DefineTests[ExperimentFilter,
 				Time -> 45 Minute,
 				WashRetentate -> True,
 				RetentateWashVolume -> 50 Microliter,
-				RetentateWashDrainTime -> 15 Minute,
+				RetentateWashTime -> 15 Minute,
 				Centrifuge -> True
 			],
 			ObjectP[Object[Protocol, Filter]]
@@ -1044,7 +1070,47 @@ DefineTests[ExperimentFilter,
 			],
 			ObjectP[Object[Protocol, RoboticSamplePreparation]]
 		],
-		Test["Populate the NumberOfResuspensionTADMCurves, NumberOfLoadingTADMCurves, and NumberOfRetentateWashTADMCurves fields in the OutputUnitOperations:", 
+		Example[{Options, RetentateWashPipettingMethod, "RetentateWashPipettingMethod can be set to control the pipetting parameters used when transferring RetentateWashBuffer into the filter plate:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Volume -> 300 Microliter,
+				Preparation -> Robotic,
+				WashRetentate -> True,
+				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
+				RetentateWashVolume -> 50 Microliter,
+				RetentateWashPipettingMethod -> Model[Method, Pipetting, "DMSO"],
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, Omega 3K MWCO, 350uL"],
+				CollectRetentate -> True,
+				RetentateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				FiltrateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				Output -> Options
+			];
+			Lookup[options, RetentateWashPipettingMethod],
+			{{ObjectP[Model[Method, Pipetting, "DMSO"]]}},
+			Variables :> {options}
+		],
+		Example[{Options, RetentateWashPipettingMethod, "RetentateWashPipettingMethod can be set differently for each wash buffer:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Volume -> 300 Microliter,
+				Preparation -> Robotic,
+				WashRetentate -> True,
+				RetentateWashBuffer -> {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+				RetentateWashVolume -> {50 Microliter, 50 Microliter},
+				RetentateWashPipettingMethod -> {Model[Method, Pipetting, "DMSO"], Null},
+				Filter -> Model[Container, Plate, Filter, "Plate Filter, Omega 3K MWCO, 350uL"],
+				CollectRetentate -> True,
+				RetentateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				FiltrateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				Output -> Options
+			];
+			Lookup[options, RetentateWashPipettingMethod],
+			{{ObjectP[Model[Method, Pipetting, "DMSO"]], Null}},
+			Variables :> {options}
+		],
+		Test["Populate the NumberOfResuspensionTADMCurves, NumberOfLoadingTADMCurves, and NumberOfRetentateWashTADMCurves fields in the OutputUnitOperations:",
 			protocol = ExperimentFilter[
 				{
 					Object[Sample, "Filter Sample 1 in filter plate 2" <> $SessionUUID],
@@ -2062,6 +2128,261 @@ DefineTests[ExperimentFilter,
 			],
 			_String
 		],
+
+		(* InitialFiltrate option tests *)
+
+		Example[{Options, InitialFiltrate, "If InitialFiltrate is set to True, a portion of the sample is filtered before retentate collection to prime the filter:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					Output -> Options
+				],
+				InitialFiltrate
+			],
+			True
+		],
+
+		Example[{Options, InitialFiltrate, "If InitialFiltrate is set to True, then populate all the fields in the relevant unit operation:"},
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				BatchedUnitOperations[[1]][{InitialFiltrate, InitialFiltrateVolume, InitialFiltrateContainerOutLink, InitialFiltrateContainerLabel}]
+			],
+			{
+				{True},
+				{VolumeP},
+				{ObjectP[Model[Container]]},
+				{_String}
+			}
+		],
+
+		Example[{Options, InitialFiltrateVolume, "Use the InitialFiltrateVolume option to indicate the volume of sample to filter before retentate collection:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrateVolume -> 1 Milliliter,
+					Output -> Options
+				],
+				InitialFiltrateVolume
+			],
+			EqualP[1 Milliliter]
+		],
+
+		Example[{Options, InitialFiltrateContainerOut, "Use the InitialFiltrateContainerOut option to indicate the container to collect the initial filtrate:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					Output -> Options
+				],
+				InitialFiltrateContainerOut
+			],
+			ObjectP[Model[Container]]
+		],
+
+		Example[{Options, InitialFiltrateContainerOut, "Use the InitialFiltrateContainerOut option with a specific container object to collect the initial filtrate:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateContainerOut -> Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID],
+					Output -> Options
+				],
+				InitialFiltrateContainerOut
+			],
+			ObjectP[Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID]]
+		],
+
+		Example[{Options, InitialFiltrateLabel, "Use the InitialFiltrateLabel option to label the initial filtrate sample for use in downstream unit operations:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateLabel -> "my initial filtrate",
+					Output -> Options
+				],
+				InitialFiltrateLabel
+			],
+			"my initial filtrate"
+		],
+
+		Example[{Options, InitialFiltrateLabel, "When InitialFiltrate is True and InitialFiltrateLabel is Automatic, a label is automatically generated:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					Output -> Options
+				],
+				InitialFiltrateLabel
+			],
+			_String
+		],
+
+		Example[{Options, InitialFiltrateContainerLabel, "Use the InitialFiltrateContainerLabel option to indicate the label of the container to collect the initial filtrate:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateContainerLabel -> "initial filtrate container 1",
+					Output -> Options
+				],
+				InitialFiltrateContainerLabel
+			],
+			"initial filtrate container 1"
+		],
+
+		Example[{Options, InitialFiltrateStorageCondition, "Use the InitialFiltrateStorageCondition option to indicate how the initial filtrate is stored after the protocol:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateStorageCondition -> Refrigerator,
+					Output -> Options
+				],
+				InitialFiltrateStorageCondition
+			],
+			Refrigerator
+		],
+
+		Example[{Options, InitialFiltrateDestinationWell, "Use the InitialFiltrateDestinationWell option to indicate the well in the InitialFiltrateContainerOut where the initial filtrate is collected:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateDestinationWell -> "A1",
+					Output -> Options
+				],
+				InitialFiltrateDestinationWell
+			],
+			"A1"
+		],
+
+		Test["When InitialFiltrate is True, the InitialFiltrateLabel is populated in the unit operation:",
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateLabel -> "my initial filtrate label",
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				BatchedUnitOperations[[1]][InitialFiltrateLabel]
+			],
+			{"my initial filtrate label"}
+		],
+
+		Test["When InitialFiltrate is True, the InitialFiltrateDestinationWell defaults to \"A1\" for a vessel container and is populated in the unit operation:",
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				BatchedUnitOperations[[1]][InitialFiltrateDestinationWell]
+			],
+			{"A1"}
+		],
+
+		Test["When InitialFiltrate is True and the InitialFiltrateContainerOut is a self-standing vessel, the InitialFiltrateDestinationRack is Null in the unit operation:",
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateContainerOut -> Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				BatchedUnitOperations[[1]][InitialFiltrateDestinationRack]
+			],
+			{Null}
+		],
+
+		Test["When InitialFiltrate is True, the InitialFiltrateTime is computed from the InitialFiltrateVolume and resolved flow rate and is populated as a positive time in the unit operation:",
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateVolume -> 2 Milliliter,
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				BatchedUnitOperations[[1]][InitialFiltrateTime]
+			],
+			{GreaterP[0 Minute]}
+		],
+
+		Test["When InitialFiltrate is True, the protocol object's InitialFiltrateContainersOut and InitialFiltrateDestinationWell fields are populated:",
+			Download[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateContainerOut -> Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID],
+					InitialFiltrateDestinationWell -> "A1",
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID]
+				],
+				{InitialFiltrateContainersOut, InitialFiltrateDestinationWell}
+			],
+			{
+				{LinkP[Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID]]},
+				{"A1"}
+			}
+		],
+
+		Test["When InitialFiltrate is True, the simulation creates a sample in the InitialFiltrateContainerOut with the correct volume and reduces the filtrate volume accordingly:",
+			Module[{simulation, initialFiltrateContainerLabel, filtrateContainerLabel, initialFiltrateVolume, filtrateVolume},
+
+				(* Run the experiment with InitialFiltrate on and a specific volume, getting the simulation back *)
+				simulation = ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FiltrationType -> Syringe,
+					InitialFiltrate -> True,
+					InitialFiltrateVolume -> 2 Milliliter,
+					Output -> Simulation
+				];
+
+				(* Get the initial filtrate container and filtrate container labels from the unit operation *)
+				{initialFiltrateContainerLabel, filtrateContainerLabel} = Download[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					{Protocols[[-1]][BatchedUnitOperations][[1]][InitialFiltrateContainerLabel][[1]], Protocols[[-1]][BatchedUnitOperations][[1]][FiltrateContainerLabel][[1]]},
+					Simulation -> simulation
+				];
+
+				(* Download the volumes of the samples in the initial filtrate and filtrate containers using labels *)
+				initialFiltrateVolume = Download[
+					LookupLabeledObject[simulation, initialFiltrateContainerLabel],
+					Contents[[1, 2]][Volume],
+					Simulation -> simulation
+				];
+
+				filtrateVolume = Download[
+					LookupLabeledObject[simulation, filtrateContainerLabel],
+					Contents[[1, 2]][Volume],
+					Simulation -> simulation
+				];
+
+				{initialFiltrateVolume, filtrateVolume}
+			],
+			(* InitialFiltrateVolume is 2 mL; remaining filtrate volume is 15 mL - 2 mL = 13 mL *)
+			{EqualP[2 Milliliter], EqualP[13 Milliliter]},
+			TimeConstraint -> 600
+		],
+
 		Example[{Options, Instrument, "Instrument option allows specification of instrument to use for filtration:"},
 			Lookup[
 				ExperimentFilter[
@@ -2559,6 +2880,27 @@ DefineTests[ExperimentFilter,
 			],
 			{"Resuspension Buffer Container 1", _String}
 		],
+		Example[{Options, {Time, SampleLoadingDrainTime, RetentateWashTime, RetentateWashDrainTime}, "SampleLoadingDrainTime and RetentateWashDrainTime defaults to 3 Minutes when Preparation -> Robotic:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Preparation -> Robotic,
+				WashRetentate -> True,
+				Output -> Options
+			];
+			Lookup[options, {Time, SampleLoadingDrainTime, RetentateWashTime, RetentateWashDrainTime}],
+			{{EqualP[5 Minute]}, {EqualP[5 Minute]}, {{EqualP[5 Minute]}}, {{EqualP[5 Minute]}}},
+			Variables :> {options}
+		],
+		Example[{Options, {Time, SampleLoadingDrainTime, RetentateWashTime, RetentateWashDrainTime}, "SampleLoadingDrainTime and RetentateWashDrainTime are uploaded properly when Preparation -> Robotic:"},
+			protocol = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Preparation -> Robotic,
+				WashRetentate -> True
+			];
+			Download[protocol, OutputUnitOperations[[1]][{Time, SampleLoadingDrainTime, RetentateWashTime, RetentateWashDrainTime}]],
+			{{EqualP[5 Minute]}, {EqualP[5 Minute]}, {{EqualP[5 Minute]}}, {{EqualP[5 Minute]}}},
+			Variables :> {protocol}
+		],
 		Example[{Options, FilterStorageCondition, "The storage condition at which the filter should be stored after the end of the protocol:"},
 			Lookup[
 				ExperimentFilter[
@@ -2721,6 +3063,14 @@ DefineTests[ExperimentFilter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], CentrifugeTime -> 10*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -2772,6 +3122,15 @@ DefineTests[ExperimentFilter,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 1200
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentFilter[Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];
@@ -2975,6 +3334,109 @@ DefineTests[ExperimentFilter,
 			],
 			{__Rule}
 		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Time is rounded:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Time -> 10.252 Minute,
+				Output -> Options
+			], Time],
+			10.25 Minute,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Temperature is rounded in increments of 1 Celsius:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 15mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Temperature -> 12.2 Celsius,
+				Output -> Options
+			], Temperature],
+			12 Celsius,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option FlowRate is rounded:"},
+			Lookup[
+				ExperimentFilter[
+					Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+					FlowRate -> 3.001 Milliliter / Minute,
+					FiltrateContainerOut -> Model[Container, Vessel, "50mL Tube"],
+					Output -> Options
+				],
+				FlowRate
+			],
+			3 Milliliter / Minute,
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option Intensity as RPM is rounded for manual prep:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Intensity -> 1001 RPM,
+				Output -> Options
+			], Intensity],
+			1000 RPM,
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option RetentateWashCentrifugeIntensity as RPM is rounded for manual prep:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				RetentateWashBuffer -> Model[Sample, "Milli-Q water"],
+				RetentateWashVolume -> 0.1 Milliliter,
+				RetentateWashCentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, RetentateWashCentrifugeIntensity],
+			{EqualP[1000 RPM]},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option PrewetFilterCentrifugeIntensity as RPM is rounded for manual prep:"},
+			options = ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				PrewetFilterCentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, PrewetFilterCentrifugeIntensity],
+			EqualP[1000 RPM],
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if option Intensity as RCF is rounded for robotic prep:"},
+			Lookup[ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Volume -> 300 Microliter,
+				FiltrationType -> Centrifuge,
+				Intensity -> 200.123 GravitationalAcceleration,
+				Preparation -> Robotic,
+				Output -> Options
+			], Intensity],
+			{EqualP[200.1 GravitationalAcceleration]},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Intensity as RCF is rounded for manual prep:"},
+			Lookup[ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+				FiltrationType -> Centrifuge,
+				Intensity -> 200.123 GravitationalAcceleration,
+				Output -> Options
+			], Intensity],
+			EqualP[200.1 GravitationalAcceleration],
+			Messages :> {Warning::InstrumentPrecision}
+		],
+		Example[{Messages, "InstrumentPrecision", "Throws a warning if option Intensity as RPM is rounded for robotic prep:"},
+			Lookup[ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 1mL" <> $SessionUUID],
+				Volume -> 300 Microliter,
+				FiltrationType -> Centrifuge,
+				Intensity -> 1000.1 RPM,
+				Preparation -> Robotic,
+				Output -> Options
+			], Intensity],
+			{1000 RPM},
+			Messages :> {Warning::InstrumentPrecision}
+		],
 		Example[{Messages, "OccludingRetentateMismatch", "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel must not be specified:"},
 			ExperimentFilter[
 				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
@@ -3017,6 +3479,53 @@ DefineTests[ExperimentFilter,
 			$Failed,
 			Messages :> {Error::PrewetFilterCentrifugeIntensityTypeMismatch, Error::InvalidOption}
 		],
+
+		(* InitialFiltrate error tests *)
+
+		Example[{Messages, "InitialFiltrateMismatch", "Throw an error if InitialFiltrate is set to False but an initial filtrate option is specified:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Syringe,
+				InitialFiltrate -> False,
+				InitialFiltrateVolume -> 1 Milliliter
+			],
+			$Failed,
+			Messages :> {Error::InitialFiltrateMismatch, Error::InvalidOption}
+		],
+
+		Example[{Messages, "InitialFiltrateMismatch", "Throw an error if InitialFiltrate is set to True but an initial filtrate option is explicitly set to Null:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Syringe,
+				InitialFiltrate -> True,
+				InitialFiltrateVolume -> Null
+			],
+			$Failed,
+			Messages :> {Error::InitialFiltrateMismatch, Error::InvalidOption}
+		],
+
+		Example[{Messages, "InitialFiltrateContainerOutMaxVolume", "Throw an error if the InitialFiltrateVolume exceeds the MaxVolume of the InitialFiltrateContainerOut:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 15mL" <> $SessionUUID],
+				FiltrationType -> Syringe,
+				InitialFiltrate -> True,
+				InitialFiltrateVolume -> 3 Milliliter,
+				InitialFiltrateContainerOut -> Model[Container, Vessel, "2mL Tube"]
+			],
+			$Failed,
+			Messages :> {Error::InitialFiltrateContainerOutMaxVolume, Error::InvalidOption}
+		],
+
+		Example[{Messages, "InitialFiltrateTypeMismatch", "Throw an error if InitialFiltrate is set to True but FiltrationType is not Syringe:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID],
+				FiltrationType -> Vacuum,
+				InitialFiltrate -> True
+			],
+			$Failed,
+			Messages :> {Error::InitialFiltrateTypeMismatch, Error::InvalidOption}
+		],
+
 		Example[{Messages, "FiltrationTypeAndInstrumentMismatch", "A mismatch between an instrument and filtration type will product an error message:"},
 			Lookup[
 				ExperimentFilter[
@@ -3347,6 +3856,29 @@ DefineTests[ExperimentFilter,
 			],
 			{Null, Null}
 		],
+		Example[{Messages, "InvalidFiltrationTypeForVolume", "An error will be returned if the sample volume is out of the supported range of the specified FiltrationType:"},
+			ExperimentFilter[
+				Object[Container, Vessel, "Filter Test Container for 1mL sample" <> $SessionUUID],
+				FiltrationType -> PeristalticPump
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidFiltrationTypeForVolume,
+				Error::InvalidOption
+			}
+		],
+		Example[{Messages, "InvalidFiltrationTypeForVolume", "An error will be returned if the sample volume is out of the supported range of the implied FiltrationType:"},
+			ExperimentFilter[
+				Object[Sample, "Filter Sample in filter plate 1" <> $SessionUUID],
+				Filter -> Model[Item, Filter, "Disk Filter, PTFE, 0.22um, 4mm"],
+				Syringe -> Model[Container, Syringe, "10mL Syringe with Luer-Lok\[RegisteredTrademark] Tip"]
+			],
+			$Failed,
+			Messages :> {
+				Error::InvalidFiltrationTypeForVolume,
+				Error::InvalidOption
+			}
+		],
 		Example[{Messages, "NoFilterAvailable", "An error will be returned if there is currently no filter in stock capable of performing the filtration requested:"},
 			Lookup[
 				ExperimentFilter[
@@ -3646,6 +4178,17 @@ DefineTests[ExperimentFilter,
 			],
 			$Failed,
 			Messages :> {Error::PrewetFilterIncompatibleWithFilterType, Error::InvalidOption}
+		],
+		Example[{Messages, "OverOccupiedFilter", "Cannot over-occupy a specified filter object:"},
+			ExperimentFilter[
+				{
+					Object[Sample, "Filter Test Sample with 2L" <> $SessionUUID],
+					Object[Sample, "Filter Test Sample with 500 mL" <> $SessionUUID]
+				},
+				Filter -> Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::OverOccupiedFilter, Error::InvalidOption}
 		]
 	},
 	Parallel -> True,
@@ -3727,7 +4270,10 @@ DefineTests[ExperimentFilter,
 				Object[Container, Plate, "Filter Test heavy plate"<>$SessionUUID],
 
 				Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
-				Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
+				Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID],
+				Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID],
+
+				Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID]
 			};
 
 			(* Check whether the names we want to give below already exist in the database *)
@@ -3737,19 +4283,21 @@ DefineTests[ExperimentFilter,
 			Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
 
 		];
-		Module[{objectID1, objectID2, objectID3, objectID4, firstUpload, secondUpload},
+		Module[{objectID1, objectID2, objectID3, objectID4, objectID5, firstUpload, secondUpload},
 
 			(*create an ID that we'll use for the kitting*)
 			{
 				objectID1,
 				objectID2,
 				objectID3,
-				objectID4
+				objectID4,
+				objectID5
 			} = CreateID[{
 				Object[Container, Vessel, Filter],
 				Object[Container, Vessel, Filter],
 				Object[Container, Vessel],
-				Object[Container, Vessel]
+				Object[Container, Vessel],
+				Object[Item, Filter]
 			}];
 
 
@@ -3915,6 +4463,13 @@ DefineTests[ExperimentFilter,
 						Type->Object[Container, Vessel],
 						Model->Link[Model[Container, Vessel, "2mL Tube"], Objects],
 						Name -> "Filter Test tube with cell sample "<>$SessionUUID,
+						DeveloperObject -> True,
+						Site -> Link[$Site]
+					],
+					Association[
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Filter Test Initial Filtrate Container" <> $SessionUUID,
 						DeveloperObject -> True,
 						Site -> Link[$Site]
 					],
@@ -4104,8 +4659,14 @@ DefineTests[ExperimentFilter,
 						Replace[PositionPlotting] -> Download[Model[Container, Plate, Filter, "id:eGakld0955Lo"], PositionPlotting],
 						Replace[Positions] -> Download[Model[Container, Plate, Filter, "id:eGakld0955Lo"], Positions],
 						DeveloperObject -> True
+					],
+					Association[
+						Type -> Object[Item, Filter],
+						Model -> Link[Model[Item, Filter, "Filter Test Membrane Filter"], Objects],
+						Name -> "Filter Test Membrane Filter" <> $SessionUUID,
+						DeveloperObject -> True,
+						Site -> Link[$Site]
 					]
-
 				}
 			];
 
@@ -4273,7 +4834,10 @@ DefineTests[ExperimentFilter,
 			Object[Protocol, ManualSamplePreparation, "Test MSP for ExperimentFilter unit tests" <> $SessionUUID],
 
 			Object[Container, Vessel, "Filter Test tube with cell sample " <> $SessionUUID],
-			Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID]
+			Object[Sample, "Filter Test cell sample 1 " <> $SessionUUID],
+			Object[Item, Filter, "Filter Test Membrane Filter" <> $SessionUUID],
+
+			Object[Container, Vessel, "Filter Test Initial Filtrate Container" <> $SessionUUID]
 		};
 
 		(* Check whether the names we want to give below already exist in the database *)

@@ -22,7 +22,7 @@ DefineObjectType[Object[Resource, Instrument], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Model[Instrument][RequestedResources],
-			Description -> "The requested instrument models that are reserved to fulfill this resource resquest.",
+			Description -> "The requested instrument models that are reserved to fulfill this resource request.",
 			Category -> "Resources"
 		},
 		Instrument -> {

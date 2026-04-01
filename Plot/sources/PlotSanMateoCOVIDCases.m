@@ -35,11 +35,16 @@ PlotSanMateoCOVIDCases[startTime_DateObject, endTime_DateObject, ops:OptionsPatt
 	sanMateoData = Select[nytData, (Part[#, 4] == "California" && Part[#, 3] == "San Mateo") &];
 
 	(*Pull out dates, cases, and 7-day avg. cases columns*)
+	(* In Wolfram 14.2 we get straight DateObjects *)
+	(* In Mathematica 13.3 and below we get date strings and have to convert them to date objects *)
 	{allDates,allCases,allAvgCases} = Transpose@Part[sanMateoData, All, {1, 5, 6}];
 
 	(* Convert dates to date objects *)
-	allDateObjs=Map[
-		DateObject[ToExpression[StringSplit[#,"-"]]]&,
+	allDateObjs = If[LessQ[$VersionNumber, 14.2],
+		Map[
+			DateObject[ToExpression[StringSplit[#,"-"]]]&,
+			allDates
+		],
 		allDates
 	];
 

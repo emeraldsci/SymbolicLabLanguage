@@ -117,6 +117,18 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Error::InvalidInput
 			}
 		],
+		Example[{Messages, "ConflictingMethodRequirements", "Return an error if WorkCell is specified, but Manual preparation is required or specified:"},
+			ExperimentAbsorbanceSpectroscopy[
+				Object[Container, Vessel, "Test container 3 for ExperimentAbsorbanceSpectroscopy tests" <> $SessionUUID],
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages:>{
+				Error::ConflictingMethodRequirements,
+				Warning::AliquotRequired,
+				Error::InvalidOption
+			}
+		],
 		Example[{Additional,"Basic simulation call with Preparation->Manual:"},
 			ExperimentAbsorbanceSpectroscopy[
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID],
@@ -1853,6 +1865,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Variables :> {options},
 			TimeConstraint -> 500
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			TimeConstraint -> 500,
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Instrument -> Model[Instrument, PlateReader, "Lunatic"], Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1895,7 +1916,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FiltrationType, "The type of filtration method that should be used to perform the filtration:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options},
@@ -1909,7 +1930,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, Filter, "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables :> {options},
@@ -1966,7 +1987,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FilterSyringe, "The syringe used to force the sample through a filter:"},
-			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables :> {options},
@@ -2069,6 +2090,15 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			TimeConstraint -> 500
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
@@ -2264,7 +2294,7 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				RequiredResources[[All, 2]]
 			],
 			Sort@{
-				BlankContainers,Blanks,Checkpoints,ContainersIn,Instrument,Line1PrimaryPurgingSolvent,Line1SecondaryPurgingSolvent,Null,PrimaryInjections,
+				BlankContainers,Blanks,Checkpoints,ContainersIn,Instrument,Line1PrimaryPurgingSolvent,Line1SecondaryPurgingSolvent,PrimaryInjections,
 				SamplesIn
 			}
 		],
@@ -2292,6 +2322,60 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 			ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 3 (200 uL)" <> $SessionUUID], QuantificationAnalyte -> Model[Molecule, Oligomer, "ACTH 18-39"], QuantifyConcentration -> False],
 			$Failed,
 			Messages :> {Error::ConcentrationWavelengthMismatch, Error::InvalidOption}
+		],
+		Example[{Options,ImageMicrofluidicPlate,"If Instrument is Lunatic, ImageMicrofluidicPlate resolves to PostRead:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"]];
+			Download[protocol, ImageMicrofluidicPlate],
+			PostRead,
+			Variables :> {protocol}
+		],
+		Example[{Options,ImageMicrofluidicPlate,"If Instrument is Lunatic, ImageMicrofluidicPlate can be set to control when to image the microfluidic chips:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"], ImageMicrofluidicPlate -> All];
+			Download[protocol, ImageMicrofluidicPlate],
+			All,
+			Variables :> {protocol}
+		],
+		Example[{Options,ImageMicrofluidicPlate,"If Instrument is not Lunatic, ImageMicrofluidicPlate resolves to Null:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"]];
+			Download[protocol, ImageMicrofluidicPlate],
+			Null,
+			Variables :> {protocol}
+		],
+		Example[{Messages,"InvalidImageMicrofluidicPlate","If Instrument is not Lunatic, raise an error if ImageMicrofluidicPlate is not Null:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], ImageMicrofluidicPlate -> All],
+			$Failed,
+			Messages :> {Error::InvalidImageMicrofluidicPlate, Error::InvalidOption},
+			Variables :> {protocol}
+		],
+		Example[{Options,MaxLoadingRetries,"If Instrument is Lunatic, MaxLoadingRetries resolves to 2:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"]];
+			Download[protocol, MaxLoadingRetries],
+			2,
+			Variables :> {protocol}
+		],
+		Example[{Options,MaxLoadingRetries,"If Instrument is Lunatic, MaxLoadingRetries resolves to 6 if the protocol is a subprotocol of a qualification:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"], ParentProtocol -> Object[Qualification, PlateReader, "ExperimentAbsorbanceSpectroscopy Test Qualification " <> $SessionUUID]];
+			Download[protocol, MaxLoadingRetries],
+			6,
+			Variables :> {protocol}
+		],
+		Example[{Options,MaxLoadingRetries,"If Instrument is Lunatic, MaxLoadingRetries can be set to control how many times we can retry the measurements:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "Lunatic"], MaxLoadingRetries -> 5];
+			Download[protocol, MaxLoadingRetries],
+			5,
+			Variables :> {protocol}
+		],
+		Example[{Options,MaxLoadingRetries,"If Instrument is not Lunatic, MaxLoadingRetries resolves to Null:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"]];
+			Download[protocol, MaxLoadingRetries],
+			Null,
+			Variables :> {protocol}
+		],
+		Example[{Messages,"InvalidMaxLoadingRetries","If Instrument is not Lunatic, raise an error if MaxLoadingRetries is not Null:"},
+			protocol = ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1" <> $SessionUUID], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], MaxLoadingRetries -> 5],
+			$Failed,
+			Messages :> {Error::InvalidMaxLoadingRetries, Error::InvalidOption},
+			Variables :> {protocol}
 		],
 		Example[{Additional, "If the input sample has no model, still successfully returns a protocol:"},
 			ExperimentAbsorbanceSpectroscopy[Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Peptide oligomer 5 (200 uL), no model" <> $SessionUUID]],
@@ -2468,7 +2552,9 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Injection 1" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Injection 2" <> $SessionUUID],
 
-				Object[Protocol, AbsorbanceSpectroscopy, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID]
+				Object[Protocol, AbsorbanceSpectroscopy, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID],
+
+				Object[Qualification, PlateReader, "ExperimentAbsorbanceSpectroscopy Test Qualification " <> $SessionUUID]
 
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
@@ -3012,6 +3098,11 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 						},
 						UnresolvedOptions -> {EquilibrationTime -> 46*Minute}
 					|>,
+					<|
+						Type -> Object[Qualification, PlateReader],
+						Name -> "ExperimentAbsorbanceSpectroscopy Test Qualification " <> $SessionUUID,
+						DeveloperObject -> True
+					|>,
 					<|Object -> Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 2 (300 uL)" <> $SessionUUID], Replace[Composition] -> {{5 Millimolar, Link[Model[Molecule, "Water"]], Now}}|>,
 					(* test on a model-less sample *)
 					<|Object -> sample19, Model -> Null|>
@@ -3132,7 +3223,9 @@ DefineTests[ExperimentAbsorbanceSpectroscopy,
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy Acetone Test Chemical 2 (1.5 mL)" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy test mammalian sample, no model" <> $SessionUUID],
 				Object[Sample, "ExperimentAbsorbanceSpectroscopy New Test Chemical 1 (Solid)" <> $SessionUUID],
-				Object[Protocol, AbsorbanceSpectroscopy, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID]
+				Object[Protocol, AbsorbanceSpectroscopy, "Old Absorbance Spectroscopy Protocol with 1 Hour of equilibration time" <> $SessionUUID],
+				Object[Qualification, PlateReader, "ExperimentAbsorbanceSpectroscopy Test Qualification " <> $SessionUUID]
+
 			};
 			existingObjs = PickList[allObjs, DatabaseMemberQ[allObjs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False];

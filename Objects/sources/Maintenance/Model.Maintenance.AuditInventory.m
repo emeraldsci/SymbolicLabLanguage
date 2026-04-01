@@ -15,6 +15,27 @@ DefineObjectType[Model[Maintenance, AuditInventory], {
 			Pattern :> Alternatives[Container, Product],
 			Description -> "Indicates if the audit target is product or container/instrument.",
 			Category -> "General"
-		}
+		},
+        AuditLocation -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicate if the location of contents should also be verified in the target container or instrument.",
+            Category -> "General"
+        },
+        AuditNestedContainers -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicate if non-empty containers which are contents of the current Target should also be audited in an AuditInventory subprotocol.",
+            Category -> "General"
+        },
+        MaxNestedContentsToAudit -> {
+            Format -> Single,
+            Class -> Integer,
+            Pattern :> GreaterEqualP[1, 1],
+            Description -> "Indicate the maximum number of nested contents that can be audited in subprotocols. Note this does not count the direct contents.",
+            Category -> "General"
+        }
 	}
 }];

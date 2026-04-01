@@ -118,17 +118,6 @@ DefineObjectType[Object[Protocol, Evaporate], {
 			Category -> "Instrument Specifications",
 			IndexMatching->PooledSamplesIn
 		},
-		Balances -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Alternatives[
-				Object[Instrument],
-				Model[Instrument]
-			],
-			Description -> "The balance instrument used to weigh the centrifuge buckets to ensure the vacuum centrifuge is balanced properly.",
-			Category -> "Instrument Specifications"
-		},
 		BucketWeights -> {
 			Format -> Multiple,
 			Class -> Link,

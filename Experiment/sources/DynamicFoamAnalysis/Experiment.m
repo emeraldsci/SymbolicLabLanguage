@@ -3632,7 +3632,7 @@ dynamicFoamAnalysisResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnres
 
 	uniqueNeedleResource = Map[
 		Function[uniqueSample,
-			uniqueSample -> Resource[Sample -> Model[Item, Needle, "id:4pO6dMmv9pnM"], Name -> ToString[Unique[]]](*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+			uniqueSample -> Resource[Sample -> Model[Item, Needle, "id:4pO6dMmv9pnM"], Name -> ToString[Unique[]]](*"14Ga x 2In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 		],
 		DeleteDuplicates[mySamples]
 	];

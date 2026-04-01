@@ -41,6 +41,15 @@ DefineObjectType[Object[Part,Computer],{
 			Category->"Part Specifications"
 		},
 
+		BackupHardDriveHash->{
+			Format->Single,
+			Class->String,
+			Pattern:>_String,
+			Description->"The SHA-256 hash of the backup hard drive of the computer.",
+			Category->"Part Specifications",
+			Developer->True
+		},
+
 		InstrumentSoftware->{
 			Format->Multiple,
 			Class->{Expression,String},

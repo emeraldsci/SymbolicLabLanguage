@@ -52,8 +52,17 @@ DefineOptions[ExperimentGrind,
 				Widget -> Alternatives[
 					"Mass" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[1 Milligram, $MaxTransferMass, 0.1 Milligram],
+						Pattern :> RangeP[1 Milligram, $MaxTransferMass],
 						Units -> {1, {Gram, {Gram, Milligram}}}
+					],
+					"Number of Tablets" -> Widget[
+						Type -> Number,
+						Pattern :> RangeP[1, 100, 1]
+					],
+					"Units" -> Widget[
+						Type -> Quantity,
+						Pattern :> RangeP[1 Unit, 100 Unit, 1 Unit],
+						Units -> {1, {Unit, {Unit}}}
 					],
 					"All" -> Widget[Type -> Enumeration, Pattern :> Alternatives[All]]
 				]
@@ -100,7 +109,9 @@ DefineOptions[ExperimentGrind,
 					Type -> Object,
 					Pattern :> ObjectP[{
 						Model[Container, Vessel],
-						Model[Container, GrindingContainer]
+						Object[Container, Vessel],
+						Model[Container, GrindingContainer],
+						Object[Container, GrindingContainer]
 					}],
 					OpenPaths -> {
 						{
@@ -344,7 +355,7 @@ Warning::InsufficientAmount = "The sample volume(s) `1`, calculated based on sam
 Warning::ExcessiveAmount = "The sample volume(s) `1`, calculated based on sample Amount and BulkDensity, may be too large for efficient grinding of the sample(s) `2` using `3`. Also, check the Instrumentation Table in the help files for ExperimentGrind or ExperimentMeasureMeltingPoint for more grinder options.";
 Error::LargeParticles = "Based on the specified Fineness(es), `1`, the particles of the sample(s) `2` might be too large to be ground by `3`.";
 Error::GrinderTypeOptionMismatch = "The specified GrinderType(s) do not match the type(s) of the selected grinder(s) for sample(s) `1`. Check these pairings: `2`. Here is the the type(s) of the selected grinder(s): `3`.";
-Error::CoolingTimeMismatch = "The CoolingTime is set to Null for sample(s) `1`, however, NumberOfGrindingSteps, `2`, are greater than 1. Either set NumberOfGrindSteps to 1 or set CoolingTime to a time value. Otherwise, leave the option(s) unspecified to calculate automatically.";
+Error::CoolingTimeMismatch = "The CoolingTime is set to Null for sample(s) `1`; however, NumberOfGrindingSteps, `2`, are greater than 1. Either set NumberOfGrindSteps to 1 or set CoolingTime to a time value. Otherwise, leave the option(s) unspecified to calculate automatically.";
 Error::HighGrindingRate = "`1`. The MaxGrindingRate of the specified grinders are: `2`. `3`";
 Error::LowGrindingRate = "`1`. The MinGrindingRate of the specified grinders are: `2`. `3`";
 Error::HighGrindingTime = "`1`. The MaxTime of the specified grinders are: `2`. `3`";
@@ -358,6 +369,7 @@ Warning::MissingMassInformation = "Mass filed of Sample(s) `1` is empty.";
 Error::GrindingContainerMismatch = "The specified grinding container(s) must be compatible with the resolved grinder(s) for `1`. Check these pairings: `2`. Please use the PreferredGrindingContainer function to select the correct container, or leave it unspecified to calculate automatically.";
 Error::GrindingBeadMismatch = "The specified GrindingBead, `1`, does not match the specified GrinderType, `2`, for sample(s): `3`. GrindingBead should be specified only if GrinderType is BallMill; otherwise, it should be Null. Both options can be left undetermined to be calculated automatically.";
 Error::NumberOfGrindingBeadsMismatch = "The specified NumberOfGrindingBeads, `1`, does not match the specified GrindingBead, `2`, for sample(s) `3`. GrindingBead is used for BallMill only; If the desired GrinderType is BallMill, GrindingBead and NumberOfGrindingBeads should be specified; for grinder types other than BallMill, they should be Null. Alternatively, these options can be left unspecified to be calculated automatically."
+Error::CountedGrindAmount = "The Amount option was specified as a number for some samples that are not counted and thus do not have discrete amounts.  Please specify Amount as a weight or All for the following sample(s): `1`.";
 
 
 (* ::Subsection::Closed:: *)
@@ -757,7 +769,7 @@ ExperimentGrind[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 
 	(* Figure out if we need to perform our simulation. If so, we can't return early even though we want to because we *)
 	(* need to return some type of simulation to our parent function that called us. *)
-	performSimulationQ = MemberQ[output, Result | Simulation];
+	performSimulationQ = MemberQ[output, Simulation];
 
 	(* If option resolution failed and we aren't asked for the simulation or output, return early. *)
 	If[!performSimulationQ && (returnEarlyBecauseFailuresQ || returnEarlyBecauseOptionsResolverOnly),
@@ -886,9 +898,8 @@ DefineOptions[
 
 resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myOptions : {_Rule...}, myResolutionOptions : OptionsPattern[resolveExperimentGrindOptions]] := Module[
 	{
-		outputSpecification, output, gatherTests, cache, simulation, samplePrepOptions, grindOptions, simulatedSamples, ballMills,
-		knifeMills, grinderTypeMinAmount, resolvedSamplePrepOptions, updatedSimulation, samplePrepTests, samplePackets, modelPackets,
-		sampleContainerPacketsWithNulls, sampleContainerModelPacketsWithNulls, mortarGrinders, cacheBall, sampleDownloads,
+		outputSpecification, output, gatherTests, cache, simulation, ballMills,
+		knifeMills, grinderTypeMinAmount, samplePackets, modelPackets, mortarGrinders,
 		fastAssoc, grinderModelPackets, grinderModels, absoluteMinGrinderVolume, maxFeedFineness, sampleContainerModelPackets,
 		sampleContainerPackets, messages, discardedSamplePackets, discardedInvalidInputs, discardedTest, lowAmountMessages,
 		mapThreadFriendlyOptions, grindOptionAssociation, optionPrecisions, roundedGrindOptions, precisionTests,
@@ -916,7 +927,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		grindingBeadMismatchTest, grindingBeadNumberMismatchOption, grindingBeadNumberMismatchTest, resolvedInstrumentTypes,
 		grindingContainerMismatchTest, ratePrecisionOption, timePrecisionOption, minGrindingRates, maxGrindingRates,
 		lowGrindingProfileTimes, highGrindingProfileTimes, lowGrindingProfileRates, highGrindingProfileRates,
-		lowGrindingProfileTimeTest, highGrindingProfileTimeTest, lowGrindingProfileRateTest, highGrindingProfileRateTest
+		lowGrindingProfileTimeTest, highGrindingProfileTimeTest, lowGrindingProfileRateTest, highGrindingProfileRateTest,
+		countedGrindAmountErrorQs, countedGrindAmountOptions, countedGrindAmountTest
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -931,37 +943,41 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 	cache = Lookup[ToList[myResolutionOptions], Cache, {}];
 	simulation = Lookup[ToList[myResolutionOptions], Simulation, Simulation[]];
 
-	(* Separate out our Grind options from our Sample Prep options. *)
-	{samplePrepOptions, grindOptions} = splitPrepOptions[myOptions];
+	(* generate a fast cache association *)
+	fastAssoc = makeFastAssocFromCache[cache];
 
-	(* Resolve our sample prep options (only if the sample prep option is not true) *)
-	{{simulatedSamples, resolvedSamplePrepOptions, updatedSimulation}, samplePrepTests} = If[gatherTests,
-		resolveSamplePrepOptionsNew[ExperimentGrind, myInputSamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> {Result, Tests}],
-		{resolveSamplePrepOptionsNew[ExperimentGrind, myInputSamples, samplePrepOptions, Cache -> cache, Simulation -> simulation, Output -> Result], {}}
+	(* pull out the packets we need below from the fastAssoc we were passed from the main function *)
+	samplePackets = fetchPacketFromFastAssoc[#, fastAssoc]& /@ myInputSamples;
+	modelPackets = Map[
+		With[{model = Download[Lookup[#, Model], Object]},
+			If[NullQ[model],
+				Null,
+				fetchPacketFromFastAssoc[model, fastAssoc]
+			]
+		]&,
+		samplePackets
 	];
 
-
-	(* Extract the packets that we need from our downloaded cache. *)
-	(* need to do this even if we have caching because of the simulation stuff *)
-	sampleDownloads = Quiet[Download[
-		simulatedSamples,
-		{
-			Packet[Name, Volume, Mass, State, Status, Container, LiquidHandlerIncompatible, Solvent, Position, Model, StorageCondition],
-			Packet[Model[{DefaultStorageCondition}]],
-			Packet[Container[{Object, Model}]],
-			Packet[Container[Model[{MaxVolume}]]]
-		},
-		Simulation -> updatedSimulation
-	], {Download::FieldDoesntExist, Download::NotLinkField}];
-
-	(* combine the cache together *)
-	cacheBall = FlattenCachePackets[{
-		cache,
-		sampleDownloads
-	}];
-
-	(* generate a fast cache association *)
-	fastAssoc = makeFastAssocFromCache[cacheBall];
+	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null.
+			  Make these packets {} instead so that we can call Lookup on them like we would on a packet. *)
+	sampleContainerPackets = Map[
+		With[{container = Download[Lookup[#, Container], Object]},
+			If[NullQ[container],
+				{},
+				fetchPacketFromFastAssoc[container, fastAssoc]
+			]
+		]&,
+		samplePackets
+	];
+	sampleContainerModelPackets = Map[
+		With[{containerModel = Download[Lookup[#, Model, Null], Object]},
+			If[NullQ[containerModel],
+				{},
+				fetchPacketFromFastAssoc[containerModel, fastAssoc]
+			]
+		]&,
+		sampleContainerPackets
+	];
 
 	(* determine what is the absolute minimum amount of sample that can efficiently be ground *)
 	(* list of grinder models. Models are duplicate: Model[Instrument, Grinder, "name"] and Model[Instrument, Grinder, "ID" *)
@@ -988,22 +1004,6 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 	(* determine maxFeedFineness *)
 	maxFeedFineness = Max[(fastAssocLookup[fastAssoc, #, FeedFineness]& /@ grinderModels)];
 
-	(* Get the downloaded mess into a usable form *)
-	{
-		samplePackets,
-		modelPackets,
-		sampleContainerPacketsWithNulls,
-		sampleContainerModelPacketsWithNulls
-	} = Transpose[sampleDownloads];
-
-	(* look up sample models *)
-	sampleModels = Lookup[samplePackets, Model, Null];
-
-	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null.
-			  Make these packets {} instead so that we can call Lookup on them like we would on a packet. *)
-	sampleContainerModelPackets = Replace[sampleContainerModelPacketsWithNulls, {Null -> {}}, 1];
-	sampleContainerPackets = Replace[sampleContainerPacketsWithNulls, {Null -> {}}, 1];
-
 	(*-- INPUT VALIDATION CHECKS --*)
 
 	(* NOTE: MAKE SURE NONE OF THE SAMPLES ARE DISCARDED - *)
@@ -1015,7 +1015,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 	(* If there are invalid inputs and we are throwing messages,throw an error message and keep track of the invalid inputs.*)
 	If[Length[discardedInvalidInputs] > 0 && messages,
-		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> cacheBall]]
+		Message[Error::DiscardedSamples, ObjectToString[discardedInvalidInputs, Cache -> cache]]
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -1023,11 +1023,11 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[discardedInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> cacheBall] <> " are not discarded:", True, False]
+				Test["Our input samples " <> ObjectToString[discardedInvalidInputs, Cache -> cache] <> " are not discarded:", True, False]
 			];
 			passingTest = If[Length[discardedInvalidInputs] == Length[myInputSamples],
 				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[myInputSamples, discardedInvalidInputs], Cache -> cacheBall] <> " are not discarded:", True, True]
+				Test["Our input samples " <> ObjectToString[Complement[myInputSamples, discardedInvalidInputs], Cache -> cache] <> " are not discarded:", True, True]
 			];
 			{failingTest, passingTest}
 		],
@@ -1043,7 +1043,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 	(* If there are invalid inputs and we are throwing messages,do so *)
 	If[Length[nonSolidSampleInvalidInputs] > 0 && messages,
-		Message[Error::NonSolidSample, ObjectToString[nonSolidSampleInvalidInputs, Cache -> cacheBall]];
+		Message[Error::NonSolidSample, ObjectToString[nonSolidSampleInvalidInputs, Cache -> cache]];
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -1051,12 +1051,12 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[nonSolidSampleInvalidInputs] == 0,
 				Nothing,
-				Test["Our input samples " <> ObjectToString[nonSolidSampleInvalidInputs, Cache -> cacheBall] <> " have a Solid State:", True, False]
+				Test["Our input samples " <> ObjectToString[nonSolidSampleInvalidInputs, Cache -> cache] <> " have a Solid State:", True, False]
 			];
 
 			passingTest = If[Length[nonSolidSampleInvalidInputs] == Length[myInputSamples],
 				Nothing,
-				Test["Our input samples " <> ObjectToString[Complement[myInputSamples, nonSolidSampleInvalidInputs], Cache -> cacheBall] <> " have a Solid State:", True, True]
+				Test["Our input samples " <> ObjectToString[Complement[myInputSamples, nonSolidSampleInvalidInputs], Cache -> cache] <> " have a Solid State:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1073,7 +1073,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 	(* If there are invalid inputs and we are throwing messages,do so *)
 	If[Length[missingMassInvalidInputs] > 0 && messages && Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::MissingMassInformation, ObjectToString[missingMassInvalidInputs, Cache -> cacheBall]];
+		Message[Warning::MissingMassInformation, ObjectToString[missingMassInvalidInputs, Cache -> cache]];
 	];
 
 	(* If we are gathering tests,create a passing and/or failing test with the appropriate result. *)
@@ -1081,12 +1081,12 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[missingMassInvalidInputs] == 0,
 				Nothing,
-				Warning["Input samples " <> ObjectToString[missingMassInvalidInputs, Cache -> cacheBall] <> " contain mass information:", True, False]
+				Warning["Input samples " <> ObjectToString[missingMassInvalidInputs, Cache -> cache] <> " contain mass information:", True, False]
 			];
 
 			passingTest = If[Length[missingMassInvalidInputs] == Length[myInputSamples],
 				Nothing,
-				Warning["Input samples " <> ObjectToString[Complement[myInputSamples, missingMassInvalidInputs], Cache -> cacheBall] <> " contain mass information:", True, True]
+				Warning["Input samples " <> ObjectToString[Complement[myInputSamples, missingMassInvalidInputs], Cache -> cache] <> " contain mass information:", True, True]
 			];
 
 			{failingTest, passingTest}
@@ -1097,7 +1097,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 	(*-- OPTION PRECISION CHECKS --*)
 
 	(* Convert list of rules to Association so we can Lookup,Append,Join as usual. *)
-	grindOptionAssociation = Association[grindOptions];
+	grindOptionAssociation = Association[myOptions];
 
 	(* Define the options and associated precisions that we need to check *)
 	optionPrecisions = {
@@ -1168,8 +1168,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		lowGrindingProfileTimes,
 		highGrindingProfileTimes,
 		lowGrindingProfileRates,
-		(*49*)highGrindingProfileRates
-
+		highGrindingProfileRates,
+		(*50*)countedGrindAmountErrorQs
 	} = Transpose[MapThread[
 			Function[{samplePacket, modelPacket, options, sampleContainerPacket, sampleContainerModelPacket},
 				Module[
@@ -1186,12 +1186,12 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 						unresolvedNumberOfGrindingSteps, numberOfGrindingSteps, unresolvedCoolingTime, coolingTime,
 						unresolvedGrindingProfile, grindingProfile, unresolvedGrindingContainer, grindingContainer,
 						unresolvedGrindingBead, grindingBead, unresolvedNumberOfGrindingBeads, numberOfGrindingBeads,
-						calculatedNumberOfGrindingBeads, grindingContainerMismatch, grindingBeadNumberMismatch,
+						grindingContainerMismatch, grindingBeadNumberMismatch,
 						grindingContainerModel, grindingContainerFootprint, grindingBeadMismatch, roundedTime,
 						timePrecisionTests, ratePrecisionWarningQ, timePrecisionWarningQ, roundedRateOption,
 						invalidSampleFineness, grinderTypeMismatch, rateUnitChanged, lowGrindingProfileTime,
 						highGrindingProfileTime, timesFromGrindingProfile, lowGrindingProfileRate, highGrindingProfileRate,
-						ratesFromGrindingProfile
+						ratesFromGrindingProfile, countedGrindAmountErrorQ
 					},
 
 					(* error checking variables *)
@@ -1205,7 +1205,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 						grindingBeadNumberMismatch,
 						invalidCoolingTime,
 						ratePrecisionWarningQ,
-						timePrecisionWarningQ
+						timePrecisionWarningQ,
+						countedGrindAmountErrorQ
 					};
 
 					Evaluate[errorCheckingVariables] = ConstantArray[False, Length[Evaluate[errorCheckingVariables]]];
@@ -1296,6 +1297,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 						GrinderType -> halfResolvedGrinderType,
 						Fineness -> unresolvedFineness,
 						BulkDensity -> unresolvedBulkDensity,
+						SolidUnitWeight -> Lookup[samplePacket, SolidUnitWeight],
 						OutputFormat -> ErrorType
 					};
 					
@@ -1389,7 +1391,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 					grindingContainer = If[
 						MatchQ[unresolvedGrindingContainer, Except[Automatic]],
 						unresolvedGrindingContainer,
-						PreferredGrindingContainer[instrument, amount, unresolvedBulkDensity]
+						PreferredGrindingContainer[instrument, amount, unresolvedBulkDensity, SolidUnitWeight -> Lookup[samplePacket, SolidUnitWeight]]
 					];
 
 					(* Lookup Model of the grinding container *)
@@ -1459,13 +1461,27 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 						(* If GrindingBead is set to an object and NumberOfGrindingBeads is Automatic, calculate NumberOfGrindingBeads. error switch is off *)
 						MatchQ[unresolvedNumberOfGrindingBeads, Automatic] && MatchQ[grindingBead, Except[Null]],
-							(*Calculate sample volume, then estimate number of required beads, considering 50% void volume*)
-							(*the calculated number is then rounded to an integer.*)
-							calculatedNumberOfGrindingBeads = Round[UnitSimplify[
-								(0.5 * (amount) / (unresolvedBulkDensity)) / ((4 / 3) * Pi * (fastAssocLookup[fastAssoc, grindingBead, Diameter] / 2)^3)]
-							];
-							(*If the final integer is less than 1, 1 is returned. If the final integer is greater than 20, 20 is returned.*)
-							{Max[1, Min[20, calculatedNumberOfGrindingBeads]], False},
+							Module[
+								{radius, solidUnitWeight, amountToUse, calculatedNumberOfGrindingBeads, beadVolume},
+								radius = 0.5 * fastAssocLookup[fastAssoc, grindingBead, Diameter];
+								beadVolume = (4 / 3) * Pi * radius^3;
+
+								(* just assume 200 mg if we don't have anything here, which is better than trainwrecking *)
+								solidUnitWeight = Lookup[samplePacket, SolidUnitWeight] /. {Null -> 200 Milligram};
+								amountToUse = If[MatchQ[amount, GreaterP[0, 1.]],
+									amount * solidUnitWeight,
+									amount
+								];
+
+								(*Calculate sample volume, then estimate number of required beads, considering 50% void volume*)
+								(*the calculated number is then rounded to an integer.*)
+								calculatedNumberOfGrindingBeads = Round[UnitSimplify[
+									(0.5 * amountToUse / unresolvedBulkDensity) / beadVolume
+								]];
+
+								(*If the final integer is less than 1, 1 is returned. If the final integer is greater than 20, 20 is returned.*)
+								{Max[1, Min[20, calculatedNumberOfGrindingBeads]], False}
+							],
 
 						(* the only other case is that NumberOfGrindingBead is Automatic and GrindingBead is Null so NumberOfGrindingBead is resolved to Null, with error switch set False *)
 						True, {Null, False}
@@ -1734,10 +1750,13 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 					];
 
 					(* ContainerOut; Default: Null; Null indicates Input Sample's Container. *)
-					containerOut = If[
+					containerOut = Which[
 						MatchQ[unresolvedContainerOut, Except[Automatic]],
-						unresolvedContainerOut,
-						PreferredContainer[UnitSimplify[amount / unresolvedBulkDensity]]
+							unresolvedContainerOut,
+						MatchQ[amount, GreaterP[0, 1.]],
+							PreferredContainer[UnitSimplify[amount * (Lookup[samplePacket, SolidUnitWeight] /. {Null -> 200 Milligram}) / unresolvedBulkDensity]],
+						True,
+							PreferredContainer[UnitSimplify[amount / unresolvedBulkDensity]]
 					];
 
 					(* resolve ContainerOutLabel *)
@@ -1755,6 +1774,13 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 							NullQ[modelPacket],
 							NullQ[Lookup[modelPacket, DefaultStorageCondition, Null]]
 						]
+					];
+
+					(* throw an error if Amount is not a mass but the sample doens't have Count *)
+					countedGrindAmountErrorQ = And[
+						(* note that 4 or 4 Unit both match True for UnitsP[Unit]; that's fine we're just trying to exclude All and masses *)
+						MatchQ[amount, UnitsP[Unit]],
+						NullQ[Lookup[samplePacket, Count]]
 					];
 
 					{
@@ -1806,7 +1832,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 						lowGrindingProfileTime,
 						highGrindingProfileTime,
 						lowGrindingProfileRate,
-						(*49*)highGrindingProfileRate
+						highGrindingProfileRate,
+						(*50*)countedGrindAmountErrorQ
 					}
 				]
 			],
@@ -1827,19 +1854,19 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 	resolvedInstrumentTypes = fastAssocLookup[fastAssoc, resolvedInstrumentModels, GrinderType];
 
 	(* obtain named form instruments to use in messages *)
-	namedResolvedInstruments = ObjectToString[#, Cache -> cacheBall]& /@ resolvedInstrument;
+	namedResolvedInstruments = ObjectToString[#, Cache -> cache]& /@ resolvedInstrument;
 
 	(* if Amount is All, use that for the resolved amount option *)
 	unresolvedAmounts = Lookup[mapThreadFriendlyOptions, Amount];
 	outputAmounts = MapThread[If[MatchQ[#1, All], #1, Round[#2, 0.0001]]&, {unresolvedAmounts, resolvedAmount}];
 
 	(* throw a warning if sample amount is too low or too low *)
-	lowAmountOptions = If[MemberQ[lowSampleAmounts, True] && messages,
+	lowAmountOptions = If[MemberQ[lowSampleAmounts, True] && messages && Not[MatchQ[$ECLApplication, Engine]],
 		(
 			Message[
 				Warning::InsufficientAmount,
 				"",
-				ObjectToString[PickList[simulatedSamples, lowSampleAmounts], Cache -> cacheBall],
+				ObjectToString[PickList[myInputSamples, lowSampleAmounts], Cache -> cache],
 				"calculated/specified grinders. Please use PreferredGrinder function for more details"
 			];
 			{Amount}
@@ -1852,18 +1879,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, lowSampleAmounts];
-			passingInputs = PickList[simulatedSamples, lowSampleAmounts, False];
+			failingInputs = PickList[myInputSamples, lowSampleAmounts];
+			passingInputs = PickList[myInputSamples, lowSampleAmounts, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The amount of the following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " are more than the minAmount of grinders.", True, False],
+				Warning["The amount of the following samples, " <> ObjectToString[failingInputs, Cache -> cache] <> " are more than the minAmount of grinders.", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The amount of the following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " are more than the MinAmount of grinders.", True, True],
+				Warning["The amount of the following samples, " <> ObjectToString[passingInputs, Cache -> cache] <> " are more than the MinAmount of grinders.", True, True],
 				Nothing
 			];
 
@@ -1879,7 +1906,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 			Message[
 				Warning::ExcessiveAmount,
 				"",
-				ObjectToString[PickList[simulatedSamples, highSampleAmounts], Cache -> cacheBall],
+				ObjectToString[PickList[myInputSamples, highSampleAmounts], Cache -> cache],
 				"calculated/specified grinders. Please use PreferredGrinder function for more details."
 			];
 			{Amount}
@@ -1892,18 +1919,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, highSampleAmounts];
-			passingInputs = PickList[simulatedSamples, highSampleAmounts, False];
+			failingInputs = PickList[myInputSamples, highSampleAmounts];
+			passingInputs = PickList[myInputSamples, highSampleAmounts, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The amount of the following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " are less than the maxAmount of grinders.", True, False],
+				Test["The amount of the following samples, " <> ObjectToString[failingInputs, Cache -> cache] <> " are less than the maxAmount of grinders.", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The amount of the following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " are less than the MaxAmount of grinders.", True, True],
+				Test["The amount of the following samples, " <> ObjectToString[passingInputs, Cache -> cache] <> " are less than the MaxAmount of grinders.", True, True],
 				Nothing
 			];
 
@@ -1918,8 +1945,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::LargeParticles,
-				ObjectToString[PickList[resolvedFineness, invalidSamplesFineness], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, invalidSamplesFineness], Cache -> cacheBall],
+				ObjectToString[PickList[resolvedFineness, invalidSamplesFineness], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, invalidSamplesFineness], Cache -> cache],
 				"calculated/specified grinders. Please use PreferredGrinder function for more details."
 			];
 			{Fineness}
@@ -1932,18 +1959,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, invalidSamplesFineness];
-			passingInputs = PickList[simulatedSamples, invalidSamplesFineness, False];
+			failingInputs = PickList[myInputSamples, invalidSamplesFineness];
+			passingInputs = PickList[myInputSamples, invalidSamplesFineness, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The largest particles of the following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " are smaller than than the maximum FeedFineness of grinders.", True, False],
+				Test["The largest particles of the following samples, " <> ObjectToString[failingInputs, Cache -> cache] <> " are smaller than than the maximum FeedFineness of grinders.", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The largest particles of the following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " are smaller than than the maximum FeedFineness of grinders.", True, True],
+				Test["The largest particles of the following samples, " <> ObjectToString[passingInputs, Cache -> cache] <> " are smaller than than the maximum FeedFineness of grinders.", True, True],
 				Nothing
 			];
 
@@ -1959,17 +1986,17 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 			Message[
 				Error::GrinderTypeOptionMismatch,
 
-				ObjectToString[PickList[simulatedSamples, grinderTypeMismatches], Cache -> cacheBall],
+				ObjectToString[PickList[myInputSamples, grinderTypeMismatches], Cache -> cache],
 
 				ObjectToString[DeleteDuplicates[Transpose[{
 					PickList[resolvedInstrument, grinderTypeMismatches],
 					PickList[resolvedGrinderType, grinderTypeMismatches]
-				}]], Cache -> cacheBall],
+				}]], Cache -> cache],
 
 				ObjectToString[DeleteDuplicates[PickList[
 					Transpose[{resolvedInstrumentModels, resolvedInstrumentTypes}],
 					grinderTypeMismatches]
-				], Cache -> cacheBall]
+				], Cache -> cache]
 			];
 			{GrinderType}
 		),
@@ -1981,18 +2008,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, grinderTypeMismatches];
-			passingInputs = PickList[simulatedSamples, grinderTypeMismatches, False];
+			failingInputs = PickList[myInputSamples, grinderTypeMismatches];
+			passingInputs = PickList[myInputSamples, grinderTypeMismatches, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified GrinderType(s) and type(s) of the specified grinder Instrument(s) match for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified GrinderType(s) and type(s) of the specified grinder Instrument(s) match for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified GrinderType(s) and type(s) of the specified grinder Instrument(s) match for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified GrinderType(s) and type(s) of the specified grinder Instrument(s) match for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2007,9 +2034,9 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::GrindingBeadMismatch,
-				ObjectToString[PickList[resolvedGrindingBead, grindingBeadMismatches], Cache -> cacheBall],
-				ObjectToString[PickList[resolvedGrinderType, grindingBeadMismatches], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, grindingBeadMismatches], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedGrindingBead, grindingBeadMismatches], Cache -> cache],
+				ObjectToString[PickList[resolvedGrinderType, grindingBeadMismatches], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, grindingBeadMismatches], Cache -> cache]
 			];
 			{GrindingBead}
 		),
@@ -2021,18 +2048,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, grindingBeadMismatches];
-			passingInputs = PickList[simulatedSamples, grindingBeadMismatches, False];
+			failingInputs = PickList[myInputSamples, grindingBeadMismatches];
+			passingInputs = PickList[myInputSamples, grindingBeadMismatches, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified GrinderBead does not match the specified GrinderType for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Test["The specified GrinderBead does not match the specified GrinderType for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cache] <> ".", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified GrinderBead does not match the specified GrinderType for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified GrinderBead does not match the specified GrinderType for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2047,9 +2074,9 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::NumberOfGrindingBeadsMismatch,
-				ObjectToString[PickList[resolvedNumberOfGrindingBeads, grindingBeadNumberMismatches], Cache -> cacheBall],
-				ObjectToString[PickList[resolvedGrindingBead, grindingBeadNumberMismatches], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, grindingBeadNumberMismatches], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedNumberOfGrindingBeads, grindingBeadNumberMismatches], Cache -> cache],
+				ObjectToString[PickList[resolvedGrindingBead, grindingBeadNumberMismatches], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, grindingBeadNumberMismatches], Cache -> cache]
 			];
 			{NumberOfGrindingBeads, GrindingBead}
 		),
@@ -2061,18 +2088,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, grindingBeadNumberMismatches];
-			passingInputs = PickList[simulatedSamples, grindingBeadNumberMismatches, False];
+			failingInputs = PickList[myInputSamples, grindingBeadNumberMismatches];
+			passingInputs = PickList[myInputSamples, grindingBeadNumberMismatches, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified NumberOfGrinderBeads does not match the specified GrindingBead for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cacheBall] <> ".", True, False],
+				Test["The specified NumberOfGrinderBeads does not match the specified GrindingBead for the following sample(s), " <> ObjectToString[failingInputs, Cache -> cache] <> ".", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified NumberOfGrinderBeads does not match the specified GrindingBead for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified NumberOfGrinderBeads does not match the specified GrindingBead for the following sample(s), " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2105,7 +2132,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::HighGrindingRate,
 
-					"The specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, highGrindingRates], Cache -> cacheBall] <> " is greater than the MaxGrindingRate of the specified grinder(s)",
+					"The specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, highGrindingRates], Cache -> cache] <> " is greater than the MaxGrindingRate of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, maxGrindingRates}], highGrindingProfileRates]]],
 
@@ -2120,7 +2147,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::HighGrindingRate,
 
-					"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingProfileRates], Cache -> cacheBall] <> " is greater than the MaxGrindingRate of the specified grinder(s)",
+					"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingProfileRates], Cache -> cache] <> " is greater than the MaxGrindingRate of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, maxGrindingRates}], highGrindingProfileRates]]],
 
@@ -2136,7 +2163,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 					Message[
 						Error::HighGrindingRate,
 
-						"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingProfileRates], Cache -> cacheBall] <> " is greater than the MaxGrindingRate of the specified grinder(s). Also, the specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingRates], Cache -> cacheBall] <> " are greater than the MaxGrindingRate of the specified grinder(s)",
+						"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingProfileRates], Cache -> cache] <> " is greater than the MaxGrindingRate of the specified grinder(s). Also, the specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingRates], Cache -> cache] <> " are greater than the MaxGrindingRate of the specified grinder(s)",
 
 						Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, allHighRateErrorQs}], highGrindingRates]]],
 
@@ -2153,18 +2180,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, highGrindingRates];
-			passingInputs = PickList[simulatedSamples, highGrindingRates, False];
+			failingInputs = PickList[myInputSamples, highGrindingRates];
+			passingInputs = PickList[myInputSamples, highGrindingRates, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified GrindingRate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified GrindingRate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified GrindingRate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified GrindingRate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2179,18 +2206,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, highGrindingProfileRates];
-			passingInputs = PickList[simulatedSamples, highGrindingProfileRates, False];
+			failingInputs = PickList[myInputSamples, highGrindingProfileRates];
+			passingInputs = PickList[myInputSamples, highGrindingProfileRates, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding rates in GrindingProfile are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding rates in GrindingProfile are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding rate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding rate(s) are equal to or smaller than the maximum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2210,7 +2237,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::LowGrindingRate,
 
-					"The specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, lowGrindingRates], Cache -> cacheBall] <> " is smaller than the MinGrindingRate of the specified grinder(s)",
+					"The specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, lowGrindingRates], Cache -> cache] <> " is smaller than the MinGrindingRate of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, minGrindingRates}], lowGrindingProfileRates]]],
 
@@ -2225,7 +2252,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 			Message[
 				Error::LowGrindingRate,
 
-				"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingProfileRates], Cache -> cacheBall] <> " is smaller than the MinGrindingRate of the specified grinder(s)",
+				"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingProfileRates], Cache -> cache] <> " is smaller than the MinGrindingRate of the specified grinder(s)",
 
 				Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, minGrindingRates}], lowGrindingProfileRates]]],
 
@@ -2241,7 +2268,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::LowGrindingRate,
 
-					"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingProfileRates], Cache -> cacheBall] <> " is smaller than the MinGrindingRate of the specified grinder(s). Also, the specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingRates], Cache -> cacheBall] <> " are smaller than the MinGrindingRate of the specified grinder(s)",
+					"At least one of the specified grinding rate(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingProfileRates], Cache -> cache] <> " is smaller than the MinGrindingRate of the specified grinder(s). Also, the specified GrindingRate(s) for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingRates], Cache -> cache] <> " are smaller than the MinGrindingRate of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, allLowRateErrorQs}], lowGrindingRates]]],
 
@@ -2258,18 +2285,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, lowGrindingRates];
-			passingInputs = PickList[simulatedSamples, lowGrindingRates, False];
+			failingInputs = PickList[myInputSamples, lowGrindingRates];
+			passingInputs = PickList[myInputSamples, lowGrindingRates, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified GrindingRate(s) are equal to or greater than the minimum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified GrindingRate(s) are equal to or greater than the minimum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified GrindingRate(s) are equal to or greater than the minimum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified GrindingRate(s) are equal to or greater than the minimum GrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2284,18 +2311,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, lowGrindingProfileRates];
-			passingInputs = PickList[simulatedSamples, lowGrindingProfileRates, False];
+			failingInputs = PickList[myInputSamples, lowGrindingProfileRates];
+			passingInputs = PickList[myInputSamples, lowGrindingProfileRates, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding rates in GrindingProfile are equal to or greater than the MinGrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding rates in GrindingProfile are equal to or greater than the MinGrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding rates in GrindingProfile are equal to or greater than the MinGrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding rates in GrindingProfile are equal to or greater than the MinGrindingRate of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2315,7 +2342,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::HighGrindingTime,
 					
-					"The specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, highGrindingTimes], Cache -> cacheBall] <> " is greater than the MaxTime of the specified grinder(s)",
+					"The specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, highGrindingTimes], Cache -> cache] <> " is greater than the MaxTime of the specified grinder(s)",
 					
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, maxGrindingTimes}], highGrindingProfileTimes]]],
 					
@@ -2330,7 +2357,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::HighGrindingTime,
 					
-					"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingProfileTimes], Cache -> cacheBall] <> " is greater than the MaxTime of the specified grinder(s)",
+					"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingProfileTimes], Cache -> cache] <> " is greater than the MaxTime of the specified grinder(s)",
 					
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, maxGrindingTimes}], highGrindingProfileTimes]]],
 					
@@ -2346,7 +2373,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 					Message[
 						Error::HighGrindingTime,
 						
-						"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingProfileTimes], Cache -> cacheBall] <> " is greater than the MaxTime of the specified grinder(s). Also, the specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[simulatedSamples, highGrindingTimes], Cache -> cacheBall] <> " are greater than the MaxTime of the specified grinder(s)",
+						"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingProfileTimes], Cache -> cache] <> " is greater than the MaxTime of the specified grinder(s). Also, the specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[myInputSamples, highGrindingTimes], Cache -> cache] <> " are greater than the MaxTime of the specified grinder(s)",
 						
 						Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, allHighTimeErrorQs}], highGrindingTimes]]],
 						
@@ -2363,18 +2390,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, highGrindingTimes];
-			passingInputs = PickList[simulatedSamples, highGrindingTimes, False];
+			failingInputs = PickList[myInputSamples, highGrindingTimes];
+			passingInputs = PickList[myInputSamples, highGrindingTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding Time(s) are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding Time(s) are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding Time(s) are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding Time(s) are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2389,18 +2416,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, highGrindingProfileTimes];
-			passingInputs = PickList[simulatedSamples, highGrindingProfileTimes, False];
+			failingInputs = PickList[myInputSamples, highGrindingProfileTimes];
+			passingInputs = PickList[myInputSamples, highGrindingProfileTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding times in GrindingProfile are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding times in GrindingProfile are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding times in GrindingProfile are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding times in GrindingProfile are equal to or smaller than the maximum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2421,7 +2448,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::LowGrindingTime,
 
-					"The specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, lowGrindingTimes], Cache -> cacheBall] <> " is smaller than the MinTime of the specified grinder(s)",
+					"The specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[resolvedInstrument, lowGrindingTimes], Cache -> cache] <> " is smaller than the MinTime of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, minGrindingTimes}], lowGrindingProfileTimes]]],
 
@@ -2436,7 +2463,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				Message[
 					Error::LowGrindingTime,
 
-					"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingProfileTimes], Cache -> cacheBall] <> " is smaller than the MinTime of the specified grinder(s)",
+					"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingProfileTimes], Cache -> cache] <> " is smaller than the MinTime of the specified grinder(s)",
 
 					Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, minGrindingTimes}], lowGrindingProfileTimes]]],
 
@@ -2452,7 +2479,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 					Message[
 						Error::LowGrindingTime,
 
-						"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingProfileTimes], Cache -> cacheBall] <> " is smaller than the MinTime of the specified grinder(s). Also, the specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[simulatedSamples, lowGrindingTimes], Cache -> cacheBall] <> " are greater than the MinTime of the specified grinder(s)",
+						"At least one of the specified grinding Time(s) in the GrindingProfile for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingProfileTimes], Cache -> cache] <> " is smaller than the MinTime of the specified grinder(s). Also, the specified grinding Time(s) for sample(s) " <> ObjectToString[PickList[myInputSamples, lowGrindingTimes], Cache -> cache] <> " are greater than the MinTime of the specified grinder(s)",
 
 						Map[StringRiffle[#, ": "]&, DeleteDuplicates[PickList[Transpose[{namedResolvedInstruments, allLowTimeErrorQs}], lowGrindingTimes]]],
 
@@ -2469,18 +2496,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, lowGrindingTimes];
-			passingInputs = PickList[simulatedSamples, lowGrindingTimes, False];
+			failingInputs = PickList[myInputSamples, lowGrindingTimes];
+			passingInputs = PickList[myInputSamples, lowGrindingTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding Time(s) are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding Time(s) are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding Time(s) are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding Time(s) are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2495,18 +2522,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, lowGrindingTimes];
-			passingInputs = PickList[simulatedSamples, lowGrindingTimes, False];
+			failingInputs = PickList[myInputSamples, lowGrindingTimes];
+			passingInputs = PickList[myInputSamples, lowGrindingTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The specified grinding times in GrindingProfile are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Test["The specified grinding times in GrindingProfile are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The specified grinding times in GrindingProfile are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Test["The specified grinding times in GrindingProfile are equal to or greater than the minimum grinding time that can be set by the timer of the specified Instrument for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2521,8 +2548,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::CoolingTimeMismatch,
-				ObjectToString[PickList[simulatedSamples, invalidCoolingTimes], Cache -> cacheBall],
-				ObjectToString[PickList[resolvedNumberOfGrindingSteps, invalidCoolingTimes], Cache -> cacheBall]
+				ObjectToString[PickList[myInputSamples, invalidCoolingTimes], Cache -> cache],
+				ObjectToString[PickList[resolvedNumberOfGrindingSteps, invalidCoolingTimes], Cache -> cache]
 			];
 			{CoolingTime}
 		),
@@ -2534,18 +2561,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, invalidCoolingTimes];
-			passingInputs = PickList[simulatedSamples, invalidCoolingTimes, False];
+			failingInputs = PickList[myInputSamples, invalidCoolingTimes];
+			passingInputs = PickList[myInputSamples, invalidCoolingTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["If NumberOfGrindingSteps is greater than 1, CoolingTime is not Null for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["If NumberOfGrindingSteps is greater than 1, CoolingTime is not Null for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["If NumberOfGrindingSteps is greater than 1, CoolingTime is not Null for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["If NumberOfGrindingSteps is greater than 1, CoolingTime is not Null for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2560,8 +2587,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Warning::ModifiedNumberOfGrindingSteps,
-				ObjectToString[PickList[resolvedNumberOfGrindingSteps, changedNumbersOfGrindingSteps], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, changedNumbersOfGrindingSteps], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedNumberOfGrindingSteps, changedNumbersOfGrindingSteps], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, changedNumbersOfGrindingSteps], Cache -> cache]
 			];
 			{GrindingRate, GrindingProfile}
 		),
@@ -2573,18 +2600,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, changedNumbersOfGrindingSteps];
-			passingInputs = PickList[simulatedSamples, changedNumbersOfGrindingSteps, False];
+			failingInputs = PickList[myInputSamples, changedNumbersOfGrindingSteps];
+			passingInputs = PickList[myInputSamples, changedNumbersOfGrindingSteps, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["The specified NumberOfGrindingSteps is equal to the number of grinding steps in GrindingProfile for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["The specified NumberOfGrindingSteps is equal to the number of grinding steps in GrindingProfile for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["The specified NumberOfGrindingSteps is equal to the number of grinding steps in GrindingProfile for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["The specified NumberOfGrindingSteps is equal to the number of grinding steps in GrindingProfile for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2599,8 +2626,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Warning::ModifiedGrindingRates,
-				ObjectToString[PickList[resolvedGrindingRate, changedRates], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, changedRates], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedGrindingRate, changedRates], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, changedRates], Cache -> cache]
 
 			];
 			{GrindingRate, GrindingProfile}
@@ -2613,18 +2640,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, changedRates];
-			passingInputs = PickList[simulatedSamples, changedRates, False];
+			failingInputs = PickList[myInputSamples, changedRates];
+			passingInputs = PickList[myInputSamples, changedRates, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["All specified grinding rate(s) in GrindingProfile are equal to the specified grinding Rate(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["All specified grinding rate(s) in GrindingProfile are equal to the specified grinding Rate(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["All specified grinding rate(s) in GrindingProfile are equal to the specified grinding Rate(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["All specified grinding rate(s) in GrindingProfile are equal to the specified grinding Rate(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2642,6 +2669,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				ToString[GrindingRate],
 				ObjectToString[PickList[ratePrecisions, ratePrecisionWarningQs], Cache -> cacheBall],
 				ObjectToString[PickList[Lookup[grindOptionAssociation, GrindingRate], ratePrecisionWarningQs], Cache -> cacheBall],
+				ObjectToString[PickList[Lookup[grindOptionAssociation, GrindingRate], ratePrecisionWarningQs], Cache -> cacheBall],
 				ObjectToString[PickList[resolvedGrindingRate, ratePrecisionWarningQs], Cache -> cacheBall]
 			];
 			{}
@@ -2654,8 +2682,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Warning::ModifiedGrindingTimes,
-				ObjectToString[PickList[resolvedTime, changedTimes], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, changedTimes], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedTime, changedTimes], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, changedTimes], Cache -> cache]
 			];
 			{GrindingRate, GrindingProfile}
 		),
@@ -2667,18 +2695,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, changedTimes];
-			passingInputs = PickList[simulatedSamples, changedTimes, False];
+			failingInputs = PickList[myInputSamples, changedTimes];
+			passingInputs = PickList[myInputSamples, changedTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["All specified grinding times in GrindingProfile are equal to the specified grinding Time(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["All specified grinding times in GrindingProfile are equal to the specified grinding Time(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["All specified grinding times in GrindingProfile are equal to the specified grinding Time(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["All specified grinding times in GrindingProfile are equal to the specified grinding Time(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2696,6 +2724,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 				ToString[Time],
 				ObjectToString[PickList[timePrecisions, timePrecisionWarningQs], Cache -> cacheBall],
 				ObjectToString[PickList[Lookup[grindOptionAssociation, Time], timePrecisionWarningQs], Cache -> cacheBall],
+				ObjectToString[PickList[Lookup[grindOptionAssociation, Time], timePrecisionWarningQs], Cache -> cacheBall],
 				ObjectToString[PickList[resolvedTime, timePrecisionWarningQs], Cache -> cacheBall]
 			];
 			{}
@@ -2708,8 +2737,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Warning::ModifiedCoolingTimes,
-				ObjectToString[PickList[resolvedCoolingTime, changedCoolingTimes], Cache -> cacheBall],
-				ObjectToString[PickList[simulatedSamples, changedCoolingTimes], Cache -> cacheBall]
+				ObjectToString[PickList[resolvedCoolingTime, changedCoolingTimes], Cache -> cache],
+				ObjectToString[PickList[myInputSamples, changedCoolingTimes], Cache -> cache]
 			];
 			{GrindingRate, GrindingProfile}
 		),
@@ -2721,18 +2750,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, changedCoolingTimes];
-			passingInputs = PickList[simulatedSamples, changedCoolingTimes, False];
+			failingInputs = PickList[myInputSamples, changedCoolingTimes];
+			passingInputs = PickList[myInputSamples, changedCoolingTimes, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["All specified cooling times in GrindingProfile are equal to the specified CoolingTime(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["All specified cooling times in GrindingProfile are equal to the specified CoolingTime(s) for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["All specified cooling times in GrindingProfile are equal to the specified CoolingTime(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["All specified cooling times in GrindingProfile are equal to the specified CoolingTime(s) for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2747,11 +2776,11 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::GrindingContainerMismatch,
-				ObjectToString[PickList[simulatedSamples, grindingContainerMismatches], Cache -> cacheBall],
+				ObjectToString[PickList[myInputSamples, grindingContainerMismatches], Cache -> cache],
 				ObjectToString[DeleteDuplicates[Transpose[{
 					PickList[resolvedGrindingContainer, grindingContainerMismatches],
 					PickList[resolvedInstrument, grindingContainerMismatches]
-				}]], Cache -> cacheBall]
+				}]], Cache -> cache]
 			];
 			{GrindingContainer}
 		),
@@ -2763,18 +2792,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, grindingContainerMismatches];
-			passingInputs = PickList[simulatedSamples, grindingContainerMismatches, False];
+			failingInputs = PickList[myInputSamples, grindingContainerMismatches];
+			passingInputs = PickList[myInputSamples, grindingContainerMismatches, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Warning["The specified grinding containers match the grinder for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " .", True, False],
+				Warning["The specified grinding containers match the grinder for the following sample(s) " <> ObjectToString[failingInputs, Cache -> cache] <> " .", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Warning["The specified grinding containers match the grinder for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " .", True, True],
+				Warning["The specified grinding containers match the grinder for the following sample(s) " <> ObjectToString[passingInputs, Cache -> cache] <> " .", True, True],
 				Nothing
 			];
 
@@ -2789,7 +2818,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		(
 			Message[
 				Error::InvalidSamplesOutStorageCondition,
-				ObjectToString[PickList[simulatedSamples, invalidSamplesOutStorageConditions], Cache -> cacheBall]
+				ObjectToString[PickList[myInputSamples, invalidSamplesOutStorageConditions], Cache -> cache]
 			];
 			{SamplesOutStorageCondition}
 		),
@@ -2801,18 +2830,18 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
 
 			(* Get the failing and not failing samples *)
-			failingInputs = PickList[simulatedSamples, invalidSamplesOutStorageConditions];
-			passingInputs = PickList[simulatedSamples, invalidSamplesOutStorageConditions, False];
+			failingInputs = PickList[myInputSamples, invalidSamplesOutStorageConditions];
+			passingInputs = PickList[myInputSamples, invalidSamplesOutStorageConditions, False];
 
 			(* Create the passing and failing tests *)
 			failingInputTest = If[Length[failingInputs] > 0,
-				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " have a valid SamplesOutStorageCondition.", True, False],
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cache] <> " have a valid SamplesOutStorageCondition.", True, False],
 				Nothing
 			];
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " have a valid SamplesOutStorageCondition.", True, True],
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cache] <> " have a valid SamplesOutStorageCondition.", True, True],
 				Nothing
 			];
 
@@ -2820,6 +2849,19 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 			{passingInputsTest, failingInputTest}
 		],
 		{}
+	];
+
+	(* throw a message if a non-counted sample is specified with a count *)
+	countedGrindAmountOptions = If[MemberQ[countedGrindAmountErrorQs, True] && messages,
+		(
+			Message[Error::CountedGrindAmount, ObjectToString[PickList[myInputSamples, countedGrindAmountErrorQs], Simulation -> simulation]];
+			{Amount}
+		),
+		{}
+	];
+	countedGrindAmountTest = If[gatherTests,
+		Test["Amount is specified as a count only if the corresponding sample has Count populated:", MatchQ[countedGrindAmountErrorQs, {False..}], True],
+		Null
 	];
 
 	(* gather all the resolved options together *)
@@ -2867,7 +2909,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		invalidSamplesOutStorageConditionsOptions,
 		grindingContainerMismatchOptions,
 		grindingBeadMismatchOption,
-		grindingBeadNumberMismatchOption
+		grindingBeadNumberMismatchOption,
+		countedGrindAmountOptions
 	}]];
 
 	(* this constant is used to track InvalidOptions found here. it can be used by other functions to throw all InvalidOptions generated by all functions in one place *)
@@ -2876,7 +2919,7 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[messages && Length[invalidInputs] > 0,
-		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> cacheBall]]
+		Message[Error::InvalidInput, ObjectToString[invalidInputs, Cache -> cache]]
 	];
 
 	(* Throw Error::InvalidOption if there are invalid options. *)
@@ -2887,7 +2930,6 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 
 	(* get all the tests together *)
 	allTests = Cases[Flatten[{
-		samplePrepTests,
 		discardedTest,
 		missingMassTest,
 		nonSolidSampleTest,
@@ -2913,7 +2955,8 @@ resolveExperimentGrindOptions[myInputSamples : {ObjectP[Object[Sample]]...}, myO
 		grindingBeadMismatchTest,
 		grindingBeadNumberMismatchTest,
 		ratePrecisionsTests,
-		timePrecisionsTests
+		timePrecisionsTests,
+		countedGrindAmountTest
 	}], TestP];
 
 	(* return our resolved options and/or tests *)
@@ -2941,10 +2984,10 @@ grindResourcePackets[
 	{
 		safeOps, outputSpecification, output, gatherTests, messages, noSamplesWithWarning, amountAllQs,
 		cache, simulation, fastAssoc, grinderGrouper, containerResources,
-		simulatedSampleContainersIn, samplesInResources,
+		simulatedSampleContainersIn, samplesInResources, grindingContainerResources,
 		instrumentTag, grinderType, instruments, amount, fineness, grinderGroupedOptions,
 		grindingRate, time, numberOfGrindingSteps, coolingTime, rawGrindingProfile,
-		grindingBeadResourceRules, mergedBeadsAndNumbers, beadsAndNumbers,
+		grindingBeadResourceRules, mergedBeadsAndNumbers, beadsAndNumbers, grindingContainerTransfer,
 		grindingProfiles, sampleLabel, containerOut, bulkDensity, unitOperationPackets,
 		grindingContainer, grindingBead, numberOfGrindingBeads, sampleOutLabel, containerOutLabel,
 		totalTimes, instrumentAndTimeRules, mergedInstrumentTimes, instrumentResources,
@@ -3027,25 +3070,45 @@ grindResourcePackets[
 	(* --- Make all the resources needed in the experiment --- *)
 
 	(*Update amount value to quantity if it is resolved to All*)
-	numericAmount = MapThread[If[
-		MatchQ[#1, All], fastAssocLookup[fastAssoc, #2, Mass], #1
-	]&, {amount, mySamples}];
+	numericAmount = MapThread[
+		If[MatchQ[#1, All],
+			fastAssocLookup[fastAssoc, #2, Mass],
+			#1
+		]&,
+		{amount, mySamples}
+	];
 
 	(* frq should throw SamplesMustBeMoved warning only when Amount is All *)
 	amountAllQs = MatchQ[#, All]& /@ amount;
 	noSamplesWithWarning = PickList[mySamples, amountAllQs, False];
 
 	(*SampleIn and GrindingContainer Resources*)
-	samplesInResources = MapThread[Resource[
-		Sample -> #,
-		Name -> #2,
-		Amount -> #3,
-		Container -> Download[#4, Object],
-		ExactAmount -> True,
-		(* 10% Tolerance (or 0.01 Gram, whichever is greater): The mass that the sample is allowed to deviate from the requested Amount when fulfilling the sample, because ExactAmount is True. *)
-		Tolerance -> Max[0.1 * #3, 0.01 Gram],
-		AutomaticDisposal -> False
-	]&, {mySamples, sampleLabel, numericAmount, grindingContainer}];
+	samplesInResources = MapThread[
+		Resource[
+			Sample -> #,
+			Name -> #2,
+			Amount -> If[MatchQ[#3, _Integer | _Real], #3 * Unit, #3]
+		]&,
+		{mySamples, sampleLabel, numericAmount}
+	];
+
+	grindingContainerResources = Map[
+		Resource[Sample -> #, Name -> ToString[Unique[]]]&,
+		grindingContainer
+	];
+
+	(* determine if we're already in the grinding container (then this value is False) *)
+	grindingContainerTransfer = MapThread[
+		Function[{sample, grindCont},
+			(* if the grinding container matches the sample object, then also do NOT transfer *)
+			If[MatchQ[fastAssocLookup[fastAssoc, sample, Container], ObjectP[grindCont]],
+				False,
+				(* otherwise, do transfer *)
+				True
+			]
+		],
+		{mySamples, grindingContainer}
+	];
 
 	grindingContainerModels = If[
 		MatchQ[#, ObjectP[Object]],
@@ -3076,13 +3139,17 @@ grindResourcePackets[
 	];
 
 	(* Weigh boat resources *)
-	weighingContainerResources = Link[Resource[
-		Sample -> If[LessEqual[#, 10 Gram],
-			Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"], (*Weigh boats, medium, Individual*)
-			Model[Item, WeighBoat, "id:XnlV5jOD1AjZ"] (*Weigh boats, large, Individual*)
-		],
-		Name -> CreateUniqueLabel["Weigh Boat Resources"]
-	]]& /@ numericAmount;
+	(* tablets always get big weigh boats*)
+	weighingContainerResources = Map[
+		Link[Resource[
+			Sample -> If[Not[MatchQ[#, GreaterP[0, 1.]]] && LessEqual[#, 10 Gram],
+				Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"], (*Weigh boats, medium, Individual *)
+				Model[Item, WeighBoat, "id:XnlV5jOD1AjZ"] (*Weigh boats, large, Individual *)
+			],
+			Name -> CreateUniqueLabel["Weigh Boat Resources"]
+		]]&,
+		numericAmount
+	];
 
 	(*Make a list of tags for each unique instrument*)
 	instrumentTag = Map[
@@ -3249,7 +3316,7 @@ grindResourcePackets[
 			Amount -> numericAmount,
 			Fineness -> fineness,
 			BulkDensity -> bulkDensity,
-			GrindingContainer -> grindingContainer,
+			GrindingContainer -> Link /@ grindingContainerResources,
 			GrindingBead -> grindingBeadResources,
 			NumberOfGrindingBeads -> numberOfGrindingBeads,
 			GrindingRate -> grindingRate,
@@ -3281,8 +3348,7 @@ grindResourcePackets[
 
 		groupedTubeHolderModels = First@Lookup[groupedOption, GrinderTubeHolder];
 
-		grindPositionNumber = If[
-			NullQ[groupedTubeHolderModels],
+		grindPositionNumber = If[MatchQ[groupedTubeHolderModels, Null | ObjectP[Model[Container]]],
 			Length @ Flatten[fastAssocLookup[fastAssoc, groupedGrinderModel, Positions]],
 			Length @ Flatten[fastAssocLookup[fastAssoc, groupedTubeHolderModels, Positions]]
 		];
@@ -3339,7 +3405,16 @@ grindResourcePackets[
 							GrinderTubeHolder -> DeleteDuplicates @ Flatten[Lookup[options, GrinderTubeHolder]],
 							GrinderClampAssembly -> Lookup[options, GrinderClampAssembly],
 							WeighingContainer -> Lookup[options, WeighingContainer],
-							Amount -> Lookup[options, Amount],
+							(* need to add Unit if it's not already there *)
+							(* it's kind of hard to determine if it's there or not because some things don't go together *)
+							(* for instance, you can't use UnitsP[Unit].  Also doing 3 * Unit * Unit actually _removes_ the unit unit*)
+							Amount -> Map[
+								If[MatchQ[#, _Integer | _Real],
+									# * Unit,
+									#
+								]&,
+								Lookup[options, Amount]
+							],
 							Fineness -> Lookup[options, Fineness],
 							BulkDensity -> Lookup[options, BulkDensity],
 							GrindingContainer -> Lookup[options, GrindingContainer],
@@ -3375,7 +3450,14 @@ grindResourcePackets[
 			Type -> Object[Protocol, Grind],
 			Replace[SamplesIn] -> Map[Link[#, Protocols]&, samplesInResources],
 			Replace[ContainersIn] -> Map[Link[#, Protocols]&, containerResources],
-			Replace[Amounts] -> numericAmount,
+			(* VariableUnit fields need to have Unit at the end and not just numbers *)
+			Replace[Amounts] -> Map[
+				If[MatchQ[#, _Integer | _Real],
+					# * Unit,
+					#
+				]&,
+				numericAmount
+			],
 			Replace[BulkDensities] -> bulkDensity,
 			Replace[CoolingTimes] -> coolingTime,
 			Replace[Finenesses] -> fineness,
@@ -3386,7 +3468,8 @@ grindResourcePackets[
 			Replace[GrindingProfiles] -> grindingProfiles,
 			Replace[GrinderTypes] -> grinderType,
 			Replace[Instruments] -> instrumentResources,
-			Replace[GrindingContainers] -> Link /@ grindingContainer,
+			Replace[GrindingContainers] -> Link /@ grindingContainerResources,
+			Replace[GrindingContainerTransfer] -> grindingContainerTransfer,
 			Replace[GrindingBeads] -> grindingBeadResources,
 			Replace[NumbersOfGrindingBeads] -> numberOfGrindingBeads,
 			Replace[ContainersOut] -> containerOutResourcesForProtocol,
@@ -3505,7 +3588,7 @@ simulateExperimentGrind[
 		containerOutLabel, samplesOutStorageCondition, instrumentResources,
 		instrumentTag, samplesInResources, grindingBeadResources, totalTimes,
 		instrumentAndTimeRules, mergedInstrumentTimes, containerOutResourcesForProtocol,
-		simulatedContainerOutObjects, numericAmount, sampleUpdatePackets
+		simulatedContainerOutObjects, numericAmount, sampleUpdatePackets, tabletAmounts
 	},
 
 	(* Lookup our cache and simulation and make our fast association *)
@@ -3522,7 +3605,7 @@ simulateExperimentGrind[
 				(*protocolObject,*)
 			},
 			{
-				Packet[Model, Container, Tablet, SampleHandling]
+				Packet[Model, Container, Tablet, SampleHandling, SolidUnitWeight]
 			},
 			Simulation -> simulation
 		],
@@ -3591,6 +3674,15 @@ simulateExperimentGrind[
 	numericAmount = MapThread[If[
 		MatchQ[#1, All], fastAssocLookup[fastAssoc, #2, Mass], #1
 	]&, {amount, mySamples}];
+
+	(* also get the quantity if we're tablets and need a weight *)
+	tabletAmounts = MapThread[
+		If[MatchQ[#1, GreaterP[0, 1.]],
+			#1 * (fastAssocLookup[fastAssoc, #2, SolidUnitWeight] /. {Null -> 200 Milligram}),
+			#1
+		]&,
+		{numericAmount, mySamples}
+	];
 
 	(*SampleIn and GrindingContainer Resources*)
 	samplesInResources = MapThread[Resource[
@@ -3708,7 +3800,7 @@ simulateExperimentGrind[
 	uploadSampleTransferPackets = UploadSampleTransfer[
 		ToList[mySamples],
 		simulatedNewSamples,
-		amount,
+		tabletAmounts,
 		Upload -> False,
 		FastTrack -> True,
 		Simulation -> currentSimulation,
@@ -3832,6 +3924,19 @@ DefineOptions[PreferredGrinder,
 			]
 		},
 		{
+			OptionName -> SolidUnitWeight,
+			Default -> Automatic,
+			Description -> "The mass of one single unit of the sample, most frequently a tablet.",
+			ResolutionDescription -> "Automatically set to 200 Milligram if the input amount is set to an integer.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Gram],
+				Units :> {Milligram, {Gram, Milligram}}
+			]
+		},
+		{
 			OptionName -> OutputFormat,
 			Default -> Result,
 			Description -> "The format of the final output. Result returns the natural flow of errors, warnings, and final output. ErrorType returns a list error names that can be used to form proper Message structures when PreferredGrinder is used in other functions.",
@@ -3877,25 +3982,51 @@ preferredGrinderFastCache[string_] := preferredGrinderFastCache[string] = Module
 (* ::Subsubsection::Closed:: *)
 (*PreferredGrinder Main Function*)
 
-PreferredGrinder[amount : (MassP | VolumeP), options : OptionsPattern[PreferredGrinder]] := Module[
+PreferredGrinder[amount : (MassP | VolumeP | GreaterP[0, 1.]), options : OptionsPattern[PreferredGrinder]] := Module[
 	{
 		safeOptions, grinderFastCache, grinderModels, absoluteMinGrinderVolume, volumeAmount, preferredGrinder,
 		grinderType, fineness, bulkDensity, priorityList, preferredGrinderFinder, grinderFastCacheWithDeprecated,
 		fastCacheKeys, fastCacheValues, grinderTypeMaxFinenessRule, maxFeedFineness, grinderTypeMinAmountRule,
 		grinderTypeMaxAmountRule, absoluteMaxGrinderVolume, grinderModelTuples, grinderTypeModelRules, selectedGrinder,
 		preferredGrindersNoError, outputFormat, largeParticleMessage, insufficientAmountMessage, excessiveAmountMessage,
-		grinderTypePattern, particleMessage, insufficientMessage, excessiveMessage
+		grinderTypePattern, particleMessage, insufficientMessage, excessiveMessage, solidUnitWeight, resolvedSolidUnitWeight
 	},
 
 	(*Call SafeOptions to make sure all options match pattern*)
 	safeOptions = SafeOptions[PreferredGrinder, ToList[options]];
 
 	(*Lookup options*)
-	{grinderType, fineness, bulkDensity, outputFormat} = Lookup[safeOptions, {GrinderType, Fineness, BulkDensity, OutputFormat}];
+	{
+		grinderType,
+		fineness,
+		bulkDensity,
+		outputFormat,
+		solidUnitWeight
+	} = Lookup[
+		safeOptions,
+		{
+			GrinderType,
+			Fineness,
+			BulkDensity,
+			OutputFormat,
+			SolidUnitWeight
+		}
+	];
 	grinderTypePattern = Alternatives @@ ToList[grinderType];
 
+	(* resolve the SolidUnitWeight option; if amount is an integer then we have to set it to something; otherwise Null *)
+	resolvedSolidUnitWeight = Which[
+		Not[MatchQ[solidUnitWeight, Automatic|Null]], solidUnitWeight,
+		MatchQ[amount, GreaterP[0, 1.]], 200 Milligram,
+		True, Null
+	];
+
 	(*Convert amount mass to volume*)
-	volumeAmount = If[MassQ[amount], UnitSimplify[amount / bulkDensity], amount];
+	volumeAmount = Which[
+		MassQ[amount], UnitSimplify[amount / bulkDensity],
+		MatchQ[amount, GreaterP[0, 1.]], UnitSimplify[amount * resolvedSolidUnitWeight / bulkDensity],
+		True,  amount
+	];
 
 	(* generate fast cache *)
 	grinderFastCacheWithDeprecated = preferredGrinderFastCache["Memoization"];
@@ -4159,11 +4290,48 @@ preferredGrindingContainerFastCache[string_] := preferredGrindingContainerFastCa
 	Experiment`Private`makeFastAssocFromCache[cachePreferredGrindingContainerPackets["Memoization"]]
 ];
 
-PreferredGrindingContainer[grinder : Alternatives[ObjectP[Model[Instrument, Grinder]], ObjectP[Object[Instrument, Grinder]]], amount : (MassP | VolumeP), bulkDensity : GreaterP[0Gram / Milliliter]] := Module[
-	{volumeAmount, grinderModel, fastCache},
+DefineOptions[PreferredGrindingContainer,
+	Options :> {
+		{
+			OptionName -> SolidUnitWeight,
+			Default -> Automatic,
+			Description -> "The mass of one single unit of the sample, most frequently a tablet.",
+			ResolutionDescription -> "Automatically set to 200 Milligram if the input amount is set to an integer.",
+			AllowNull -> True,
+			Category -> "General",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Gram],
+				Units :> {Milligram, {Gram, Milligram}}
+			]
+		}
+	}
+]
+
+PreferredGrindingContainer[
+	grinder : Alternatives[ObjectP[Model[Instrument, Grinder]], ObjectP[Object[Instrument, Grinder]]],
+	amount : (MassP | VolumeP | GreaterP[0, 1.]),
+	bulkDensity : GreaterP[0Gram / Milliliter],
+	ops:OptionsPattern[PreferredGrindingContainer]
+] := Module[
+	{safeOps, solidUnitWeight, resolvedSolidUnitWeight, volumeAmount, grinderModel, fastCache},
+
+	safeOps = SafeOptions[PreferredGrindingContainer, ToList[ops]];
+	solidUnitWeight = Lookup[safeOps, SolidUnitWeight];
+
+	(* automatically set SolidUnitWeight to something if we have an integer *)
+	resolvedSolidUnitWeight = Which[
+		Not[MatchQ[solidUnitWeight, Automatic]], solidUnitWeight,
+		MatchQ[amount, GreaterP[0, 1.]], 200 Milligram,
+		True, Null
+	];
 
 	(*Convert amount mass to volume*)
-	volumeAmount = If[MassQ[amount], UnitSimplify[amount / bulkDensity], amount];
+	volumeAmount = Which[
+		MassQ[amount], UnitSimplify[amount / bulkDensity],
+		MatchQ[amount, GreaterP[0, 1.]], UnitSimplify[amount * resolvedSolidUnitWeight / bulkDensity],
+		True, amount
+	];
 
 	(* generate fast cache *)
 	fastCache = preferredGrindingContainerFastCache["Memoization"];

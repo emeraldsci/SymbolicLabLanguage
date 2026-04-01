@@ -57,8 +57,21 @@ DefineTests[GenerateExperimentReview,
         ],
 
         Test["Generates a review of a MeasurepH protocol:",
-            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"]];
-            Object[Protocol, MeasurepH, "id:KBL5DvPp6l3J"][ExperimentReviewNotebook],
+            GenerateExperimentReview[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]];
+            Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"][ExperimentReviewNotebook],
+            ObjectP[Object[EmeraldCloudFile]],
+            SetUp :> (
+                $CreatedObjects = {};
+            ),
+            TearDown :> (
+                EraseObject[$CreatedObjects, Force->True];
+            ),
+            TimeConstraint -> 600
+        ],
+
+        Test["Generates a review of a KarlFischerTitration protocol:",
+            GenerateExperimentReview[Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"]];
+            Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"][ExperimentReviewNotebook],
             ObjectP[Object[EmeraldCloudFile]],
             SetUp :> (
                 $CreatedObjects = {};
@@ -166,7 +179,7 @@ DefineTests[GenerateExperimentReview,
             $Failed,
             Messages :> {Error::ObjectDoesNotExist}
         ],
-        Example[{Messages, "IncompleteProtocol", "Does not generate a review notebook if the protocol is Canceled:"},
+        Example[{Messages, "IncompleteProtocol", "Does not generate a review notebook if the protocol is Aborted:"},
             GenerateExperimentReview[
                 Object[Protocol, RoboticSamplePreparation, "id:bq9LA0968Dav"]
             ],
@@ -967,6 +980,10 @@ DefineTests[mspPrimaryData,
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:O81aEB1jDblo"]],
             {_Labeled}
         ],
+        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Centrifuge unit operation:"},
+            mspPrimaryData[Object[Protocol,ManualSamplePreparation,"id:Z1lqpMv0z9a5"]],
+            {_Labeled}
+        ],
         Example[{Basic, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Transfer and FillToVolume unit operations:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:XnlV5jNELD8Z"]],
             {_Labeled}
@@ -983,10 +1000,6 @@ DefineTests[mspPrimaryData,
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:xRO9n3E5eL1w"]],
             {_Labeled}
         ],
-        Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains Incubate unit operations wherein streams of Object[Instrument, OverheadStirrer]s were recorded (multiple MixTypes case):"},
-            mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:wqW9BPzDEDdM"]],
-            {_Labeled}
-        ],
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein WeightAppearance images were taken:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:GmzlKjNpXYRE"]],
             {_Labeled}
@@ -994,6 +1007,399 @@ DefineTests[mspPrimaryData,
         Example[{Additional, "Generate a TabView figure showing details about the unit operations in a MSP protocol that contains a Transfer unit operation wherein solid samples were weighed by difference:"},
             mspPrimaryData[Object[Protocol, ManualSamplePreparation, "id:KBL5DvP8zEx7"]],
             {_Labeled}
+        ]
+    }
+];
+
+(* ::Subsection:: *)
+(*fillToVolumeUnitOperationPrimaryData*)
+
+DefineTests[fillToVolumeUnitOperationPrimaryData,
+    {
+        Test["A stream button is generated for each FillToVolume sample when fillToVolumeUnitOperationPrimaryData is run on the most recently completed Object[Qualification, Training, VolumetricFlask]:",
+            Module[
+                {mostRecentTrainingQual, flatSubprotocolPackets, relevantMSPPacket, ftvUnitOp, primaryDataFunctionOutput},
+
+                (* Get the most recent qual via Search. We use quals for this because they are frequently created public objects. *)
+                mostRecentTrainingQual = First @ Search[Object[Qualification, Training, VolumetricFlask],
+                    And[
+                        DateCompleted > Now - 4 Week,
+                        Status == Completed,
+                        Result == Pass
+                    ],
+                    MaxResults -> 1
+                ];
+
+                (* Download packets for each subprotocol of the qual which include the OutputUnitOperations of each protocol. *)
+                flatSubprotocolPackets = Flatten[Quiet[Download[mostRecentTrainingQual, Packet[Subprotocols ..[OutputUnitOperations]]]]];
+
+                (* Find the packet corresponding to an MSP protocol which has an Object[UnitOperation, FillToVolume] in the OutputUnitOperations. *)
+                relevantMSPPacket = First @ PickList[
+                    flatSubprotocolPackets,
+                    Lookup[flatSubprotocolPackets, {Object, OutputUnitOperations}],
+                    {ObjectP[Object[Protocol, ManualSamplePreparation]], {___, ObjectP[Object[UnitOperation, FillToVolume]], ___}}
+                ];
+
+                (* Get the output unit operation we want to feed into fillToVolumeUnitOperationPrimaryData *)
+                ftvUnitOp = FirstCase[
+                    Flatten[Lookup[relevantMSPPacket, OutputUnitOperations]],
+                    ObjectP[Object[UnitOperation, FillToVolume]]
+                ];
+
+                (* Run fillToVolumeUnitOperationPrimaryData *)
+                primaryDataFunctionOutput = fillToVolumeUnitOperationPrimaryData[Download[ftvUnitOp]];
+
+                (* If the output is a SlideView (because there are multiple FTV samples), dig into it to get the contents. *)
+                If[MatchQ[primaryDataFunctionOutput, _SlideView],
+                    Module[
+                        {slideViewContentsList},
+                        slideViewContentsList = primaryDataFunctionOutput[[1]];
+                        Map[#[[1]]&, slideViewContentsList]
+                    ],
+                    {primaryDataFunctionOutput[[1]]}
+                ]
+            ],
+            {{_, _Button, _Labeled}..}
+        ],
+
+        Test["A stream button is generated for each FillToVolume sample when fillToVolumeUnitOperationPrimaryData is run on the most recently completed public Object[Protocol, StockSolution]:",
+            Module[
+                {recentPublicStockSolutionProtocols, flatUnitOperationPackets, relevantFTVUnitOpPacket, ftvUnitOp, primaryDataFunctionOutput},
+
+                (* Get the most recent public stock solution protocols involving a FTV via Search. *)
+                recentPublicStockSolutionProtocols = Search[Object[Protocol, StockSolution],
+                    And[
+                        DateCompleted > Now - 12 Week,
+                        Status == Completed,
+                        Notebook == Null,
+                        FillToVolumeProtocols != {}
+                    ]
+                ];
+
+                (* Download the information we need from these protocols in order to find the most recent FTV unit operation which used a VF. *)
+                flatUnitOperationPackets = Flatten[Quiet[
+                    Download[recentPublicStockSolutionProtocols, Packet[FillToVolumeProtocols[OutputUnitOperations][SampleContainerLink]]]
+                ]];
+
+                (* Take the last (i.e., the most recent) packet in the list corresponding to a FTV unit op performed using volumetric flask(s). *)
+                relevantFTVUnitOpPacket = Last @ PickList[
+                    flatUnitOperationPackets,
+                    Lookup[flatUnitOperationPackets, {Object, SampleContainerLink}],
+                    {ObjectP[Object[UnitOperation, FillToVolume]], {ObjectP[Object[Container, Vessel, VolumetricFlask]]..}}
+                ];
+
+                (* Get the output unit operation we want to feed into fillToVolumeUnitOperationPrimaryData *)
+                ftvUnitOp = Lookup[relevantFTVUnitOpPacket, Object];
+
+                (* Run fillToVolumeUnitOperationPrimaryData *)
+                primaryDataFunctionOutput = fillToVolumeUnitOperationPrimaryData[Download[ftvUnitOp]];
+
+                (* If the output is a SlideView (because there are multiple FTV samples), dig into it to get the contents. *)
+                If[MatchQ[primaryDataFunctionOutput, _SlideView],
+                    Module[
+                        {slideViewContentsList},
+                        slideViewContentsList = primaryDataFunctionOutput[[1]];
+                        Map[#[[1]]&, slideViewContentsList]
+                    ],
+                    {primaryDataFunctionOutput[[1]]}
+                ]
+            ],
+            {{_, _Button, _Labeled}..}
+        ]
+    }
+];
+
+(* ::Subsection:: *)
+(*filterUnitOperationPrimaryData*)
+
+DefineTests[filterUnitOperationPrimaryData,
+    {
+        Test["A stream button is generated for each syringe filtration sample when filterUnitOperationPrimaryData is run on the most recently completed public Object[Protocol, Filter] which utilized syringe filtration:",
+            Module[
+                {
+                    recentFilterProtocolsWithStreams, mostRecentFilterProtocol, optimizedUnitOperationPackets, outputUnitOperationPackets,
+                    selectedOptimizedUnitOperation, selectedOutputUnitOperation, filtrationTypes, numberOfSamples, numberOfSyringeFiltrationSamples,
+                    instrumentPackets, instrumentModelPackets, filterUOPDOutput, numberOfButtons
+                },
+
+                (* Get recent Filter protocols which have streams. Currently, we only record Syringe filtration so these should all have Syringe (at least) in the FiltrationTypes. *)
+                recentFilterProtocolsWithStreams = Search[
+                    Object[Protocol, Filter],
+                    And[
+                        Streams != {},
+                        Notebook == Null,
+                        Status == Completed,
+                        DateCompleted > Now - 6 Month
+                    ]
+                ];
+
+                (* Get the most recent protocol which used syringe filtration. *)
+                mostRecentFilterProtocol = Last[recentFilterProtocolsWithStreams];
+
+                (* Download what we need to feed into filterUnitOperationPrimaryData *)
+                {optimizedUnitOperationPackets, outputUnitOperationPackets} = Quiet @ Download[mostRecentFilterProtocol,
+                    {
+                        Packet[ParentProtocol[OptimizedUnitOperations][FiltrationType]],
+                        Packet[ParentProtocol[OutputUnitOperations][FiltrationType]]
+                    }
+                ];
+
+                (* Get the first syringe filter unit operation from each list of packets. *)
+                selectedOptimizedUnitOperation = First @ PickList[
+                    optimizedUnitOperationPackets,
+                    Lookup[optimizedUnitOperationPackets, {Object, FiltrationType}],
+                    {ObjectP[Object[UnitOperation, Filter]], {___, Syringe, ___}}
+                ];
+                selectedOutputUnitOperation = First @ PickList[
+                    outputUnitOperationPackets,
+                    Lookup[outputUnitOperationPackets, {Object, FiltrationType}],
+                    {ObjectP[Object[UnitOperation, Filter]], {___, Syringe, ___}}
+                ];
+
+                (* Get the number of total samples and number of syringe filtration samples. *)
+                filtrationTypes = Lookup[selectedOptimizedUnitOperation, FiltrationType];
+                numberOfSamples = Length[filtrationTypes];
+                numberOfSyringeFiltrationSamples = Length[Cases[filtrationTypes, Syringe]];
+
+                (* We typically feed in some download packets to get the image/name of the instrument. Just hardcode some values here instead, it will not affect this test. *)
+                instrumentPackets = ConstantArray[
+                    <|Object -> Object[Instrument, SyringePump, "id:o1k9jAGko3MA"], Model -> Model[Instrument, SyringePump, "id:GmzlKjPzN9l4"]|>,
+                    numberOfSamples
+                ];
+                instrumentModelPackets = ConstantArray[
+                    <|Object -> Model[Instrument, SyringePump, "id:GmzlKjPzN9l4"], ImageFile -> Object[EmeraldCloudFile, "id:xRO9n3Be1NRw"]|>,
+                    numberOfSamples
+                ];
+
+                (* Run the unitOperationPrimaryData function *)
+                filterUOPDOutput = filterUnitOperationPrimaryData[
+                    Download[Lookup[selectedOptimizedUnitOperation, Object]],
+                    Download[Lookup[selectedOutputUnitOperation, Object]],
+                    instrumentPackets,
+                    instrumentModelPackets
+                ];
+
+                (* Use Part to expand the output graphic into list format, then Flatten it and get the total number of buttons. *)
+                (* I don't love this because it's not intuitive. *)
+                numberOfButtons = Length @ Cases[Flatten[filterUOPDOutput[[1, -1, 1, 1]]], _Button];
+
+                (* Compare the number of buttons to the number of syringe filtration samples. Also *)
+                (* check that there was at least 1 syringe filtration sample so that there's no risk *)
+                (* of passing artificially with SameQ[0, 0] if our searching and pruning went awry. *)
+                And[
+                    SameQ[numberOfButtons, numberOfSyringeFiltrationSamples],
+                    GreaterQ[numberOfSyringeFiltrationSamples, 0]
+                ]
+            ],
+            True
+        ]
+    }
+];
+
+(* ::Subsection:: *)
+(*mixIncubateUnitOperationPrimaryData*)
+
+DefineTests[mixIncubateUnitOperationPrimaryData,
+    {
+        Test["A stream button is generated for each sample when mixIncubateUnitOperationPrimaryData is run on the most recently completed public Object[Protocol, Incubate] which exclusively utilized Invert mixing:",
+            Module[
+                {
+                    recentIncubateProtocols, downloadTuples, mostRecentRelevantDownloadTuple, optimizedUnitOperation, outputUnitOperation,
+                    instrumentPackets, instrumentModelPackets, subprotocolUnitOperationPacket, numberOfSamples, miuopdOutput, numberOfStreamButtons
+                },
+
+                (* Get recent Incubate protocols which have streams. *)
+                recentIncubateProtocols = Search[Object[Protocol, Incubate],
+                    And[
+                        DateCompleted > Now - 6 Month,
+                        Status == Completed,
+                        Streams != {},
+                        Notebook == Null
+                    ]
+                ];
+
+                (* Download from the recent protocols. *)
+                downloadTuples = Quiet[
+                    Download[recentIncubateProtocols,
+                        {
+                            Packet[ParentProtocol[OptimizedUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model, ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model][ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Subprotocol][SamplesIn, InstrumentResources]]
+                        }
+                    ]
+                ];
+
+                (* Get the most recent (last in the list - hence the FirstCase[Reverse[...]]) UO and associated packets which only used Invert mixing. *)
+                mostRecentRelevantDownloadTuple = FirstCase[Reverse[downloadTuples], {___, {KeyValuePattern[MixType -> {Invert..}]}, ___}];
+
+                (* Parse the components of this download tuple so we can feed what we need into the unitOperationPrimaryData function. *)
+                optimizedUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[1, 1]], Object];
+                outputUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[2, 1]], Object];
+                instrumentPackets = mostRecentRelevantDownloadTuple[[3]];
+                instrumentModelPackets = mostRecentRelevantDownloadTuple[[4]];
+                subprotocolUnitOperationPacket = mostRecentRelevantDownloadTuple[[5, 1]];
+
+                (* Get the number of samples which were mixed by this method, which will be the number of stream buttons we expect. *)
+                numberOfSamples = Length @ Lookup[mostRecentRelevantDownloadTuple[[1, 1]], MixType];
+
+                (* Run the unitOperationPrimaryData function. *)
+                miuopdOutput = mixIncubateUnitOperationPrimaryData[
+                    Download[optimizedUnitOperation],
+                    Download[outputUnitOperation],
+                    <||>, (* this input is the user options, which we don't need here. *)
+                    Flatten[instrumentPackets],
+                    Flatten[instrumentModelPackets],
+                    subprotocolUnitOperationPacket
+                ];
+
+                (* Get the number of stream buttons generated in the output. *)
+                numberOfStreamButtons = Length @ Cases[Flatten[miuopdOutput[[1, 1, 1, -1, 1, 1, 1]]], _Button];
+
+                (* Compare the number of buttons to the number of relevant mix samples. Also *)
+                (* check that there was at least 1 relevant mix sample so that there's no risk *)
+                (* of passing artificially with SameQ[0, 0] if our searching and pruning went awry. *)
+                And[
+                    SameQ[numberOfStreamButtons, numberOfSamples],
+                    GreaterQ[numberOfSamples, 0]
+                ]
+            ],
+            True
+        ],
+
+        Test["A stream button is generated for each sample when mixIncubateUnitOperationPrimaryData is run on the most recently completed public Object[Protocol, Incubate] which exclusively utilized Swirl mixing:",
+            Module[
+                {
+                    recentIncubateProtocols, downloadTuples, mostRecentRelevantDownloadTuple, optimizedUnitOperation, outputUnitOperation,
+                    instrumentPackets, instrumentModelPackets, subprotocolUnitOperationPacket, numberOfSamples, miuopdOutput, numberOfStreamButtons
+                },
+
+                (* Get recent Incubate protocols which have streams. *)
+                recentIncubateProtocols = Search[Object[Protocol, Incubate],
+                    And[
+                        DateCompleted > Now - 6 Month,
+                        Status == Completed,
+                        Streams != {},
+                        Notebook == Null
+                    ]
+                ];
+
+                (* Download from the recent protocols. *)
+                downloadTuples = Quiet[
+                    Download[recentIncubateProtocols,
+                        {
+                            Packet[ParentProtocol[OptimizedUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model, ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model][ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Subprotocol][SamplesIn, InstrumentResources]]
+                        }
+                    ]
+                ];
+
+                (* Get the most recent (last in the list - hence the FirstCase[Reverse[...]]) UO and associated packets which only used Swirl mixing. *)
+                mostRecentRelevantDownloadTuple = FirstCase[Reverse[downloadTuples], {___, {KeyValuePattern[MixType -> {Swirl..}]}, ___}];
+
+                (* Parse the components of this download tuple so we can feed what we need into the unitOperationPrimaryData function. *)
+                optimizedUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[1, 1]], Object];
+                outputUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[2, 1]], Object];
+                instrumentPackets = mostRecentRelevantDownloadTuple[[3]];
+                instrumentModelPackets = mostRecentRelevantDownloadTuple[[4]];
+                subprotocolUnitOperationPacket = mostRecentRelevantDownloadTuple[[5, 1]];
+
+                (* Get the number of samples which were mixed by this method, which will be the number of stream buttons we expect. *)
+                numberOfSamples = Length @ Lookup[mostRecentRelevantDownloadTuple[[1, 1]], MixType];
+
+                (* Run the unitOperationPrimaryData function. *)
+                miuopdOutput = mixIncubateUnitOperationPrimaryData[
+                    Download[optimizedUnitOperation],
+                    Download[outputUnitOperation],
+                    <||>, (* this input is the user options, which we don't need here. *)
+                    Flatten[instrumentPackets],
+                    Flatten[instrumentModelPackets],
+                    subprotocolUnitOperationPacket
+                ];
+
+                (* Get the number of stream buttons generated in the output. *)
+                numberOfStreamButtons = Length @ Cases[Flatten[miuopdOutput[[1, 1, 1, -1, 1, 1, 1]]], _Button];
+
+                (* Compare the number of buttons to the number of relevant mix samples. Also *)
+                (* check that there was at least 1 relevant mix sample so that there's no risk *)
+                (* of passing artificially with SameQ[0, 0] if our searching and pruning went awry. *)
+                And[
+                    SameQ[numberOfStreamButtons, numberOfSamples],
+                    GreaterQ[numberOfSamples, 0]
+                ]
+            ],
+            True
+        ],
+
+        Test["A stream button is generated for each sample when mixIncubateUnitOperationPrimaryData is run on the most recently completed public Object[Protocol, Incubate] which exclusively utilized Stir mixing:",
+            Module[
+                {
+                    recentIncubateProtocols, downloadTuples, mostRecentRelevantDownloadTuple, optimizedUnitOperation, outputUnitOperation,
+                    instrumentPackets, instrumentModelPackets, subprotocolUnitOperationPacket, numberOfSamples, miuopdOutput, numberOfStreamButtons
+                },
+
+                (* Get recent Incubate protocols which have streams. *)
+                recentIncubateProtocols = Search[Object[Protocol, Incubate],
+                    And[
+                        DateCompleted > Now - 6 Month,
+                        Status == Completed,
+                        Streams != {},
+                        Notebook == Null
+                    ]
+                ];
+
+                (* Download from the recent protocols. *)
+                downloadTuples = Quiet[
+                    Download[recentIncubateProtocols,
+                        {
+                            Packet[ParentProtocol[OptimizedUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][MixType]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model, ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Instrument][Model][ImageFile]],
+                            Packet[ParentProtocol[OutputUnitOperations][Subprotocol][SamplesIn, InstrumentResources]]
+                        }
+                    ]
+                ];
+
+                (* Get the most recent (last in the list - hence the FirstCase[Reverse[...]]) UO and associated packets which only used Swirl mixing. *)
+                mostRecentRelevantDownloadTuple = FirstCase[Reverse[downloadTuples], {___, {KeyValuePattern[MixType -> {Stir..}]}, ___}];
+
+                (* Parse the components of this download tuple so we can feed what we need into the unitOperationPrimaryData function. *)
+                optimizedUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[1, 1]], Object];
+                outputUnitOperation = Lookup[mostRecentRelevantDownloadTuple[[2, 1]], Object];
+                instrumentPackets = mostRecentRelevantDownloadTuple[[3]];
+                instrumentModelPackets = mostRecentRelevantDownloadTuple[[4]];
+                subprotocolUnitOperationPacket = mostRecentRelevantDownloadTuple[[5, 1]];
+
+                (* Get the number of samples which were mixed by this method, which will be the number of stream buttons we expect. *)
+                numberOfSamples = Length @ Lookup[mostRecentRelevantDownloadTuple[[1, 1]], MixType];
+
+                (* Run the unitOperationPrimaryData function. *)
+                miuopdOutput = mixIncubateUnitOperationPrimaryData[
+                    Download[optimizedUnitOperation],
+                    Download[outputUnitOperation],
+                    <||>, (* this input is the user options, which we don't need here. *)
+                    Flatten[instrumentPackets],
+                    Flatten[instrumentModelPackets],
+                    subprotocolUnitOperationPacket
+                ];
+
+                (* Get the number of stream buttons generated in the output. *)
+                numberOfStreamButtons = Length @ Cases[Flatten[miuopdOutput[[1, 1, 1, -1, 1, 1, 1]]], _Button];
+
+                (* Compare the number of buttons to the number of relevant mix samples. Also *)
+                (* check that there was at least 1 relevant mix sample so that there's no risk *)
+                (* of passing artificially with SameQ[0, 0] if our searching and pruning went awry. *)
+                And[
+                    SameQ[numberOfStreamButtons, numberOfSamples],
+                    GreaterQ[numberOfSamples, 0]
+                ]
+            ],
+            True
         ]
     }
 ];
@@ -1101,6 +1507,77 @@ DefineTests[hplcPrimaryData,
                 _Manipulate
             }
         ],
+        Example[{Basic, "Output only the specified injection Type:"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"], InjectionType -> ColumnPrime],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Pane
+            }
+
+        ],
+        Example[{Basic, "Output only the specified injection Types:"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType -> {ColumnPrime,ColumnFlush}],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Manipulate
+            }
+
+        ],
+        Example[{Messages, "Display all data if none of the given InjectionTypes are present in the protocol"},
+            hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType ->Blank],
+            {
+                {
+                    {
+                        StyleBox["Chromatography Type: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["ReversePhase", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                {
+                    {
+                        StyleBox["Scale: ", FontWeight -> "Bold", FontSize -> 16],
+                        StyleBox["Analytical", FontSize -> 16]
+                    },
+                    "Text"
+                },
+                _Manipulate
+            },
+            Messages :> {Warning::NoInjectionsOfGivenTypes}
+        ],
+
+        Example[{Messages, "Return a warning and only plot the requested InjectionTypes that are present in the protocol"},
+            output = hplcPrimaryData[Object[Protocol, HPLC, "id:aXRlGn00aznk"],InjectionType -> {Blank, ColumnPrime}][[3]];
+            Length[output[[1, 1]]],
+            1,
+            Messages :> {Warning::SomeInjectionsMissing}
+        ],
+
         Example[{Basic, "Output a message to indicate when data is not available:"},
             hplcPrimaryData[Object[Protocol, HPLC, "id:01G6nvD87kMm"]],
             {"This protocol was aborted and does not have chromatograms to display.", "Text"}
@@ -1234,12 +1711,24 @@ DefineTests[measurepHPrimaryData,
             measurepHPrimaryData[Object[Protocol, MeasurepH, "id:7X104v6ajDKd"]],
             {_Column}
         ],
-        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, where no calibration data is provided:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:3em6Zvr3Zz9B"]],
+        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, and for which multiple calibrations were performed:"},
+            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:kEJ9mqG4WW7p"]],
+            {_Column}
+        ]
+    }
+];
+
+(* ::Subsection:: *)
+(*karlFischerTitrationPrimaryData*)
+
+DefineTests[karlFischerTitrationPrimaryData,
+    {
+        Example[{Basic, "Generate data tables for an Object[Protocol, KarlFischerTitration] with Volumetric Technique:"},
+            karlFischerTitrationPrimaryData[Object[Protocol, KarlFischerTitration, "id:3em6ZvA90voW"]],
             {_Column}
         ],
-        Example[{Basic, "Generate summary and data tables for an Object[Protocol, MeasurepH] with multiple samples whose pH values were measured multiple times, and for which multiple calibrations were performed:"},
-            measurepHPrimaryData[Object[Protocol, MeasurepH, "id:9RdZXvNjz8X9"]],
+        Example[{Basic, "Generate data tables for an Object[Protocol, KarlFischerTitration] with Coulometric Technique:"},
+            karlFischerTitrationPrimaryData[Object[Protocol, KarlFischerTitration, "id:KBL5DvRw1emN"]],
             {_Column}
         ]
     }

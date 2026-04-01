@@ -12,6 +12,8 @@
 (*Messages*)
 
 $ManifoldMaximumComputationTime=(1 Week);
+(* this is a string representation of the default MM verstion that is configured on the manifold side (not SLL), it is used to make the log URLs*)
+$DefaultManifoldMathematicaVersionString = "14.2.0";
 Warning::DeveloperOnlyOptions="Current user does not have adequate permissions to set option(s) `1`. These option(s) will be ignored and reverted to their defaults.";
 Warning::NoTrigger="Option Trigger was either not specified or set to None, so option TrackedFields will be ignored.";
 Error::CloudOnlyOptions="The supplied options `1` can only be used when computing on the cloud. Please set Computation->Cloud, or remove these options from your Compute call.";
@@ -123,7 +125,7 @@ DefineOptionSet[BaseComputationKernelOptions :> {
 	{
 		OptionName->MathematicaVersion,
 		Default->Null,
-		Description->"Specify which Mathematica version should be used to run this Manifold job. Null defaults to 13.3.1.",
+		Description->"Specify which Mathematica version should be used to run this Manifold job. Null defaults to "<>$DefaultManifoldMathematicaVersionString<>".",
 		AllowNull->True,
 		Widget->Widget[Type->Enumeration,Pattern:>ManifoldMathematicaVersionsP],
 		Category->"Hidden"

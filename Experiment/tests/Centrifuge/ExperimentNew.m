@@ -404,11 +404,23 @@ DefineTests[
 			}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08 * Milliliter, Output -> Options];
+			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08 Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
-			0.08 * Milliliter,
+			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCentrifuge[Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.081 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			Stubs :> {
 				$PersonID = Object[User, "Test user for notebook-less test protocols"],
 				$EmailEnabled = False
@@ -937,6 +949,18 @@ DefineTests[
 				ExperimentCentrifuge[containerID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule}
+		],
+		Example[{Messages, "WorkCellIsIncompatibleWithMethod","Return an error if WorkCell is specified, but Manual preparation is required or specified:"},
+			ExperimentCentrifuge[
+				Object[Sample, "10 mL sample in 50 mL tube for ExperimentCentrifuge testing (1)" <> $SessionUUID],
+				Preparation -> Manual,
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::InvalidOption
+			}
 		],
 		Example[{Messages, "EmptyContainer", "If an empty container is given as input, return $Failed:"},
 			ExperimentCentrifuge[Object[Container, Vessel, "Empty container for ExperimentCentrifuge testing" <> $SessionUUID]],
@@ -1488,16 +1512,56 @@ DefineTests[
 			Messages :> {Error::NoTransferContainerFound, Error::InvalidInput}
 		],
 
-
-		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate is more precise than the achievable precision of the specified centrifuge:"},
-			Download[ExperimentCentrifuge[
-				{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
-				Intensity -> Quantity[544, ("Revolutions") / ("Minutes")]
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RPM is more precise than the achievable precision of the specified manual centrifuge:"},
+			Download[
+				ExperimentCentrifuge[
+					{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
+					Intensity -> 544 RPM
+				],
+				OutputUnitOperations[Intensity]
 			],
-				OutputUnitOperations[Intensity]],
-			{{Quantity[540, ("Revolutions") / ("Minutes")]}},
+			{{540 RPM}},
 			Messages :> {Warning::CentrifugePrecision},
 			EquivalenceFunction -> Equal
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RCF is more precise than the achievable precision of the specified manual centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Sample, "Sample oligo, 1mL, 15 mL container for ExperimentCentrifuge testing" <> $SessionUUID]},
+				Intensity -> 1500 GravitationalAcceleration
+			];
+			centrifugeUOOutput = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			centrifugeUOInput = FirstCase[Download[protocol, InputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[{centrifugeUOInput, centrifugeUOOutput}, Intensity],
+			{{1500 GravitationalAcceleration}, {2540 RPM}},
+			Messages :> {Warning::CentrifugePrecision},
+			EquivalenceFunction -> Equal,
+			Variables :> {protocol, centrifugeUOInput, centrifugeUOOutput}
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate is more precise than the achievable precision of the specified robotic centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID]},
+				Intensity -> 200.123 GravitationalAcceleration,
+				Preparation -> Robotic
+			];
+			centrifugeUO = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[centrifugeUO, Intensity],
+			{EqualP[200.1 GravitationalAcceleration]..},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {protocol, centrifugeUO}
+		],
+		Example[{Messages, "CentrifugePrecision", "Gives a warning and rounds the rate option if the rate in RPM is more precise than the achievable precision of the specified robotic centrifuge:"},
+			protocol = ExperimentCentrifuge[
+				{Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID]},
+				Intensity -> 2000 RPM,
+				Rotor -> Model[Container, CentrifugeRotor, "id:xRO9n3vk11k5"],
+				Preparation -> Robotic
+			];
+			centrifugeUOOutput = FirstCase[Download[protocol, OutputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			centrifugeUOInput = FirstCase[Download[protocol, InputUnitOperations], ObjectP[Object[UnitOperation, Centrifuge]]];
+			Download[{centrifugeUOInput, centrifugeUOOutput}, Intensity],
+			{{2000 RPM..}, {EqualP[492 GravitationalAcceleration]..}},
+			Messages :> {Warning::CentrifugePrecision},
+			Variables :> {protocol, centrifugeUOInput, centrifugeUOOutput}
 		],
 
 		Example[{Messages, "SampleStowaways", "If there are non-input samples in the same containers as any input samples, samples will be transferred to exclude non-input samples:"},
@@ -1629,7 +1693,7 @@ DefineTests[
 					Instrument -> Model[Instrument, Centrifuge, "Avanti J-15R"]
 				],
 				OutputUnitOperations[Intensity]],
-			{{Quantity[967.04, "StandardAccelerationOfGravity"]}}
+			{{2040 RPM}}
 		],
 
 		Example[{Messages, "ConflictingOptionsWithinContainer", "If samples in the same container are requested to be centrifuged with different time, temperature, instrument, or intensity, the samples will be transferred to different containers:"},
@@ -1794,7 +1858,7 @@ DefineTests[
 
 		Test["Makes the expected resources:",
 			Module[{protocol, requiredResources, centrifugeResources, groupedCentrifuges, centrifugeMatch, sampleResources,
-				sampleMatch, bucketResources, bucketMatch, balanceResource, balanceMatch, rackResources, rackMatch},
+				sampleMatch, bucketResources, bucketMatch, balanceResource, balanceMatch, rackResources, rackMatch, handlingStationResource, handlingStationMatch},
 				protocol = ExperimentCentrifuge[{
 					Object[Container, Plate, "96-well plate with 3 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID],
 					Object[Container, Plate, "96-well plate with 9 1mL samples for ExperimentCentrifuge testing" <> $SessionUUID],
@@ -1885,13 +1949,17 @@ DefineTests[
 				balanceResource = Cases[requiredResources, {LinkP[], Balance, ___}];
 				balanceMatch = MatchQ[balanceResource, {{LinkP[Object[Resource, Instrument]], Balance, Null, Null}}];
 
+				(* Expect one handling station resource *)
+				handlingStationResource = Cases[requiredResources, {LinkP[], HandlingEnvironment, ___}];
+				handlingStationMatch = MatchQ[handlingStationResource, {{LinkP[Object[Resource, Instrument]], HandlingEnvironment, Null, Null}}];
+
 				(* Expect 2 rack resources *)
 				rackResources = Cases[requiredResources, {LinkP[], TareRacks, ___}];
 				rackMatch = MatchQ[rackResources, {{LinkP[Object[Resource, Sample]], TareRacks, 1, Null}}];
 
-				{centrifugeMatch, sampleMatch, bucketMatch, balanceMatch, rackMatch}
+				{centrifugeMatch, sampleMatch, bucketMatch, balanceMatch, handlingStationMatch, rackMatch}
 			],
-			{True, True, True, True, True},
+			{True, True, True, True, True, True},
 			(* This test is pretty slow locally, but oh my *)
 			TimeConstraint -> 50000
 		],
@@ -2196,10 +2264,64 @@ DefineTests[
 			];
 			Equal[
 				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
-				{60 Second, 0.02 Gram}
+				{$DefaultWeightStabilityDuration, 0.02 Gram}
 			],
 			True,
 			Variables :> {protocol}
+		],
+		(* biohazard sample scenarios *)
+		Test["If the sample is detected to be biohazardous, bucket covers and biosafety cabinets are used for loading and unloading:",
+			protocol = ExperimentCentrifuge[
+				Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID],
+				ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Existing MSP protocol for ExperimentCentrifuge testing" <> $SessionUUID]
+			];
+			Download[protocol, {Buckets[CoverFootprints], BucketCovers, TransferEnvironments, Centrifuges}],
+			{
+				{{CoverFootprintP..}, {CoverFootprintP..}, {CoverFootprintP..}, {CoverFootprintP..}},
+				{ObjectP[Model[Item, Lid]], ObjectP[Model[Item, Lid]], ObjectP[Model[Item, Lid]], ObjectP[Model[Item, Lid]]},
+				{ObjectP[Model[Instrument, HandlingStation, BiosafetyCabinet, "id:54n6evJ3G4nl"]]}, (*"Biosafety Cabinet Handling Station for Microbiology"*)
+				{ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]]}(*"Avanti J-15R"*)
+			},
+			Variables :> {protocol}
+		],
+		Test[{"For a mixed list of biohazard and regular samples, the centrifuges are picked accordingly:"},
+			options = ExperimentCentrifuge[
+				{
+					Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "8.5 mL sample in 8.9 mL OptiSeal centrifuge tube for ExperimentCentrifuge testing" <> $SessionUUID]
+				}, Output -> Options];
+			Lookup[options, {Instrument, RotorGeometry}],
+			{
+				{
+					ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]],(*"Avanti J-15R"*)
+					ObjectP[Model[Instrument, Centrifuge, "id:lYq9jRxY9RzA"]](*"Optima XPN 80 Preparative Ultracentrifuge"*)
+				},
+				{SwingingBucketRotor, FixedAngleRotor}
+			},
+			Variables :> {options}
+		],
+		Example[{Messages, "ContainerCentrifugeIncompatible", "Throws a warning if the centrifuge that support bucket cover for the biohazard sample cannot host the sample's container:"},
+			options = ExperimentCentrifuge[Object[Sample, "Bacterial biohazard sample in incompatible container (100 mL bottle) for ExperimentCentrifuge testing" <> $SessionUUID], Output -> Options];
+			Lookup[options, {Instrument, AliquotContainer}],
+			{
+				ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]],(*"Avanti J-15R"*)
+				{{1, Model[Container, Vessel, "id:bq9LA0dBGGR6"]}} (*50 mL Tube*)
+			},
+			Messages :> {Warning::ContainerCentrifugeIncompatible},
+			Variables :> {options}
+		],
+		Example[{Messages, "NoCompatibleCentrifuge", "Throws a message if no centrifuge that support bucket cover could be found for the specified parameters and the biohazard sample:"},
+			ExperimentCentrifuge[
+				Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID],
+				Intensity -> 100 RPM (* Avanti J-15R" supports a Min of 200 RPM*)
+			],
+			$Failed,
+			Messages :> {Error::NoCompatibleCentrifuge, Error::InvalidOption}
+		],
+		Example[{Messages, "IncompatibleCentrifuge", "Throws a message if sample is biohazardous but the specified centrifuge does not support bucket cover:"},
+			ExperimentCentrifuge[Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID], Instrument -> Model[Instrument, Centrifuge, "id:lYq9jRxY9RzA"]],
+			$Failed,
+			Messages :> {Error::IncompatibleCentrifuge, Error::InvalidOption}
 		]
 	},
 	Parallel -> True,
@@ -2327,6 +2449,13 @@ DefineTests[
 					Object[Sample, "Centrifuge Test normal sample next to heavy sample in normal plate" <> $SessionUUID],
 					Object[Container, Plate, "96-well PCR plate with 1 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID],
 					Object[Sample, "1 mL sample in 96-well PCR plate for ExperimentCentrifuge testing (plate 7, sample 1)" <> $SessionUUID],
+					(* Biology containers and samples *)
+					Object[Container, Vessel, "15 mL tube with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Container, Plate, "96-well tissue culture plate with biohazard mammalian sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Mammalian biohazard sample in 96-well Tissue Culture Plate for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Container, Vessel, "100 mL bottle with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Bacterial biohazard sample in incompatible container (100 mL bottle) for ExperimentCentrifuge testing" <> $SessionUUID],
 					Model[Item, Counterweight, "Test Model Counterweight for ExperimentCentrifuge testing" <> $SessionUUID],
 					Object[Protocol, DNASynthesis, "Protocol with ImageSample False for ExperimentCentrifuge testing" <> $SessionUUID],
 					Object[Protocol, DNASynthesis, "Protocol with ImageSample True for ExperimentCentrifuge testing" <> $SessionUUID],
@@ -2364,6 +2493,7 @@ DefineTests[
 				sample71, sample72, sample73, sample74, sample75, sample76, sample77, sample78, sample79, sample80,
 				sample81, sample82, sample83, sample84, sample85, sample86, sample87, sample88, sample89, sample90,
 				sample91, sample92, sample93, sample94, sample95, sample96, sample97, sample98, sample99, sample100,
+				sample101, sample102, sample103,
 				container1, container2, container3, container4, container5, container6, container7, container8, container9, container10,
 				container11, container12, container13, container14, container15, container16, container17, container18, container19, container20,
 				container21, container22, container23, container24, container25, container26, container27, container28, container29, container30,
@@ -2372,6 +2502,7 @@ DefineTests[
 				plate51, plate52, plate53, plate54, plate55, plate56, container57, container58, container59, container60,
 				container61, container62, container63, container64, container65, container66, container67, container68, container69, plateFilter70,
 				plate71, container72, container73, container74, container75, container76, container77, container78, container79, container80,
+				container81, plate82, container83,
 				dnaSynthProt1, dnaSynthProt2, centrifugeProt1, mspProt1, modelRack1, modelCounterweight1, protocol
 			},
 			{
@@ -2418,7 +2549,9 @@ DefineTests[
 				(*41*)centrifugeProt1,
 				(*42*)mspProt1,
 				(*43*)modelRack1,
-				(*44*)modelCounterweight1
+				(*44*)modelCounterweight1,
+				(*45*)sample101, sample102, sample103,
+				(*46*)container81, plate82, container83
 			} = CreateID[{
 				(*1*)Model[Instrument, Centrifuge],
 				(*2*)Model[Instrument, Centrifuge],
@@ -2463,7 +2596,9 @@ DefineTests[
 				(*41*)Object[Protocol, Centrifuge],
 				(*42*)Object[Protocol, ManualSamplePreparation],
 				(*43*)Model[Container, Rack],
-				(*44*)Model[Item, Counterweight]
+				(*44*)Model[Item, Counterweight],
+				(*45*)Object[Sample], Object[Sample], Object[Sample],
+				(*46*)Object[Container, Vessel], Object[Container, Plate], Object[Container, Vessel]
 			}];
 
 			(* Model centrifuges *)
@@ -3729,6 +3864,68 @@ DefineTests[
 					Replace[Contents] -> {
 						{"A1", Link[sample92, Container]}
 					}
+				|>,
+				(* Bacterial biohzard sampel in 15 mL tube. Note that as long as it has BiohazardDisposal flagged and CellType populated, it works for the experiment and test. It does not necessarily need composition populated with cells. *)
+				<|
+					Object -> sample101,
+					DeveloperObject -> True,
+					Type -> Object[Sample],
+					Site -> Link[$Site],
+					Model -> Link[modelSample1, Objects],
+					Name -> "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID,
+					Volume -> 10 Milliliter,
+					CellType -> Bacterial,
+					BiohazardDisposal -> True
+				|>,
+				<|
+					Object -> container81,
+					DeveloperObject -> True,
+					Type -> Object[Container, Vessel],
+					Site -> Link[$Site],
+					Model -> Link[Model[Container, Vessel, "15mL Tube"], Objects],
+					Name -> "15 mL tube with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID,
+					Replace[Contents] -> {{"A1", Link[sample101, Container]}}
+				|>,
+				<|
+					Object -> sample102,
+					DeveloperObject -> True,
+					Type -> Object[Sample],
+					Site -> Link[$Site],
+					Name -> "Mammalian biohazard sample in 96-well Tissue Culture Plate for ExperimentCentrifuge testing" <> $SessionUUID,
+					Volume -> 1.5 Milliliter,
+					CellType -> Mammalian,
+					BiosafetyLevel -> "BSL-2",
+					BiohazardDisposal -> True
+				|>,
+				<|
+					Object -> plate82,
+					DeveloperObject -> True,
+					Type -> Object[Container, Plate],
+					Model -> Link[Model[Container, Plate, "96-well Greiner Tissue Culture Plate"], Objects],
+					Site -> Link[$Site],
+					Name -> "96-well tissue culture plate with biohazard mammalian sample for ExperimentCentrifuge testing" <> $SessionUUID,
+					Replace[Contents] -> {
+						{"A1", Link[sample102, Container]}
+					}
+				|>,
+				<|
+					Object -> sample103,
+					DeveloperObject -> True,
+					Type -> Object[Sample],
+					Site -> Link[$Site],
+					Name -> "Bacterial biohazard sample in incompatible container (100 mL bottle) for ExperimentCentrifuge testing" <> $SessionUUID,
+					Volume -> 20 Milliliter,
+					CellType -> Yeast,
+					BiohazardDisposal -> True
+				|>,
+				<|
+					Object -> container83,
+					DeveloperObject -> True,
+					Type -> Object[Container, Vessel],
+					Site -> Link[$Site],
+					Model -> Link[Model[Container, Vessel, "100 mL Glass Bottle"], Objects],
+					Name -> "100 mL bottle with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID,
+					Replace[Contents] -> {{"A1", Link[sample103, Container]}}
 				|>
 			}]];
 
@@ -3857,6 +4054,13 @@ DefineTests[
 					Object[Sample, "Centrifuge Test normal sample next to heavy sample in normal plate" <> $SessionUUID],
 					Object[Container, Plate, "96-well PCR plate with 1 1mL samples for ExperimentCentrifuge testing (1)" <> $SessionUUID],
 					Object[Sample, "1 mL sample in 96-well PCR plate for ExperimentCentrifuge testing (plate 7, sample 1)" <> $SessionUUID],
+					(* Biology containers and samples *)
+					Object[Container, Vessel, "15 mL tube with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Bacterial biohazard sample in 15 mL tube for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Container, Plate, "96-well tissue culture plate with biohazard mammalian sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Mammalian biohazard sample in 96-well Tissue Culture Plate for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Container, Vessel, "100 mL bottle with bacterial biohazard sample for ExperimentCentrifuge testing" <> $SessionUUID],
+					Object[Sample, "Bacterial biohazard sample in incompatible container (100 mL bottle) for ExperimentCentrifuge testing" <> $SessionUUID],
 					Model[Item, Counterweight, "Test Model Counterweight for ExperimentCentrifuge testing" <> $SessionUUID],
 					Object[Protocol, DNASynthesis, "Protocol with ImageSample False for ExperimentCentrifuge testing" <> $SessionUUID],
 					Object[Protocol, DNASynthesis, "Protocol with ImageSample True for ExperimentCentrifuge testing" <> $SessionUUID],
@@ -4069,8 +4273,31 @@ DefineTests[
 				WorkCell -> microbioSTAR, Preparation -> Robotic
 			],
 			{{Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"]}}
+		],
+		Example[{Options, Biohazard, "Find centrifuges that will work with the desired Biohazard:"},
+			CentrifugeDevices[{
+				Model[Container, Vessel, "1.5mL Tube with 2mL Tube Skirt"],
+				Model[Container, Vessel, "1.5mL Tube with 2mL Tube Skirt"],
+				Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+				Model[Container, Plate, "96-well 2mL Deep Well Plate"]},
+				Biohazard -> {True, False, True, False}
+			],
+			{
+				{ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]]},(*"Avanti J-15R"*)
+				OrderlessPatternSequence[{
+					Model[Instrument, Centrifuge, "id:O81aEB4kJYLO"],
+					Model[Instrument, Centrifuge, "id:jLq9jXY4kGJx"],
+					Model[Instrument, Centrifuge, "id:6V0npvmZ1l3Z"],
+					Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"],
+					Model[Instrument, Centrifuge, "id:9RdZXv1XwWex"]
+				}],
+				{ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]]},(*"Avanti J-15R"*)
+				OrderlessPatternSequence[{
+					ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]],
+					ObjectP[Model[Instrument, Centrifuge, "id:eGakldJEz14E"]]
+				}]
+			}
 		]
-
 	},
 	SetUp :> {ClearDownload[]; ClearMemoization[];},
 	SymbolSetUp :> {

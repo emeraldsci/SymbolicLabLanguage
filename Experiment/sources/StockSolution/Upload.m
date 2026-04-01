@@ -185,6 +185,53 @@ DefineOptions[UploadStockSolution,
 			Category->"Organizational Information"
 		},
 
+		(* --- PreRinse Labware --- *)
+		{
+			OptionName->PreRinseLabware,
+			Default->Automatic,
+			AllowNull->True,
+			Widget->Widget[
+				Type->Enumeration,
+				Pattern:>BooleanP
+			],
+			Description->"Indicates if labware used for transfers are rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			ResolutionDescription -> "Automatically set to True if any of the other PreRinseLabware options are set. Or, if a template model is provided, resolves based on whether that template has PreRinse parameters. Otherwise, set to False.",
+			Category->"PreRinse Labware"
+		},
+		{
+			OptionName->NumberOfPreRinses,
+			Default->Automatic,
+			AllowNull->True,
+			Widget->Widget[
+				Type->Number,
+				Pattern:>GreaterP[0, 1]
+			],
+			Description->"The number of times labware used for transfers are rinsed with PreRinseSolution before use.",
+			ResolutionDescription -> "If a template model is provided, resolves based on the template model. Otherwise automatically set to 2 if any of the other PreRinseLabware options are set. Otherwise, set to Null.",
+			Category->"PreRinse Labware"
+		},
+		{
+			OptionName->PreRinseSolution,
+			Default->Automatic,
+			AllowNull->True,
+			Widget->Widget[
+				Type->Object,
+				Pattern:>ObjectP[{
+					Model[Sample],
+					Object[Sample]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
+			],
+			Description->"The solution that is used to rinse labware used for transfers (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			ResolutionDescription -> "If a template model is provided, resolves based on the template model. Otherwise automatically set to the first Liquid component in the stock solution formula if any of the other PreRinseLabware options are set. Otherwise, set to Null.",
+			Category->"PreRinse Labware"
+		},
+
 		(* --- Incubation --- *)
 		{
 			OptionName -> Incubate,
@@ -1254,6 +1301,8 @@ Warning::NewModelCreation="A new model (`3`) will be created when using `2` as i
 Warning::ExistingModelReplacesInput="An existing model (`1`) fulfills the input template model (`2`) with specified options. The existing model (`1`) will be used as the alternative preparation template for this stock solution.";
 Error::UnitOperationInvalidVolumeIncrement="The specified VolumeIncrement(s) (`1`) is not compatible with the total volume (`2`) made by this stock solution. Please consider setting VolumeIncrement to Automatic, or to the total volume made by this set of UnitOperations.";
 Warning::SpecifedMixRateNotSafe = "The specified mix rate exceeds the MaxOverheadMixRate of the resolved ContainerOut (`1`). Please consider about using a smaller mix rate to avoid overflow or spillage during mixing.";
+Error::PreRinseOptionConflictUSS="Some PreRinse options are specified while the other PreRinse options are set to Null. Please specify all the PreRinse options (PreRinseLabware, NumberOfPreRinses, PreRinseSolution) if PreRinse is required or consider leaving some of them Automatic. If PreRinse is not needed, please set all the PreRinse options to Null.";
+Error::InvalidPreRinseSolutionUSS = "The PreRinseSolution specified (`1`) is not one of the stock solution liquid components. Please use one of the stock solution liquid components as PreRinseSolution.";
 
 (* ::Subsubsection::Closed:: *)
 (*UploadStockSolution*)
@@ -1403,6 +1452,8 @@ UploadStockSolution[
 			{
 				Packet[
 					Name, Deprecated, Formula, FillToVolumeSolvent, FillToVolumeMethod, TotalVolume, Sterile, State, Tablet,
+
+					PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 
 					MixUntilDissolved, MixTime, MaxMixTime, MixRate, MixType, Mixer, NumberOfMixes, MaxNumberOfMixes,
 
@@ -1939,7 +1990,7 @@ UploadStockSolution[
 			Incubate, IncubationTemperature, IncubationTime, Mix, MixUntilDissolved, MixTime, MaxMixTime, MixType,
 			Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes, AdjustpH, NominalpH, MinpH, MaxpH, pHingAcid, pHingBase,
 			Filter, FilterMaterial, FilterSize, Autoclave, AutoclaveProgram, OrderOfOperations, FillToVolumeMethod,
-			PrepareInResuspensionContainer
+			PrepareInResuspensionContainer, PreRinseLabware, NumberOfPreRinses, PreRinseSolution
 		};
 
 		boolPrepOps = {Incubate, Mix, AdjustpH, Filter, Autoclave};
@@ -1947,7 +1998,7 @@ UploadStockSolution[
 		(* mass resolve options *)
 		Map[Function[option,
 			If[
-				MatchQ[Lookup[safeOptions,option], Except[Automatic]],
+				MatchQ[Lookup[safeOptions,option], Except[(Automatic|Null|False)]],
 				option->Lookup[safeOptions,option],
 				option->If[MemberQ[boolPrepOps, option], False, Null]
 			]],
@@ -2151,6 +2202,7 @@ uploadStockSolutionModel[
 
 					Autoclave, AutoclaveProgram,
 					PrepareInResuspensionContainer,
+					PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 					UnitOperations
 				]
 			},
@@ -2605,7 +2657,9 @@ resolveUploadStockSolutionOptions[
 		postAutoclaveResolvedMixOptions,postAutoclaveMixOptionResolutionTests,postAutoclaveResolvedMixBool,postAutoclaveResolvedIncubateBool,
 		postAutoclavePreResolvedMixTime,postAutoclavePreResolvedIncubationTime,postAutoclaveMixAndIncubateSubOptionNames,postAutoclaveMixSubOptionNames,
 		postAutoclaveIncubateSubOptionNames, preResolvedMixRate, postAutoclavePreResolvedMixRate, preResolvedMixRateReplaceQ, postAutoclavePreResolvedMixRateReplaceQ, specifiedMixRate, specifiedPostAutoclaveMixRate, preResolvedMixOptions, postAutoclavePreResolvedMixOptions,
-		resolvedPrepContainer
+		resolvedPrepContainer,
+		resolvedPreRinseLabware, resolvedNumberOfPreRinses, resolvedPreRinseSolution,
+		conflictPreRinseOptionsQ, invalidPreRinseSolution, conflictPreRinseOptionsTest, invalidPreRinseSolutionTest
 	},
 
 	(* determine if we should keep a running list of tests *)
@@ -2709,7 +2763,8 @@ resolveUploadStockSolutionOptions[
 						Acid, Base, Fuming, IncompatibleMaterials, UltrasonicIncompatible, CentrifugeIncompatible,
 						PreferredContainers, VolumeIncrements, Preparable, FillToVolumeMethod,
 						Autoclave, AutoclaveProgram,
-						FulfillmentScale
+						FulfillmentScale,
+						PreRinseLabware, NumberOfPreRinses, PreRinseSolution
 					}
 				]
 			]
@@ -3763,7 +3818,103 @@ resolveUploadStockSolutionOptions[
 		{Normal[KeyTake[<|safeOptionsTemplateWithMixAndIncubateTimes|>, filterSubOptionNames]] /. {Automatic -> Null}, False, {}}
 	];
 
+	(* Pre-Rinse Options *)
+	(* Resolve Pre-Rinse options *)
+	{
+		resolvedPreRinseLabware,
+		resolvedNumberOfPreRinses,
+		resolvedPreRinseSolution,
+		conflictPreRinseOptionsQ,
+		invalidPreRinseSolution
+	}=Module[
+		{providedPreRinseLabwareBool, providedNumberOfPreRinses, providedPreRinseSolution, solvent, preRinseLabware, numberOfPreRinses, preRinseSolution, allPossiblePreRinseSolutions, bestPreRinseSolution, conflictQ, invalidPreRinseSolutionQ},
 
+		{providedPreRinseLabwareBool, providedNumberOfPreRinses, providedPreRinseSolution} = Lookup[safeOptionsTemplateWithMixAndIncubateTimes, {PreRinseLabware, NumberOfPreRinses, PreRinseSolution}, Automatic];
+
+
+		(* get the formula information for the requested stock solution model *)
+		solvent = If[!NullQ[mySolventPacket],
+			Lookup[mySolventPacket, Object],
+			Nothing
+		];
+		allPossiblePreRinseSolutions = Join[
+			{
+				(* If there is FillToVolume solvent, we can use it for PreRinse *)
+				solvent
+			},
+			(* Then select the formula items that are liquid *)
+			Lookup[Cases[myFormulaSpecWithPackets[[All,2]], KeyValuePattern[State -> Liquid]], Object, {}]
+		];
+		bestPreRinseSolution = FirstOrDefault[allPossiblePreRinseSolutions];
+		{preRinseLabware, numberOfPreRinses, preRinseSolution} = Switch[
+			{providedPreRinseLabwareBool, providedNumberOfPreRinses, providedPreRinseSolution},
+
+			(* 1 - PreRinse is set to Null or False - Set All to Null *)
+			{False|Null, _, _},
+			{
+				providedPreRinseLabwareBool,
+				providedNumberOfPreRinses/.{Automatic->Null},
+				providedPreRinseSolution/.{Automatic->Null}
+			},
+
+			(* 2 - PreRinse is Automatic and NumberOfPreRinses and PreRinseSolution are both Automatic/Null - Set All to Null *)
+			{Automatic, Automatic|Null, Automatic|Null},
+			{
+				Null,
+				Null,
+				Null
+			},
+
+			(* 3 - Any other case where PreRinse is set to True, or other PreRinse options are set *)
+			_,
+			{
+				True,
+				providedNumberOfPreRinses/.{Automatic->2},
+				providedPreRinseSolution/.{Automatic->bestPreRinseSolution}
+			}
+		];
+
+		(* Check if we have conflict PreRinse options *)
+		conflictQ = !MatchQ[
+			{preRinseLabware, numberOfPreRinses, preRinseSolution},
+			Alternatives[{Null | False, Null, Null}, {True, Except[Null], Except[Null]}]
+		];
+
+		(* Check if we have a bad pre rinse solution *)
+		invalidPreRinseSolutionQ = TrueQ[preRinseLabware] && !MemberQ[allPossiblePreRinseSolutions, Download[preRinseSolution, Object]] && !conflictQ;
+
+		{preRinseLabware, numberOfPreRinses, preRinseSolution, conflictQ, invalidPreRinseSolutionQ}
+	];
+
+	(* PreRinseOptionConflict error and tests - when some of PreRinse options are set to not Null while others are set to Null *)
+	If[conflictPreRinseOptionsQ&&!gatherTests,
+		(
+			Message[Error::PreRinseOptionConflictUSS];
+			Message[Error::InvalidOption, {PreRinseLabware, NumberOfPreRinses, PreRinseSolution}];
+		)
+	];
+	conflictPreRinseOptionsTest = If[gatherTests,
+		Test["PreRinse options are all not Null or Null.",
+			conflictPreRinseOptionsQ,
+			False
+		],
+		Nothing
+	];
+
+	(* InvalidPreRinseSolution error and tests - when the PreRinse Solution is not part of the stock solution formula *)
+	If[invalidPreRinseSolution&&!gatherTests,
+		(
+			Message[Error::InvalidPreRinseSolutionUSS, resolvedPreRinseSolution];
+			Message[Error::InvalidOption,PreRinseSolution];
+		)
+	];
+	invalidPreRinseSolutionTest = If[gatherTests,
+		Test["PreRinseSolution is part of the stock solution liquid formula or FillToVolumeSolvent.",
+			invalidPreRinseSolution,
+			False
+		],
+		Nothing
+	];
 
 
 	(* If we were given our FillToVolumeMethod, check it. *)
@@ -4007,6 +4158,10 @@ resolveUploadStockSolutionOptions[
 				Resuspension -> resolvedResuspension,
 				PrepareInResuspensionContainer -> resolvedPrepareInResuspensionContainer,
 				VolumeIncrements -> resolvedVolumeIncrements,
+				(* Pre-Rinse options *)
+				PreRinseLabware -> resolvedPreRinseLabware,
+				NumberOfPreRinses -> resolvedNumberOfPreRinses,
+				PreRinseSolution -> resolvedPreRinseSolution,
 				FulfillmentScale->resolvedFulfillmentScale,
 				Preparable -> preparableQ,
 				Composition->resolvedComposition,
@@ -4036,7 +4191,8 @@ resolveUploadStockSolutionOptions[
 			{
 				Incubate, IncubationTemperature, IncubationTime, Mix, MixUntilDissolved, MixTime, MaxMixTime, MixType,
 				Mixer, MixRate, NumberOfMixes, MaxNumberOfMixes, AdjustpH, NominalpH, MinpH, MaxpH, pHingAcid, pHingBase,
-				Filter, FilterMaterial, FilterSize, Autoclave, AutoclaveProgram, OrderOfOperations, FillToVolumeMethod
+				Filter, FilterMaterial, FilterSize, Autoclave, AutoclaveProgram, OrderOfOperations, FillToVolumeMethod,
+				PrepareInResuspensionContainer, PreRinseLabware, NumberOfPreRinses, PreRinseSolution
 			},
 			(!MatchQ[Lookup[resolvedOptions, #], False|Null]&)
 		]
@@ -4048,7 +4204,7 @@ resolveUploadStockSolutionOptions[
 	];
 
 	invalidPrimitivesOptionsTest=If[gatherTests,
-		Test["The preparation related options (Incubate, Mix, Filter, pH, etc.) cannot be set if the UnitOperations override option is given:",Length[invalidPrimitivesOptions]==0,True],
+		Test["The preparation related options (Incubate, Mix, Filter, pH, PreRinse, etc.) cannot be set if the UnitOperations override option is given:",Length[invalidPrimitivesOptions]==0,True],
 		{}
 	];
 
@@ -4075,7 +4231,9 @@ resolveUploadStockSolutionOptions[
 		fulfillmentScaleVolIncrementsMismatchTests,
 		orderOfOperationsTest,
 		orderOfOperationsForpHTest,
-		invalidPrimitivesOptionsTest
+		invalidPrimitivesOptionsTest,
+		conflictPreRinseOptionsTest,
+		invalidPreRinseSolutionTest
 	}];
 
 	(* return the options and the tests (if any) *)
@@ -4452,6 +4610,7 @@ newStockSolution[
 				MaxNumberOfpHingCycles, MaxpHingAdditionVolume, MaxAcidAmountPerCycle, MaxBaseAmountPerCycle,
 				FilterMaterial, FilterSize,
 				IncubationTime, IncubationTemperature,
+				PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 				OrderOfOperations, Autoclave, AutoclaveProgram,
 				FillToVolumeMethod, UnitOperations, TransportTemperature, PrepareInResuspensionContainer,
 				TransportTemperature, PostAutoclaveMixUntilDissolved,
@@ -4561,6 +4720,12 @@ newStockSolution[
 					(* incubation options *)
 					TrueQ[Lookup[possibleModelPacket, IncubationTime] == Lookup[resolvedOptionsNoAmbient, IncubationTime]],
 					TrueQ[Lookup[possibleModelPacket, IncubationTemperature] == Lookup[resolvedOptionsNoAmbient, IncubationTemperature]],
+
+					(* PreRinse options *)
+					(* need to use TrueQ on both sides because a Null and False are the same here *)
+					TrueQ[Lookup[possibleModelPacket, PreRinseLabware]] === TrueQ[Lookup[resolvedOptionsNoAmbient, PreRinseLabware]],
+					Lookup[possibleModelPacket, NumberOfPreRinses] === Lookup[resolvedOptionsNoAmbient, NumberOfPreRinses],
+					Download[Lookup[possibleModelPacket, PreRinseSolution], Object] === Download[Lookup[resolvedOptionsNoAmbient, PreRinseSolution], Object],
 
 					(* other preparation options *)
 					(* having this Or call ensures that we don't need to back populate everything that doesn't have Preparable populated, but if it is populated it needs to match *)
@@ -4769,6 +4934,7 @@ newStockSolution[
 			FilterMaterial, FilterSize,
 			LightSensitive, ShelfLife, UnsealedShelfLife, TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
 			IncubationTime, IncubationTemperature,
+			PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 			DiscardThreshold,
 			UltrasonicIncompatible, CentrifugeIncompatible,
 			Resuspension, PrepareInResuspensionContainer,
@@ -4787,13 +4953,16 @@ newStockSolution[
 		{MixUntilDissolved,MixTime,MaxMixTime,MixType,Mixer,MixRate,NumberOfMixes, MaxNumberOfMixes,
 		NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,
 		FilterMaterial,FilterSize,
-		IncubationTime,IncubationTemperature,PrepareInResuspensionContainer,TransportTemperature,PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime,
+		IncubationTime,IncubationTemperature,
+			PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
+			PrepareInResuspensionContainer,TransportTemperature,PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime,
 			PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,PostAutoclaveMixRate, PostAutoclaveNumberOfMixes,
 			PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature},
 		{MixUntilDissolved,MixTime,MaxMixTime,MixType,Mixer,MixRate,NumberOfMixes, MaxNumberOfMixes,
 			NominalpH,MinpH,MaxpH,pHingAcid,pHingBase,
 			FilterMaterial,FilterSize,
 			IncubationTime,IncubationTemperature,TransportTemperature,
+			PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 			PostAutoclaveMixUntilDissolved, PostAutoclaveMixTime, PostAutoclaveMaxMixTime, PostAutoclaveMixType, PostAutoclaveMixer,
 			PostAutoclaveMixRate, PostAutoclaveNumberOfMixes, PostAutoclaveMaxNumberOfMixes, PostAutoclaveIncubationTime, PostAutoclaveIncubationTemperature}
 	];
@@ -4947,6 +5116,7 @@ newStockSolution[
 					MaxNumberOfpHingCycles,MaxpHingAdditionVolume,MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,
 					FilterMaterial,FilterSize,
 					IncubationTime,IncubationTemperature,
+					PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 					OrderOfOperations,Autoclave,AutoclaveProgram,
 					FillToVolumeMethod,UnitOperations,PrepareInResuspensionContainer
 				]
@@ -5134,6 +5304,7 @@ newStockSolution[
 			MaxNumberOfpHingCycles,MaxpHingAdditionVolume,MaxAcidAmountPerCycle,MaxBaseAmountPerCycle,
 			FilterMaterial,FilterSize,
 			IncubationTime,IncubationTemperature,
+			PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 			OrderOfOperations,Autoclave,AutoclaveProgram,
 			FillToVolumeMethod,UnitOperations, TransportTemperature,PrepareInResuspensionContainer
 		]
@@ -5193,7 +5364,13 @@ newStockSolution[
 
 					(* Autoclaving *)
 					TrueQ[Lookup[possibleModelPacket, Autoclave]] === TrueQ[Lookup[resolvedOptionsNoAmbient, Autoclave]],
-					Lookup[possibleModelPacket, AutoclaveProgram] === Lookup[resolvedOptionsNoAmbient, AutoclaveProgram]
+					Lookup[possibleModelPacket, AutoclaveProgram] === Lookup[resolvedOptionsNoAmbient, AutoclaveProgram],
+
+					(* PreRinse options *)
+					(* need to use TrueQ on both sides because a Null and False are the same here *)
+					TrueQ[Lookup[possibleModelPacket, PreRinseLabware]] === TrueQ[Lookup[resolvedOptionsNoAmbient, PreRinseLabware]],
+					Lookup[possibleModelPacket, NumberOfPreRinses] === Lookup[resolvedOptionsNoAmbient, NumberOfPreRinses],
+					Download[Lookup[possibleModelPacket, PreRinseSolution], Object] === Download[Lookup[resolvedOptionsNoAmbient, PreRinseSolution], Object]
 				];
 
 				(* if the formulas are the same (but different absolute amounts), then the ratios for each component will all agree *)
@@ -5334,6 +5511,7 @@ newStockSolution[
 			FilterMaterial, FilterSize,
 			LightSensitive, ShelfLife, UnsealedShelfLife, TransportTemperature, Density, ExtinctionCoefficients, Ventilated, Flammable, Acid, Base, Fuming,
 			IncubationTime, IncubationTemperature,
+			PreRinseLabware, NumberOfPreRinses, PreRinseSolution,
 			DiscardThreshold,
 			UltrasonicIncompatible, CentrifugeIncompatible,
 			Resuspension, PrepareInResuspensionContainer

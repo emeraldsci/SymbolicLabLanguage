@@ -100,6 +100,16 @@ With[
 				Developer -> True,
 				AdminWriteOnly->True
 			},
+			SlackTagging -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[User, Emerald, Developer],
+				Description -> "The developer that will be additionally tagged on Slack when a support ticket is escalated to SciOps.",
+				Category -> "General",
+				Developer -> True,
+				AdminWriteOnly -> True
+			},
 			Distro-> {
 				Format -> Single,
 				Class -> Link,
@@ -1217,6 +1227,31 @@ With[
 				Category -> "Sample Storage",
 				Developer -> True
 			},
+			LinedContainers -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Container, Rack] | Model[Container, Rack],
+				Description -> "Indicates the racks used to transport samples that require lined surface during this protocol.",
+				Category -> "Sample Storage",
+				Developer -> True
+			},
+			CurrentTransporters -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container][CurrentTransporterProtocol],
+					Model[Container],
+					Object[Instrument, PortableCooler][CurrentTransporterProtocol],
+					Object[Instrument, PortableHeater][CurrentTransporterProtocol],
+					Model[Instrument, PortableCooler],
+					Model[Instrument, PortableHeater]
+				],
+				Description -> "Indicates the instruments and/or containers used to transport samples that require special transport conditions during this protocol.",
+				Category -> "Sample Storage",
+				Developer -> True
+			},
 
 			InitialNitrogenPressure -> {
 				Format -> Single,
@@ -2058,6 +2093,15 @@ With[
 				Headers -> {"Date","ReadyCheck Result","State of Resources"},
 				Developer -> True
 			},
+			ScreenCaptures -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[EmeraldCloudFile],
+				Description -> "Videos of activity on the instrument computer while the operator was accessing it via VNC.",
+				Category -> "Operations Information",
+				Developer -> True
+			},
 			(* --- Storage pricing --- *)
 			StoragePrice -> {
 				Format -> Single,
@@ -2488,6 +2532,14 @@ With[
 				Category -> "General",
 				Developer -> True
 			},
+			StreamTroubleshootRetryNumber -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterEqualP[0, 1],
+				Description -> "Number of attempts operator tried to troubleshoot the stream-related issues. When this exceeds certain limit, an error messsage will be thrown to request sci ops intervention.",
+				Category -> "General",
+				Developer -> True
+			},
 			Movements -> {
 				Format -> Multiple,
 				Class -> {Link, Link, String, String, Integer, Integer},
@@ -2526,7 +2578,7 @@ With[
 					Null
 				},
 				Headers -> {"Source", "Destination Object", "Destination Position", "TaskID", "Iteration", "TotalIterations"},
-				Description -> "Lists all movements from a non-aseptic source into a non-aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
+				Description -> "Lists all movements from a non-aseptic source into a non-aseptic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
 			},
@@ -2568,7 +2620,7 @@ With[
 					Null
 				},
 				Headers -> {"Source", "Destination Object", "Destination Position", "TaskID", "Iteration", "TotalIterations"},
-				Description -> "Lists all movements from an aseptic source into a non-aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
+				Description -> "Lists all movements from an aseptic source into a non-aseptic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
 			},
@@ -2610,7 +2662,7 @@ With[
 					Null
 				},
 				Headers -> {"Source", "Destination Object", "Destination Position", "TaskID", "Iteration", "TotalIterations"},
-				Description -> "Lists all movements from a non-aseptic source into an aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
+				Description -> "Lists all movements from a non-aseptic source into an aseptic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
 			},
@@ -2652,7 +2704,7 @@ With[
 					Null
 				},
 				Headers -> {"Source", "Destination Object", "Destination Position", "TaskID", "Iteration", "TotalIterations"},
-				Description -> "Lists all movements from an aseptic source into an aspetic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
+				Description -> "Lists all movements from an aseptic source into an aseptic destination that the indicated task is currently performing.  This field is only populated during the process of any sort of movement task, and is emptied once it is complete.",
 				Developer -> True,
 				Category -> "Placements"
 			},
@@ -2674,12 +2726,13 @@ With[
 				Category -> "Health & Safety",
 				Developer -> True
 			},
-			ErrorRecoveryLog -> {
+			GuidedCorrectionLog -> {
 				Format -> Multiple,
 				Class -> {
 					Date -> Date,
 					Procedure -> String,
 					TaskID -> String,
+					CorrectionCategory -> Expression,
 					Subprotocol -> Link,
 					ResponsibleOperator -> Link
 				},
@@ -2687,6 +2740,7 @@ With[
 					Date -> _?DateObjectQ,
 					Procedure -> _String,
 					TaskID -> _String,
+					CorrectionCategory -> GuidedCorrectionCategoryP,
 					Subprotocol -> _Link,
 					ResponsibleOperator -> _Link
 				},
@@ -2694,11 +2748,51 @@ With[
 					Date -> Null,
 					Procedure -> Null,
 					TaskID -> Null,
+					CorrectionCategory -> Null,
 					Subprotocol -> Alternatives[Object[Protocol], Object[Maintenance], Object[Qualification]],
-					ResponsibleOperator -> Object[User, Emerald][ErrorRecoveryEvents, RootProtocol]
+					ResponsibleOperator -> Object[User, Emerald][GuidedCorrectionEvents, RootProtocol]
 				},
-				Description -> "The error recovery procedures triggered during execution of this protocol.",
+				Description -> "The guided correction procedures triggered during execution of this protocol.",
 				Category -> "Organizational Information"
+			},
+			OEBCompoundHandling -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the operator of this protocol is currently handling a OccupationalExposureBanding 4/5 compound, which poses exposure hazard and requires additional PPE.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			OEBCompoundHandlingLog -> {
+				Format -> Multiple,
+				Class -> {
+					Date,
+					Expression,
+					Link
+				},
+				Pattern :> {
+					_?DateObjectQ,
+					BooleanP,
+					_Link
+				},
+				Relation -> {
+					Null,
+					Null,
+					Object[User]
+				},
+				Headers -> {"Date", "Status", "Responsible Party"},
+				Description -> "The historical record of a protocol entering and exiting OEBCompoundHandling.",
+				Category -> "Health & Safety",
+				Developer -> True
+			},
+			OEBCompounds -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Object[Sample],
+				Description -> "Indicates what OccupationalExposureBanding 4/5 compounds are being handled within this protocol.",
+				Category -> "Health & Safety",
+				Developer -> True
 			},
 			insertMe
 		}

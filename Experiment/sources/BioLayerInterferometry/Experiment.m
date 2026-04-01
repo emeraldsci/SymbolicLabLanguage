@@ -4763,7 +4763,7 @@ resolveExperimentBioLayerInterferometryOptions[mySamples:{ObjectP[Object[Sample]
     {}
   ];
 
-  (* Warn the use if they have specified solutions, time, etc that wont be used because the flag in RegenertionParameters is no on *)
+  (* Warn the use if they have specified solutions, time, etc that wont be used because the flag in RegenerationParameters is no on *)
   If[!MatchQ[unusedRegenerationOptions,{}]&&!gatherTests&&Not[MatchQ[$ECLApplication, Engine]],
     Message[Warning::UnusedBLIRegenerationOptions, unusedRegenerationOptions]
   ];
@@ -10140,7 +10140,7 @@ bioLayerInterferometryResourcePackets[mySamples:{ObjectP[Object[Sample]]..}, myU
 
   (* --- RESOLVE THE DILUTIONS --- *)
 
-  (* look up the dilutions and tag them so that they can be read by DilutionsToNamesHelper. keep the index matched ones index matched since they will dictate the amonut of sample needed *)
+  (* look up the dilutions and tag them so that they can be read by DilutionsToNamesHelper. keep the index matched ones index matched since they will dictate the amount of sample needed *)
   (* we will put them all in the same format so it is easy to figure out how much solution is needed: <|sample->Volume, sample->volume|>  *)
   (* we can throw out all of the sample->volumes that have non object names and should be good to go *)
 
@@ -10723,7 +10723,7 @@ namesFromBLIDilutions[dilutions:_List]:=
       (*
       serial dilutions have the formats:
       {{DilutionFactor, {solutionIDs...}}, (Serial)},
-      {{TransferAmonut, DiluentAmount, {solutionIDs...}}, (Serial)},
+      {{TransferAmount, DiluentAmount, {solutionIDs...}}, (Serial)},
       {{{DilutionFactor, ID}...}, (Serial)},
       {{{TransferAmount, DiluentAmount, ID}...}, (Serial)}
       *)
@@ -10957,7 +10957,7 @@ dilutionsResolver[dilutions:_List, dilutionType: (Serial|Fixed), sample_, diluen
 
       Which[
         MatchQ[Length[dilutions], 3],
-        (* we are looking at the dilutions with format:{TransferAmonut, DiluentAmount, {"solutionIDs"...}} *)
+        (* we are looking at the dilutions with format:{TransferAmount, DiluentAmount, {"solutionIDs"...}} *)
         Join[
           List[Null -> First[dilutions],  diluent -> dilutions[[2]], Name -> #]&/@Rest[Last[dilutions]],
           List[{sample -> First[dilutions],  diluent -> dilutions[[2]], Name -> First[Last[dilutions]]}]

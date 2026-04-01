@@ -815,7 +815,7 @@ resolveImagesPrimitives[
 (* ::Subsubsection:: *)
 (* populateImagesprimitives *)
 
-(* Helper function to automatically poplulate the primitives based on the user and data options *)
+(* Helper function to automatically populate the primitives based on the user and data options *)
 populateImagesprimitives[
 	myInput:ObjectP[Object[Data,Microscope]],
 	myExpandedOptions:{(_Rule|_RuleDelayed)..},
@@ -1212,7 +1212,7 @@ resolveImageAdjustmentPrimitives[
 (* ::Subsubsection:: *)
 (* populateImageAdjustmentprimitives *)
 
-(* Helper function to automatically poplulate the primitives based on the user and data options *)
+(* Helper function to automatically populate the primitives based on the user and data options *)
 populateImageAdjustmentprimitives[
 	myInput:ObjectP[Object[EmeraldCloudFile]],
 	myImage_Image,
@@ -2691,7 +2691,7 @@ resolveImageSegmentationPrimitives[
 (* ::Subsubsection:: *)
 (* populateImageSegmentationprimitives *)
 
-(* Helper function to automatically poplulate the primitives based on the user and data options *)
+(* Helper function to automatically populate the primitives based on the user and data options *)
 populateImageSegmentationprimitives[
 	myInput:ObjectP[Object[EmeraldCloudFile]],
 	myImage_Image,

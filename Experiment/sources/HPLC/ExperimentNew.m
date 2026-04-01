@@ -1024,7 +1024,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -1036,7 +1036,7 @@ DefineOptions[ExperimentHPLC,
 					]
 				],
 				Description -> "For each ExcitationWavelength/EmissionWavelength pair, the signal amplification factor which modulates the percentage of maximum voltage that can be applied to the Photomultiplier Tube of the Fluorescence Detector. Linear increase in voltage applied to the Photomultiplier tube leads to an exponential change in RFU signal. Variable Fluorescence Sensitivity implies a different fluorescence sensitivity for each Excitation/Emission Wavelength pair.",
-				ResolutionDescription -> "If the \"Ultimate 3000 with FLR Detector\" or \"Waters Acquity UPLC H-Class FLR\" instrument is selected, automatically set to 100 Percent. If the \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\" instrument is selected, automatically set to 60 Percent.",
+				ResolutionDescription -> "If the \"Ultimate 3000 with FLR Detector\" instrument is selected, automatically set to 100 Percent. If the \"Waters Acquity UPLC H-Class FLR\" instrument is selected, automatically set to 100 Percent (corresponding to the recommended Gain value of 1 on the Waters MassLynx software). If the \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\" instrument is selected, automatically set to 60 Percent.",
 				Category -> "Detection"
 			},
 			{
@@ -2049,7 +2049,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -2706,7 +2706,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -3309,7 +3309,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -3879,7 +3879,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -4232,6 +4232,7 @@ Error::HPLCFluorescenceWavelengthLimit = "The following options `1` have specifi
 Error::InvalidHPLCEmissionCutOffFilter = "The fluorescence emission cut-off filter is not available on `1`. Please set the option `2` to Null or select a different instrument (like `3`).";
 Error::TooLargeHPLCEmissionCutOffFilter = "For `1` `2`, the selected `3` `4` should not be larger than `5` `6` so that the emission light can pass through the cut-off filter and reach the emission monochromator for final wavelength selection. Please specify a larger emission cut-off filter value or set it to Open to allow lights of all wavelengths to pass through.";
 Error::InvalidWatersHPLCFluorescenceGain="When `1` is used, the fluorescence gain option `2` can only be set to a constant value for multi-channel fluorescence measurement. Please correct the option values to continue.";
+Error::HPLCFluorescenceGainOverMaximum="When a non-Waters HPLC `1` is used, the fluorescence gain option `2` can only be set to a maximum of 100%. Please correct the option values to continue.";
 Error::InvalidHPLCFluorescenceFlowCellTemperature = "The fluorescence flow cell temperature control is not available on `1`. Please set the option `2` to Null or select a different instrument (like `3`).";
 Error::ConflictRefractiveIndexMethod = "For `3` `4`, when DifferentialRefractiveIndex method is selected in `1`, the gradient in `2` should have the differential refractive index reference loading closed. Please select RefractiveIndex instead or choose a different gradient.";
 Warning::RepeatedDetectors = "The specified Detector option `1` has repeated entries. The repeat entries have been removed.";
@@ -4260,36 +4261,6 @@ $DefaultIonExchangePreparativeColumn=Model[Item, Column, "id:rea9jl1or6Np"];
 $DefaultIonExchangeAnalyticalColumn=Model[Item, Column, "id:zGj91aR3d6GL"];
 $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$DefaultReversePhasePreparativeColumn,$DefaultReversePhaseAnalyticalColumn,$DefaultIonExchangePreparativeColumn,$DefaultIonExchangeAnalyticalColumn];
 
-(* HPLC Vials *)
-$ChromatographyLCCompatibleVials = {
-	(* "HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
-	(* "1mL HPLC Vial (total recovery)" *)
-	Model[Container, Vessel, "id:1ZA60vL48X85"],
-	(* "Amber HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:GmzlKjznOxmE"],
-	(* "HPLC vial (high recovery), LCMS Certified" *)
-	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
-	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
-	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
-	(* "Polypropylene HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:qdkmxz0A884Y"],
-	(* "PFAS Testing Vials, Agilent" *)
-	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
-	(* "2mL HPLC clear vial, flat bottom" *)
-	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
-};
-
-$ChromatographyLCCompatibleVialsNamed = {
-	Model[Container, Vessel, "HPLC vial (high recovery)"],
-	Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
-	Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
-	Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
-	Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
-	Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],
-	Model[Container, Vessel, "PFAS Testing Vials, Agilent"]
-};
-
 (* ::Subsection:: *)
 (* ExperimentHPLC *)
 
@@ -4306,7 +4277,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		modelColumnFields, gradientFields, fractionCollectionFields, sampleFields, modelContainerFields, optionsWithObjects,
 		availableInstruments, availableInstrumentObjects, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
 		instrumentObjects, objectSampleFields, modelSampleFields, modelSampleFieldsPacket, objectContainerFields, modelContainerFieldsPacket, analyteFields,
-		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache,
+		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache, lcVialModels,
 		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, authorObject, cacheBall,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets,
 		resourcePacketTests, cartridgeObjects, modelCartridgeObjects, cartridgeFields, modelCartridgeFields,
@@ -4611,6 +4582,9 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
 	];
 
+	(* Find all compatible LC vials prior to downloading. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -4622,7 +4596,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards/blanks *)
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 					(* Preparatory HPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
@@ -5275,7 +5249,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
 		roundedInjectionTable, instrumentMaxColumnOD,
 		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments,
-		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions
+		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions,
+		lcVialModels, lcVialModelsNamed
 	},
 
 	(* Determine the requested return value from the function *)
@@ -10767,12 +10742,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		PickList[simulatedSampleContainers, specifiedAliquotBools, False],
 		ObjectP[Object[Container, Plate]]
 	];
+
+	(* Pull the memoized LC vials and their names. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+	lcVialModelsNamed = NamedObject[lcVialModels, Cache -> cache];
+
 	(* Vessels are for Dionex and Waters instruments *)
 	uniqueNonAliquotableVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
 		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"], Model[Container, Vessel, "PFAS Testing Vials, Agilent"]} *)
-		{False, ObjectP[$ChromatographyLCCompatibleVials]}
+		{False, ObjectP[lcVialModels]}
 	];
 
 	(* Need anything that is aliquotable too *)
@@ -14622,7 +14602,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Only prep HPLC uses different containers *)
 	{compatibleContainers, namedCompatibleContainers} = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		{{Model[Container, Vessel, "id:bq9LA0dBGGR6"], Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:bq9LA0dBGGrd"], Model[Container, Vessel, "id:rea9jl1orrMp"]}, {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]}},
-		{$ChromatographyLCCompatibleVials, $ChromatographyLCCompatibleVialsNamed}
+		{lcVialModels, lcVialModelsNamed}
 	];
 
 	(* If the sample's container model is not compatible with the instrument, it will not be possible to run the samples. *)
@@ -15114,11 +15094,11 @@ resolveHPLCInstrumentOptions[
 		resolvedpHTemperatureCompensation, resolvedConductivityTemperatureCompensation,
 		resolvedInstrumentSpecificOptions, resultRule, testsRule, outputSpecification, resolvedDetector, resolvedMaxAcceleration, resolvedSampleTemperature, resolvedAbsorbanceWavelengths, missingFractionCollectionDetectorOption, resolvedAbsorbanceSamplingRates, resolvedSmoothingTimeConstants,resolvedUVFilters,
 		fluorescenceWavelengthLimit, tooNarrowFluorescenceRange,
-		resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
-		resolvedStandardExcitationWavelength, resolvedStandardEmissionWavelength, resolvedStandardEmissionCutOffFilter, resolvedStandardFluorescenceGain, resolvedStandardFluorescenceFlowCellTemperature, standardWavelengthSwappedErrors, standardTooNarrowFluorescenceRangeErrors, standardConflictFluorescenceLengthErrors, standardTooManyFluorescenceWavelengthsErrors, standardInvalidEmissionCutOffFilterErrors, standardTooLargeEmissionCutOffFilterErrors, standardInvalidWatersFluorescenceGainErrors, standardInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedBlankExcitationWavelength, resolvedBlankEmissionWavelength, resolvedBlankEmissionCutOffFilter, resolvedBlankFluorescenceGain, resolvedBlankFluorescenceFlowCellTemperature, blankWavelengthSwappedErrors, blankTooNarrowFluorescenceRangeErrors, blankConflictFluorescenceLengthErrors, blankTooManyFluorescenceWavelengthsErrors, blankInvalidEmissionCutOffFilterErrors, blankTooLargeEmissionCutOffFilterErrors, blankInvalidWatersFluorescenceGainErrors, blankInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedColumnPrimeExcitationWavelength, resolvedColumnPrimeEmissionWavelength, resolvedColumnPrimeEmissionCutOffFilter, resolvedColumnPrimeFluorescenceGain, resolvedColumnPrimeFluorescenceFlowCellTemperature, columnPrimeWavelengthSwappedErrors, columnPrimeTooNarrowFluorescenceRangeErrors, columnPrimeConflictFluorescenceLengthErrors, columnPrimeTooManyFluorescenceWavelengthsErrors, columnPrimeInvalidEmissionCutOffFilterErrors, columnPrimeTooLargeEmissionCutOffFilterErrors, columnPrimeInvalidWatersFluorescenceGainErrors, columnPrimeInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedColumnFlushExcitationWavelength, resolvedColumnFlushEmissionWavelength, resolvedColumnFlushEmissionCutOffFilter, resolvedColumnFlushFluorescenceGain,  resolvedColumnFlushFluorescenceFlowCellTemperature, columnFlushWavelengthSwappedErrors, columnFlushTooNarrowFluorescenceRangeErrors, columnFlushConflictFluorescenceLengthErrors, columnFlushTooManyFluorescenceWavelengthsErrors, columnFlushInvalidEmissionCutOffFilterErrors, columnFlushTooLargeEmissionCutOffFilterErrors, columnFlushInvalidWatersFluorescenceGainErrors, columnFlushInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidNonWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
+		resolvedStandardExcitationWavelength, resolvedStandardEmissionWavelength, resolvedStandardEmissionCutOffFilter, resolvedStandardFluorescenceGain, resolvedStandardFluorescenceFlowCellTemperature, standardWavelengthSwappedErrors, standardTooNarrowFluorescenceRangeErrors, standardConflictFluorescenceLengthErrors, standardTooManyFluorescenceWavelengthsErrors, standardInvalidEmissionCutOffFilterErrors, standardTooLargeEmissionCutOffFilterErrors, standardInvalidWatersFluorescenceGainErrors, standardInvalidNonWatersFluorescenceGainErrors, standardInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedBlankExcitationWavelength, resolvedBlankEmissionWavelength, resolvedBlankEmissionCutOffFilter, resolvedBlankFluorescenceGain, resolvedBlankFluorescenceFlowCellTemperature, blankWavelengthSwappedErrors, blankTooNarrowFluorescenceRangeErrors, blankConflictFluorescenceLengthErrors, blankTooManyFluorescenceWavelengthsErrors, blankInvalidEmissionCutOffFilterErrors, blankTooLargeEmissionCutOffFilterErrors, blankInvalidWatersFluorescenceGainErrors, blankInvalidNonWatersFluorescenceGainErrors, blankInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedColumnPrimeExcitationWavelength, resolvedColumnPrimeEmissionWavelength, resolvedColumnPrimeEmissionCutOffFilter, resolvedColumnPrimeFluorescenceGain, resolvedColumnPrimeFluorescenceFlowCellTemperature, columnPrimeWavelengthSwappedErrors, columnPrimeTooNarrowFluorescenceRangeErrors, columnPrimeConflictFluorescenceLengthErrors, columnPrimeTooManyFluorescenceWavelengthsErrors, columnPrimeInvalidEmissionCutOffFilterErrors, columnPrimeTooLargeEmissionCutOffFilterErrors, columnPrimeInvalidWatersFluorescenceGainErrors, columnPrimeInvalidNonWatersFluorescenceGainErrors, columnPrimeInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedColumnFlushExcitationWavelength, resolvedColumnFlushEmissionWavelength, resolvedColumnFlushEmissionCutOffFilter, resolvedColumnFlushFluorescenceGain,  resolvedColumnFlushFluorescenceFlowCellTemperature, columnFlushWavelengthSwappedErrors, columnFlushTooNarrowFluorescenceRangeErrors, columnFlushConflictFluorescenceLengthErrors, columnFlushTooManyFluorescenceWavelengthsErrors, columnFlushInvalidEmissionCutOffFilterErrors, columnFlushTooLargeEmissionCutOffFilterErrors, columnFlushInvalidWatersFluorescenceGainErrors, columnFlushInvalidNonWatersFluorescenceGainErrors, columnFlushInvalidFluorescenceFlowCellTemperatureErrors,
 		resolvedLightScatteringLaserPower, resolvedLightScatteringFlowCellTemperature, resolvedStandardLightScatteringLaserPower, resolvedStandardLightScatteringFlowCellTemperature, resolvedBlankLightScatteringLaserPower, resolvedBlankLightScatteringFlowCellTemperature, resolvedColumnPrimeLightScatteringLaserPower, resolvedColumnPrimeLightScatteringFlowCellTemperature, resolvedColumnFlushLightScatteringLaserPower, resolvedColumnFlushLightScatteringFlowCellTemperature,
 		resolvedRefractiveIndexMethod, resolvedRefractiveIndexFlowCellTemperature, refractiveIndexMethodConflictErrors, resolvedStandardRefractiveIndexMethod, resolvedStandardRefractiveIndexFlowCellTemperature, standardRefractiveIndexMethodConflictErrors, resolvedBlankRefractiveIndexMethod, resolvedBlankRefractiveIndexFlowCellTemperature, blankRefractiveIndexMethodConflictErrors, resolvedColumnPrimeRefractiveIndexMethod, resolvedColumnPrimeRefractiveIndexFlowCellTemperature, columnPrimeRefractiveIndexMethodConflictErrors, resolvedColumnFlushRefractiveIndexMethod, resolvedColumnFlushRefractiveIndexFlowCellTemperature, columnFlushRefractiveIndexMethodConflictErrors,
 		resolvedNebulizerGas, resolvedNebulizerGasHeating, resolvedNebulizerHeatingPower, resolvedNebulizerGasPressure, resolvedDriftTubeTemperatures, resolvedELSDGains, resolvedELSDSamplingRates, standardNebulizerGas, standardNebulizerGasHeating, invalidOptions, gasPressureAsList,
@@ -15148,7 +15128,7 @@ resolveHPLCInstrumentOptions[
 		roundedWavelengthResolutionBool, roundedWavelengthResolutionBoolOptions,
 		wavelengthResolutionConflictBool, wavelengthResolutionConflictOptions, wavelengthResolutionConflictTests, wavelengthFractionCollectionConflictOptions, wavelengthFractionCollectionConflictTests,
 		innerResult, innerNebulizerGas, innerNebulizerGasHeating, innerNebulizerHeatingPower, innerNebulizerGasPressure, innerDriftTubeTemperature, innerELSDGain, innerELSDSamplingRate,
-		fluorescenceGreaterEmissionInvalidOptions, fluorescenceGreaterEmissionInvalidTests, fluorescenceRangeTooNarrowInvalidOptions, fluorescenceRangeTooNarrowInvalidTests, conflictFluorescenceLengthOptions, conflictFluorescenceLengthTests, tooManyFluorescenceChannelsOptions, tooManyFluorescenceChannelsTests, invalidEmissionCutOffFilterOptions, invalidEmissionCutOffFilterTests, tooLargeEmissionCutOffFilterOptions, tooLargeEmissionCutOffFilterTests, invalidDionexFluorescenceGainOptions, invalidWatersFluorescenceGainOptions, invalidWatersFluorescenceGainTests, invalidFluorescenceFlowCellTemperatureOptions, invalidFluorescenceFlowCellTemperatureTests, conflictRefractiveIndexMethodOptions, conflictRefractiveIndexMethodTests,
+		fluorescenceGreaterEmissionInvalidOptions, fluorescenceGreaterEmissionInvalidTests, fluorescenceRangeTooNarrowInvalidOptions, fluorescenceRangeTooNarrowInvalidTests, conflictFluorescenceLengthOptions, conflictFluorescenceLengthTests, tooManyFluorescenceChannelsOptions, tooManyFluorescenceChannelsTests, invalidEmissionCutOffFilterOptions, invalidEmissionCutOffFilterTests, tooLargeEmissionCutOffFilterOptions, tooLargeEmissionCutOffFilterTests, invalidDionexFluorescenceGainOptions, invalidWatersFluorescenceGainOptions, invalidWatersFluorescenceGainTests, invalidNonWatersFluorescenceGainOptions, invalidNonWatersFluorescenceGainTests, invalidFluorescenceFlowCellTemperatureOptions, invalidFluorescenceFlowCellTemperatureTests, conflictRefractiveIndexMethodOptions, conflictRefractiveIndexMethodTests,
 		gasPressureOptions, nebulizerGasOptions, gasPressureConflictBool, gasPressureConflictOptions, gasPressureConflictTest, nebulizerGasHeatingOptions, gasHeatingConflictBool, gasHeatingConflictOptions, gasHeatingConflictTest, nebulizerHeatingPowerOptions,
 		heatingPowerConflictGasBool, heatingPowerConflictHeatingBool, gasHeatingPowerConflictOptions, gasHeatingPowerConflictTest, uvFilterOptions, samplingRateOptions, tuvOptionsNotNeededQ,
 		tuvNotNeededOptions, tuvOptionsNotNeededTest, resolvedInjectionTable, columnPrimeQ, columnFlushQ, columnPrimeOptions, columnFlushOptions,
@@ -16626,6 +16606,7 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterErrors,
 		tooLargeEmissionCutOffFilterErrors,
 		invalidWatersFluorescenceGainErrors,
+		invalidNonWatersFluorescenceGainErrors,
 		invalidFluorescenceFlowCellTemperatureErrors
 	} = Transpose[
 		MapThread[
@@ -16634,10 +16615,10 @@ resolveHPLCInstrumentOptions[
 				Module[
 					{
 						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 					},
 
-					{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 8];
+					{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 9];
 
 					(* Set Ex/Em from the provided values or automatically *)
 					{resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength} = If[MemberQ[resolvedDetector, Fluorescence],
@@ -16699,9 +16680,15 @@ resolveHPLCInstrumentOptions[
 						True, Null
 					];
 					(* Resolve the Gain from the provided values or automatically *)
-					defaultFluorescenceGain = If[agilentManufacturedQ,
+					defaultFluorescenceGain = Which[
 						(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+						agilentManufacturedQ,
 						60Percent,
+						(* Waters Fluorescence detector recommends a gain at 1, which we treat as 100 percent *)
+						watersManufacturedQ,
+						100Percent,
+						(* Dionex - just do 100 percent *)
+						True,
 						100Percent
 					];
 					resolvedSingleFluorescenceGain = Which[
@@ -16775,13 +16762,19 @@ resolveHPLCInstrumentOptions[
 						False
 					];
 
+					(* If non-Waters is used, fluorescence gain can not exceed 100% *)
+					invalidNonWatersFluorescenceGainError = If[MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"]]],
+						MemberQ[ToList[resolvedSingleFluorescenceGain], GreaterP[100Percent]],
+						False
+					];
+
 					(* Flow cell temperature can only be set for UltiMate 3000 *)
 					invalidFluorescenceFlowCellTemperatureError = MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]] && !MatchQ[resolvedSingleFluorescenceFlowCellTemperature, Ambient | Null];
 
 					(* Return everything *)
 					{
 						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 					}
 				]
 			],
@@ -16804,6 +16797,7 @@ resolveHPLCInstrumentOptions[
 			standardInvalidEmissionCutOffFilterErrors,
 			standardTooLargeEmissionCutOffFilterErrors,
 			standardInvalidWatersFluorescenceGainErrors,
+			standardInvalidNonWatersFluorescenceGainErrors,
 			standardInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16819,6 +16813,7 @@ resolveHPLCInstrumentOptions[
 			blankInvalidEmissionCutOffFilterErrors,
 			blankTooLargeEmissionCutOffFilterErrors,
 			blankInvalidWatersFluorescenceGainErrors,
+			blankInvalidNonWatersFluorescenceGainErrors,
 			blankInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16834,6 +16829,7 @@ resolveHPLCInstrumentOptions[
 			columnPrimeInvalidEmissionCutOffFilterErrors,
 			columnPrimeTooLargeEmissionCutOffFilterErrors,
 			columnPrimeInvalidWatersFluorescenceGainErrors,
+			columnPrimeInvalidNonWatersFluorescenceGainErrors,
 			columnPrimeInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16849,6 +16845,7 @@ resolveHPLCInstrumentOptions[
 			columnFlushInvalidEmissionCutOffFilterErrors,
 			columnFlushTooLargeEmissionCutOffFilterErrors,
 			columnFlushInvalidWatersFluorescenceGainErrors,
+			columnFlushInvalidNonWatersFluorescenceGainErrors,
 			columnFlushInvalidFluorescenceFlowCellTemperatureErrors
 		}
 	} = MapThread[
@@ -16862,10 +16859,10 @@ resolveHPLCInstrumentOptions[
 							Module[
 								{
 									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 								},
 
-								{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 8];
+								{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 9];
 
 								(* Set Ex/Em from the provided values or automatically *)
 								{resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength} = If[MemberQ[resolvedDetector, Fluorescence],
@@ -16903,9 +16900,15 @@ resolveHPLCInstrumentOptions[
 									True, Null
 								];
 								(* Resolve the Gain from the provided values or automatically *)
-								defaultFluorescenceGain = If[agilentManufacturedQ,
+								defaultFluorescenceGain = Which[
 									(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+									agilentManufacturedQ,
 									60Percent,
+									(* Waters Fluorescence detector recommends a gain at 1, which we treat as 100 percent *)
+									watersManufacturedQ,
+									100Percent,
+									(* Dionex - just do 100 percent *)
+									True,
 									100Percent
 								];
 								(* Resolve the Gain from the provided values or automatically *)
@@ -16923,8 +16926,9 @@ resolveHPLCInstrumentOptions[
 										Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
 										defaultFluorescenceGain
 									],
-									(* If first gain of sample is the same value as the wavelength, use it *)
-									MemberQ[resolvedDetector, Fluorescence]&&SameLengthQ[First[resolvedFluorescenceGain],resolvedSingleExcitationWavelength], First[resolvedFluorescenceGain],
+									(* If first gain of sample is the same length as the wavelength and it has a valid gain, use it *)
+									MemberQ[resolvedDetector, Fluorescence]&&SameLengthQ[First[resolvedFluorescenceGain],resolvedSingleExcitationWavelength]&&!TrueQ[First[invalidNonWatersFluorescenceGainErrors]],
+									First[resolvedFluorescenceGain],
 									(* Otherwise use a default *)
 									MemberQ[resolvedDetector, Fluorescence],
 									If[MatchQ[resolvedSingleExcitationWavelength,_List],
@@ -16999,13 +17003,20 @@ resolveHPLCInstrumentOptions[
 									False
 								];
 
+
+								(* If non-Waters is used, fluorescence gain can not exceed 100% *)
+								invalidNonWatersFluorescenceGainError = If[MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"]]],
+									MemberQ[ToList[resolvedSingleFluorescenceGain], GreaterP[100Percent]],
+									False
+								];
+
 								(* Flow cell temperature can only be set for UltiMate 3000 *)
 								invalidFluorescenceFlowCellTemperatureError = MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]] && !MatchQ[resolvedSingleFluorescenceFlowCellTemperature, Ambient | Null];
 
 								(* Return everything *)
 								{
 									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 								}
 							]
 						],
@@ -17021,7 +17032,7 @@ resolveHPLCInstrumentOptions[
 						]&,
 						entry
 					],
-					ConstantArray[{}, 8]
+					ConstantArray[{}, 9]
 				]
 			]
 		],
@@ -18186,7 +18197,56 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* Fluorescence Error 7 - InvalidHPLCFluorescenceFlowCellTemperature - flow cell temperature control is not available on Waters instrument *)
+	(* Fluorescence Error 7 - InvalidWatersHPLCFluorescenceGain - the gain must be the same for multi-channel fluorescence measurement for Waters *)
+	invalidNonWatersFluorescenceGainOptions = MapThread[
+		If[MemberQ[#1, True],
+			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
+			Message[Error::HPLCFluorescenceGainOverMaximum, ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], ToString[#2]];{#2},
+			{}
+		]&,
+		{
+			(* Error tracking booleans *)
+			{
+				invalidNonWatersFluorescenceGainErrors,
+				standardInvalidNonWatersFluorescenceGainErrors,
+				blankInvalidNonWatersFluorescenceGainErrors,
+				columnPrimeInvalidNonWatersFluorescenceGainErrors,
+				columnFlushInvalidNonWatersFluorescenceGainErrors
+			},
+			(* Option Names *)
+			{
+				FluorescenceGain,
+				StandardFluorescenceGain,
+				BlankFluorescenceGain,
+				ColumnPrimeFluorescenceGain,
+				ColumnFlushFluorescenceGain
+			}
+		}
+	];
+
+	invalidNonWatersFluorescenceGainTests = MapThread[
+		testOrNull["For Non-Waters HPLC system with Fluorescence detector, the " <> ToString[#2] <> " option must be set to a maximum of 100 Percent.", !MemberQ[#1, True]]&,
+		{
+			(* Error tracking booleans *)
+			{
+				invalidNonWatersFluorescenceGainErrors,
+				standardInvalidNonWatersFluorescenceGainErrors,
+				blankInvalidNonWatersFluorescenceGainErrors,
+				columnPrimeInvalidNonWatersFluorescenceGainErrors,
+				columnFlushInvalidNonWatersFluorescenceGainErrors
+			},
+			(* Option Names *)
+			{
+				FluorescenceGain,
+				StandardFluorescenceGain,
+				BlankFluorescenceGain,
+				ColumnPrimeFluorescenceGain,
+				ColumnFlushFluorescenceGain
+			}
+		}
+	];
+
+	(* Fluorescence Error 8 - InvalidHPLCFluorescenceFlowCellTemperature - flow cell temperature control is not available on Waters instrument *)
 	invalidFluorescenceFlowCellTemperatureOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
@@ -18452,6 +18512,7 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterOptions,
 		tooLargeEmissionCutOffFilterOptions,
 		invalidWatersFluorescenceGainOptions,
+		invalidNonWatersFluorescenceGainOptions,
 		invalidFluorescenceFlowCellTemperatureOptions,
 		conflictRefractiveIndexMethodOptions,
 		gasPressureConflictOptions,
@@ -18479,6 +18540,7 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterTests,
 		tooLargeEmissionCutOffFilterTests,
 		invalidWatersFluorescenceGainTests,
+		invalidNonWatersFluorescenceGainTests,
 		invalidFluorescenceFlowCellTemperatureTests,
 		conflictRefractiveIndexMethodTests,
 		gasPressureConflictTest,
@@ -18950,8 +19012,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	compatibleVialContainer = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		(* "50mL Tube" *)
 		{Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
-		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
-		$ChromatographyLCCompatibleVials
+		(* We could assign this to a variable but it returns exactly what we need and is only used here so just inserting the memoized search directly. *)
+		allLCCompatibleVialSearch["Memoization"]
 	];
 
 	(* Set autosampler dead volume (following the same number as in the resolver *)
@@ -19625,12 +19687,9 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		columnPrimeFlowRates
 	];
 
-	(* Get the Initial FlowRate of the last ColumnFlush or ColumnPrime - if ColumnPrime is specified as frequency, it will serve as a flush *)
-	columnFlushInitialFlowRate = Which[
-		!NullQ[columnFlushFlowRates], Last[columnFlushFlowRates],
-		!NullQ[columnPrimeFlowRates], Last[columnPrimeFlowRates],
-		True, 1Milliliter / Minute
-	];
+	(* Get the final flow rate of the very last injection (usually column flush) of the injection table to be the flow rate for shut-down. This makes sure that we won't unnecessarily change flow rate during shutdown *)
+	(* Here in theory, we should take the last gradient entry, and then last gradient point, and then last entry as the flow rate. We take an easy route to just flatten everything and the very last entry is just our final flow rate. *)
+	columnFlushInitialFlowRate = Last[Flatten[allGradientTuples]];
 
 	(* Put together the Shutdown gradient *)
 	shutdownGradient = If[MatchQ[instrumentModel, ObjectP[dionexHPLCInstruments]],
@@ -19870,7 +19929,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	];
 
 	(* Leave 0 mL if no BufferD used. Round for water dispenser if buffer is water. *)
-	bufferDVolume = If[NullQ[bufferDModel],
+	bufferDVolume = If[NullQ[Lookup[resolvedOptions, BufferD]],
 		0 Milliliter,
 		If[MatchQ[bufferDModel, WaterModelP],
 			roundToDispenseVolume[Total[bufferDVolumePerGradient] + extraBufferVolume],
@@ -19960,14 +20019,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferAVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferAVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferAVolume) <= 7.5 Liter],
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19978,14 +20046,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferBVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferBVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferBVolume) <= 7.5 Liter],
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19996,14 +20073,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferCVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferCVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferCVolume) <= 7.5 Liter],
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20014,14 +20100,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferDVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferDVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferDVolume) <= 7.5 Liter],
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20036,7 +20131,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20049,7 +20144,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20111,7 +20206,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	bufferDResource = Which[
 		(* If no BufferD AND Dionex, set to Null *)
 		And[
-			NullQ[bufferDModel],
+			NullQ[Lookup[resolvedOptions, BufferD]],
 			MatchQ[instrumentModel,dionexHPLCPattern]
 		],
 		Null,
@@ -20119,7 +20214,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* This is only for Agilent *)
 		MatchQ[bufferDContainer, {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} | {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}],
 		Resource[
-			Sample -> Lookup[resolvedOptions, BufferC],
+			Sample -> Lookup[resolvedOptions, BufferD],
 			Amount -> bufferDVolume + 2.5 Liter,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20127,7 +20222,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Otherwise we have a non-carboy *)
 		True,
 		Resource[
-			Sample -> If[!NullQ[bufferDModel], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
+			Sample -> If[!NullQ[Lookup[resolvedOptions, BufferD]], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
 			Amount -> bufferDVolume + bufferDeadVolume,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20156,7 +20251,10 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 				(* Otherwise 1 Liter bottle since we have 1 Liter cap assigned. It requires >130 injections to go beyond the max volume *)
 				If[internalUsageQ,
 					{Model[Container, Vessel, "id:4pO6dM5l83Vz"]}, (* 1L Glass Bottle, Detergent-Sensitive *)
-					{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					If[MatchQ[needleWashSolution, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"]}, (* 1L Glass Bottle *)
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					]
 				]
 			];
 			Resource[
@@ -20179,7 +20277,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferA],
 			Amount -> systemPrimeBufferAVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20196,7 +20295,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferB],
 			Amount -> systemPrimeBufferBVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20213,7 +20313,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferC],
 			Amount -> systemPrimeBufferCVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20231,7 +20332,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferD],
 			Amount -> systemPrimeBufferDVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20248,7 +20350,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferA],
 			Amount -> systemFlushBufferAVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20265,7 +20368,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferB],
 			Amount -> systemFlushBufferBVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20282,7 +20386,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferC],
 			Amount -> systemFlushBufferCVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20299,7 +20404,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferD],
 			Amount -> systemFlushBufferDVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20414,7 +20520,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			(* Use buffer and fraction volume to decide the time, or take 6 Hour *)
 			Min[maxFractionTotalVolume / bufferUsePerTime, 6 Hour]
 		],
-		6 Hour
+		(* we don't collect fractions, go a value that is between 1-3Hours and as close to the SeparationTime/2 as possible *)
+		Min[
+			Max[totalRunTime/2,1Hour],
+			3Hour
+		]
 	];
 
 	(* Create placement field value for SystemPrime buffers *)
@@ -23095,9 +23205,109 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 	((totalVolume * totalGradientProportion) + extraVolume) Milliliter
 ];
 
+(* Preferred LC Vials *)
+$PreferredLCCompatibleVials = {
+	(* "HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
+	(* "1mL HPLC Vial (total recovery)" *)
+	Model[Container, Vessel, "id:1ZA60vL48X85"],
+	(* "Amber HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:GmzlKjznOxmE"],
+	(* "HPLC vial (high recovery), LCMS Certified" *)
+	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
+	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
+	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
+	(* "Polypropylene HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:qdkmxz0A884Y"],
+	(* "PFAS Testing Vials, Agilent" *)
+	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
+	(* "2mL HPLC clear vial, flat bottom" *)
+	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
+}
 
 (* ::Subsubsection::Closed:: *)
-(*allHPLCInstrumentSearch*)
+(*allLCCompatibleVialSearch*)
+
+(* ::Subsubsection::Closed:: *)
+(*pierceableCapFootprints*)
+
+pierceableCapFootprints[fakeString:_String] := pierceableCapSearch[fakeString] = Module[
+	{},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`pierceableCapFootprints];
+
+	DeleteDuplicates[
+		Download[
+			Search[Model[Item, Cap],
+				And[
+					VerifiedCoverModel == True,
+					Pierceable == True,
+					Products[Deprecated] != True
+				]
+			],
+			CoverFootprint
+		]
+	]
+];
+
+
+(* Function to search the database for all non-deprecated CE vials that fit the autosampler.
+ 	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
+allLCCompatibleVialSearch[fakeString:_String] := allLCCompatibleVialSearch[fakeString] = Module[
+	{pierceableContainers, containers, centrifugableQ, coverFootprints},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`allLCCompatibleVialSearch];
+
+	coverFootprints = Alternatives@@pierceableCapFootprints["Memoization"];
+
+	{pierceableContainers, containers} = Search[
+		{
+			Model[Container, Vessel],
+			Model[Container, Vessel]
+		},
+		{
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				],
+				CoverFootprints == coverFootprints
+			],
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				]
+			]
+		}
+	];
+
+	centrifugableQ = MemberQ[allCentrifugableContainersSearch["Memoization"], ObjectP[#]]& /@ containers;
+
+	SortBy[PickList[containers, centrifugableQ], {!MemberQ[#, $PreferredLCCompatibleVials], !MemberQ[#, pierceableContainers]}]
+];
 
 (* Function to search the database for all non-deprecated HPLC instruments.
  	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)

@@ -90,9 +90,8 @@ DefineUsage[ExperimentAdjustpH,
 			"ValidExperimentAdjustpHQ",
 			"ExperimentAdjustpHOptions",
 			"ExperimentAdjustpHPreview",
-			"pHDevices",
 			"ExperimentMeasureVolume",
-			"ExperimentWeight"
+			"ExperimentMeasureWeight"
 		},
 		Tutorials -> {
 			"Sample Preparation"

@@ -142,7 +142,7 @@ setupPreviewSymbolXY[analysisFunction_, xy_, resolvedOps:{_Rule...}, internalVar
 		(*
 			When the app is loaded in command center,dv must be stored as a \
 			kernel variable and NOT a dynamicmodule variable for things to \
-			work.However,this means the graphic will cease to function after a \
+			work.however, this means the graphic will cease to function after a \
 			kernel restart-Therefore,switch on $ECLApplication-If \
 			$CommandCenter,then dv lives in the kernel-Otherwise,dv is a \
 			DynamicModule variable

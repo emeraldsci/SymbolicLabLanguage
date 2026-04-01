@@ -78,7 +78,6 @@ DefineObjectType[Object[Report, CustomerMetrics], {
 			Description -> "A daily log of number of protocols per queue time range within the period between the StartDate and the EndDate over which the customer metrics is gathered and stored.",
 			Category -> "Protocol Metrics"
 		},
-		
 		(*Thread Utilization Metrics*)
 		TeamThreadUtilizationLog-> {
 			Format -> Multiple,
@@ -127,7 +126,7 @@ DefineObjectType[Object[Report, CustomerMetrics], {
 			Class -> {Date, Link,Link, Link, Link, Real, Integer, Integer,Real,Expression},
 			Pattern :> {_?DateObjectQ, _Link,_Link, _Link, _Link, GreaterEqualP[0 Hour], GreaterEqualP[0,1], GreaterEqualP[0,1],GreaterEqualP[0 USD],{GreaterEqualP[0 Meter]..}},
 			Units -> {None, None, None,None, None, Hour, None, None,USD,None},
-			Relation-> {Null, Object[Instrument], Model[Instrument],Object[Resource,Instrument], Object[Protocol], Null, Null, Null,Null,Null},
+			Relation-> {Null, Object[Instrument], Model[Instrument],Object[Resource,Instrument], Object[Protocol]|Object[Qualification]|Object[Maintenance], Null, Null, Null,Null,Null},
 			Headers -> {"Date", "Instrument","Instrument Model", "Resource", "Root Protocol", "Time InUse", "Number Of Qualifications","Number of Maintenances","Purchase Cost","Dimensions" },
 			Description-> "A log of instrument and relevant usage information per day within the date range over which the customer metrics is gathered and stored. Time InUse indicates the time instrument is in use for the particular instrument Resource of the individual log. Number of Qualifications and Number of Maintenances indicate the number performed to date of the Log Date.",
 			Category -> "Instrument Usage Metrics"

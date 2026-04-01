@@ -41,7 +41,7 @@ DefineObjectType[Object[Qualification,FragmentAnalyzer],{
 			},
 			Pattern:>{
 				_String,
-				Alternatives[{GreaterEqualP[0 BasePair]...},{GreaterEqualP[0 Nucleotide]...}],
+				Alternatives[{Alternatives[GreaterEqualP[0 BasePair],Null]...},{Alternatives[GreaterEqualP[0 Nucleotide],Null]...}],
 				Alternatives[GreaterEqualP[0 Percent],Null],
 				QualificationResultP
 			},

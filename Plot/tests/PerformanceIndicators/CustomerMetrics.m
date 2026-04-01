@@ -108,11 +108,11 @@ DefineTests[PlotCustomerMetrics,
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Basic,"PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object for dates that have no protocols completed:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}]],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,12}],DateObject[{2024,01,20}]],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Basic,"PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object for date range that involve multiple report objects:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,29}],DateObject[{2023,11,14}]],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,09,07}],DateObject[{2024,09,14}]],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Messages, "TooManyDays", "PlotCustomerMetrics returns $Failed when date range is more than 365 days:"},
@@ -123,88 +123,84 @@ DefineTests[PlotCustomerMetrics,
 			}
 		],
 		Example[{Messages, "MissingReports", "PlotCustomerMetrics returns $Failed when there are missing reports for one or more days included in the date range input:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,04,01}],DateObject[{2024,04,07}]],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,12,30}],DateObject[{2024,01,07}]],
 			$Failed,
 			Messages :> {
 				Error::MissingReports
 			}
 		],
 		Example[{Options, Target, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when Target is specified as Company:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],Target->Company],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],Target->Company],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, ThreadUtilization, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when ThreadUtilization is specified as Number:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],ThreadUtilization->Number],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],ThreadUtilization->Number],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, ChartStyle, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when ChartStyle is specified as Stack:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],ChartStyle->Stack],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],ChartStyle->Stack],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, MaxThreads, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when MaxThreads is specified as an integer:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],MaxThreads->5],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],MaxThreads->5],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, QueueTimesRange, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when QueueTimesRange is specified as Cumulative:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],QueueTimesRange->Cumulative],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],QueueTimesRange->Cumulative],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, QueueTimesProtocol, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when QueueTimesProtocol is specified as Protocol:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],QueueTimesProtocol->Protocol],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],QueueTimesProtocol->Protocol],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, TurnaroundTimes, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when TurnaroundTimes is specified as True:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],TurnaroundTimes->True],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],TurnaroundTimes->True],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, TurnaroundTimeLimit, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when TurnaroundTimeLimit is specified as an integer:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],TurnaroundTimeLimit->10],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],TurnaroundTimeLimit->10],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, IncludedTurnaroundStatus, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when IncludedTurnaroundStatus is specified as a list of ProtocolStatusP|OperationStatusP:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],IncludedTurnaroundStatus->{OperatorStart, OperatorReady, OperatorProcessing, InstrumentProcessing}],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],IncludedTurnaroundStatus->{OperatorStart, OperatorReady, OperatorProcessing, InstrumentProcessing}],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, UserUtilizationProtocol, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when UserUtilizationProtocol is specified as Experiment:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],UserUtilizationProtocol->Experiment],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],UserUtilizationProtocol->Experiment],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, InstrumentWorkingHours, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when InstrumentWorkingHours is specified as True:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],InstrumentWorkingHours->True],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],InstrumentWorkingHours->True],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, InstrumentSavings, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when InstrumentSavings is specified as Finance:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],InstrumentSavings->Finance],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],InstrumentSavings->Finance],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, RealEstateRate, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when RealEstateRate is specified as a rate in USD/Feet^2:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],RealEstateRate->50*(USD/Power["Feet",2])],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],RealEstateRate->50*(USD/Power["Feet",2])],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, EmailRecipients, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when EmailRecipients is specified:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],EmailRecipients->{Sales}],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],EmailRecipients->{Sales}],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, EmailBcc, "PlotCustomerMetrics generate the notebook and pdf reports and update the team financing object when EmailBcc is specified:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],EmailBcc->{Sales}],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],EmailBcc->{Sales}],
 			{{ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[EmeraldCloudFile]]..}, {ObjectP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, Upload, "PlotCustomerMetrics generate the notebook, pdf and financing team object packet when Upload is set to False:"},
-			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,07}],Upload->False],
+			PlotCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,14}],Upload->False],
 			{{PacketP[Object[EmeraldCloudFile]]..}, {PacketP[Object[EmeraldCloudFile]]..}, {PacketP[Object[Team, Financing]]..}}
 		],
 		Example[{Options, Upload, "PlotCustomerMetrics generate the notebook, pdf and financing team object packets for multiple team inputs when Upload is set to False:"},
-			PlotCustomerMetrics[{Object[Team,Financing,"Emerald Therapeutics"],Object[Team,Financing,"Emerald Therapeutics"]},DateObject[{2023,10,01}],DateObject[{2023,10,07}],Upload->False],
+			PlotCustomerMetrics[{Object[Team,Financing,"Emerald Therapeutics"],Object[Team,Financing,"Emerald Therapeutics"]},DateObject[{2024,01,01}],DateObject[{2024,01,14}],Upload->False],
 			{{PacketP[Object[EmeraldCloudFile]]..}, {PacketP[Object[EmeraldCloudFile]]..}, {PacketP[Object[Team, Financing]]..}}
 		]
 		
 	},
 	Stubs:>{
-		$PublicPath=$TemporaryDirectory,
-		Search[Object[Report,CustomerMetrics],_]=Search[
-			Object[Report,CustomerMetrics],
-			FinancingTeam==Object[Team,Financing,"Emerald Therapeutics"]&&Name==(___~~$SessionUUID)
-		]
+		$PublicPath=$TemporaryDirectory
 	},
 	HardwareConfiguration -> HighRAM,
 	SetUp:>(
@@ -217,68 +213,6 @@ DefineTests[PlotCustomerMetrics,
 		Unset[$CreatedObjects];
 		On[LinkObject::linkn];
 		On[LinkObject::linkd];
-	),
-	SymbolSetUp:>(Module[
-		{
-			objects,
-			existsFilter,
-			reportObject1,
-			reportObject2,
-			reportObject3
-		},
-		
-		objects ={
-			Object[Report,CustomerMetrics,"Test Report Object 1 for PlotCustomerMetrics"<>$SessionUUID],
-			Object[Report,CustomerMetrics,"Test Report Object 2 for PlotCustomerMetrics"<>$SessionUUID],
-			Object[Report,CustomerMetrics,"Test Report Object 3 for PlotCustomerMetrics"<>$SessionUUID]
-		};
-		
-		(* Check whether the names we want to give below already exist in the database *)
-		existsFilter = DatabaseMemberQ[objects];
-		
-		(* Erase any objects that we failed to erase in the last unit test. *)
-		Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
-		
-		$CreatedObjects={};
-		
-		reportObject1 = ReportCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,10,01}],DateObject[{2023,10,31}]];
-		
-		Upload[<|
-			Object->reportObject1,
-			Name->"Test Report Object 1 for PlotCustomerMetrics"<>$SessionUUID
-		|>];
-		
-		reportObject2 = ReportCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2023,11,01}],DateObject[{2023,11,30}]];
-		
-		Upload[<|
-			Object->reportObject2,
-			Name->"Test Report Object 2 for PlotCustomerMetrics"<>$SessionUUID
-		|>];
-		
-		reportObject3 = ReportCustomerMetrics[Object[Team,Financing,"Emerald Therapeutics"],DateObject[{2024,01,01}],DateObject[{2024,01,31}]];
-		
-		Upload[<|
-			Object->reportObject3,
-			Name->"Test Report Object 3 for PlotCustomerMetrics"<>$SessionUUID
-		|>];
-		
-	];),
-	SymbolTearDown:>(
-		Module[
-			{objects,existsFilter},
-			
-			objects ={
-				Object[Report,CustomerMetrics,"Test Report Object 1 for PlotCustomerMetrics"<>$SessionUUID],
-				Object[Report,CustomerMetrics,"Test Report Object 2 for PlotCustomerMetrics"<>$SessionUUID],
-				Object[Report,CustomerMetrics,"Test Report Object 3 for PlotCustomerMetrics"<>$SessionUUID]
-			};
-			
-			(* Check whether the names we want to give below already exist in the database *)
-			existsFilter = DatabaseMemberQ[objects];
-			
-			(* Erase any objects that we failed to erase in the last unit test. *)
-			Quiet[EraseObject[PickList[objects, existsFilter], Force -> True, Verbose -> False]];
-		];
 	)
 ]
 

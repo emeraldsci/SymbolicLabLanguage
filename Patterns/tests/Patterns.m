@@ -2607,3 +2607,118 @@ DefineTests[CellsFrozen,
 		Unset[$CreatedObjects]
 	)
 ];
+
+(* ::Subsection:: *)
+(* CalibrationReportTypeP *)
+DefineTests["CalibrationReportTypeP",
+	{
+		Example[{Basic, "Returns True for \"Pump_Calibration.html\":"},
+			MatchQ["Pump_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for \"Wavelength_Calibration.html\":"},
+			MatchQ["Wavelength_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for \"Position_Calibration.html\":"},
+			MatchQ["Position_Calibration.html", CalibrationReportTypeP],
+			True
+		],
+		(* Input should not be a symbol *)
+		Example[{Messages,"strse", "Returns False if input is a symbol:"},
+			MatchQ[Pump_Calibration.html, CalibrationReportTypeP],
+			False,
+			Messages :>{StringMatchQ::strse}
+		],
+		(* Input missing .html extension *)
+		Test["Returns False if .html extension is missing:",
+			MatchQ["Pump_Calibration", CalibrationReportTypeP],
+			False
+		],
+		Test["Returns False if file name doesn't match:",
+			MatchQ["Proton_Calibration.html", CalibrationReportTypeP],
+			False
+		],
+		Test["Returns False if file name doesn't match:",
+			CalibrationReportTypeP["Proton_Calibration.html"],
+			False
+		],
+		Test["Returns False if file name doesn't match:",
+			CalibrationReportTypeP["Proton_Calibration.html"],
+			False
+		]
+	}
+];
+
+(* ::Subsection:: *)
+(* qPCRCalibrationTypeP *)
+DefineTests["qPCRCalibrationTypeP",
+	{
+		Example[{Basic, "Returns True for Background:"},
+			MatchQ[Background, qPCRCalibrationTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for RegionOfInterest"},
+			MatchQ[RegionOfInterest, qPCRCalibrationTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for Uniformity:"},
+			MatchQ[Uniformity, qPCRCalibrationTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for Dye:"},
+			MatchQ[Dye, qPCRCalibrationTypeP],
+			True
+		],
+		Example[{Basic, "Returns True for Normalization:"},
+			MatchQ[Normalization, qPCRCalibrationTypeP],
+			True
+		],
+		(* Input should not be a string *)
+		Example[{Messages,"strse", "Returns False if input is a string:"},
+			MatchQ["Background", qPCRCalibrationTypeP],
+			False,
+			Messages :>{StringMatchQ::strse}
+		],
+		(* returns False if input is a member of the pattern *)
+		Test["Returns False if input is not part of the pattern",
+			CalibrationReportTypeP[Wavelength],
+			False
+		]
+	}
+];
+
+(* ::Subsection:: *)
+(* LightScatteringSampleTypeP *)
+DefineTests["LightScatteringSampleTypeP",
+	{
+		Example[{Basic,"Returns True for InputSample"},
+			MatchQ[InputSample, LightScatteringSampleTypeP],
+			True
+		],
+		Example[{Basic,"Returns True for SolventBlank"},
+			MatchQ[SolventBlank, LightScatteringSampleTypeP],
+			True
+		],
+		Example[{Basic,"Returns True for CalibrationStandard"},
+			MatchQ[CalibrationStandard, LightScatteringSampleTypeP],
+			True
+		],
+		Example[{Basic,"Returns True for Missing"},
+			MatchQ[Missing, LightScatteringSampleTypeP],
+			True
+		],
+		Example[{Basic,"Returns False if input is a string"},
+			MatchQ["SolventBlank", LightScatteringSampleTypeP],
+			False
+		],
+		Example[{Basic,"Returns False if input is Null"},
+			MatchQ[Null, LightScatteringSampleTypeP],
+			False
+		],
+		Example[{Basic,"Returns False if input is a list"},
+			MatchQ[{SolventBlank}, LightScatteringSampleTypeP],
+			False
+		]
+	}
+];

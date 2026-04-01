@@ -1030,8 +1030,8 @@ DefineOptions[ExperimentDialysis,
 
 (*Errors*)
 (*Conflicting Options*)
-Error::ConflictingStaticDialysisOptions="The Dialysis Method is `1`, however the options, `2`, are only applicable to StaticDialysis. Please set these options to automatic or change the DialysisMethod to StaticDialysis.";
-Error::ConflictingDynamicDialysisOptions="The Dialysis Method is `1`, however the options, `2`, are only applicable to DynamicDialysis. Please set these options to automatic or change the DialysisMethod to DynamicDialysis.";
+Error::ConflictingStaticDialysisOptions="The Dialysis Method is `1`; however, the options, `2`, are only applicable to StaticDialysis. Please set these options to automatic or change the DialysisMethod to StaticDialysis.";
+Error::ConflictingDynamicDialysisOptions="The Dialysis Method is `1`; however, the options, `2`, are only applicable to DynamicDialysis. Please set these options to automatic or change the DialysisMethod to DynamicDialysis.";
 Error::DialysisMethodInstrumentMismatch="The Instrument, `1`, is not appropriate for the DialysisMethod, `2`. Please pick a different Instrument";
 Error::DialysateTemperatureInstrumentMismatch="The Instrument, `1`, cannot be control the temperature of the dialysate to `2`. Please pick a different Instrument or DialysateTemperature";
 Error::SampleVolumeDialysisMembraneMismatch="The SampleVolume, `1`, cannot fit inside the DialysisMembrane `2`. Please choose a different SampleVolume or DialysisMembrane.";
@@ -1052,11 +1052,11 @@ Error::RetentateSamplingMismatch="The retentate sampling,`1`, is `2` and the ret
 Error::DialysateSamplingMismatch="The dialysate sampling,`1`, is `2` and the dialysate sampling  options `3` are `4`. Please set these options if and only if dialysate sampling is True.";
 Error::NumberOfDialysisRoundsMismatch="The NumberOfDialysisRounds is `1` however the dialysis options for rounds going beyond this number `2` are set. Please set these options to automatic or increase the NumberOfDialysisRounds.";
 Error::DialysisMembraneMWCOMismatch="The MolecularWeightCutoff, `1`, does not match the MoleccularWeightCutoff, `2`, of the DialysisMembrane, `3`.";
-Error::DialysisMembraneSoakMismatch="DialysisMembraneSoak is set to `1`, however the options for the dialysis membrane soak, `2`, are set to `3`. Please set these options if and only if DialysisMembraneSoak to True.";
+Error::DialysisMembraneSoakMismatch="DialysisMembraneSoak is set to `1`; however, the options for the dialysis membrane soak, `2`, are set to `3`. Please set these options if and only if DialysisMembraneSoak to True.";
 Error::ConflictingDialysateContainerMixType="The DialysateContainer `1` cannot be used with the DialysisMixType `2`. Please choose a beaker as a container or set DialysisMixType to Null.";
 Error::ConflictingDialysisMethodMixType="The DialysisMixType, `1`, is not supported with the DialysisMethod, `2`. Please choose another DialysisMixType.";
-Error::ConflictingNullStaticDialysisOptions="The Dialysis Method is `1`, however the DialysateContainer is  `2`. Please set the DialysateContainer or change the DialysisMethod.";
-Error::ConflictingNullDynamicDialysisOptions="The Dialysis Method is `1`, however the dynamic dialysis options, `2`, are set to Null. Please set these options or change the DialysisMethod.";
+Error::ConflictingNullStaticDialysisOptions="The Dialysis Method is `1`; however, the DialysateContainer is  `2`. Please set the DialysateContainer or change the DialysisMethod.";
+Error::ConflictingNullDynamicDialysisOptions="The Dialysis Method is `1`; however, the dynamic dialysis options, `2`, are set to Null. Please set these options or change the DialysisMethod.";
 Error::NumberOfDialysisRoundsNullMismatch="The NumberOfDialysisRounds is `1` however the dialysis options for rounds `2` are Null. Please set these options or decrease the NumberOfDialysisRounds.";
 Error::NumberOfDialysisRoundsEquilibriumMismatch="The NumberOfDialysisRounds is `1` however the DialysisMethod is EquilibriumDialysis. Please set these NumberOfDialysisRounds to 1.";
 Error::InsufficientDialysateVolume="Due to the dead volume of the dynamic dialysis tank, the dialysate volume must be at least 1.7 Liters.";
@@ -2077,7 +2077,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		Null
 	];
 	(*
-	Error::ConflictingStaticDialysisOptions="The Dialysis Method is `1`, however the options, `2`, are only applicable to StaticDialysis. Please set these options to automatic or change the DialysisMethod to StaticDialysis.";
+	Error::ConflictingStaticDialysisOptions="The Dialysis Method is `1`; however, the options, `2`, are only applicable to StaticDialysis. Please set these options to automatic or change the DialysisMethod to StaticDialysis.";
 	*)
 	(*check if there are Static dialysis options filled out but StaticDialysis is not selected*)
 	conflictingStaticDialysisOptions=If[
@@ -2122,7 +2122,7 @@ resolveExperimentDialysisOptions[mySamples : ListableP[{ObjectP[Object[Sample]].
 		{}
 	];
 (*
-Error::ConflictingNullStaticDialysisOptions="The Dialysis Method is `1`, however the DialysateContainer is  `2`. Please set the DialysateContainer or change the DialysisMethod.";
+Error::ConflictingNullStaticDialysisOptions="The Dialysis Method is `1`; however, the DialysateContainer is  `2`. Please set the DialysateContainer or change the DialysisMethod.";
 *)
 	(*Check if the dialysis method is static and the dialysate container is null*)
 	conflictingNullStaticDialysisOptions=If[
@@ -2365,7 +2365,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 
 
 	(*
-	"The Dialysis Method is `1`, however the options, `2`, are only applicable to DynamicDialysis. Please set these options to automatic or change the DialysisMethod to DynamicDialysis.";
+	"The Dialysis Method is `1`; however, the options, `2`, are only applicable to DynamicDialysis. Please set these options to automatic or change the DialysisMethod to DynamicDialysis.";
 	*)
 	(*check if the dynamic dialysis options are set when the dialysismethod is set to a different method*)
 	conflictingDynamicDialysisOptions=If[
@@ -2407,7 +2407,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 	];
 
 (*
-	Error::ConflictingNullDynamicDialysisOptions="The Dialysis Method is `1`, however the dynamic dialysis options, `2`, are set to Null. Please set these options or change the DialysisMethod.";
+	Error::ConflictingNullDynamicDialysisOptions="The Dialysis Method is `1`; however, the dynamic dialysis options, `2`, are set to Null. Please set these options or change the DialysisMethod.";
 	*)
 	(*check if the dynamic dialysis options are set to Null when the dialysismethod Dynamic*)
 	conflictingNullDynamicDialysisOptions=If[
@@ -3993,7 +3993,7 @@ Error::ConflictingDialysisMethodMixType="The DialysisMixType `1` is not supporte
 		{}
 	];
 
-	(*Error::DialysisMembraneSoakMismatch="DialysisMembraneSoak is set to `1`, however the options for the dialysis membrane soak, `2`, are set to `3`. Please set these options if and only if DialysisMembraneSoak to True.";
+	(*Error::DialysisMembraneSoakMismatch="DialysisMembraneSoak is set to `1`; however, the options for the dialysis membrane soak, `2`, are set to `3`. Please set these options if and only if DialysisMembraneSoak to True.";
 *)
 	(*check if the sock options conflict with the soak bool*)
 	dialysisMembraneSoakMismatchOptions=Flatten[MapThread[
@@ -7761,7 +7761,7 @@ dialysisResourcePackets[myPooledSamples:ListableP[{ObjectP[Object[Sample]]..}],m
 		{sampleVolume,dialysisMembranes}
 	];
 
-	(*Same thing for all the removal of sample from the tubes, however the 50ml tip is too wide for the tubes so use 25ml max instead*)
+	(*Same thing for all the removal of sample from the tubes; however, the 50ml tip is too wide for the tubes so use 25ml max instead*)
 	samplingTipModels=MapThread[
 		If[
 			MatchQ[#1,GreaterP[0Milliliter]]&&MatchQ[#2,ObjectP[Model[Item]]],

@@ -187,9 +187,11 @@ DefineTests[
 			{Options, ImageContainer, "Imaging multiple samples with ImageContainer -> True defaults Instrument to SampleImager batch over unique container:"},
 			Download[
 				ExperimentImageSample[
-					{Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
+					{
+						Object[Sample, "Test water sample 1 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
 						Object[Sample, "Test water sample 2 in 96 deep-well plate for ExperimentImageSample "<>$SessionUUID],
-						Object[Sample, "Test water sample in 384-well plate for ExperimentImageSample "<>$SessionUUID]},
+						Object[Sample, "Test water sample in 384-well plate for ExperimentImageSample "<>$SessionUUID]
+					},
 					ImageContainer->True
 				],
 				BatchedImagingParameters[[All, {Imager, Wells}]]
@@ -338,7 +340,56 @@ DefineTests[
 			],
 			{{Top, Side}, {Top, Side}}
 		],
-		
+		Example[{Options, ColorReference, "ColorReference causes the input sample to be imaged with a set of color standards for comparison:"},
+			Download[
+				ExperimentImageSample[
+					Object[Sample, "Test color comparison sample for ExperimentImageSample " <> $SessionUUID],
+					ColorReference -> ColorReferencesY
+				],
+				{
+					ColorReferences,
+					BatchedColorReferences,
+					BatchedImagingParameters[[All, SecondaryRack]],
+					ColorReferenceSamples,
+					ColorReferenceSampleResources,
+					BatchLengths,
+					TubeRackPlacementBatchLengths,
+					MoreIntenseColorReferences
+				}
+			],
+			{
+				{ColorReferencesY},
+				{ColorReferencesY},
+				{ObjectP[$ColorComparisonRack]},
+				{{ObjectP[Model[Sample]]..}},
+				{ObjectP[Model[Sample]]..},
+				{1},
+				{9},
+				{Null}
+			}
+		],
+		Example[{Options, ColorReference, "If in a color comparison vial, ColorReference is automatically set:"},
+			Lookup[
+				ExperimentImageSample[
+					Object[Sample, "Test color comparison sample for ExperimentImageSample " <> $SessionUUID],
+					Output -> Options
+				],
+				ColorReference
+			],
+			ColorReferencesP
+		],
+		Example[{Options, ColorReference, "If the input sample is not in the color reference container, aliquot into one:"},
+			Lookup[
+				ExperimentImageSample[
+					Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID],
+					ColorReference -> ColorReferencesY,
+					Output -> Options
+				],
+				AliquotContainer
+			],
+			{{1, ObjectP[$ColorComparisonContainer]}},
+			Messages :> {Warning::ImagingIncompatibleContainer, Warning::AliquotRequired}
+		],
 		Example[
 			{Options, Name, "Specify the name of the resultant ImageSample protocol:"},
 			Lookup[
@@ -936,6 +987,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "Set the CentrifugeTime option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], CentrifugeTime -> 40*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1096,6 +1155,14 @@ DefineTests[
 			0.08*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Set the AssayVolume option:"},
 			options = ExperimentImageSample[Object[Sample, "Test water sample in 2mL Tube 1 for ExperimentImageSample "<>$SessionUUID], AssayVolume -> 0.08*Milliliter, Output -> Options];

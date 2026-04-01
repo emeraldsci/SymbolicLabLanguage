@@ -43,6 +43,27 @@ DefineTests[ExperimentPlateMedia,
 			],
 			ObjectP[Object[Protocol,PlateMedia]]
 		],
+		Example[{Options, {ImageSample, MeasureVolume, MeasureWeight}, "ImageSample can be specified to indicate whether to image the plates in the bisoafety cabinet after solidification:"},
+			Download[
+				ExperimentPlateMedia[
+					Model[Sample, Media, "Test media model for ExperimentPlateMedia (LB, solid w/2% Agar)" <> $SessionUUID],
+					NumberOfPlates -> 5,
+					ImageSample -> False
+				],
+				ImageSample
+			],
+			False
+		],
+		Example[{Options, {ImageSample, MeasureVolume, MeasureWeight}, "ImageSample is default to True to image the plates in the bisoafety cabinet after solidification, while other post-processing options default to False:"},
+			Download[
+				ExperimentPlateMedia[
+					Model[Sample, Media, "Test media model for ExperimentPlateMedia (LB, solid w/2% Agar)" <> $SessionUUID],
+					NumberOfPlates -> 5
+				],
+				{ImageSample, MeasureVolume, MeasureWeight}
+			],
+			{True, False, False}
+		],
 		Example[{Messages,"PlateOutDestinationWellMismatch", "Throw an error if the specified DestinationWell is not a valid position for the specified PlateOut:"},
 			ExperimentPlateMedia[Model[Sample,Media,"Test media model for ExperimentPlateMedia (LB, solid w/2% Agar)"<>$SessionUUID],
 				PlateOut->Model[Container,Plate,"Omni Tray Sterile Media Plate"],
@@ -147,7 +168,7 @@ DefineTests[ExperimentPlateMedia,
 			];
 			
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for ExperimentPlateMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for ExperimentPlateMedia"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						Model[Sample,Media,"LB Broth, Miller"],
@@ -166,7 +187,7 @@ DefineTests[ExperimentPlateMedia,
 			];
 			
 			(* Test LB liquid media with 50ug/mL Ampicillin *)
-			With[{ampicillin = UploadSampleModel["Ampicillin for ExperimentPlateMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Ampicillin"]}},State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{ampicillin = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Ampicillin"]}},Name->"Ampicillin for ExperimentPlateMedia"<>$SessionUUID,State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					Model[Sample,Media,"Test media model for ExperimentPlateMedia (LB, liquid)"<>$SessionUUID],
 					Supplements->{{50*Milligram,ampicillin}},
@@ -342,7 +363,7 @@ DefineTests[
 			testBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentPlateMediaOptions tests"<>$SessionUUID,DeveloperObject->True|>];
 
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for ExperimentPlateMediaOptions"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for ExperimentPlateMediaOptions"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						Model[Sample,Media,"LB Broth, Miller"],
@@ -473,7 +494,7 @@ DefineTests[
 			testBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ValidExperimentPlateMediaQ tests"<>$SessionUUID,DeveloperObject->True|>];
 
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for ValidExperimentPlateMediaQ"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for ValidExperimentPlateMediaQ"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						Model[Sample,Media,"LB Broth, Miller"],
@@ -594,7 +615,7 @@ DefineTests[
 			testBench=Upload[<|Type->Object[Container,Bench],Model->Link[Model[Container,Bench,"The Bench of Testing"],Objects],Name->"Test bench for ExperimentPlateMediaPreview tests"<>$SessionUUID,DeveloperObject->True|>];
 
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for ExperimentPlateMediaPreview"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for ExperimentPlateMediaPreview"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					{
 						Model[Sample,Media,"LB Broth, Miller"],

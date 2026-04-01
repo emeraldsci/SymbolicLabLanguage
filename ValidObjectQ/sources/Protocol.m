@@ -254,7 +254,7 @@ validProtocolQTests[packet:ObjectP[Object[Protocol]]]:={
 	(* OWNERSHIP *)
 
 	(* we don't allow for any public SamplesOut if the protocol is linked to a Notebook *)
-	(* we exclude MeasureWeight protocols from this since these have SamplesOut whenever there was a transfer container, however the samples should stay public since identical to SampelsIn *)
+	(* we exclude MeasureWeight protocols from this since these have SamplesOut whenever there was a transfer container; however, the samples should stay public since identical to SampelsIn *)
 	Test["If the protocol has SamplesOut and has a notebook, all SamplesOut that have a Product that is not marked as NotForSale must have a notebook as well:",
 		If[!NullQ[Lookup[packet, Notebook]]&&MatchQ[Lookup[packet, SamplesOut],{ObjectP[]..}]&&!MatchQ[Lookup[packet,Type],Object[Protocol,MeasureWeight]],
 			MatchQ[PickList[Download[Lookup[packet, SamplesOut], Notebook[Object]], Download[Lookup[packet, SamplesOut], Product[NotForSale]], Except[True]],{ObjectP[Object[LaboratoryNotebook]]...}],
@@ -4227,7 +4227,6 @@ validProtocolKarlFischerTitrationQTests[packet : PacketP[Object[Protocol, KarlFi
 	]
 
 }];
-
 (* ::Subsection::Closed:: *)
 (*validProtocolIRSpectroscopyQTests*)
 
@@ -9873,6 +9872,17 @@ validProtocolPlateMediaTests[packet:PacketP[Object[Protocol,PlateMedia]]]:={
 	}]
 };
 
+(* ::Subsection::Closed:: *)
+(*validProtocolWaterPreparationQTests*)
+
+validProtocolWaterPreparationQTests[packet:PacketP[Object[Protocol,WaterPreparation]]]:={
+	NullFieldTest[packet,{
+		SamplesIn,
+		ContainersIn,
+		Amounts
+	}]
+};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -9996,6 +10006,7 @@ registerValidQTestFunction[Object[Protocol, Transfer],validProtocolTransferQTest
 registerValidQTestFunction[Object[Protocol, Evaporate],validProtocolEvaporateQTests];
 registerValidQTestFunction[Object[Protocol, Uncover],validProtocolUncoverQTests];
 registerValidQTestFunction[Object[Protocol, Western],validProtocolWesternQTests];
+registerValidQTestFunction[Object[Protocol, WaterPreparation], validProtocolWaterPreparationQTests];
 registerValidQTestFunction[Object[Protocol, CapillaryELISA],validProtocolCapillaryELISAQTests];
 registerValidQTestFunction[Object[Protocol, CircularDichroism],validProtocolCircularDichroismQTests];
 registerValidQTestFunction[Object[Protocol, CountLiquidParticles],validProtocolCountLiquidParticlesQTests];

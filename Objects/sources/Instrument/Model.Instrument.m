@@ -240,14 +240,6 @@ DefineObjectType[Model[Instrument], {
 			Description -> "The approximate weight of the instrument.",
 			Category -> "Instrument Specifications"
 		},
-		UnderSoftwareDevelopment -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if this model of instrument is in the process of being brought online.",
-			Category -> "Qualifications & Maintenance",
-			Developer -> True
-		},
 		(*--- Pricing Information ---*)
 		PricingRate -> {
 			Format -> Single,
@@ -455,13 +447,22 @@ DefineObjectType[Model[Instrument], {
 			Description -> "Readily available configurations of container models in specified positions on the deck of this instrument model.",
 			Category -> "Dimensions & Positions"
 		},
+		BenchSpaceRequirement -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0, 0.25],
+			Units -> None,
+			Description -> "The amount of bench (or bench-equivalent) space this instrument occupies when installed, rounded up to the nearest 1/4 bench. For floorstanding instruments, this is the bench-equivalent floor space required. Does not apply to mobile instruments (e.g., pipettes).",
+			Category -> "Dimensions & Positions",
+			Developer -> True
+		},
 
 		(* --- Storage Information ---  *)
 		LocalCacheContents -> {
 			Format -> Multiple,
 			Class -> {Link, Integer},
 			Pattern :> {_Link, GreaterEqualP[0,1]},
-			Relation -> {(Model[Container]|Model[Sample]|Model[Part]|Model[Plumbing]|Model[Wiring]|Model[Item]), Null},
+			Relation -> {(Model[Item]|Model[Container]|Model[Sample]|Model[Part]|Model[Plumbing]|Model[Wiring]), Null},
 			Headers -> {"Item Model", "Required Quantity"},
 			Description -> "Items required to be present in the local cache for instruments of this model, along with the required quantity of each item.",
 			Category -> "Storage Information"
@@ -590,6 +591,14 @@ DefineObjectType[Model[Instrument], {
 			Category-> "Qualifications & Maintenance",
 			Developer -> True
 		},
+		VerificationRequired -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this model of instrument must be verified daily.",
+			Category-> "Qualifications & Maintenance",
+			Developer -> True
+		},
 		(* --- Inventory --- *)
 		Manufacturer -> {
 			Format -> Single,
@@ -709,6 +718,17 @@ DefineObjectType[Model[Instrument], {
 			Description -> "The SLL2 ID for this Object, if it was migrated from the old data store.",
 			Category -> "Migration Support",
 			Developer -> True
+		},
+
+		(*--- Liner Information ---*)
+		DefaultLinerModels -> {
+			Format -> Multiple,
+			Class -> {String, Link},
+			Pattern :> {_String, _Link},
+			Relation -> {Null, Model[Item, Liner]},
+			Description -> "The standard protective insert model to be placed within each position of instruments of this model. No position indicates that the liner covers the whole instrument surface.",
+			Category -> "Liner Information",
+			Headers -> {"Position", "Liner Model"}
 		}
 	}
 }];

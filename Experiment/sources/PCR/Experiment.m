@@ -1010,7 +1010,7 @@ ExperimentPCR[
 
 		(* Actually upload our protocol object. *)
 		True,
-		(* NOTE: If Preparation->Manual, we don't have auxillary unit operation packets since there aren't batches. *)
+		(* NOTE: If Preparation->Manual, we don't have auxiliary unit operation packets since there aren't batches. *)
 		(* We only have unit operation packets when doing robotic. *)
 			UploadProtocol[
 				resourceResult[[1]],(*protocolPacket*)
@@ -2616,7 +2616,7 @@ resolveExperimentPCROptions[
 
 
 	(*---Resolve Post Processing Options---*)
-	resolvedPostProcessingOptions=resolvePostProcessingOptions[ReplaceRule[myOptions, Preparation->resolvedPreparation],Sterile->True];
+	resolvedPostProcessingOptions=resolvePostProcessingOptions[ReplaceRule[myOptions, Preparation->resolvedPreparation]];
 
 
 	(*---Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary---*)
@@ -3947,6 +3947,10 @@ resolveExperimentPCRMethod[
 			"the following samples are liquid handler incompatible "<>ObjectToString[Lookup[Cases[allObjectSamplePackets, KeyValuePattern[LiquidHandlerIncompatible->True]], Object], Cache->allPackets],
 			Nothing
 		],
+		If[MatchQ[Lookup[safeOptions, WorkCell], Null],
+			"The WorkCell option is set to Null",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Manual],
 			"the Preparation option is set to Manual by the user",
 			Nothing
@@ -3955,6 +3959,10 @@ resolveExperimentPCRMethod[
 
 	(* Create a list of reasons why we need Preparation->Robotic. *)
 	roboticRequirementStrings={
+		If[MatchQ[Lookup[safeOptions, WorkCell], WorkCellP],
+			"The WorkCell option is specified (only robotic preparation supports using a work cell)",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Robotic],
 			"the Preparation option is set to Robotic by the user",
 			Nothing

@@ -637,6 +637,14 @@ DefineOptions[
 				Description -> "Indicates if the incubation position is brought to Temperature before exposing the Sample to it. This option can only be set if Preparation->Robotic.",
 				ResolutionDescription -> "Automatically set to False if Preparation->Robotic."
 			},
+			{
+				OptionName -> CurrentHandlingEnvironment,
+				Widget -> Widget[Type -> Object, Pattern :> ObjectP[{Object[Instrument, HandlingStation]}]],
+				AllowNull -> True,
+				Default -> Null,
+				Category -> "Hidden",
+				Description -> "Used for passing the current handling station from a parent protocol. If possible, the current handling station will be used for any incubate/mixing operations."
+			},
 			(* Transform-specific options *)
 			{
 				OptionName -> Transform,
@@ -1451,7 +1459,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 			MatchQ[Lookup[resolvedOptions, Aliquot], {False..}]
 		],
 			Module[{primitive, nonHiddenOptions, experimentFunction},
-				(* Create our transfer primitive to feed into RoboticSamplePreparation. *)
+				(* Create our transfer primitive to feed into ManualSamplePreparation. *)
 				primitive=Incubate@@Join[
 					{
 						Sample->myInputs
@@ -1461,7 +1469,7 @@ ExperimentIncubate[myInputs:ListableP[ObjectP[Object[Sample]]],myOptions:Options
 
 				(* Remove any hidden options before returning. *)
 				(* We need to pass the resolved AlternateInstruments to incubate primitive *)
-				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions, Exclude -> AlternateInstruments];
+				nonHiddenOptions=RemoveHiddenOptions[ExperimentIncubate,collapsedResolvedOptions, Exclude -> {CurrentHandlingEnvironment, AlternateInstruments}];
 
 				(* Memoize the value of ExperimentIncubate so the framework doesn't spend time resolving it again. *)
 				Internal`InheritedBlock[{ExperimentIncubate, $PrimitiveFrameworkResolverOutputCache},
@@ -1601,8 +1609,11 @@ Error::SafeMixRateMismatch="The sample(s), `1`, have mix rate set to be `2`, whi
 Error::SafeMixRateNotFound="The sample(s), `1`, cannot find MaxOverheadMixRate of its container model. Please check if the field is correctly populated. If the field is not populated, please consider aliquoting the sample or select a different mix type.";
 Error::VolumetricFlaskMixMismatch="The sample(s), `1`, is in volumetric flask, which conflicts with mix type (`2`). Volumetric flask can only be mixed using Swirl, Shake or Invert.";
 Error::VolumetricFlaskMixRateMismatch="The sample(s), `1`, is in volumetric flask, which conflicts with mix rate (`2`). The max mix rate that volumetric flask can reach is 250 RPM.";
+Error::IncompatiblePipetteMixTips = "The sample(s), `1`, at indices, `5`, have Tips specified as, `3`, that is incompatible for mixing via pipetting with the requested mix volume(s), `2`. The compatible tip models are `4`. The tips are compatible if they (1) can hold the mix volume, (2) are compatible with TipType, TipMaterial, Sterile options, (3) can reach the bottom the sample container if sample is in a plate or mixed robotically. Please specify one of the compatible tips or allow the option to be resolved automatically.";
+Error::NoCompatiblePipetteMixTips = "The sample(s), `1`, at indices, `4`, have no compatible tips to perform pipette mixing with the requested mix volume(s), `2`, in their original container(s), that also satisfy the following requirements, `3`. Please change the tip requirements, MixVolume, or allow related options to be resolved automatically.";
+Warning::IntermediateContainerPipetteMix = "The sample(s), `1`, at indices, `4`, have no compatible tips to perform pipette mixing with the requested mix volume(s), `2`, in their original container(s), that also satisfy the following requirements, `3`. As a result, the sample(s) will be transferred into an intermediate container, pipette mixed, and transferred back to their original container(s). If you wish the pipette mix to happen in situ, please change the tip requirements, MixVolume, or allow related options to be resolved automatically.";
 
-resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentIncubateNewOptions]]:=Module[
+resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentIncubateNewOptions]]:=TraceExpression["resolveExperimentIncubateNewOptions",Module[
 	{
 	(* Boilerplate variables. *)
 	outputSpecification,output,gatherTests,cache,myIncubateOptions,mySamplePrepOptions,mySimulatedSamples,simulation,
@@ -1693,7 +1704,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 	typeTest,typeMismatchInvalidOptions,multiProbeHeadInvalidSamples,multiProbeHeadInvalidOptions,multiProbeHeadTest,resolvedRates,resolvedInstruments,instrumentRates,
 	resolvedAliquotOptions,aliquotTests,targetContainers, transformIncompatibleInstrumentOptions,	transformIncompatibleInstrumentTest,
 	transformIncompatibleContainerOptions, transformIncompatibleContainerTest,
-		stirNoStirBarOrImpellerInvalidOptions, stirNoStirBarOrImpellerTest,
+	stirNoStirBarOrImpellerInvalidOptions, stirNoStirBarOrImpellerTest,noCompatibleTipsErrors,intermediateContainerPipetteMixWarnings,noCompatibleTipsErrorOptions,noCompatibleTipsTest,intermediateContainerPipetteMixTest,
+	incompatibleTipsErrors,incompatibleTipsErrorOptions,incompatibleTipsTest,
 
 			(* Return Variables. *)
 	email,confirm,canaryBranch,template,samplesInStorageCondition,fastTrack,operator,parentProtocol,upload,outputOption
@@ -3550,6 +3562,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		]
 	];
 
+	(* initiate the error tracking variables *)
+	incompatibleTipsErrors = {};
+	noCompatibleTipsErrors = {};
+	intermediateContainerPipetteMixWarnings = {};
+
 	(* MapThread over each of our samples. *)
 	{
 	thaws,thawTimes,maxThawTimes,thawTemperatures,thawInstruments,
@@ -3598,7 +3615,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 
 	transformIncompatibleInstrumentErrors,transformIncompatibleContainerErrors
 	}=
-	Transpose[MapThread[Function[{mySample,myMapThreadOptions,sourceContainerModelPacket,aliquotQ},
+	Transpose[MapThread[Function[{mySample,myMapThreadOptions,sourceContainerModelPacket,aliquotQ, manipulationIndex},
 			Module[
 				{
 					sampleContainerObject,mixTypeRateError,invertSampleVolumeError,invertSuitableContainerError,invertContainerWarning,
@@ -3959,14 +3976,16 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									(* If the mix instrument is Null and MixVolume is Null, we have to invert. *)
 									Invert,
 									(* What is the volume of our sample? *)
-									(* If our sample is > 50mL, do invert since the maximum volume of mix by pipette is 50 mL *)
+									(* If our sample is > 50mL, do invert or swirl since the maximum volume of mix by pipette is 50 mL *)
 									(* and if our sample's volume is too large, the sample will not be mixed well. *)
 									Which[
-										(* large volumes cant be inverted *)
+										(* large volumes (> 4L) cant be inverted *)
 										MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&MatchQ[Lookup[samplePacket,Volume,0 Liter], GreaterP[4 Liter]],
 											Swirl,
-
-										(* anything between 50 Milliliter and 4 Liter should invert *)
+										(* open container (cannot be capped) cant be inverted *)
+										MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter &&TrueQ[Lookup[containerPacket,OpenContainer,True]],
+											Swirl,
+										(* anything between 50 Milliliter and 4 Liter and capped should invert *)
 										MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
 											Invert,
 
@@ -3995,13 +4014,26 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						Sonicate,
 					(* Is MixRate or Time set to Null? *)
 					MatchQ[Lookup[myMapThreadOptions,MixRate],Null]||MatchQ[Lookup[myMapThreadOptions,Time],Null],
-						(* MixRate or Time was Null, resolve to Invert or Pipette. *)
-						(* What is the volume of our sample? *)
-						(* If our sample is > 50mL, do invert since the maximum volume of mix by pipette is 50 mL *)
-						(* and if our sample's volume is too large, the sample will not be mixed well. *)
-						If[MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
-							Invert,
-							Pipette
+						(* MixRate or Time was Null, resolve to Invert or Swirl or Pipette. *)
+						Which[
+							(* Always do Invert for VolumetricFlask (Cannot do Pipette) *)
+							MatchQ[containerPacket, ObjectP[{Model[Container, Vessel, VolumetricFlask], Object[Container, Vessel, VolumetricFlask]}]],
+								Invert,
+							(* What is the volume of our sample? *)
+							(* If our sample is > 50mL, do invert or swirl since the maximum volume of mix by pipette is 50 mL *)
+							(* and if our sample's volume is too large, the sample will not be mixed well. *)
+							(* large volumes (> 4L) cant be inverted *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&MatchQ[Lookup[samplePacket,Volume,0 Liter], GreaterP[4 Liter]],
+								Swirl,
+							(* open container (cannot be capped) cant be inverted *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter &&TrueQ[Lookup[containerPacket,OpenContainer,True]],
+								Swirl,
+							(* anything between 50 Milliliter and 4 Liter and capped should invert *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
+								Invert,
+							(* small volumes are pipetted *)
+							True,
+								Pipette
 						],
 					(* Is MixRate set? *)
 					!MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic|Null],
@@ -4083,15 +4115,28 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 						Pipette,
 					(* Is NumberOfMixes or MaxNumberOfMixes set? *)
 					!MatchQ[Lookup[myMapThreadOptions,NumberOfMixes],Automatic|Null]||!MatchQ[Lookup[myMapThreadOptions,MaxNumberOfMixes],Automatic|Null],
-						(* Is the sample in a vessel that is closed? *)
-						If[MatchQ[Lookup[containerPacket,OpenContainer,True],True],
-							(* The container is not closed, we cannot invert. *)
-							Pipette,
-							(* The container is closed, invert. *)
-							Invert
+						Which[
+							(* Always do Invert for VolumetricFlask (Cannot do Pipette) *)
+							MatchQ[containerPacket, ObjectP[{Model[Container, Vessel, VolumetricFlask], Object[Container, Vessel, VolumetricFlask]}]],
+								Invert,
+							(* What is the volume of our sample? *)
+							(* If our sample is > 50mL, do invert or swirl since the maximum volume of mix by pipette is 50 mL *)
+							(* and if our sample's volume is too large, the sample will not be mixed well. *)
+							(* large volumes (> 4L) cant be inverted *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&MatchQ[Lookup[samplePacket,Volume,0 Liter], GreaterP[4 Liter]],
+								Swirl,
+							(* open container (cannot be capped) cant be inverted *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter &&TrueQ[Lookup[containerPacket,OpenContainer,True]],
+								Swirl,
+							(* anything between 50 Milliliter and 4 Liter and capped should invert *)
+							MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
+								Invert,
+							(* small volumes are pipetted *)
+							True,
+								Pipette
 						],
 					(* Is any temperature related option set to non-Automatic? *)
-					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
+					MatchQ[Lookup[myMapThreadOptions,AnnealingTime],Except[Null|Automatic]]||MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Null|Automatic|Ambient]],
 						Module[{resolvedTemperature,footprintCompatibleInstruments,aliquotInstrumentResult},
 							(* Is Temperature set? *)
 							resolvedTemperature=If[MatchQ[Lookup[myMapThreadOptions,Temperature],Except[Automatic]],
@@ -4200,14 +4245,24 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 											(* Not in an open container. *)
 											(* See if any options are set to Null, if not, optimize footprints. *)
 											Module[{footprintCompatibleInstruments,aliquotInstrumentResult},
-												(* If Time is Null, we have to choose Invert or Pipette. *)
+												(* If Time is Null, we have to choose Invert or Swirl or Pipette. *)
 												If[MatchQ[Lookup[myMapThreadOptions,Time],Null],
-													(* What is the volume of our sample? *)
-													(* If our sample is > 50mL, do invert since the maximum volume of mix by pipette is 50 mL *)
-													(* and if our sample's volume is too large, the sample will not be mixed well. *)
-													If[MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
-														Invert,
-														Pipette
+													Which[
+														(* What is the volume of our sample? *)
+														(* If our sample is > 50mL, do invert or swirl since the maximum volume of mix by pipette is 50 mL *)
+														(* and if our sample's volume is too large, the sample will not be mixed well. *)
+														(* large volumes (> 4L) cant be inverted *)
+														MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&MatchQ[Lookup[samplePacket,Volume,0 Liter], GreaterP[4 Liter]],
+															Swirl,
+														(* open container (cannot be capped) cant be inverted *)
+														MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter &&TrueQ[Lookup[containerPacket,OpenContainer,True]],
+															Swirl,
+														(* anything between 50 Milliliter and 4 Liter and capped should invert *)
+														MatchQ[Lookup[samplePacket,Volume,0 Liter],VolumeP]&&Lookup[samplePacket,Volume,0 Liter]>50 Milliliter,
+															Invert,
+														(* small volumes are pipetted *)
+														True,
+															Pipette
 													],
 													(* ELSE: *)
 													(* See if there are any instruments that are capible of mixing our sample, as is. *)
@@ -4607,7 +4662,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							(* Resolve some robotic specific options *)
 							{mixPosition,mixPositionOffset,mixFlowRate,correctionCurve,tips,tipType,tipMaterial}=If[MatchQ[resolvedPreparation,Robotic],
 								Module[
-									{myMixPosition,myMixPositionOffset,myMixFlowRate,myCorrectionCurve,sortedCorrectionCurve,sortedActualValues,myTips,myTipType,myTipMaterial},
+									{myMixPosition,myMixPositionOffset,myMixFlowRate,myCorrectionCurve,sortedCorrectionCurve,sortedActualValues,specifiedTips,specifiedTipsModel,compatibleTips,myTips,myTipType,myTipMaterial},
 									(* Resolve MixPosition. *)
 									myMixPosition=If[
 										MatchQ[Lookup[myMapThreadOptions, MixPosition], Except[Automatic]],
@@ -4674,75 +4729,117 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										False
 									];
 
+									(* Resolve Tips *)
+									(* get the specified tips *)
+									specifiedTips = Lookup[myMapThreadOptions, Tips];
+									(* get the specified tip model *)
+									specifiedTipsModel = Switch[specifiedTips,
+										Automatic,
+											Automatic,
+										ObjectP[Object[Item]],
+											Download[fastAssocLookup[fastAssoc, specifiedTips, Model], Object],
+										ObjectP[Model[Item]],
+											Download[specifiedTips, Object],
+										_,
+											Null
+									];
 
-									(* Resolve Tips. *)
-									myTips=If[
-										MatchQ[Lookup[myMapThreadOptions, Tips], Except[Automatic]],
-										Lookup[myMapThreadOptions, Tips],
-										(* if not provided, then store default*)
-										Module[{specifiedTipType,specifiedTipMaterial,potentialTips},
-											(* Lookup our TipType. *)
-											specifiedTipType=Which[
-												MatchQ[Lookup[myMapThreadOptions, TipType], Except[Automatic]],
+									(* first get the potential tips to use *)
+									compatibleTips = Module[{specifiedTipType, specifiedTipMaterial, potentialTips},
+										(* Lookup our TipType. *)
+										specifiedTipType = Which[
+											MatchQ[Lookup[myMapThreadOptions, TipType], Except[Automatic]],
 												Lookup[myMapThreadOptions, TipType],
-												(* Otherwise, all types. *)
-												True,
+											(* Otherwise, all types. *)
+											True,
 												All
+										];
+
+										(* Lookup our TipMaterial. *)
+										specifiedTipMaterial = (Lookup[myMapThreadOptions, TipMaterial] /. {Automatic -> All});
+
+										(* Get the tips that we should use. *)
+										(* TransferDevices gives us results in a preferential order. *)
+										potentialTips = Module[{rawPotentialTips, containerCompatibleTips},
+											(* Get the list with the correct options passed down to it. *)
+											rawPotentialTips = TransferDevices[
+												Model[Item, Tips],
+												volume,
+												TipType -> specifiedTipType,
+												TipMaterial -> specifiedTipMaterial,
+												PipetteType -> Hamilton,
+												(* NOTE: We need sterile tips if we're on the bioSTAR/microbioSTAR since we can only load *)
+												(* sterile tips due to the need for using a tip box. *)
+												Sterile -> If[MatchQ[workCell, bioSTAR | microbioSTAR],
+													True,
+													All
+												]
+											][[All, 1]];
+
+											(* These tips can hold the volume and meet the required TipType/TipMaterial -- but make sure that they can reach the bottom of the container. *)
+											containerCompatibleTips = Select[
+												rawPotentialTips,
+												(tipsCanAspirateQ[
+													#,
+													sourceContainerModelPacket,
+													volume,
+													volume,
+													allTipModelPackets,
+													sampleContainerModelCalibrationPackets
+												]&)
 											];
 
-											(* Lookup our TipMaterial. *)
-											specifiedTipMaterial=(Lookup[myMapThreadOptions, TipMaterial]/.{Automatic->All});
-
-											(* Get the tips that we should use. *)
-											(* TransferDevices gives us results in a preferential order. *)
-											potentialTips=Module[{rawPotentialTips, containerCompatibleTips},
-												(* Get the list with the correct options passed down to it. *)
-												rawPotentialTips=TransferDevices[
-													Model[Item, Tips],
-													volume,
-													TipType->specifiedTipType,
-													TipMaterial->specifiedTipMaterial,
-													PipetteType->Hamilton,
-													(* NOTE: We need sterile tips if we're on the bioSTAR/microbioSTAR since we can only load *)
-													(* sterile tips due to the need for using a tip box. *)
-													Sterile->If[MatchQ[workCell, bioSTAR|microbioSTAR],
-														True,
-														All
-													]
-												][[All,1]];
-
-												(* These tips can hold the volume and meet the required TipType/TipMaterial -- but make sure that they can reach the bottom of the container. *)
-												containerCompatibleTips=Select[
-													rawPotentialTips,
-													(tipsCanAspirateQ[
-														#,
-														sourceContainerModelPacket,
-														volume,
-														volume,
-														allTipModelPackets,
-														sampleContainerModelCalibrationPackets
-													]&)
-												];
-
-												(* If there are no tips available that suit our needs, then take off our limitations and record an error *)
-												(* to throw later. *)
-												If[Length[containerCompatibleTips]==0,
+											(* If there are no tips available that suit our needs, then take off our limitations and record an error *)
+											(* We cannot use intermediate container in robotic case so this will have to be a hard error *)
+											If[Length[containerCompatibleTips] == 0,
+												(
+													(* any tips wont be usable if we are here, so just throw the no compatible tips error *)
+													AppendTo[noCompatibleTipsErrors,
+														{
+															mySample,
+															volume,
+															{
+																TipType -> specifiedTipType,
+																TipMaterial -> specifiedTipMaterial,
+																Sterile -> If[MatchQ[workCell, bioSTAR | microbioSTAR],
+																	True,
+																	All
+																],
+																PipetteType -> Hamilton
+															},
+															manipulationIndex
+														}
+													];
+													(* set to a random tolerant tips, we are in an error state already *)
 													TransferDevices[
 														Model[Item, Tips],
 														volume,
-														PipetteType->Hamilton
-													][[All,1]],
+														PipetteType -> Hamilton
+													][[All, 1]]
+												),
+												(
+													(* if our specified tips is not in the compatible list, throw the incompatible tips error *)
+													If[MatchQ[specifiedTipsModel, Except[Automatic]] && !MemberQ[containerCompatibleTips, specifiedTipsModel],
+														AppendTo[incompatibleTipsErrors, {mySample, volume, specifiedTips, containerCompatibleTips, manipulationIndex}]
+													];
 													containerCompatibleTips
-												]
-											];
-
-											Which[
-												Length[potentialTips]==0,
-												Null,
-												True,
-												FirstOrDefault[potentialTips]
+												)
 											]
+										];
+
+										Which[
+											Length[potentialTips] == 0,
+												Null,
+											True,
+												FirstOrDefault[potentialTips]
 										]
+									];
+
+									(* Resolve Tips. *)
+									myTips=If[MatchQ[specifiedTips, Except[Automatic]],
+										specifiedTips,
+										(* if not provided, then store default*)
+										compatibleTips
 									];
 
 									(* Resolve TipType. *)
@@ -4803,67 +4900,126 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 									{ myMixPosition,myMixPositionOffset,myMixFlowRate,myCorrectionCurve,myTips,myTipType,myTipMaterial }
 								],
 								Module[
-									{myTips,myTipType,myTipMaterial},
+									{specifiedTips, specifiedTipsModel, compatibleTips, myTips,myTipType,myTipMaterial},
 
 									(* Resolve Tips. *)
-									myTips=If[MatchQ[Lookup[myMapThreadOptions, Tips], Except[Automatic]],
-										Lookup[myMapThreadOptions, Tips],
-										(* if not provided, then store default*)
-										Module[{specifiedTipType,specifiedTipMaterial,potentialTips},
-											(* Lookup our TipType. *)
-											specifiedTipType=Which[
-												MatchQ[Lookup[myMapThreadOptions, TipType], Except[Automatic]],
+									(* get the specified tips *)
+									specifiedTips = Lookup[myMapThreadOptions, Tips];
+									(* get the specified tip model *)
+									specifiedTipsModel = Switch[specifiedTips,
+										Automatic,
+											Automatic,
+										ObjectP[Object[Item]],
+											Download[fastAssocLookup[fastAssoc, specifiedTips, Model], Object],
+										ObjectP[Model[Item]],
+											Download[specifiedTips, Object],
+										_,
+											Null
+									];
+
+									(* first get the potential tips to use *)
+									compatibleTips = Module[{specifiedTipType, specifiedTipMaterial, potentialTips},
+										(* Lookup our TipType. *)
+										specifiedTipType = Which[
+											MatchQ[Lookup[myMapThreadOptions, TipType], Except[Automatic]],
 												Lookup[myMapThreadOptions, TipType],
-												(* Otherwise, all types. *)
-												True,
+											(* Otherwise, all types. *)
+											True,
 												All
-											];
+										];
 
-											(* Lookup our TipMaterial. *)
-											specifiedTipMaterial=(Lookup[myMapThreadOptions, TipMaterial]/.{Automatic->All});
+										(* Lookup our TipMaterial. *)
+										specifiedTipMaterial = (Lookup[myMapThreadOptions, TipMaterial] /. {Automatic -> All});
 
-											(* Get the tips that we should use. *)
-											(* TransferDevices gives us results in a preferential order. *)
-											potentialTips=Module[{rawPotentialTips, containerCompatibleTips},
-												(* Get the list with the correct options passed down to it. *)
-												rawPotentialTips=TransferDevices[
-													Model[Item, Tips],
+										(* Get the tips that we should use. *)
+										(* TransferDevices gives us results in a preferential order. *)
+										potentialTips = Module[{rawPotentialTips, containerCompatibleTips},
+											(* Get the list with the correct options passed down to it. *)
+											rawPotentialTips = TransferDevices[
+												Model[Item, Tips],
+												volume,
+												TipType -> specifiedTipType,
+												TipMaterial -> specifiedTipMaterial
+											][[All, 1]];
+
+											(* These tips can hold the volume and meet the required TipType/TipMaterial -- but make sure that they can reach the bottom of the container. *)
+											containerCompatibleTips = Select[
+												rawPotentialTips,
+												(tipsCanAspirateQ[
+													#,
+													sourceContainerModelPacket,
 													volume,
-													TipType->specifiedTipType,
-													TipMaterial->specifiedTipMaterial
-												][[All,1]];
-
-												(* These tips can hold the volume and meet the required TipType/TipMaterial -- but make sure that they can reach the bottom of the container. *)
-												containerCompatibleTips=Select[
-													rawPotentialTips,
-													(tipsCanAspirateQ[
-														#,
-														sourceContainerModelPacket,
-														volume,
-														volume,
-														allTipModelPackets,
-														sampleContainerModelCalibrationPackets
-													]&)
-												];
-
-												(* If there are no tips available that suit our needs, then take off our limitations and record an error *)
-												(* to throw later. *)
-												If[Length[containerCompatibleTips]==0,
-													TransferDevices[
-														Model[Item, Tips],
-														volume
-													][[All,1]],
-													containerCompatibleTips
-												]
+													volume,
+													allTipModelPackets,
+													sampleContainerModelCalibrationPackets
+												]&)
 											];
 
+											(* If there are no tips available that suit our needs, then take off our limitations and record an warning *)
+											(* we will need to use a intermediate container for this to work *)
 											Which[
-												Length[potentialTips]==0,
-												Null,
+												(* if we can do pipette mix in the original container, good *)
+												Length[containerCompatibleTips] > 0,
+													(
+														(* if we are given a tip, but not in the auto-resolved list, throw an error *)
+														If[MatchQ[specifiedTipsModel, Except[Automatic]] && !MemberQ[containerCompatibleTips, specifiedTipsModel],
+															AppendTo[incompatibleTipsErrors, {mySample, volume, specifiedTips, containerCompatibleTips, manipulationIndex}]
+														];
+														containerCompatibleTips
+													),
+												(* otherwise, we will need to use a intermediate container for this to work *)
+												(* transfer does not allow intermediate decanting for plates, so we have to hard error in that scenario *)
+												Length[rawPotentialTips] > 0,
+													(
+														Which[
+															(* any tips wont be usable if we are here, so just throw the no compatible tips error *)
+															MatchQ[Lookup[sourceContainerModelPacket, Object], ObjectP[Model[Container, Plate]]],
+																AppendTo[noCompatibleTipsErrors, {mySample, volume, {TipType -> specifiedTipType, TipMaterial -> specifiedTipMaterial}, manipulationIndex}],
+															(* if our specified tips is not in the compatible list, throw the incompatible tips error *)
+															MatchQ[specifiedTipsModel, Except[Automatic]] && !MemberQ[rawPotentialTips, specifiedTipsModel],
+																AppendTo[incompatibleTipsErrors, {mySample, volume, specifiedTips, rawPotentialTips, manipulationIndex}],
+															(* otherwise, throw the warning saying we are going to aliquot the sample out to an intermediate container *)
+															True,
+																AppendTo[intermediateContainerPipetteMixWarnings, {mySample, volume, {TipType -> specifiedTipType, TipMaterial -> specifiedTipMaterial}, manipulationIndex}]
+														];
+														rawPotentialTips
+													),
+												(* otherwise, we just do not have any tips that are material suitable, this is hard error *)
 												True,
-												FirstOrDefault[potentialTips]
+													(
+														(* any tips wont be usable if we are here, so just throw the no compatible tips error *)
+														AppendTo[
+															noCompatibleTipsErrors,
+															{
+																mySample,
+																volume,
+																{
+																	TipType -> specifiedTipType,
+																	TipMaterial -> specifiedTipMaterial
+																},
+																manipulationIndex
+															}
+														];
+														TransferDevices[
+															Model[Item, Tips],
+															volume
+														][[All, 1]]
+													)
 											]
+										];
+
+										Which[
+											Length[potentialTips] == 0,
+												Null,
+											True,
+												FirstOrDefault[potentialTips]
 										]
+									];
+
+									myTips=If[MatchQ[specifiedTips, Except[Automatic]],
+										specifiedTips,
+										(* if not provided, then store default*)
+										compatibleTips
 									];
 
 									(* Resolve TipType. *)
@@ -7429,6 +7585,9 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 								fastAssocLookup[fastAssoc, instrument, {Model, Object}] /. {$Failed | NullP -> Null}
 							];
 
+							(* Set nutatorPacket to use in downstream logic *)
+							nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
+
 							(* Did the user supply a rate? *)
 							rate=If[MatchQ[Lookup[myMapThreadOptions,MixRate],Automatic],
 								If[
@@ -7437,9 +7596,8 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 										!NullQ[Lookup[samplePacket,ThawMixRate]]
 									],
 									Lookup[samplePacket,ThawMixRate],
-									(* Resolve to the average RPM of the set instrument. *)
-									nutatorPacket = fetchPacketFromFastAssoc[instrumentModel, fastAssoc];
 
+									(* Resolve to the average RPM of the set instrument. *)
 									(* Round to the nearest RPM. *)
 									Round[Mean[Lookup[nutatorPacket,{MinRotationRate,MaxRotationRate},1RPM]],1RPM]
 								],
@@ -7535,6 +7693,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 							(* Are there instruments that can currently support the footprint of our sample? *)
 							instrument=If[Length[potentialInstruments]>0,
 								(* Resolve rate (if we have to) to be the average rate of our first instrument. *)
+
 								rate=If[MatchQ[preResolvedRate,Automatic],
 									(* Resolve to the average RPM of the set instrument. *)
 									nutatorPacket = fetchPacketFromFastAssoc[First[potentialInstruments], fastAssoc];
@@ -8248,7 +8407,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 				}
 			]
 		],
-		{mySimulatedSamples,mapThreadFriendlyOptions,sampleContainerModelPackets,Lookup[mySamplePrepOptions, Aliquot]}
+		{mySimulatedSamples,mapThreadFriendlyOptions,sampleContainerModelPackets,Lookup[mySamplePrepOptions, Aliquot],Range[Length[mySimulatedSamples]]}
 	]];
 
 	(*new resolved options*)
@@ -9944,7 +10103,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 					(* Switch based off of this mix type. *)
 					Switch[mixType,
 						Invert|Pipette,
-							(* We can choose any container to invert since it's by an indivial container basis. *)
+							(* We can choose any container to invert since it's by an individual container basis. *)
 							(* potentialAliquotContainers is ordered from smallest to largest so take the first. *)
 							({First[potentialAliquotContainersList[[#]]],Null,Null,#}&)/@aliquotInformation[[All,2]],
 						Vortex|Shake|Roll|Stir|Sonicate|Homogenize,
@@ -10783,6 +10942,73 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 		ConstantArray[Null, 6]
 	];
 
+	(* In robotic case, if we cannot find any compatible tips that can reach the bottom of the container when pipette mixing, throw error *)
+	incompatibleTipsErrorOptions = If[Length[incompatibleTipsErrors] > 0 && !gatherTests,
+		(
+			Message[
+				Error::IncompatiblePipetteMixTips,
+				ObjectToString[incompatibleTipsErrors[[All, 1]], Cache -> cacheBall],
+				incompatibleTipsErrors[[All, 2]],
+				ObjectToString[incompatibleTipsErrors[[All, 3]], Cache -> cacheBall],
+				ObjectToString[incompatibleTipsErrors[[All, 4]], Cache -> cacheBall],
+				incompatibleTipsErrors[[All, 5]]
+			];
+			{Tips}
+		),
+		{}
+	];
+
+	incompatibleTipsTest = If[gatherTests,
+		(* test holds rest, so we have to With the boolean inside rather than pass the scoped variable in *)
+		With[{bool = (Length[incompatibleTipsErrors] === 0)},
+			Test["Any tips that are specified can (1) hold the mix volume, (2) compatible with TipType, TipMaterial, Sterile option, (3) can reach the bottom the sample container:", bool, True]
+		],
+		{}
+	];
+	
+	(* In robotic case, if we cannot find any compatible tips that can reach the bottom of the container when pipette mixing, throw error *)
+	noCompatibleTipsErrorOptions = If[Length[noCompatibleTipsErrors] > 0 && !gatherTests,
+		(
+			Message[
+				Error::NoCompatiblePipetteMixTips,
+				ObjectToString[noCompatibleTipsErrors[[All, 1]], Cache -> cacheBall],
+				noCompatibleTipsErrors[[All, 2]],
+				noCompatibleTipsErrors[[All, 3]],
+				noCompatibleTipsErrors[[All, 4]]
+			];
+			{MixVolume, Sterile, TipType, TipMaterial}
+		),
+		{}
+	];
+
+	noCompatibleTipsTest = If[gatherTests,
+		(* test holds rest, so we have to With the boolean inside rather than pass the scoped variable in *)
+		With[{bool = (Length[noCompatibleTipsErrors] === 0)},
+			Test["If tip related options are given (TipMaterial, TipType, MixType is a Pipette), there are compatible tips that satisfy these requirements to achieve pipette mix in situ:", bool, True]
+		],
+		{}
+	];
+	
+	(* In manual case,  if we cannot find any compatible tips that can reach the bottom of the container when pipette mixing, throw warning since pipette mix will be done in a intermediate container *)
+	If[Length[intermediateContainerPipetteMixWarnings] > 0 && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Message[
+			Warning::IntermediateContainerPipetteMix,
+			ObjectToString[intermediateContainerPipetteMixWarnings[[All, 1]], Cache -> cacheBall],
+			intermediateContainerPipetteMixWarnings[[All, 2]],
+			intermediateContainerPipetteMixWarnings[[All, 3]],
+			intermediateContainerPipetteMixWarnings[[All, 4]]
+		],
+		{}
+	];
+
+	intermediateContainerPipetteMixTest = If[gatherTests,
+		With[{bool = (Length[intermediateContainerPipetteMixWarnings] === 0)},
+			Warning["If tip related options are given (TipMaterial, TipType, MixType is a Pipette), there are compatible tips that satisfy these requirements to achieve pipette mix in situ:", bool, True]
+		],
+		{}
+	];
+
+
 	(* -- MESSAGE AND RETURN --*)
 
 	(* --- Resolve Post Processing Options --- *)
@@ -10812,7 +11038,7 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			disruptIncompatibleInstrumentInvalidOptions, sonicationHornAmplitudeInvalidOptions, temperatureProfileInvalidOptions, mixRateProfileInvalidOptions,
 			conflictingProfileInvalidOptions, stirBarTooBigInvalidOptions, lightExposureIntensityInvalidOptions,
 			invalidZeroCorrectionOptions,transformNonTransformInvalidOptions,transformInvalidOptions,transformIncompatibleInstrumentOptions, safeMixRateInvalidOptions,
-			transformIncompatibleContainerOptions, volumetricFlaskMixInvalidOptions,volumetricFlaskMixRateInvalidOptions,
+			transformIncompatibleContainerOptions, volumetricFlaskMixInvalidOptions,volumetricFlaskMixRateInvalidOptions,noCompatibleTipsErrorOptions,incompatibleTipsErrorOptions,
 			If[MatchQ[preparationResult, $Failed],
 				{Preparation},
 				Nothing
@@ -10926,10 +11152,11 @@ resolveExperimentIncubateNewOptions[mySamples:{ObjectP[Object[Sample]]...},myOpt
 			sonicationHornAmplitudeTest,disruptNoInstrumentTest,disruptNoInstrumentForRateTest,disruptIncompatibleInstrumentTest,
 			nutateNoInstrumentTest, nutateIncompatibleInstrumentTest,temperatureProfileTest,mixRateProfileTest,conflictingProfileTest, stirBarTooBigTest,
 			lightExposureIntensityTest,monotonicCorrectionCurveTest,incompleteCorrectionCurveTest,invalidZeroCorrectionTest,transformNonTransformTest,transformTest, safeMixRateTest,
-			transformIncompatibleInstrumentTest,transformIncompatibleContainerTest, maxSafeMixRatesMissingTest, volumetricFlaskMixTest, volumetricFlaskMixRateTest
+			transformIncompatibleInstrumentTest,transformIncompatibleContainerTest, maxSafeMixRatesMissingTest, volumetricFlaskMixTest, volumetricFlaskMixRateTest, noCompatibleTipsTest,
+			intermediateContainerPipetteMixTest,incompatibleTipsTest
 		}]
 	}
-];
+]];
 
 
 (* ::Subsection::Closed:: *)
@@ -10945,14 +11172,16 @@ DefineOptions[incubateNewResourcePackets,
 ];
 
 
-incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{experimentFunction,resolvedOptionsNoHidden,outputSpecification,output,gatherTests,cache,simulatedSamples,mixTypes,mapThreadFriendlyOptions,originalSampleObjects,sampleObjects,groupedSamples,
-	protocolFields,mixType,samples,options,thawFields,thawParameters,
-	simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,
-	transformCoolerResource,transformCoolerPowerCableLink, transformBiosafetyCabinetResource, transformBiosafetyWasteBinResource, transformBiosafetyWasteBagResource, transformRecoveryPipetteResource, transformRecoveryTipResources, transformRecoveryMediaResources,
+incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=TraceExpression["incubateNewResourcePackets",Module[
+	{
+		experimentFunction, resolvedOptionsNoHidden, outputSpecification, output, gatherTests, cache, simulatedSamples, mixTypes,
+		currentHandlingStation, mapThreadFriendlyOptions, originalSampleObjects, sampleObjects, groupedSamples,
+		protocolFields,mixType,samples,options,thawFields,thawParameters,
+		simulatedContainers,sampleGroupingIndices,sampleGroupingLengths,estimatedThawTime,estimatedMixTime,multiIncubateFields,
+		transformCoolerResource,transformCoolerPowerCableLink, transformBiosafetyCabinetResource, transformBiosafetyWasteBinResource, transformBiosafetyWasteBagResource, transformRecoveryPipetteResource, transformRecoveryTipResources, transformRecoveryMediaResources,
 		result,allResourceBlobs,fulfillable,frqTests,messages,simulation,updatedSimulation,samplePackets,containerPackets,containerModelPackets,preparation,
 		sampleLabelResources,sampleContainerLabelResources,instrumentResources,tipResources,unitOperationPacket,unitOperationPacketWithLabeledObjects,mySamplePackets,
-	previewRule,optionsRule,testsRule,resultRule,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,protocolPacket, unitOperationPackets,handlingEnvironmentResource,fastAssoc},
+		previewRule,optionsRule,testsRule,resultRule,rawResourceBlobs,resourcesWithoutName,resourceToNameReplaceRules,protocolPacket, unitOperationPackets,handlingEnvironmentResource,fastAssoc},
 
 	(* get the experiment function *)
 	experimentFunction=Lookup[myResolvedOptions,ExperimentFunction];
@@ -11019,10 +11248,15 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 		MatchQ[preparation,Manual],
 
 		(*-- Get the types of each of our instruments. --*)
-		mixTypes=Lookup[myResolvedOptions,MixType];
+		{mixTypes, currentHandlingStation} = Lookup[myResolvedOptions, {MixType, CurrentHandlingEnvironment}];
 		
 		(* lets create one handling environment resource, we only need one resource that can be shared if we are inverting or swirling, otherwise, no need to create one at all *)
-		handlingEnvironmentResource = If[MemberQ[mixTypes, Invert | Swirl],
+		handlingEnvironmentResource = Which[
+			(* If we are hand mixing and were given a handling station to use (such as by a transfer parent protocol) use that. *)
+			MemberQ[mixTypes, Invert | Swirl] && MatchQ[currentHandlingStation, ObjectP[]],
+			Resource[Instrument -> Download[currentHandlingStation, Object], Time -> 5 Minute * Count[mixTypes, Invert | Swirl]],
+			(* If we are mixing and no handling station was passed to the function, use any handling station with a camera for mixing. *)
+			MemberQ[mixTypes, Invert | Swirl],
 			Module[{allAmbientHandlingStations, allAmbientHandlingStationsWithMixingZones},
 				(* get all ambient handling stations from a memoized search *)
 				allAmbientHandlingStations = Cases[transferModelsSearch["Memoization"][[23]], ObjectP[Model[Instrument, HandlingStation, Ambient]]];
@@ -11036,6 +11270,8 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 				(* make one resource *)
 				Resource[Instrument -> allAmbientHandlingStationsWithMixingZones, Time -> 5 Minute * Count[mixTypes, Invert | Swirl]]
 			],
+			(* Otherwise, no mixing by hand is employed and no handling station resource is required. *)
+			True,
 			Null
 		];
 
@@ -13379,7 +13615,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 					Model[Instrument, PortableCooler, "id:eGakldJdO9le"] (* "ICECO GO12" *)
 				}],
 				Link@Model[Wiring, Cable, "Portable cooler power cable for Transform"][Objects][[1]],
-				Link@Resource[Instrument -> Model[Instrument, HandlingStation, BiosafetyCabinet, "Biosafety Cabinet Handling Station for Microbiology"]], (* "Biosafety Cabinet Handling Station for Microbiology" *)
+				Link@Resource[Instrument -> microbialBSCModels["Memoization"]], (* "Biosafety Cabinet Handling Station for Microbiology" *)
 				Link@Resource[Sample -> Model[Container, WasteBin, "id:7X104v1DJmX6"]], (* "Biohazard Waste Container, BSC" *)
 				Link@Resource[Sample -> Model[Item, Consumable, "id:7X104v6oeYNJ"]], (* "Biohazard Waste Bags, 8x12" *)
 				Link@Resource[Instrument -> Model[Instrument, Pipette, "id:GmzlKjP3boWe"]], (* "Eppendorf Research Plus P1000, Microbial" *)
@@ -13679,7 +13915,7 @@ incubateNewResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOpt
 		resultRule,
 		testsRule
 	}
-];
+]];
 
 (* ::Subsection::Closed:: *)
 (*Simulation*)
@@ -13695,7 +13931,7 @@ simulateExperimentIncubate[
 	mySamples:{ObjectP[Object[Sample]]...},
 	myResolvedOptions:{_Rule...},
 	myResolutionOptions:OptionsPattern[simulateExperimentIncubate]
-]:=Module[
+]:=TraceExpression["simulateExperimentIncubate",Module[
 	{
 		mapThreadFriendlyOptions, resolvedPreparation, resolvedWorkCell, protocolType, cache, simulation, samplePackets,
 		sampleModelPackets, protocolObject, fulfillmentSimulation, currentSimulation, simulatedSampleStatePackets,
@@ -13892,7 +14128,7 @@ simulateExperimentIncubate[
 		protocolObject,
 		UpdateSimulation[currentSimulation, simulationWithLabels]
 	}
-];
+]];
 
 
 (* ::Subsection::Closed:: *)
@@ -15771,7 +16007,7 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								compatibleInstruments
 						],
 					Homogenize,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							(* No Homogenize for volumetric flask *)
 							{},
 							(* Make sure that for each compatible instrument, there is an sonication horn that is compatible with our container. *)
@@ -15829,14 +16065,13 @@ MixDevices[mySample:ObjectP[Object[Sample]],myOptions:OptionsPattern[]]:=Module[
 								]
 							]
 						],
-					Disrupt|Nutate,
-						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]],
-							(* No Disrupt|Nutate for volumetric flask *)
+					_,
+						(* No Mix for volumetric flask except Shake/Sonicate mentioned above *)
+						(* If we are considering aliquot, we may allow other mix types *)
+						If[MatchQ[sampleContainerModel,ObjectP[Model[Container,Vessel,VolumetricFlask]]]&&!MemberQ[output,Containers],
 							{},
 							compatibleInstruments
-						],
-					_,
-						compatibleInstruments
+						]
 				];
 
 				(* Were we asked to compute potentialAliquotContainers? *)
@@ -16321,7 +16556,7 @@ DefineOptions[resolveIncubateMethod,
 (* MBS uses most of the incubate/mix options and therefore had to copy some of the logic from this method resolver *)
 (* NOTE: You should NOT throw messages in this function. Just return the methods by which you can perform your primitive with *)
 (* the given options. *)
-resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container],Object[Sample]}]|{LocationPositionP,ObjectP[Object[Container]]}], myOptions:OptionsPattern[]]:=Module[
+resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container],Object[Sample]}]|{LocationPositionP,ObjectP[Object[Container]]}], myOptions:OptionsPattern[]]:=TraceExpression["resolveIncubateMethod",Module[
 	{
 		safeOptions,outputSpecification,output,gatherTests,containers,samples,containerPackets, samplePackets,mySamplePackets,
 		allPackets,allModelContainerPackets,allModelContainerPlatePackets,liquidHandlerIncompatibleContainers,
@@ -16588,6 +16823,10 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 			"the PreparatoryUnitOperations option is set (Sample Preparation is only supported Manually)",
 			Nothing
 		],
+		If[MatchQ[Lookup[safeOptions, WorkCell], Null],
+			"The WorkCell option is set to Null",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Manual],
 			"the Preparation option is set to Manual by the user",
 			Nothing
@@ -16605,6 +16844,10 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 				"the following Robotic-only options were specified "<>ToString[roboticOnlyOptions],
 				Nothing
 			]
+		],
+		If[MatchQ[Lookup[safeOptions, WorkCell], WorkCellP],
+			"The WorkCell option is specified (only robotic preparation supports using a work cell)",
+			Nothing
 		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Robotic],
 			"the Preparation option is set to Robotic by the user",
@@ -16644,7 +16887,7 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 	];
 
 	outputSpecification/.{Result->result, Tests->tests}
-];
+]];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -16654,7 +16897,7 @@ resolveIncubateMethod[myContainers:ListableP[Automatic|ObjectP[{Object[Container
 resolveExperimentIncubateWorkCell[
 	myListedSamples:ListableP[ObjectP[{Object[Sample], Object[Container], Model[Sample]}]|{LocationPositionP,_String|ObjectP[Object[Container]]}],
 	myOptions:OptionsPattern[resolveExperimentIncubateWorkCell]
-] := Module[{cache, simulation, workCell, preparation},
+] := TraceExpression["resolveExperimentIncubateWorkCell",Module[{cache, simulation, workCell, preparation},
 
 	{cache, simulation, workCell, preparation} = Lookup[myOptions, {Cache, Simulation, WorkCell, Preparation}];
 
@@ -16672,7 +16915,7 @@ resolveExperimentIncubateWorkCell[
 		True,
 			resolvePotentialWorkCells[myListedSamples, {Preparation -> preparation}, Cache -> cache, Simulation -> simulation]
 	]
-];
+]];
 
 
 (* ::Subsubsection::Closed:: *)
@@ -16808,7 +17051,7 @@ TransportDevices[myTransportCondition:(ObjectReferenceP[Model[TransportCondition
 ];
 
 (* Main overload with Model[Sample] *)
-TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondition:(ObjectReferenceP[Model[TransportCondition]]|TransportConditionP), myOptions:OptionsPattern[]]:=Module[
+TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondition:(ObjectReferenceP[Model[TransportCondition]]|TransportConditionP), myOptions:OptionsPattern[]]:=TraceExpression["TransportDevices-model",Module[
 	{listedOptions,safeOps,volumeToTransfer,preferredTransferContainer,matchingInstrument,
 		dimensionsNotFlat,storageConditionNotFlat,transportPositionsAndDimensionsNotFlat,
 		allPositionDimensions,allPositionDimensionsNoWarmed,warmedPositionDimensions,defaultStorageTemperature,transportTempLookup,
@@ -17124,10 +17367,10 @@ TransportDevices[myModelSample:ObjectReferenceP[Model[Sample]], myTransportCondi
 	]
 
 
-];
+]];
 
 (* Main overload with Object[Sample] *)
-TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCondition:ObjectReferenceP[Model[TransportCondition]], myOptions:OptionsPattern[]]:=Module[
+TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCondition:ObjectReferenceP[Model[TransportCondition]], myOptions:OptionsPattern[]]:=TraceExpression["TransportDevices",Module[
 	{listedOptions,safeOps,volumeToTransfer,preferredTransferContainer,matchingInstrument,
 		dimensionsNotFlat,storageConditionNotFlat,transportPositionsAndDimensionsNotFlat,
 		allPositionDimensions,allPositionDimensionsNoWarmed,warmedPositionDimensions,defaultStorageTemperature,transportTempLookup,
@@ -17406,4 +17649,4 @@ TransportDevices[myObjectSample:ObjectReferenceP[Object[Sample]], myTransportCon
 	]
 
 
-];
+]];
