@@ -22,7 +22,7 @@ nativeCacheUpdatePacketsResponseP=KeyValuePattern[{"Success"->True}];
 nativeCacheDeleteResponseP=nativeCacheUpdatePacketsResponseP;
 
 Authors[CreateNativeSimulation]:= {"platform"};
-CreateNativeSimulation[]:=With[
+CreateNativeSimulation[]:=TraceExpression["CreateNativeSimulation-0",With[
   {
     response=GoCall["NativeCacheCreate",<|"Kind"->"simulation"|>]
   },
@@ -31,8 +31,8 @@ CreateNativeSimulation[]:=With[
     nativeCacheErrorResponseP,handleErrorResponse[response],
     _,Message[NativeSimulation::UnexpectedTelescopeResponse,response];$Failed
   ]
-];
-CreateNativeSimulation[id_String]:=With[
+]];
+CreateNativeSimulation[id_String]:=TraceExpression["CreateNativeSimulation-1",With[
   {
     response=GoCall["NativeCacheCreate",<|"Kind"->"simulation","ID"->id|>]
   },
@@ -41,7 +41,7 @@ CreateNativeSimulation[id_String]:=With[
     nativeCacheErrorResponseP,handleErrorResponse[response],
     _,Message[NativeSimulation::UnexpectedTelescopeResponse,response];$Failed
   ]
-];
+]];
 
 Authors[ListNativeSimulations]:= {"platform"};
 ListNativeSimulations[]:=With[
@@ -68,7 +68,7 @@ GetNativeSimulation[id_String]:=With[
 ];
 
 Authors[UpdateNativeSimulation]:= {"platform"};
-UpdateNativeSimulation[id_String,packets:{PacketP[]...}]:=With[
+UpdateNativeSimulation[id_String,packets:{PacketP[]...}]:=TraceExpression["UpdateNativeSimulation",With[
   {
     response=GoCall["NativeCacheUpdatePackets",<|"ID"->id,"Packets"->ToString[GoLink`Private`filterExplicitCache[packets],InputForm]|>]
   },
@@ -78,7 +78,7 @@ UpdateNativeSimulation[id_String,packets:{PacketP[]...}]:=With[
     nativeCacheErrorResponseP,handleErrorResponse[response],
     _,Message[NativeSimulation::UnexpectedTelescopeResponse,response];$Failed
   ]
-];
+]];
 
 Authors[DeleteNativeSimulation]:= {"platform"};
 DeleteNativeSimulation[id_String]:=With[
@@ -93,7 +93,7 @@ DeleteNativeSimulation[id_String]:=With[
 ];
 
 Authors[CloneNativeSimulation]:= {"platform"};
-CloneNativeSimulation[id_String]:=With[
+CloneNativeSimulation[id_String]:=TraceExpression["CloneNativeSimulation",With[
   {
     response=GoCall["NativeCacheClone",<|"ID"->id|>]
   },
@@ -102,7 +102,7 @@ CloneNativeSimulation[id_String]:=With[
     nativeCacheErrorResponseP,handleErrorResponse[response],
     _,Message[NativeSimulation::UnexpectedTelescopeResponse,response];$Failed
   ]
-];
+]];
 
 handleErrorResponse[response:nativeCacheErrorResponseP]:=Switch[response["Error"],
   "InternalCacheError",Message[NativeSimulation::InternalCacheError,response["Message"]];$Failed,

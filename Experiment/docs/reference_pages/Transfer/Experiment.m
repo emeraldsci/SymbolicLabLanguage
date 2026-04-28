@@ -129,7 +129,7 @@ DefineUsage[ExperimentTransfer,
 							Widget -> Alternatives[
 								"Volume" -> Widget[
 									Type -> Quantity,
-									Pattern :> RangeP[0.1 Microliter, 20 Liter],
+									Pattern :> RangeP[0.5 Microliter, 20 Liter],
 									Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
 								],
 								"Mass" -> Widget[
@@ -139,7 +139,7 @@ DefineUsage[ExperimentTransfer,
 								],
 								"Count" -> Widget[
 									Type -> Number,
-									Pattern :> GreaterP[0., 1.]
+									Pattern :> RangeP[1., 15., 1.]
 								],
 								"All" -> Widget[
 									Type -> Enumeration,

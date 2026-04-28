@@ -89,7 +89,16 @@ DefineObjectType[Object[Protocol,DigitalPCR],{
 			Description->"The immiscible liquid that will be used to separate droplets and facilitate fluorescence signal detection from the individual droplets.",
 			Category->"General"
 		},
-		
+		CurrentDropletOilReservoirs->{
+			Format->Multiple,
+			Class->{String, Link},
+			Pattern:>{Alternatives["Generation Oil Slot 1","Generation Oil Slot 2","Reader Oil Slot 1","Reader Oil Slot 2"],_Link},
+			Relation->{Null, Object[Container,Vessel]},
+			Description->"The current oil reservoirs contained in each oil slot on the instrument.",
+			Headers->{"Oil Slot", "Oil Reservoir"},
+			Category->"Instrument Specifications",
+			Abstract->True
+		},
 		AmplitudeMultiplex517nm->{
 			Format->Multiple,
 			Class->Real,

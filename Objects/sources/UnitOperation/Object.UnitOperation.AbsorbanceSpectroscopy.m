@@ -5,7 +5,8 @@
 
 With[{
 	insertMe=Sequence@@$ObjectUnitOperationAbsorbanceSpectroscopyFields,
-	insertMe2=Sequence@@$ObjectUnitOperationPlateReaderBaseFields
+	insertMe2=Sequence@@$ObjectUnitOperationPlateReaderBaseFields,
+	insertMe3=Sequence@@$ObjectUnitOperationAbsorbanceSpectroscopyStandardFields
 },
 	DefineObjectType[Object[UnitOperation,AbsorbanceSpectroscopy], {
 		Description->"A detailed set of parameters that specifies a single absorbance reading step in a larger protocol.",
@@ -40,7 +41,8 @@ With[{
 			},
 
 			insertMe,
-			insertMe2
+			insertMe2,
+			insertMe3
 		}
 	}]
 ];

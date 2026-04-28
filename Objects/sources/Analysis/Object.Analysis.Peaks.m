@@ -34,12 +34,28 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Category -> "General",
 			IndexMatching -> ReferenceDataSliceDimension
 		},
+		AbsorbanceWavelength -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Meter],
+			Units -> Meter Nano,
+			Description -> "For absorbance chromatography data, the wavelength at which this analysis was performed.",
+			Category -> "General"
+		},
 		PeakSamples -> {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Object[Sample],
 			Description -> "The sample that was used to generate the data on which this analysis was performed.",
+			Category -> "General"
+		},
+		IsoelectricPointMarkers -> {
+			Format -> Multiple,
+			Headers -> {"pI", "pixel position"},
+			Class -> {Real, Real},
+			Pattern :> {_?RealQ, _?RealQ},
+			Description -> "Pairs of pI values and peak positions of reference analytes that are used to calibrate the analyzed electropherogram.",
 			Category -> "General"
 		},
 		Domain -> {
@@ -89,6 +105,22 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Pattern :> _Function,
 			Description -> "A pure function describing the baseline for the data.",
 			Category -> "General"
+		},
+		SignalToNoiseMethod -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> USP5x | USP20x,
+			Description -> "The strategy used for determining where the noise sample is taken from for comparison against the peak size.",
+			Category -> "General"
+		},
+		SignalToNoiseRange -> {
+			Format -> Multiple,
+			Class -> {Real, Real},
+			Pattern :> {NumericP, NumericP},
+			Description -> "For each member of Position, the range used for sampling the noise used in calculating the signal to noise ratio.",
+			Category -> "General",
+			Headers -> {"Min", "Max"},
+			IndexMatching -> Position
 		},
 		Position -> {
 			Format -> Multiple,
@@ -226,12 +258,13 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Category -> "Analysis & Reports",
 			IndexMatching -> Position
 		},
+		(* Values of infinity possible if both peaks have 0.0 half-height width. HalfHeightResolution omitted by AdvancedAnalyzePeaks. *)
 		HalfHeightResolution -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {NumericP..},
+			Pattern :> {(NumericP | DirectedInfinity[1])...},
 			Units -> None,
-			Description -> "For each member of Position, a vector of USP peak resolution, indicating the seperation of two peaks, calculated from half height width.",
+			Description -> "For each member of Position, a vector of USP peak resolution, indicating the separation of two peaks, calculated from half height width.",
 			Category -> "Analysis & Reports",
 			IndexMatching -> Position
 		},
@@ -240,16 +273,17 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Class -> Expression,
 			Pattern :> {(NumericP | Null)..},
 			Units -> None,
-			Description -> "For each member of Position, a vector of USP peak resolution, indicating the seperation of two peaks, calculated from tangent width.",
+			Description -> "For each member of Position, a vector of USP peak resolution, indicating the separation of two peaks, calculated from tangent width.",
 			Category -> "Analysis & Reports",
 			IndexMatching -> Position
 		},
+		(* Values of infinity possible if both peaks have 0.0 half-height width. *)
 		AdjacentResolution -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> NumericP,
+			Pattern :> NumericP | DirectedInfinity[1],
 			Units -> None,
-			Description -> "For each member of Position, a USP peak resolution indicating the seperation of two adjacent peaks, calculated from half height width.",
+			Description -> "For each member of Position, a USP peak resolution indicating the separation of two adjacent peaks, calculated from half height width.",
 			Category -> "Analysis & Reports",
 			IndexMatching -> Position
 		},
@@ -336,7 +370,7 @@ DefineObjectType[Object[Analysis, Peaks], {
 		},
 		PeakUnits -> {
 			Format -> Computable,
-			Expression :> Computables`Private`peakUnits[Field[Reference], Field[ReferenceField], Field[ReferenceDataSliceDimension]],
+			Expression :> Computables`Private`peakUnits[Field[Reference], Field[ReferenceField], Field[ReferenceDataSliceDimension], Field[IsoelectricPointMarkers]],
 			Pattern :> {_Rule...},
 			Description -> "The Units of the peak parameters as specified in the reference data.",
 			Category -> "Analysis & Reports"
@@ -347,6 +381,14 @@ DefineObjectType[Object[Analysis, Peaks], {
 			Pattern :> PurityP,
 			Description -> "The purity of the peaks as defined by the total and relative area of each peak with respect to one another and the background, in the form: {Area->{values..},RelativeArea->{percentages..},PeakLabels->{strings..}}.",
 			Category -> "Analysis & Reports"
+		},
+		SignalToNoise -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> NumericP,
+			Description -> "For each member of Position, the ratio between the amplitude of the sampled noise and the peak's height.",
+			Category -> "Analysis & Reports",
+			IndexMatching -> Position
 		},
 		SequenceAnalysis -> {
 			Format -> Single,

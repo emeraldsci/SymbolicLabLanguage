@@ -278,7 +278,7 @@ DefineObjectType[Object[Bill], {
 			Class -> {Link, Expression, Link, Expression, Real, Real},
 			Pattern :> {_Link, _?DateObjectQ, _Link, BooleanP, GreaterEqualP[0 * USD], GreaterEqualP[0 * USD]},
 			Units -> {None, None, None, None, USD, USD},
-			Relation -> {Object[Protocol], Null, Object[User], Null, Null, Null},
+			Relation -> {Object[Protocol] | Object[Maintenance] | Object[Qualification], Null, Object[User], Null, Null, Null},
 			Description -> "The pricing details of charges on experiments performed for this account for this billing cycle.",
 			Category -> "Pricing Information",
 			AdminWriteOnly -> True
@@ -356,7 +356,7 @@ DefineObjectType[Object[Bill], {
 			Relation -> {
 				(*1*)Null,
 				(*2*)Object[LaboratoryNotebook],
-				(*3*)Object[Protocol],
+				(*3*)Object[Protocol] | Object[Maintenance] | Object[Qualification],
 				(*4*)Null,
 				(*5*)Null,
 				(*6*)Null,
@@ -444,7 +444,7 @@ DefineObjectType[Object[Bill], {
 				(*1*)Null,
 				(*2*)Object[Container, Site],
 				(*3*)Object[LaboratoryNotebook],
-				(*4*)Object[Protocol],
+				(*4*)Object[Protocol] | Object[Maintenance] | Object[Qualification],
 				(*5*)Model[Instrument],
 				(*6*)Null,
 				(*7*)Null,
@@ -624,7 +624,7 @@ DefineObjectType[Object[Bill], {
 			},
 			Relation -> {
 				(*1*)Object[LaboratoryNotebook],
-				(*2*)Object[Protocol] | Object[Maintenance] | Object[Transaction],
+				(*2*)Object[Protocol] | Object[Maintenance] | Object[Qualification] | Object[Transaction],
 				(*3*)Object[Container, Site],
 				(*4*)Object[Sample] | Object[Container] | Object[Item],
 				(*5*)Null,

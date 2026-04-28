@@ -90,6 +90,14 @@ DefineTests[ExperimentMeasureCount,
 				$EmailEnabled = False
 			}
 		],
+		Example[{Basic, "Measure the count of a sample with Capsule -> True:"},
+			ExperimentMeasureCount[Object[Sample, "Available capsule sample for ExperimentMeasureCount testing" <> $SessionUUID]],
+			ObjectP[Object[Protocol, MeasureCount]],
+			Stubs :> {
+				$PersonID = Object[User, "Test user for notebook-less test protocols"],
+				$EmailEnabled = False
+			}
+    ],
 
 		(* Messages *)
 		Example[{Messages, "ObjectDoesNotExist", "Throw a message if we have a sample that does not exist (name form):"},
@@ -656,10 +664,11 @@ DefineTests[ExperimentMeasureCount,
 				},
 				NumberOfReplicates -> 2
 			];
-			Download[myProtocol, {Tweezer, Balance, Reservoirs, WeighBoats}],
+			Download[myProtocol, {Tweezer, Balance, HandlingEnvironment, Reservoirs, WeighBoats}],
 			{
 				LinkP[Model[Item, Tweezer, "id:8qZ1VWNwNDVZ"]],
 				LinkP[Model[Instrument, Balance, "id:rea9jl5Vl1ae"]],
+				LinkP[Model[Instrument, HandlingStation, Ambient]],
 				{LinkP[Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"]]..(*Weigh boats, medium, Individual*)},
 				{LinkP[Model[Item, WeighBoat, "id:Vrbp1jaq5Ojz"]]..(*Weigh boats, medium, Individual*)}
 			},
@@ -677,8 +686,9 @@ DefineTests[ExperimentMeasureCount,
 				},
 				NumberOfReplicates -> 3
 			];
-			Download[myProtocol, {Tweezer, Balance, Reservoirs, WeighBoats}],
+			Download[myProtocol, {Tweezer, Balance, HandlingEnvironment, Reservoirs, WeighBoats}],
 			{
+				Null,
 				Null,
 				Null,
 				{},
@@ -721,7 +731,7 @@ DefineTests[ExperimentMeasureCount,
 			];
 			Equal[
 				Download[protocol, {WeightStabilityDuration, MaxWeightVariation}],
-				{60 Second, 0.1 Milligram}
+				{$DefaultWeightStabilityDuration, Download[protocol,Balance[AllowedMaxVariation]]}
 			],
 			True,
 			Variables :> {protocol}
@@ -747,6 +757,7 @@ DefineTests[ExperimentMeasureCount,
 				Object[Container, Vessel, "Empty 50ml container 11 for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Container, Vessel, "Empty 50ml container 12 for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Container, Vessel, "Empty 50ml container 13 for ExperimentMeasureCount testing" <> $SessionUUID],
+				Object[Container, Vessel, "Empty 50ml container 14 for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Container, Vessel, "Empty 50ml stock solution container for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Container, Vessel, "Empty 50ml container (with special sample without model) for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Container, Vessel, "Empty 15ml container for ExperimentMeasureCount testing" <> $SessionUUID],
@@ -778,7 +789,9 @@ DefineTests[ExperimentMeasureCount,
 				Object[Item, Consumable, "Weighboats for MeasureWeight subprotocols 1" <> $SessionUUID],
 				Object[Sample, "Available sachet sample 1 for ExperimentMeasureCount testing" <> $SessionUUID],
 				Object[Sample, "Available sachet sample 2 for ExperimentMeasureCount testing" <> $SessionUUID],
-				Object[Sample, "Available sachet sample 3 for ExperimentMeasureCount testing" <> $SessionUUID]
+				Object[Sample, "Available sachet sample 3 for ExperimentMeasureCount testing" <> $SessionUUID],
+				Model[Sample, "Test capsule sample model for ExperimentMeasureCount testing" <> $SessionUUID],
+				Object[Sample, "Available capsule sample for ExperimentMeasureCount testing" <> $SessionUUID]
 			};
 			(* Check whether the names we want to give below already exist in the database *)
 			existsFilter = DatabaseMemberQ[objects];
@@ -794,16 +807,16 @@ DefineTests[ExperimentMeasureCount,
 			]]
 		];
 		Module[{emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10,
-			emptyContainer11, emptyContainer12, emptyContainer13, emptyContainerSpecial,
+			emptyContainer11, emptyContainer12, emptyContainer13, emptyContainer14, emptyContainerSpecial,
 			emptyPlate, crazyBigContainer, stockSolutionContainer, operator, fakeShelf,
 			availableSample1, discardedSample, specialNoModelSample, nonTabletOrSachetSample, hasMassSample, hasCountSample,
 			hasSolidUnitWeightSample, availableSample2, availableSample3, sampleInPlateWithNoMass,
 			sampleInPlateWithMass, sampleInCrazyBigContainer, nonChemicalSample, nonTabletOrSachetSampleInPlate,
 			discardedSampleInPlate, sampleWithoutSolidUnitWeight, fakeWeighBoat1,
-			sachetSample1, sachetSample2, sachetSample3},
+			sachetSample1, sachetSample2, sachetSample3, capsuleModel, capsuleSample},
 			(* Create some empty containers and a test operator *)
-			{emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12, emptyContainer13, emptyContainerSpecial,
-				emptyPlate, crazyBigContainer, stockSolutionContainer, operator, fakeShelf} = Upload[{
+			{emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, emptyContainer6, emptyContainer7, emptyContainer8, emptyContainer9, emptyContainer10, emptyContainer11, emptyContainer12, emptyContainer13, emptyContainer14, emptyContainerSpecial,
+				emptyPlate, crazyBigContainer, stockSolutionContainer, operator, fakeShelf, capsuleModel} = Upload[{
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 1 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 2 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 3 for ExperimentMeasureCount testing" <> $SessionUUID|>,
@@ -817,12 +830,22 @@ DefineTests[ExperimentMeasureCount,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 11 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 12 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 13 for ExperimentMeasureCount testing" <> $SessionUUID|>,
+				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container 14 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml container (with special sample without model) for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Plate], Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 96-well plate for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Plate], Model -> Link[Model[Container, Plate, "25L Polypropylene Carboy for ExperimentMeasureCount testing"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Enormous multiple-position container for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Empty 50ml stock solution container for ExperimentMeasureCount testing" <> $SessionUUID|>,
-				<|Type -> Object[User, Emerald], Model -> Link[Model[User, Emerald, Operator, "Level 1"], Objects], DeveloperObject -> True, Name -> "Operator for ExperimentMeasureCount testing" <> $SessionUUID|>,
-				<|Type -> Object[Container, Shelf], Model -> Link[Model[Container, Shelf, "id:qdkmxz0A886V"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Test Shelf for Weigh boats for ExperimentMeasureCount" <> $SessionUUID|>
+				<|Type -> Object[User, Emerald], Model -> Link[Model[User, Emerald, Operator, "Baseline"], Objects], DeveloperObject -> True, Name -> "Operator for ExperimentMeasureCount testing" <> $SessionUUID|>,
+				<|Type -> Object[Container, Shelf], Model -> Link[Model[Container, Shelf, "id:qdkmxz0A886V"], Objects], Site -> Link[$Site], DeveloperObject -> True, Name -> "Test Shelf for Weigh boats for ExperimentMeasureCount" <> $SessionUUID|>,
+				<|
+          Type -> Model[Sample],
+          Name -> "Test capsule sample model for ExperimentMeasureCount testing" <> $SessionUUID,
+          DeveloperObject -> True,
+          State -> Solid,
+          Tablet -> False,
+          Capsule -> True,
+          DefaultStorageCondition -> Link[Model[StorageCondition, "Ambient Storage"]]
+        |>
 			}];
 
 			(* Create some tablet samples *)
@@ -845,7 +868,8 @@ DefineTests[ExperimentMeasureCount,
 				fakeWeighBoat1,
 				sachetSample1,
 				sachetSample2,
-				sachetSample3
+				sachetSample3,
+				capsuleSample
 			} = ECL`InternalUpload`UploadSample[
 				{
 					Model[Sample, "Test Count Model 1 for MeasureCount"],
@@ -867,7 +891,8 @@ DefineTests[ExperimentMeasureCount,
 					Model[Item, Consumable, "id:Vrbp1jG80zRw"],
 					Model[Sample, "id:pZx9joOBZvm4"],(*"Nootropic Sachets"*)
 					Model[Sample, "id:pZx9joOBZvm4"],(*"Nootropic Sachets"*)
-					Model[Sample, "id:pZx9joOBZvm4"](*"Nootropic Sachets"*)
+					Model[Sample, "id:pZx9joOBZvm4"](*"Nootropic Sachets"*),
+					capsuleModel
 				},
 				{
 					{"A1", emptyContainer1},
@@ -889,7 +914,8 @@ DefineTests[ExperimentMeasureCount,
 					{"A1", fakeShelf},
 					{"A1", emptyContainer11},
 					{"A1", emptyContainer12},
-					{"A1", emptyContainer13}
+					{"A1", emptyContainer13},
+					{"A1", emptyContainer14}
 				}
 			];
 
@@ -914,7 +940,8 @@ DefineTests[ExperimentMeasureCount,
 				<|Object -> fakeWeighBoat1, DeveloperObject -> True, Count -> 100, Status -> Available, Name -> "Weighboats for MeasureWeight subprotocols 1" <> $SessionUUID|>,
 				<|Object -> sachetSample1, DeveloperObject -> True, Status -> Available, Name -> "Available sachet sample 1 for ExperimentMeasureCount testing" <> $SessionUUID|>,
 				<|Object -> sachetSample2, DeveloperObject -> True, Status -> Available, Name -> "Available sachet sample 2 for ExperimentMeasureCount testing" <> $SessionUUID|>,
-				<|Object -> sachetSample3, DeveloperObject -> True, Status -> Available, Name -> "Available sachet sample 3 for ExperimentMeasureCount testing" <> $SessionUUID|>
+				<|Object -> sachetSample3, DeveloperObject -> True, Status -> Available, Name -> "Available sachet sample 3 for ExperimentMeasureCount testing" <> $SessionUUID|>,
+				<|Object -> capsuleSample, DeveloperObject -> True, Status -> Available, Name -> "Available capsule sample for ExperimentMeasureCount testing" <> $SessionUUID|>
 			}]
 		]
 	},

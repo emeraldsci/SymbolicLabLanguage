@@ -553,7 +553,7 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Micro*Liter],
 			Units -> Liter Micro,
-			Description -> "The minimum sample volume required for a single run.",
+			Description -> "The minimum sample volume that can be injected in a single run.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
@@ -571,7 +571,7 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Micro*Liter],
 			Units -> Liter Micro,
-			Description -> "The maximum sample volume that that can be injected in a single run.",
+			Description -> "The maximum sample volume that can be injected in a single run.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},

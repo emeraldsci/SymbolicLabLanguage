@@ -1666,6 +1666,14 @@ DefineObjectType[Object[Protocol, MassSpectrometry], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
+		SyringeLoadVerificationCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "Records the number of times operators have attempted the syringe load verification loop during direct infusion syringe loading.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
 		CalibrationLoopCounts -> {
 			Format -> Multiple,
 			Class -> Integer,

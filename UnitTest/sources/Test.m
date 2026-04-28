@@ -66,7 +66,7 @@ DefineOptions[
 ];
 
 Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:=Module[
-	{messagesExpected,maxExecutionTime,stateFunctions,equivalenceFunction,stubs, unitTestMessage,
+	{messagesExpected,maxExecutionTime,stateFunctions,equivalenceFunction,stubs, unitTestMessage, testObjectLookup,
 		executableFunction,replacementOptions,category,subCategory,fatalFailure,
 		level,messagesOption,warning, message, constellationDebugQ, sandboxEnabled},
 
@@ -169,7 +169,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 						"SetUp",
 						"TearDown",
 						Block[{passed,result},
-							Block[{actual,executionTime,$Messages,$MessageList,$TestMessages,$MessagesExpected,messages,heldExpression,heldExpectedResult,messageFailure,resultFailure,timeoutFailure,debugOutput, startDate, endDate, simTasks, simObj},
+							Block[{actual,executionTime,$Messages,$MessageList,$TestMessages,$MessagesExpected,messages,heldExpression,heldExpectedResult,messageFailure,resultFailure,timeoutFailure,debugOutput, startDate, endDate, simTasks, simObj, namedObjectLookup},
 								(* Make sure that messages don't get printed. *)
 								$Messages={};
 								$MessageList={};
@@ -203,7 +203,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 
 														heldExpression=HoldForm[expressionUnderTest];
 														heldExpectedResult=HoldForm[expected];
-														startDate = Now;
+														startDate = ECL`SafeNow[];
 														(*Evaluate the expression under test, and record how long it takes to execute*)
 														{executionTime,actual}=AbsoluteTiming[
 															CheckAbort[
@@ -211,7 +211,7 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 																$MessageFailure
 															]
 														];
-														endDate = Now;
+														endDate = ECL`SafeNow[];
 														(*After the comparison calculation is done, Defer the evaluation of the actual result
                             such that it preserve the state of evaluation within the stubbed environment*)
 
@@ -221,6 +221,31 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 														simObj = If[MatchQ[ECL`$Simulation, True],
 															HoldForm[Evaluate[uploadSimulationCloudFile[]]],
 															Null
+														];
+
+														(* Store the ID <-> Named object relationship for any objects displayed in the test directly *)
+														(* Tests can create enormous numbers of objects, so just stick with those displayed for performance reasons *)
+														namedObjectLookup = If[ECL`ProductionQ[],
+															{},
+															Quiet@Module[
+																{mentionedObjects, rawTuples},
+
+																(* Pull out all the ID-form objects mentioned *)
+																(* Use HoldForm as a trick to pull keys out of associations - otherwise they are invisible to Cases *)
+																(* Use ToExpression@ToString@FullForm sequence to reload the expression in MM as Defer appears to have a bug *)
+																mentionedObjects = With[{act = ToExpression@ToString@FullForm[actual], exp = heldExpectedResult, mess = messages, messExp = messagesExpected},
+																	DeleteDuplicates[Cases[FullForm@HoldForm[{act, exp, mess, messExp}], ECL`IDObjectReferenceP[], Infinity]]
+																];
+
+																(* Construct tuples of ID form to their named version *)
+																rawTuples = Transpose[{
+																	mentionedObjects,
+																	ECL`NamedObject[mentionedObjects, Historical -> True]
+																}];
+
+																(* Filter to only valid tuples *)
+																Cases[rawTuples, {ECL`IDObjectReferenceP[], ECL`NamedObjectReferenceP[]}]
+															]
 														];
 													];
 
@@ -292,7 +317,10 @@ Test[description_String, expressionUnderTest_, expected_, ops:OptionsPattern[]]:
 									simTasks,
 									simObj,
 									sandboxEnabled,
-									unitTestMessage
+									unitTestMessage,
+									$SessionUUID,
+									Global`$ConstellationDomain,
+									namedObjectLookup
 								];
 							];
 
@@ -722,7 +750,10 @@ testResult[
 	simulatedTasks:{___String},
 	simulationObj:Null|_HoldForm,
 	sandbox: (True | False),
-	unitTestMessage: (Null | HoldForm[_] | HoldPattern[_])
+	unitTestMessage: (Null | HoldForm[_] | HoldPattern[_]),
+	sessionUUID_String,
+	constellationDomain_String,
+	objectNames_List
 ]:=EmeraldTestResult[
 	Association[
 		Description->description,
@@ -754,7 +785,11 @@ testResult[
 		SimulatedTasks -> simulatedTasks,
 		Simulation -> simulationObj,
 		Sandbox -> sandbox,
-		UnitTestFailureMessage -> unitTestMessage
+		UnitTestFailureMessage -> unitTestMessage,
+		SessionUUID -> sessionUUID,
+		Database -> constellationDomain,
+		(* These patterns can't be part of the input because they're not loaded when the UnitTest package is loaded. The dependencies also can't be changed, so filter here in set delayed *)
+		ObjectNames -> Cases[objectNames, {ECL`IDObjectReferenceP[], ECL`NamedObjectReferenceP[]}]
 	]
 ];
 
@@ -792,7 +827,18 @@ OnLoad[
 			BoxForm`SummaryItem[{"Outcome: ", result[Outcome]}]
 		},
 		{
-			BoxForm`SummaryItem[{"Execution Time: ", Quantity[result[ExecutionTime],"Seconds"]}]
+			BoxForm`SummaryItem[{"Execution Time: ", Quantity[result[ExecutionTime],"Seconds"]}],
+			BoxForm`SummaryItem[{"Database: ", Switch[result[Database],
+				"https://constellation.emeraldcloudlab.com", "PRODUCTION >_<",
+				"https://constellation-stage.emeraldcloudlab.com", "Stage",
+				"https://constellation-neutrino0.emeraldcloudlab.com", "Neutrino 0",
+				"https://constellation-neutrino1.emeraldcloudlab.com", "Neutrino 1",
+				"https://constellation-neutrino2.emeraldcloudlab.com", "Neutrino 2",
+				"https://constellation-neutrino3.emeraldcloudlab.com", "Neutrino 3",
+				"https://constellation-neutrino4.emeraldcloudlab.com", "Neutrino 4",
+				"https://constellation-neutrino5.emeraldcloudlab.com", "Neutrino 5",
+				_, "-"
+			]}]
 		},
 		StandardForm
 	]

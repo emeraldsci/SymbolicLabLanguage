@@ -2124,7 +2124,7 @@ DefineTests[ExperimentFragmentAnalysis,
 						InstrumentDataFilePath->"C:\\Agilent Technologies\\Data",
 						Software->"FragmentAnalyzer",
 						CapillaryArray->Link[testCapillaryArrayObject,Instrument],
-						Replace[LocalCache]->Link[testLocalCache]
+						Replace[LocalCaches]->{Link[testLocalCache],Null,Null}
 					|>
 				];
 
@@ -2887,7 +2887,7 @@ DefineTests[
 						InstrumentDataFilePath->"C:\\Agilent Technologies\\Data",
 						Software->"FragmentAnalyzer",
 						CapillaryArray->Link[testCapillaryArrayObject,Instrument],
-						Replace[LocalCache]->Link[testLocalCache]
+            Replace[LocalCaches]->{Link[testLocalCache],Null,Null}
 					|>
 				];
 
@@ -3479,7 +3479,7 @@ DefineTests[ValidExperimentFragmentAnalysisQ,
 						InstrumentDataFilePath->"C:\\Agilent Technologies\\Data",
 						Software->"FragmentAnalyzer",
 						CapillaryArray->Link[testCapillaryArrayObject,Instrument],
-						Replace[LocalCache]->Link[testLocalCache]
+            Replace[LocalCaches]->{Link[testLocalCache],Null,Null}
 					|>
 				];
 
@@ -4062,7 +4062,7 @@ DefineTests[
 						InstrumentDataFilePath->"C:\\Agilent Technologies\\Data",
 						Software->"FragmentAnalyzer",
 						CapillaryArray->Link[testCapillaryArrayObject,Instrument],
-						Replace[LocalCache]->Link[testLocalCache]
+            Replace[LocalCaches]->{Link[testLocalCache],Null,Null}
 					|>
 				];
 

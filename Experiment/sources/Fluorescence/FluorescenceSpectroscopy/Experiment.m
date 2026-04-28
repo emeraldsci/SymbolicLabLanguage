@@ -376,11 +376,11 @@ ExperimentFluorescenceSpectroscopy[mySamples:ListableP[ObjectP[{Object[Sample]}]
 	];
 
 	(* run all the tests from the resolution; if any of them were False, then we should return early here *)
-	(* need to do this becasue if we are collecting tests then the Check wouldn't have caught it *)
+	(* need to do this because if we are collecting tests then the Check wouldn't have caught it *)
 	(* basically, if _not_ all the tests are passing, then we do need to return early *)
 	returnEarlyQ = Which[
-		MatchQ[resolveOptionsResult, $Failed], True,
-		gatherTests, Not[RunUnitTest[<|"Tests" -> resolutionTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
+		MatchQ[resolvedOptionsResult, $Failed], True,
+		gatherTestsQ, Not[RunUnitTest[<|"Tests" -> resolvedOptionsTests|>, Verbose -> False, OutputFormat -> SingleBoolean]],
 		True, False
 	];
 

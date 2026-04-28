@@ -167,6 +167,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf P1000 pipette.",
 			Category -> "General"
 		},
+		MicropipetteP1000Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MicropipetteP1000TransferContainers in this qualification with the Eppendorf P1000 pipette.",
+			Category -> "General"
+		},
 		MicropipetteP1000BufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -307,6 +318,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 				Object[Item]
 			],
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf P5000 pipette.",
+			Category -> "General"
+		},
+		MicropipetteP5000Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MicropipetteP5000TransferContainers in this qualification with the Eppendorf P5000 pipette.",
 			Category -> "General"
 		},
 		MicropipetteP5000BufferVolumes -> {
@@ -451,6 +473,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf P20 pipette.",
 			Category -> "General"
 		},
+		MicropipetteP20Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MicropipetteP20TransferContainers in this qualification with the Eppendorf P20 pipette.",
+			Category -> "General"
+		},
 		MicropipetteP20BufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -591,6 +624,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 				Object[Item]
 			],
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf P2.5 pipette.",
+			Category -> "General"
+		},
+		MicropipetteP2P5Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MicropipetteP2P5TransferContainers in this qualification with the Eppendorf P2.5 pipette.",
 			Category -> "General"
 		},
 		MicropipetteP2P5BufferVolumes -> {
@@ -735,6 +779,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the pipetus serological pipette.",
 			Category -> "General"
 		},
+		SerologicalPipettePipetusTweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of SerologicalPipetteTransferContainers in this qualification with the pipetus serological pipette.",
+			Category -> "General"
+		},
 		SerologicalPipettePipetusBufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -877,6 +932,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Pos-D MR-100 positive displacement pipette.",
 			Category -> "General"
 		},
+		PositiveDisplacementPipettePosDMR100Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of PositiveDisplacementPipettePosDMR100TransferContainers in this qualification with the Pos-D MR-100 positive displacement pipette.",
+			Category -> "General"
+		},
 		PositiveDisplacementPipettePosDMR100BufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -1017,6 +1083,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 				Object[Item]
 			],
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Pos-D MR-10 positive displacement pipette.",
+			Category -> "General"
+		},
+		PositiveDisplacementPipettePosDMR10Tweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of PositiveDisplacementPipettePosDMR10TransferContainers in this qualification with the Pos-D MR-10 positive displacement pipette.",
 			Category -> "General"
 		},
 		PositiveDisplacementPipettePosDMR10BufferVolumes -> {
@@ -1162,6 +1239,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf 8-channel 300 uL pipette.",
 			Category -> "General"
 		},
+		MultichannelPipette8Channel300uLTweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MultichannelPipette8Channel300uLTransferContainers in this qualification with the Eppendorf 8-channel 300 uL pipette.",
+			Category -> "General"
+		},
 		MultichannelPipette8Channel300uLBufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -1304,6 +1392,17 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Description -> "The model of the pipette tips used for this pipette in this qualification with the Eppendorf 8-channel 10 uL pipette.",
 			Category -> "General"
 		},
+		MultichannelPipette8Channel10uLTweezers -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Tweezer],
+				Object[Item, Tweezer]
+			],
+			Description -> "The tweezers to handle weighing of MultichannelPipette8Channel10uLTransferContainers in this qualification with the Eppendorf 8-channel 10 uL pipette.",
+			Category -> "General"
+		},
 		MultichannelPipette8Channel10uLBufferVolumes -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -1355,6 +1454,22 @@ DefineObjectType[Object[Qualification, Training, Pipetting], {
 			Units -> Percent,
 			Description -> "The percentage of buffer volumes that met the qualification passing criteria.",
 			Category -> "General"
+		},
+		PartialRetake -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates that this qualification is testing only a specific set of transfers that were incorrect in a previous attempt, rather than the full set of transfers with all pipette types.",
+			Category -> "General"
+		},
+		PipettingResults -> {
+			Format -> Multiple,
+			Class -> {Pipette -> Link, RequestedVolume -> Real, TransferredVolume -> Real, Result -> Expression},
+			Pattern :> {Pipette -> _Link, RequestedVolume -> VolumeP, TransferredVolume -> VolumeP, Result -> QualificationResultP},
+			Relation -> {Pipette -> Object[Instrument, Pipette], RequestedVolume -> Null, TransferredVolume -> Null, Result -> Null},
+			Units -> {Pipette -> None, RequestedVolume -> Microliter, TransferredVolume -> Microliter, Result -> None},
+			Description -> "For each pipette transfer, indicates the requested volume and the volume actually transferred.",
+			Category -> "Experimental Results"
 		},
 		WasteContainer->{
 			Format->Single,

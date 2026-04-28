@@ -52,12 +52,11 @@ DefineUsage[ExperimentMeasurepH,
       "Based on the size/types of the container(s) in the input 'Items', the protocol will automatically choose the optimal pH measurement technique."
     },
     SeeAlso -> {
-			"ValidExperimentMeasurepHQ",
-			"ExperimentMeasurepHOptions",
-			"ExperimentMeasurepHPreview",
-			"pHDevices",
-      "ExperimentMeasureVolume",
-      "ExperimentWeight"
+		"ValidExperimentMeasurepHQ",
+		"ExperimentMeasurepHOptions",
+		"ExperimentMeasurepHPreview",
+      	"ExperimentMeasureVolume",
+		"ExperimentMeasureWeight"
     },
     Tutorials->{
 			"Sample Preparation"

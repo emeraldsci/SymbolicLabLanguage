@@ -18,7 +18,8 @@ billingTeam:=billingTeam=Search[Object[User,Emerald,Developer],Status==Active&&D
 DefineOptions[runSyncBilling,
 	Options :> {
 		{Notify -> True, True | False, "Indicates if an asana task should be created when the functions run successfully or fail."},
-		{Verbose -> False, True | False, "Indicates if progress updates will be returned. Currently disabled, no updates returned even if Verbose -> True."}
+		{Verbose -> False, True | False, "Indicates if progress updates will be returned. Currently disabled, no updates returned even if Verbose -> True."},
+		{Time -> Time, Time| EstimatedTime, "Indicates if the operator time is calculated based on real time or estimated time", Category -> Hidden}
 	}
 ];
 
@@ -63,13 +64,14 @@ runSyncBillingCore[teams:{ObjectP[Object[Team, Financing]]..}, ops:OptionsPatter
 	{
 		outputTuples, goodOutputBools, timeoutBools, times, outputDataHeader, tableOutput,
 		safeOps, notifyQ, goodOutputEntries, goodOutputTable, badOutputEntries, badOutputTable,
-		startTime, endTime
+		startTime, endTime, timeSource
 	},
 
 	(* get our safe options *)
 	(* we always want to run this nightly overload with Verbose -> True so we can track progress *)
 	safeOps=SafeOptions[runSyncBilling, ReplaceRule[ToList[ops],Verbose->True]];
 	notifyQ=Lookup[safeOps, Notify];
+	timeSource=Lookup[safeOps, Time];
 	startTime = Now;
 
 	(* run the check for mismatches in the Object[Bill] and the Model[Pricing] associated with it *)
@@ -82,8 +84,8 @@ runSyncBillingCore[teams:{ObjectP[Object[Team, Financing]]..}, ops:OptionsPatter
 	outputTuples=Map[
 		AbsoluteTiming[
 			TimeConstrained[
-				SyncBilling[#, Notify -> True],
-				7200
+				SyncBilling[#, Notify -> True, Time -> timeSource],
+				18000
 			]
 		]&,
 		teams
@@ -196,6 +198,7 @@ DefineOptions[SyncBilling,
 		{Notify -> False, True | False, "Indicates if notification will be send to financing when a bill has completed."},
 		{Fail -> False, True | False, "Indicates if we should fail a Pricing function for testing reasons.", Category -> Hidden},
 		{Verbose -> False, True | False, "Indicates if progress updates will be returned."},
+		{Time -> Time, Time| EstimatedTime, "Indicates if the operator time is calculated based on real time or estimated time", Category -> Hidden},
 		UploadOption,
 		CacheOption
 	}
@@ -226,7 +229,7 @@ SyncBilling::PriceProtocol="PriceProtocol returned some unexpected values. Outpu
 (* when a bill is due, SyncBilling creates an Asana task to the Financing team so they know what to charge the customer *)
 SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,teamPacket,uploadQ,cache,failQ,debugQ,messagesThrownQ,messagesThrown,
+		safeOps,teamPacket,uploadQ,cache,failQ,debugQ,messagesThrownQ,messagesThrown,timeSource,
 		activeTeamQ,newBillsQ,notifyQ,billFieldDefinitions,
 		newBillPackets,closingBillQ,currentBillingHistory,updatedBillingHistory,newBill,flatMessagesThrown,
 
@@ -260,6 +263,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 	cache=Lookup[safeOps, Cache, {}];
 	failQ=Lookup[safeOps, Fail];
 	debugQ=Lookup[safeOps, Verbose];
+	timeSource= Lookup[safeOps, Time];
 
 	If[Or[debugQ,TrueQ[ECL`$ManifoldRunTime]],
 		Echo[financingTeam,"Financing team:"]
@@ -471,7 +475,7 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 	If[Or[debugQ,TrueQ[ECL`$ManifoldRunTime]], Print["Starting PriceOperatorTime"]];
 	operatorPricingPackets=If[MatchQ[currentBillPackets, {PacketP[]..}],
 		Module[{evaluationData, messages, priceOperatorTimeResult,badPriceOperatorPackets},
-			evaluationData=EvaluationData[PriceOperatorTime[financingTeam, timeSpan, OutputFormat -> Association]];
+			evaluationData=EvaluationData[PriceOperatorTime[financingTeam, timeSpan, OutputFormat -> Association, Time -> timeSource]];
 			messages=Lookup[evaluationData, "MessagesText"];
 			(* add messages to a full gathered list *)
 			AppendTo[messagesThrown, messages];
@@ -803,11 +807,11 @@ SyncBilling[financingTeam:ObjectP[Object[Team, Financing]], ops:OptionsPattern[]
 	(* We want to notify Andrew when an AlaCarte customer hits a bill of > $10k such that he can 
 	kindly suggest they switch to a subscription plan. *)
 	If[!MatchQ[currentBillPackets,{}|{Null}],
-		totalCharges=With[{relevantPackets=Cases[pricingUpdatePackets,_?(KeyExistsQ[#,TotalCharge]&)]},
+		totalCharges=With[{relevantPackets=Cases[pricingUpdatePackets,_Association?(KeyExistsQ[#,TotalCharge]&),Infinity]},
 			Map[
 				Function[{packet},
 					If[MatchQ[packet,PacketP[]],
-						Lookup[Cases[pricingUpdatePackets,_?(KeyExistsQ[#,TotalCharge]&)],TotalCharge,Null],
+						Lookup[packet,TotalCharge,Null],
 						0USD
 					]
 				],
@@ -2782,6 +2786,7 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 				"Associated Protocol",
 				If[notebookQ, "Notebook", Nothing],
 				"Waste Type",
+				"Waste Weight (Kilogram)",
 				"Value (USD)",
 				"Charge (USD)"}};
 			data=Map[
@@ -2789,12 +2794,13 @@ ExportBillingData[bill:ObjectReferenceP[Object[Bill]], filePath_String, ops:Opti
 					#[[2]],
 					If[notebookQ, #[[-1]], Nothing],
 					#[[4]],
+					N@Unitless[#[[5]]],
 					N@Unitless[#[[7]]],
 					N@Unitless[#[[9]]]
 				}&,
 				wasteDisposalCharges];
 			gatheredData=GatherBy[data, #[[2]]&];
-			subtotals=If[notebookQ, Map[Flatten@{"Total", #[[1, 2]], "", Round[Unitless[Total[#[[All, 4]]]], 0.01], Round[Unitless[Total[#[[All, 5]]]], 0.01]}&, gatheredData], {}];
+			subtotals=If[notebookQ, Map[Flatten@{"Total", #[[1, 2]], "", "", Round[Unitless[Total[#[[All, 5]]]], 0.01], Round[Unitless[Total[#[[All, 6]]]], 0.01]}&, gatheredData], {}];
 			total={Flatten@{"Total", ConstantArray["", Length[data[[1]]] - 2], Round[Unitless[Total[data[[;;, -1]]]], 0.01]}};
 			If[notebookQ, Join[titles, data, subtotals, total], Join[titles, data, total]]
 		]];

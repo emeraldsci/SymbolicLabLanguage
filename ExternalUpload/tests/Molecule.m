@@ -262,6 +262,14 @@ DefineTests[
 			],
 			ObjectP[Model[Molecule, "Glycine for UploadMolecule unit tests 31 " <> $SessionUUID]]
 		],
+		Example[{Options, "pI", "Use the pI option to specify the isoelectric point pH at which Glycine has no net electrical charge:"},
+			UploadMolecule["Glycine",
+				Name -> "Glycine for UploadMolecule unit tests 72 " <> $SessionUUID,
+				pI -> 5.48
+			];
+			Download[Model[Molecule, "Glycine for UploadMolecule unit tests 72 " <> $SessionUUID], pI],
+			EqualP[5.48]
+		],
 		Example[{Options, "Radioactive", "Use the Radioactive option to specify if the chemical sample is radioactive:"},
 			UploadMolecule[PubChem[962],
 				Name -> "Water for UploadMolecule unit tests 32 " <> $SessionUUID,
@@ -517,8 +525,7 @@ DefineTests[
 				MSDSFile -> NotApplicable,
 				AffinityLabel -> True
 			],
-			ObjectP[Model[Molecule, "His Tag for UploadMolecule unit tests 56 " <> $SessionUUID]],
-			Messages :> {Error::CompoundNotFound}
+			ObjectP[Model[Molecule, "His Tag for UploadMolecule unit tests 56 " <> $SessionUUID]]
 		],
 		Example[{Options, "DetectionLabels", "Indicates the tags (e.g. Alexa Fluor 488) that the molecule contains, which can indicate the presence and amount of the molecule:"},
 			UploadMolecule["Alexa Fluor 488-Tethered Phalloidin",
@@ -1567,6 +1574,18 @@ DefineTests[
 	}
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*UploadVerifiedMolecule*)
+(* TODO: Dummy test right now. In order for VPRQ to pass, exported function must have a test. Will need to add actual tests later *)
+
+DefineTests[UploadVerifiedMolecule,
+	{
+		Test["Function returns the input object if all ValidObjectQ tests are passing:",
+			UploadVerifiedMolecule[Model[Molecule, "Water"], Verify -> True],
+			ObjectP[Model[Molecule, "Water"]]
+		]
+	}
+];
 
 
 (* ::Subsubsection::Closed:: *)

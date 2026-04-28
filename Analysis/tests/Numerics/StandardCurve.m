@@ -28,7 +28,7 @@ DefineTests[AnalyzeStandardCurve,
 	{
 		Example[{Basic, "Given a CapillaryELISA protocol as input, run one standard curve analysis per analyte, matching data by analyte type:"},
 			AnalyzeStandardCurve[
-				Object[Protocol, CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2"],
+				Object[Protocol, CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2" <> $SessionUUID],
 				FitType -> Linear,
 				Output -> {Result,Preview}
 			],
@@ -36,9 +36,9 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Basic, "Object fields where data is located can be explicitly specified in inputs. Input can be specified as a {Object(s),Field} pair, and standard data can be specified as a {Object(s),{xField,yField}} pair:"},
 			AnalyzeStandardCurve[
-				{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,qPCR,"ASC Test qPCR Sample 1-2"]},QuantificationCycleAnalyses[QuantificationCycle]},
+				{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},QuantificationCycleAnalyses[QuantificationCycle]},
 				{
-					{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+					{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 					{QuantificationCycleAnalyses[QuantificationCycle],CopyNumberAnalyses[CopyNumber]}
 				},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
@@ -49,7 +49,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Basic, "Input data can be specified as an object or list of objects. The field to pull data from is determined by the object type:"},
 			AnalyzeStandardCurve[
-				{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,qPCR,"ASC Test qPCR Sample 1-2"]},
+				{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},
 				{{10 Cycle, 2.1},{20 Cycle, 5.8},{30 Cycle, 7.7}},
 				FitType->Linear,
 				Output->Preview
@@ -198,7 +198,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Additional, "Use multiple objects, each containing multiple {x,y} coordinates, as input:"},
 			AnalyzeStandardCurve[
-				{Object[Data,ELISA,"ASC Test ELISA Sample 1"],Object[Data,ELISA,"ASC Test ELISA Sample 2"]},
+				{Object[Data,ELISA,"ASC Test ELISA Sample 1" <> $SessionUUID],Object[Data,ELISA,"ASC Test ELISA Sample 2" <> $SessionUUID]},
 				QuantityArray[{{0.0,0.0},{1.0,1.6},{2.0,2.0},{3.0,2.9},{4.0,4.1},{5.0,4.4},{6.0,6.1},{7.0,8.1}},{RFU,Mole/Liter}],
 				Output->Preview
 			],
@@ -206,7 +206,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Additional, "Mix object inputs with numerical coordinate inputs:"},
 			AnalyzeStandardCurve[
-				{{20,25,15},{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,qPCR,"ASC Test qPCR Sample 1-2"]},Field[QuantificationCycleAnalyses[QuantificationCycle]]},QuantityArray[{14.0,15.0,16.0},Cycle]},
+				{{20,25,15},{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},Field[QuantificationCycleAnalyses[QuantificationCycle]]},QuantityArray[{14.0,15.0,16.0},Cycle]},
 				QuantityArray[{{5,5},{16,17},{23,21},{29,31}},{Cycle,"DimensionlessUnit"}],
 				FitType->Linear
 			],
@@ -215,8 +215,8 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Additional, "Use a combination of transformation functions and standard curve options to construct a logistic standard curve for Capillary ELISA data:"},
 			PlotStandardCurve[
 				AnalyzeStandardCurve[
-					{Object[Data,ELISA,"ASC Test ELISA Sample 1"],Intensities},
-					{Object[Data,ELISA,"ASC Test ELISA Standard 1"],{DilutionFactors,Intensities}},
+					{Object[Data,ELISA,"ASC Test ELISA Sample 1" <> $SessionUUID],Intensities},
+					{Object[Data,ELISA,"ASC Test ELISA Standard 1" <> $SessionUUID],{DilutionFactors,Intensities}},
 					StandardTransformationFunctions->{Log10[#]&,None},
 					InversePrediction->True,
 					FitType->LogisticBase10,
@@ -228,7 +228,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Options,InputField,"Specify what field in input objects data should be downloaded from. The input field option will supersede a field specified using the {object(s),field} input format:"},
 			AnalyzeStandardCurve[
-				{Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+				{Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 				{{100,2.2},{10000,3.3},{1000000,4.16},{100000000,5.2}},
 				InputField -> CopyNumberAnalyses[CopyNumber],
 				FitType->Linear
@@ -258,14 +258,14 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Options,StandardData,"A single object contains multiple {x,y} datapoints to use as standard data:"},
 			AnalyzeStandardCurve[{1.0 RFU,2.0 RFU,3.0 RFU},
-				Object[Data,ELISA,"ASC Test ELISA Standard 2"],
+				Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],
 				FitType->Linear,Upload->False,Output->Preview
 			],
 			ValidGraphicsP[]
 		],
 		Example[{Options,StandardData,"List of objects, each containing one standard data point:"},
 			AnalyzeStandardCurve[{16 Cycle, 19.1 Cycle, 21 Cycle},
-				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				FitType->Linear,
 				Output->Preview
@@ -275,10 +275,10 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Options,StandardData,"Mixed numerical and object input as standard data:"},
 			AnalyzeStandardCurve[{16.0 Cycle, 19.1 Cycle, 21 Cycle},
 				{
-					{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],1.0 Joule},
-					{Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],2.0 Joule},
-					{Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],3.0 Joule},
-					{Object[Data,qPCR,"ASC Test qPCR Standard 1-4"],4.0 Joule}
+					{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],1.0 Joule},
+					{Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],2.0 Joule},
+					{Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],3.0 Joule},
+					{Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID],4.0 Joule}
 				},
 				FitType->Linear,
 				Output->Preview
@@ -301,7 +301,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Options,StandardFields,"Manually specify which fields to pull from standard data objects. Option values will take precendence over fields in {object(s),{xField,yFiled}} input format:"},
 			AnalyzeStandardCurve[{1.0 RFU,2.0 RFU,3.0 RFU},
-				Object[Data,ELISA,"ASC Test ELISA Standard 2"],
+				Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],
 				StandardFields->{Intensities,Intensities},
 				FitType->Linear,
 				Output->Preview
@@ -311,10 +311,10 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Options,StandardFields,"Use None when only one dimension requires a field specification:"},
 			AnalyzeStandardCurve[{1.4 Lumen, 2.2 Lumen, 3.6 Lumen},
 				{
-					{1.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-1"]},
-					{2.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-2"]},
-					{3.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-3"]},
-					{4.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]}
+					{1.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID]},
+					{2.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID]},
+					{3.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID]},
+					{4.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]}
 				},
 				StandardFields->{None,QuantificationCycleAnalyses[QuantificationCycle]},
 				FitType->Linear,
@@ -324,7 +324,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Options,StandardFields,"Default standard fields depend on Standard object type:"},
 			mySCObject=AnalyzeStandardCurve[{18.1 Cycle},
-				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				FitType -> Linear
 			];
@@ -334,7 +334,7 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Options,StandardTransformationFunctions,"Use transformation functions to pre-process the standard data:"},
 			AnalyzeStandardCurve[
 				{15 Cycle},
-				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 				StandardTransformationFunctions -> {None,Function[{x},Log10[x]]},
 				FitType -> Linear
 			][StandardDataPoints],
@@ -362,7 +362,7 @@ DefineTests[AnalyzeStandardCurve,
 			Quiet[
 				AnalyzeStandardCurve[
 					{1.0 RFU,2.0 RFU,3.0 RFU},
-					Object[Data,ELISA,"ASC Test ELISA Standard 2"],
+					Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],
 					FitType -> Automatic
 				][ExpressionType],
 				NonlinearModelFit::cvmit
@@ -370,13 +370,13 @@ DefineTests[AnalyzeStandardCurve,
 			LogisticBase10
 		],
 		Example[{Options,Template,"Use options and curve from an existing Standard Curve analysis:"},
-			AnalyzeStandardCurve[Object[Data,ELISA,"ASC Test ELISA Sample 2"],Template->existingStandardCurveAnalysis,Upload->False,Output->Preview],
+			AnalyzeStandardCurve[Object[Data,ELISA,"ASC Test ELISA Sample 2" <> $SessionUUID],Template->existingStandardCurveAnalysis,Upload->False,Output->Preview],
 			ValidGraphicsP[],
 			SetUp :> (
 				ClearMemoization[];
 				existingStandardCurveAnalysis=AnalyzeStandardCurve[
-					{Object[Data,ELISA,"ASC Test ELISA Sample 1"],Automatic},
-					Object[Data,ELISA,"ASC Test ELISA Standard 2"],
+					{Object[Data,ELISA,"ASC Test ELISA Sample 1" <> $SessionUUID],Automatic},
+					Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],
 					StandardFields->{Intensities,DilutionFactors},
 					StandardTransformationFunctions->{None,Function[{x},2.7*x]}
 				];
@@ -458,10 +458,10 @@ DefineTests[AnalyzeStandardCurve,
 		Test["Resolved options does not contain any instances of $Failed or Automatic (except Method, from AnalyzeFit):",
 			DeleteCases[AnalyzeStandardCurve[{1.4 Lumen, 2.2 Lumen, 3.6 Lumen},
 				{
-					{1.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-1"]},
-					{2.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-2"]},
-					{3.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-3"]},
-					{4.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]}
+					{1.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID]},
+					{2.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID]},
+					{3.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID]},
+					{4.0 Lumen,Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]}
 				},
 				StandardFields->{None,QuantificationCycleAnalyses[QuantificationCycle]},
 				FitType->Linear,
@@ -514,7 +514,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Messages,"DefaultFitTypeUndefined","The standard data type is not associated with a default model type, and by default a linear fit will be constructed:"},
 			AnalyzeStandardCurve[{17 Cycle, 21.1 Cycle, 23 Cycle},
-				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]},
+				{Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				Output->Preview
 			],
@@ -533,10 +533,10 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Messages,"EmptyStandardField","The object(s) and fields specified in StandardData and StandardFields point to one or more empty fields:"},
 			AnalyzeStandardCurve[{12 Cycle,14.1 Cycle,18 Cycle},
 				{
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]
 				},
 				StandardFields->{QuantificationCycleAnalyses[QuantificationCycle],DataFile},
 				FitType->Linear
@@ -547,10 +547,10 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Messages,"InvalidStandardField","The supplied StandardFields are not valid fields of the objects in StandardData:"},
 			AnalyzeStandardCurve[{12 Cycle,14.1 Cycle,18 Cycle},
 				{
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]
 				},
 				StandardFields->{QuantificationCycleAnalyses[QuantificationCycle],Protein},
 				FitType->Linear
@@ -560,7 +560,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Messages,"InvalidStandardDataFormat","The standard data specified by StandardData, StandardFields, and StandardTransformationFunctions must be a valid list of coordinates:"},
 			AnalyzeStandardCurve[{12,14,16},
-				Object[Data,ELISA,"Mismatched ELISA Data"],
+				Object[Data,ELISA,"Mismatched ELISA Data" <> $SessionUUID],
 				FitType->Linear
 			],
 			$Failed,
@@ -569,16 +569,16 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Messages,"InconsistentObjectTypes","If input data is provided as a list of objects, these objects must have the same type:"},
 			AnalyzeStandardCurve[
 				{
-					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,ELISA,"ASC Test qPCR Sample 1-2"]},Automatic},
+					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,ELISA,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},Automatic},
 					{1,2,3},
-					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,ELISA,"ASC Test qPCR Sample 1-2"]},Automatic},
-					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,qPCR,"ASC Test qPCR Sample 1-2"]},Automatic}
+					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,ELISA,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},Automatic},
+					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},Automatic}
 				},
 				{
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]
 				},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				FitType->Linear
@@ -589,10 +589,10 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Messages,"InconsistentObjectTypes","If standard data is provided as a list or mixed list of objects, these objects must have the same type:"},
 			AnalyzeStandardCurve[{12 Cycle, 14.1 Cycle, 18 Cycle},
 				{
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-					Object[Data,ELISA,"ASC Test qPCR Standard 1-3"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+					Object[Data,ELISA,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]
 				},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				FitType->Linear
@@ -606,13 +606,13 @@ DefineTests[AnalyzeStandardCurve,
 					{1,2,3},
 					{Object[User,Emerald,Developer,"id:qdkmxzq7M3xx"],Automatic},
 					{Object[User,Emerald,Developer,"id:qdkmxzq7M3xx"],Automatic},
-					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],Object[Data,qPCR,"ASC Test qPCR Sample 1-2"]},Automatic}
+					{{Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID]},Automatic}
 				},
 				{
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],
-					Object[Data,qPCR,"ASC Test qPCR Standard 1-4"]
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+					Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID]
 				},
 				StandardTransformationFunctions->{None,Function[{x},Log10[x]]},
 				FitType->Linear
@@ -651,7 +651,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Messages,"InvalidProtocolField","Input Protocol objects must have valid, non-empty Data and StandardData fields:"},
 			AnalyzeStandardCurve[
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 3"],
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 3" <> $SessionUUID],
 				FitType->Linear
 			],
 			$Failed,
@@ -664,7 +664,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Messages,"ProtocolAlreadySet","If the input is a Protocol, then the Protocol option will be unused. The hidden option Protocol is used to link standard curve analyses corresponding to the same protocol input, and is redundant in this case:"},
 			AnalyzeStandardCurve[
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2"],
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2" <> $SessionUUID],
 				Protocol->Object[Protocol,CapillaryELISA,"Any Protocol"],
 				Output -> {Result,Preview},
 				FitType->Linear
@@ -674,7 +674,7 @@ DefineTests[AnalyzeStandardCurve,
 		],
 		Example[{Messages,"DuplicateStandardData","Provide a warning message if user has specified multiple sets of Standard Data for the same analyte in input protocol:"},
 			AnalyzeStandardCurve[
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2"],
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2" <> $SessionUUID],
 				Output->{Result,Preview}
 			],
 			{{ObjectP[Object[Analysis, StandardCurve]]..}, _},
@@ -738,7 +738,7 @@ DefineTests[AnalyzeStandardCurve,
 		Example[{Messages,"StandardFieldOverride","Warn the user if the StandardFields option is overriding standard fields specified in input:"},
 			AnalyzeStandardCurve[
 				{1.0 RFU,2.0 RFU,3.0 RFU},
-				{Object[Data,ELISA,"ASC Test ELISA Standard 2"],{Intensities,DilutionFactors}},
+				{Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],{Intensities,DilutionFactors}},
 				StandardFields->{Intensities,Intensities},
 				FitType->Linear,
 				Output->Preview
@@ -747,11 +747,13 @@ DefineTests[AnalyzeStandardCurve,
 			Messages:>{Warning::StandardFieldOverride}
 		],
 		Example[{Messages,"InputContainsTemporalLinks","Warn the user if either the input or standard data has been specified as a temporal link:"},
-			AnalyzeStandardCurve[
-				{1.0 RFU,2.0 RFU,3.0 RFU},
-				{Link[Object[Data,ELISA,"ASC Test ELISA Standard 2"],DateObject["Now"]],{Intensities,DilutionFactors}},
-				FitType->Linear,
-				Output->Preview
+			With[{dateCreated = Download[Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID], DateCreated]},
+				AnalyzeStandardCurve[
+					{1.0 RFU,2.0 RFU,3.0 RFU},
+					{Link[Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID], dateCreated + 1 Second], {Intensities, DilutionFactors}},
+					FitType->Linear,
+					Output->Preview
+				]
 			],
 			ValidGraphicsP[],
 			Messages:>{Warning::InputContainsTemporalLinks}
@@ -779,60 +781,61 @@ DefineTests[AnalyzeStandardCurve,
 
 			(* Gather all the objects and models created in SymbolSetUp *)
 			allDataObjects={
-				Object[Data,ELISA,"ASC Test ELISA Sample 1"],
-				Object[Data,ELISA,"ASC Test ELISA Sample 2"],
-				Object[Data,ELISA,"ASC Test ELISA Standard 1"],
-				Object[Data,ELISA,"ASC Test ELISA Standard 2"],
-				Object[Data,ELISA,"Mismatched ELISA Data"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 1-1"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 1-2"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 2-1"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-1"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-2"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-3"],
-				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-4"],
-				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-1"],
-				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-2"],
-				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-3"],
-				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-4"],
-				Object[Data,qPCR,"ASC Test qPCR Sample 1-1"],
-				Object[Data,qPCR,"ASC Test qPCR Sample 1-2"],
-				Object[Data,qPCR,"ASC Test qPCR Sample 2-1"],
-				Object[Data,qPCR,"ASC Test qPCR Standard 1-1"],
-				Object[Data,qPCR,"ASC Test qPCR Standard 1-2"],
-				Object[Data,qPCR,"ASC Test qPCR Standard 1-3"],
-				Object[Data,qPCR,"ASC Test qPCR Standard 1-4"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 2"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 5"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 6"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 7"],
-				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 8"]
+				Object[Data,ELISA,"ASC Test ELISA Sample 1" <> $SessionUUID],
+				Object[Data,ELISA,"ASC Test ELISA Sample 2" <> $SessionUUID],
+				Object[Data,ELISA,"ASC Test ELISA Standard 1" <> $SessionUUID],
+				Object[Data,ELISA,"ASC Test ELISA Standard 2" <> $SessionUUID],
+				Object[Data,ELISA,"Mismatched ELISA Data" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 1-1" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 1-2" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Sample 2-1" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-1" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-2" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-3" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"ASC Test QC Standard 1-4" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-1" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-2" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-3" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"ASC Test CN Standard 1-4" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Sample 1-1" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Sample 1-2" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Sample 2-1" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Standard 1-1" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Standard 1-2" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Standard 1-3" <> $SessionUUID],
+				Object[Data,qPCR,"ASC Test qPCR Standard 1-4" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 2" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 5" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 6" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 7" <> $SessionUUID],
+				Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 8" <> $SessionUUID]
 			};
 
 			(* Gather all protocols generated in SymbolSetUp for Unit Tests *)
 			testProtocolObjects={
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2"],
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 3"],
-				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2"]
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 2" <> $SessionUUID],
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol 3" <> $SessionUUID],
+				Object[Protocol,CapillaryELISA,"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2" <> $SessionUUID]
 			};
 
 			(* Gather names of all data objects generated to populate test protocols *)
 			testProtocolDataObjects=Join[
-				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample "<>ToString[#]]&,Range[1,3]],
-				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#]]&,Range[1,10]],
-				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Standard Sample "<>ToString[#]]&,Range[1,2]],
-				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#]]&,Range[1,10]],
-				Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#]]&,Range[1,10]],
-				Map[Object[Sample,"AnalyzeStandardCurve Test Standard "<>ToString[#]]&,Range[1, 2]],
-				Map[Object[Sample,"AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#]]&,Range[1,3]],
-				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Container "<>ToString[#]]&,Range[1,10]],
-				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Standard Container "<>ToString[#]]&,Range[1,2]],
-				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#]]&,Range[1,3]]
+				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample "<>ToString[#] <> $SessionUUID]&,Range[1,3]],
+				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID]&,Range[1,10]],
+				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Standard Sample "<>ToString[#] <> $SessionUUID]&,Range[1,2]],
+				Map[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID]&,Range[1,10]],
+				Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#] <> $SessionUUID]&,Range[1,10]],
+				Map[Object[Sample,"AnalyzeStandardCurve Test Standard "<>ToString[#] <> $SessionUUID]&,Range[1, 2]],
+				Map[Object[Sample,"AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#] <> $SessionUUID]&,Range[1,3]],
+				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Container "<>ToString[#] <> $SessionUUID]&,Range[1,10]],
+				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Standard Container "<>ToString[#] <> $SessionUUID]&,Range[1,2]],
+				Map[Object[Container,Vessel,"AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#] <> $SessionUUID]&,Range[1,3]],
+				{Object[Container, Bench, "Testing bench for AnalyzeStandardCurve" <> $SessionUUID]}
 			];
 
 			(* All object names generated for AnalyzeStandardCurve unit tests *)
@@ -859,33 +862,33 @@ DefineTests[AnalyzeStandardCurve,
 		Upload[{
 			<|
 				Type->Object[Data,ELISA],
-				Name->"ASC Test ELISA Sample 1",
+				Name->"ASC Test ELISA Sample 1" <> $SessionUUID,
 				Replace[Intensities]->sample1DataELISA,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Data,ELISA],
-				Name->"ASC Test ELISA Sample 2",
+				Name->"ASC Test ELISA Sample 2" <> $SessionUUID,
 				Replace[Intensities]->sample2DataELISA,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Data,ELISA],
-				Name->"ASC Test ELISA Standard 1",
+				Name->"ASC Test ELISA Standard 1" <> $SessionUUID,
 				Replace[Intensities]->standardYDataELISA,
 				Replace[DilutionFactors]->standardXDataELISA,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Data,ELISA],
-				Name->"ASC Test ELISA Standard 2",
+				Name->"ASC Test ELISA Standard 2" <> $SessionUUID,
 				Replace[Intensities]->standardYDataELISA2,
 				Replace[DilutionFactors]->standardXDataELISA2,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Data,ELISA],
-				Name->"Mismatched ELISA Data",
+				Name->"Mismatched ELISA Data" <> $SessionUUID,
 				Replace[Intensities]->standardYDataELISA,
 				Replace[DilutionFactors]->badXDataELISA,
 				DeveloperObject->True
@@ -896,13 +899,13 @@ DefineTests[AnalyzeStandardCurve,
 		sample1QCObjects=Upload[{
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Sample 1-1",
+				Name->"ASC Test QC Sample 1-1" <> $SessionUUID,
 				QuantificationCycle->16.9 Cycle,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Sample 1-2",
+				Name->"ASC Test QC Sample 1-2" <> $SessionUUID,
 				QuantificationCycle->17.3 Cycle,
 				DeveloperObject->True
 			|>
@@ -911,7 +914,7 @@ DefineTests[AnalyzeStandardCurve,
 		sample2QCObjects=Upload[{
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Sample 2-1",
+				Name->"ASC Test QC Sample 2-1" <> $SessionUUID,
 				QuantificationCycle->22.1 Cycle,
 				DeveloperObject->True
 			|>
@@ -920,25 +923,25 @@ DefineTests[AnalyzeStandardCurve,
 		standard1QCObjects=Upload[{
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Standard 1-1",
+				Name->"ASC Test QC Standard 1-1" <> $SessionUUID,
 				QuantificationCycle->24.7 Cycle,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Standard 1-2",
+				Name->"ASC Test QC Standard 1-2" <> $SessionUUID,
 				QuantificationCycle->21.6 Cycle,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Standard 1-3",
+				Name->"ASC Test QC Standard 1-3" <> $SessionUUID,
 				QuantificationCycle->18.2 Cycle,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"ASC Test QC Standard 1-4",
+				Name->"ASC Test QC Standard 1-4" <> $SessionUUID,
 				QuantificationCycle->15.0 Cycle,
 				DeveloperObject->True
 			|>
@@ -948,25 +951,25 @@ DefineTests[AnalyzeStandardCurve,
 		standard1CopyObjects=Upload[{
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"ASC Test CN Standard 1-1",
+				Name->"ASC Test CN Standard 1-1" <> $SessionUUID,
 				CopyNumber->1000,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"ASC Test CN Standard 1-2",
+				Name->"ASC Test CN Standard 1-2" <> $SessionUUID,
 				CopyNumber->10000,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"ASC Test CN Standard 1-3",
+				Name->"ASC Test CN Standard 1-3" <> $SessionUUID,
 				CopyNumber->100000,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"ASC Test CN Standard 1-4",
+				Name->"ASC Test CN Standard 1-4" <> $SessionUUID,
 				CopyNumber->1000000,
 				DeveloperObject->True
 			|>
@@ -976,7 +979,7 @@ DefineTests[AnalyzeStandardCurve,
 		MapThread[
 			Upload[<|
 				Type->Object[Data,qPCR],
-				Name->"ASC Test qPCR Standard 1-"<>ToString[#3],
+				Name->"ASC Test qPCR Standard 1-" <> ToString[#3] <> $SessionUUID,
 				Replace[QuantificationCycleAnalyses]->Link[#1,Reference],
 				Replace[CopyNumberAnalyses]->Link[#2,Data],
 				DeveloperObject->True
@@ -987,7 +990,7 @@ DefineTests[AnalyzeStandardCurve,
 		MapThread[
 			Upload[<|
 				Type->Object[Data,qPCR],
-				Name->"ASC Test qPCR Sample 1-"<>ToString[#2],
+				Name->"ASC Test qPCR Sample 1-" <> ToString[#2] <> $SessionUUID,
 				Replace[QuantificationCycleAnalyses]->Link[#1,Reference],
 				DeveloperObject->True
 			|>]&,
@@ -997,7 +1000,7 @@ DefineTests[AnalyzeStandardCurve,
 		MapThread[
 			Upload[<|
 				Type->Object[Data,qPCR],
-				Name->"ASC Test qPCR Sample 2-"<>ToString[#2],
+				Name->"ASC Test qPCR Sample 2-" <> ToString[#2] <> $SessionUUID,
 				Replace[QuantificationCycleAnalyses]->Link[#1,Reference],
 				DeveloperObject->True
 			|>]&,
@@ -1008,52 +1011,52 @@ DefineTests[AnalyzeStandardCurve,
 		Upload[{
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Analyte 1",
+				Name->"AnalyzeStandardCurve Test Analyte 1" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type -> Model[Molecule, Protein],
-				Name -> "AnalyzeStandardCurve Test Analyte 2",
+				Name -> "AnalyzeStandardCurve Test Analyte 2" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 1",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 1" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 2",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 2" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 3",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 3" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 4",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 4" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 5",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 5" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 6",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 6" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 7",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 7" <> $SessionUUID,
 				DeveloperObject->True
 			|>,
 			<|
 				Type->Model[Molecule, Protein],
-				Name->"AnalyzeStandardCurve Test Multiplex Analyte 8",
+				Name->"AnalyzeStandardCurve Test Multiplex Analyte 8" <> $SessionUUID,
 				DeveloperObject->True
 			|>
 		}];
@@ -1073,56 +1076,56 @@ DefineTests[AnalyzeStandardCurve,
 			ECL`InternalUpload`UploadSample[
 				ConstantArray[Model[Container,Vessel,"2mL Tube"],10],
 				ConstantArray[{"Work Surface",testBench},10],
-				Name->Map[("AnalyzeStandardCurve Test Container "<>ToString[#])&,Range[1,10]]
+				Name->Map[("AnalyzeStandardCurve Test Container "<>ToString[#] <> $SessionUUID)&,Range[1,10]]
 			];
 			
 			(* Upload two fake standards for ELISA Protocol *)
 			ECL`InternalUpload`UploadSample[
 				ConstantArray[Model[Container,Vessel,"2mL Tube"],2],
 				ConstantArray[{"Work Surface",testBench},2],
-				Name->Map[("AnalyzeStandardCurve Test Standard Container "<>ToString[#])&,Range[1,2]]
+				Name->Map[("AnalyzeStandardCurve Test Standard Container "<>ToString[#] <> $SessionUUID)&,Range[1,2]]
 			];
 			
 			(* Upload multiplex standards for ELISA Protocol *)
 			ECL`InternalUpload`UploadSample[
 				ConstantArray[Model[Container,Vessel,"2mL Tube"],3],
 				ConstantArray[{"Work Surface",testBench},3],
-				Name->Map[("AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#])&,Range[1,3]]
+				Name->Map[("AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#] <> $SessionUUID)&,Range[1,3]]
 			];
 			
 		];
 
 		ECL`InternalUpload`UploadSample[
 			ConstantArray[Model[Sample,"Milli-Q water"],10],
-			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Container "<>ToString[#]]}&,Range[1,10]],
+			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Container "<>ToString[#] <> $SessionUUID]}&,Range[1,10]],
 			InitialAmount->1 Milliliter,
-			Name->Map[("AnalyzeStandardCurve Test Sample "<>ToString[#])&,Range[1,10]]
+			Name->Map[("AnalyzeStandardCurve Test Sample "<>ToString[#] <> $SessionUUID)&,Range[1,10]]
 		];
 
 		ECL`InternalUpload`UploadSample[
 			ConstantArray[Model[Sample,StockSolution,"Filtered PBS, Sterile"],2],
-			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Standard Container "<>ToString[#]]}&,Range[1, 2]],
+			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Standard Container "<>ToString[#] <> $SessionUUID]}&,Range[1, 2]],
 			InitialAmount->1 Milliliter,
-			Name->Map[("AnalyzeStandardCurve Test Standard "<>ToString[#])&,Range[1, 2]]
+			Name->Map[("AnalyzeStandardCurve Test Standard "<>ToString[#] <> $SessionUUID)&,Range[1, 2]]
 		];
 
 		ECL`InternalUpload`UploadSample[
 			ConstantArray[Model[Sample,StockSolution,"Filtered PBS, Sterile"],3],
-			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#]]}&,Range[1,3]],
+			Map[{"A1",Object[Container,Vessel,"AnalyzeStandardCurve Test Multiplex Standard Container "<>ToString[#] <> $SessionUUID]}&,Range[1,3]],
 			InitialAmount->1 Milliliter,
-			Name->Map[("AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#])&,Range[1,3]]
+			Name->Map[("AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#] <> $SessionUUID)&,Range[1,3]]
 		];
 
 		(* Create and upload Capillary ELISA Sample Data Objects *)
-		nameList=Map[("AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#])&,Range[1,10]];
+		nameList=Map[("AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID)&,Range[1,10]];
 
 		(* Get names of samples *)
-		samplesInList=Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#]]&,Range[1,10]];
+		samplesInList=Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#] <> $SessionUUID]&,Range[1,10]];
 
 		(* Create a list of analyte names*)
 		analyteList=Join[
-			ConstantArray[Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1"],5],
-			ConstantArray[Model[Molecule, Protein,"AnalyzeStandardCurve Test Analyte 2"],5]
+			ConstantArray[Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1" <> $SessionUUID],5],
+			ConstantArray[Model[Molecule, Protein,"AnalyzeStandardCurve Test Analyte 2" <> $SessionUUID],5]
 		];
 
 		(* Generate dummy dilution factor values*)
@@ -1155,16 +1158,16 @@ DefineTests[AnalyzeStandardCurve,
 		Upload[allDataUploads];
 
 		(* Create and upload Capillary ELISA Sample Data Objects *)
-		nameListStandard=Map[("AnalyzeStandardCurve Test ELISA data for Standard Sample "<>ToString[#])&,Range[1,2]];
-		nameList=Map[("AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#])&,Range[1,10]];
+		nameListStandard=Map[("AnalyzeStandardCurve Test ELISA data for Standard Sample "<>ToString[#] <> $SessionUUID)&,Range[1,2]];
+		nameList=Map[("AnalyzeStandardCurve Test ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID)&,Range[1,10]];
 
 		(* Get names of samples *)
-		samplesInListStandard=Map[Object[Sample,"AnalyzeStandardCurve Test Standard "<>ToString[#]]&,Range[1,2]];
+		samplesInListStandard=Map[Object[Sample,"AnalyzeStandardCurve Test Standard "<>ToString[#] <> $SessionUUID]&,Range[1,2]];
 
 		(* Create a list of analyte names *)
 		analyteListStandard={
-			Model[Molecule, Protein,"AnalyzeStandardCurve Test Analyte 1"],
-			Model[Molecule, Protein, "AnalyzeStandardCurve Test Analyte 2"]
+			Model[Molecule, Protein,"AnalyzeStandardCurve Test Analyte 1" <> $SessionUUID],
+			Model[Molecule, Protein, "AnalyzeStandardCurve Test Analyte 2" <> $SessionUUID]
 		};
 
 		(* Generate dummy dilution factor values*)
@@ -1182,8 +1185,8 @@ DefineTests[AnalyzeStandardCurve,
 
 		(* Generate dummy compositions for ELISA test objects *)
 		standardCompositionList={
-			{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1"]],1000000 Picogram/Milliliter},
-			{Link[Model[Molecule, Protein, "AnalyzeStandardCurve Test Analyte 2"]],2000 Picogram/Milliliter}
+			{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Analyte 1" <> $SessionUUID]],1000000 Picogram/Milliliter},
+			{Link[Model[Molecule, Protein, "AnalyzeStandardCurve Test Analyte 2" <> $SessionUUID]],2000 Picogram/Milliliter}
 		};
 
 		(* Format packets for the dummy ELISA data objects *)
@@ -1211,13 +1214,13 @@ DefineTests[AnalyzeStandardCurve,
 		Upload[allStandardDataUploads];
 
 		(* Create and upload Capillary ELISA Multiplex Sample Data Objects *)
-		nameMultiplexList=Map[("AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#])&,Range[1,10]];
+		nameMultiplexList=Map[("AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID)&,Range[1,10]];
 
 		(* Get names of samples in multiplex samples *)
-		samplesInMultiplexList=Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#]]&,Range[1,10]];
+		samplesInMultiplexList=Map[Object[Sample,"AnalyzeStandardCurve Test Sample "<>ToString[#] <> $SessionUUID]&,Range[1,10]];
 
 		(* Get a list of multiplex analyte names *)
-		multiplexAnalytes=Map[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte "<>ToString[#]]&,Range[1,8]];
+		multiplexAnalytes=Map[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte " <> ToString[#] <> $SessionUUID]&,Range[1,8]];
 
 		(* Duplicate the multiplex analyte list ten times, once for each sample *)
 		analyteMultiplexList=ConstantArray[Link[multiplexAnalytes],10];
@@ -1307,10 +1310,10 @@ DefineTests[AnalyzeStandardCurve,
 		Upload[allMultiPlexDataUploads];
 
 		(* Create and upload three Capillary ELISA Multiplex Standard Data Objects *)
-		nameMultiplexListStandard=Map[("AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample "<>ToString[#])&,Range[1,3]];
+		nameMultiplexListStandard=Map[("AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample "<>ToString[#] <> $SessionUUID)&,Range[1,3]];
 
 		(* Get names of samples in multiplex samples *)
-		samplesInMultiplexListStandard=Map[Object[Sample,"AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#]]&,Range[1,3]];
+		samplesInMultiplexListStandard=Map[Object[Sample,"AnalyzeStandardCurve Test Multiplex Standard "<>ToString[#] <> $SessionUUID]&,Range[1,3]];
 
 		(* Duplicate the multiplex analyte list three times, once for each sample *)
 		analyteMultiplexListStandard=ConstantArray[Link[multiplexAnalytes],3];
@@ -1383,23 +1386,23 @@ DefineTests[AnalyzeStandardCurve,
 		(* Assign analytes and concentrations to each channel in the multiplex *)
 		multiPlexStandardCompositionList={
 			{
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 5"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 6"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 7"]],1000000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 8"]],1000000 Picogram/Milliliter}
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 5" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 6" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 7" <> $SessionUUID]],1000000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 8" <> $SessionUUID]],1000000 Picogram/Milliliter}
 			},
 			{
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1"]],2000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2"]],2000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3"]],2000 Picogram/Milliliter},
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4"]],2000 Picogram/Milliliter}
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1" <> $SessionUUID]],2000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 2" <> $SessionUUID]],2000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 3" <> $SessionUUID]],2000 Picogram/Milliliter},
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 4" <> $SessionUUID]],2000 Picogram/Milliliter}
 			},
 			{
-				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1"]],1000000 Picogram/Milliliter}
+				{Link[Model[Molecule,Protein,"AnalyzeStandardCurve Test Multiplex Analyte 1" <> $SessionUUID]],1000000 Picogram/Milliliter}
 			}
 		};
 
@@ -1433,7 +1436,7 @@ DefineTests[AnalyzeStandardCurve,
 		(* Create a protocol with multiple standards and samples, matching by analyte *)
 		Upload[<|
 			Type->Object[Protocol,CapillaryELISA],
-			Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol 2",
+			Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol 2" <> $SessionUUID,
 			Replace[Data]->Map[Link[Object[Data,ELISA,#],Protocol]&,nameList],
 			Replace[StandardData]->Map[Link[Object[Data,ELISA, #],Protocol]&,nameListStandard],
 			DeveloperObject->True
@@ -1442,22 +1445,22 @@ DefineTests[AnalyzeStandardCurve,
 		(* Create a protocol which is missing StandardData, to test error messages *)
 		Upload[<|
 			Type->Object[Protocol,CapillaryELISA],
-			Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol 3",
-			Replace[Data]->{Link[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Unknown Sample 1"],Protocol]},
+			Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol 3" <> $SessionUUID,
+			Replace[Data]->{Link[Object[Data,ELISA,"AnalyzeStandardCurve Test ELISA data for Unknown Sample 1" <> $SessionUUID],Protocol]},
 			DeveloperObject->True
 		|>];
 
 		(* Create a multiplex ELISA protocol *)
 		Upload[<|
 			Type->Object[Protocol,CapillaryELISA],
-		  Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2",
+		  Name->"AnalyzeStandardCurve Test CapillaryELISA Protocol Multiplex 2" <> $SessionUUID,
 		  Replace[Data]->Map[
-				Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#]],Protocol]&,
+				Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Unknown Sample "<>ToString[#] <> $SessionUUID],Protocol]&,
 				Range[1, 10]
 			],
 		  Replace[StandardData]->{
-				Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample 2"],Protocol],
-		    Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample 3"],Protocol]
+				Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample 2" <> $SessionUUID],Protocol],
+		    Link[Object[Data,ELISA,"AnalyzeStandardCurve Test Multiplex ELISA data for Standard Sample 3" <> $SessionUUID],Protocol]
 			},
 			DeveloperObject->True
 		|>];
@@ -2096,10 +2099,10 @@ DefineTests[ValidAnalyzeStandardCurveQ,
 		Example[{Basic,"Given input data and options, returns a Boolean indicating the validity of the standard curve analysis call:"},
 			ValidAnalyzeStandardCurveQ[{1.4 Lumen, 2.2 Lumen, 3.6 Lumen},
 				{
-					{1.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-1"]},
-					{2.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-2"]},
-					{3.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-3"]},
-					{4.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-4"]}
+					{1.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-1" <> $SessionUUID]},
+					{2.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-2" <> $SessionUUID]},
+					{3.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-3" <> $SessionUUID]},
+					{4.0 Lumen,Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-4" <> $SessionUUID]}
 				},
 				FitType->Linear,
 				StandardFields->{None,QuantificationCycleAnalyses[QuantificationCycle]}
@@ -2146,18 +2149,18 @@ DefineTests[ValidAnalyzeStandardCurveQ,
 
 			(* Gather all the objects and models created in SymbolSetUp *)
 			allObjects={
-				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-1"],
-				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-2"],
-				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-3"],
-				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-4"],
-				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-1"],
-				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-2"],
-				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-3"],
-				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-4"],
-				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-1"],
-				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-2"],
-				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-3"],
-				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-4"]
+				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-1" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-2" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-3" <> $SessionUUID],
+				Object[Analysis,QuantificationCycle,"Valid ASC Test QC Standard 1-4" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-1" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-2" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-3" <> $SessionUUID],
+				Object[Analysis,CopyNumber,"Valid ASC Test CN Standard 1-4" <> $SessionUUID],
+				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-1" <> $SessionUUID],
+				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-2" <> $SessionUUID],
+				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-3" <> $SessionUUID],
+				Object[Data,qPCR,"Valid ASC Test qPCR Standard 1-4" <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -2170,22 +2173,22 @@ DefineTests[ValidAnalyzeStandardCurveQ,
 		standard1QCObjects=Upload[{
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"Valid ASC Test QC Standard 1-1",
+				Name->"Valid ASC Test QC Standard 1-1" <> $SessionUUID,
 				QuantificationCycle->24.7 Cycle
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"Valid ASC Test QC Standard 1-2",
+				Name->"Valid ASC Test QC Standard 1-2" <> $SessionUUID,
 				QuantificationCycle->21.6 Cycle
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"Valid ASC Test QC Standard 1-3",
+				Name->"Valid ASC Test QC Standard 1-3" <> $SessionUUID,
 				QuantificationCycle->18.2 Cycle
 			|>,
 			<|
 				Type->Object[Analysis,QuantificationCycle],
-				Name->"Valid ASC Test QC Standard 1-4",
+				Name->"Valid ASC Test QC Standard 1-4" <> $SessionUUID,
 				QuantificationCycle->15.0 Cycle
 			|>
 		}];
@@ -2193,22 +2196,22 @@ DefineTests[ValidAnalyzeStandardCurveQ,
 		standard1CopyObjects=Upload[{
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"Valid ASC Test CN Standard 1-1",
+				Name->"Valid ASC Test CN Standard 1-1" <> $SessionUUID,
 				CopyNumber->1000
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"Valid ASC Test CN Standard 1-2",
+				Name->"Valid ASC Test CN Standard 1-2" <> $SessionUUID,
 				CopyNumber->10000
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"Valid ASC Test CN Standard 1-3",
+				Name->"Valid ASC Test CN Standard 1-3" <> $SessionUUID,
 				CopyNumber->100000
 			|>,
 			<|
 				Type->Object[Analysis,CopyNumber],
-				Name->"Valid ASC Test CN Standard 1-4",
+				Name->"Valid ASC Test CN Standard 1-4" <> $SessionUUID,
 				CopyNumber->1000000
 			|>
 		}];
@@ -2216,7 +2219,7 @@ DefineTests[ValidAnalyzeStandardCurveQ,
 		MapThread[
 			Upload[<|
 				Type->Object[Data,qPCR],
-				Name->"Valid ASC Test qPCR Standard 1-"<>ToString[#3],
+				Name->"Valid ASC Test qPCR Standard 1-" <> ToString[#3] <> $SessionUUID,
 				Replace[QuantificationCycleAnalyses]->Link[#1,Reference],
 				Replace[CopyNumberAnalyses]->Link[#2,Data]
 			|>]&,

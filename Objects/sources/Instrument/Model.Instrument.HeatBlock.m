@@ -36,6 +36,14 @@ DefineObjectType[Model[Instrument, HeatBlock], {
 			Description -> "The size of the space inside the heat block.",
 			Category -> "Dimensions & Positions",
 			Headers -> {"X Direction (Width)","Y Direction (Depth)","Z Direction (Height)"}
+		},
+		CompatibleAdapters -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Rack][CompatibleMixers],
+			Description -> "The block racks that can be used with this heat block.",
+			Category -> "Model Information"
 		}
 	}
 }];

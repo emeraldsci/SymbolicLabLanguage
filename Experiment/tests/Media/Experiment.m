@@ -353,7 +353,7 @@ DefineTests[
 			];
 			
 			(* Test LB liquid media with 50ug/mL Ampicillin *)
-			With[{ampicillin = UploadSampleModel["Ampicillin for ExperimentMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Ampicillin"]}},State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{ampicillin = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Ampicillin"]}},Name->"Ampicillin for ExperimentMedia"<>$SessionUUID,State->Solid,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadMedia[
 					Model[Sample,Media,"Test media model for ExperimentMedia (LB, liquid)"<>$SessionUUID],
 					Supplements->{{50*Milligram,ampicillin}},
@@ -362,7 +362,7 @@ DefineTests[
 			];
 			
 			(* Test LB solid media with 2% Agar *)
-			With[{agar = UploadSampleModel["Agar for ExperimentMedia"<>$SessionUUID,Composition->{{100*MassPercent,Model[Molecule,"Agar"]}},State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
+			With[{agar = UploadSampleModel[{{100*MassPercent,Model[Molecule,"Agar"]}},Name->"Agar for ExperimentMedia"<>$SessionUUID,State->Solid,MeltingPoint->85*Celsius,Expires->False,DefaultStorageCondition->Model[StorageCondition,"Ambient Storage"]]},
 				UploadSample[agar, {"A1", container1}, Name -> "Agar object for ExperimentMedia"<>$SessionUUID, InitialAmount -> 30*Gram];
 				UploadMedia[
 					Model[Sample,Media,"LB Broth, Miller"],

@@ -328,6 +328,14 @@ DefineObjectType[Object[Qualification, MassSpectrometer],{
 			Headers -> {"Test item", "measured value", "Min allowed value", "Max allowed value", "Passing"},
 			Description -> "The performance test results from tuning, formated in {Test item, Measured value, Min allowed value, Max allowed Value, Passing}.",
 			Category -> "Analysis & Reports"
+		},
+		SyringeLoadVerificationCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "Records the number of times operators have attempted the syringe load verification loop during direct infusion syringe loading.",
+			Category -> "Operations Information",
+			Developer -> True
 		}
 	}
 }];

@@ -129,7 +129,7 @@ DefineTests[ExperimentFreezeCells,
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
 				Aliquot -> True,
-				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "Sterile Microfuge 16"],
+				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"],(*"Avanti J-15R"*)
 				Output -> Options, OptionsResolverOnly -> True
 			],
 			KeyValuePattern[{
@@ -254,14 +254,14 @@ DefineTests[ExperimentFreezeCells,
 				{
 					Object[Sample, "Suspension bacterial cell sample in 2mL Tube (Test for ExperimentFreezeCells) "<>$SessionUUID]
 				},
-				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "Sterile Microfuge 16"],
+				CellPelletCentrifuge -> Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"],(*"Avanti J-15R"*)
 				Aliquot -> True,
 				Output -> Options, OptionsResolverOnly -> True
 			],
 			KeyValuePattern[{
 				Aliquot -> True,
 				CryoprotectionStrategy -> ChangeMedia,
-				CellPelletCentrifuge -> ObjectP[Model[Instrument, Centrifuge, "Sterile Microfuge 16"]]
+				CellPelletCentrifuge -> ObjectP[Model[Instrument, Centrifuge, "id:pZx9jo8WA4z0"]]
 			}]
 		],
 		Example[{Options, CellPelletCentrifuge, "If CryoprotectionStrategy is ChangeMedia, the CellPelletCentrifuge option is automatically set to a centrifuge suitable for the current container of the sample(s):"},
@@ -3682,8 +3682,11 @@ DefineTests[ExperimentFreezeCells,
 
 			(* Create some bacteria and mammalian models *)
 			deprecatedModel = UploadSampleModel[
-				"Bacterial cells Deprecated Model (Test for ExperimentFreezeCells)" <> $SessionUUID,
-				Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+				{
+					{95 VolumePercent, Model[Molecule, "Water"]},
+					{5 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}
+				},
+				Name -> "Bacterial cells Deprecated Model (Test for ExperimentFreezeCells)" <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 				State -> Liquid,

@@ -24,6 +24,15 @@ DefineObjectType[Object[Instrument, KarlFischerTitrator], {
 			Description -> "The platform from which samples are heated and gas is bubbled into the Karl Fischer reagent.",
 			Category -> "Dimensions & Positions"
 		},
+		StickerSheet -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Consumable],
+			Description -> "A double-sided laminated sheet that is used to collect the object stickers for vials NMR tubes going onto the instrument autosampler. The stickers of vials are taken off temporarily and collected in this sheet, and restickered after the measurement is done, because the oven damages the stickers during the course of heating, and the melted/burned stickers can jam the autosampler.",
+			Category -> "Dimensions & Positions",
+			Developer -> True
+		},
 		TitrationTechnique -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], TitrationTechnique]],
@@ -166,6 +175,42 @@ DefineObjectType[Object[Instrument, KarlFischerTitrator], {
 			Relation -> Object[Item, Cap],
 			Description -> "Indicates the cap connected to the instrument that covers the molecular sieves bottle in Molecular Sieves Bottle Slot 2.",
 			Category -> "Instrument Specifications"
+		},
+		NumberOfInjections -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Description -> "Indicates the number of times the septum covering the reaction vessel has been pierced by a needle.  Once NumberOfInjections becomes greater than MaxNumberOfInjections, the septum is replaced and NumberOfInjections is reset to zero.",
+			Category -> "Operating Limits"
+		},
+		MaxNumberOfInjections -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Description -> "Indicates the maximum number of times the septum covering the reaction vessel may be pierced before the septum must be replaced.  This value is pulled directly from the model of the object in the Septum field.",
+			Category -> "Operating Limits"
+		},
+		Septum -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Item, Septum],
+			Description -> "The model of pierceable silicone rubber barrier covering the entrance to the reaction vessel, through which liquid samples are injected.",
+			Category -> "Instrument Specifications"
+		},
+		NumberOfTitrations -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Description -> "Indicates the number of samples that have been titrated with the current contents of the reaction vessel (only applicable for Coulometric instruments).  Once NumberOfTitrations becomes greater than MaxNumberOfTitrations, the contents of the reaction vessel are cycled out and NumberOfTitrations is reset to zero.",
+			Category -> "Operating Limits"
+		},
+		MaxNumberOfTitrations -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Description -> "Indicates the maximum number of times the contents of the reaction vessel may titrate a sample before the contents must be replaced.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

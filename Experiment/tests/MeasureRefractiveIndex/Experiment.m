@@ -1212,6 +1212,18 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureRefractiveIndex[
+				Object[Sample, "Test water sample 1 for ExperimentMeasureRefractiveIndex"<>$SessionUUID],
+				AliquotAmount -> 400.01 Microliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			400 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
+		],
 		Example[{Options, TargetConcentrationAnalyte, "Set the TargetConcentrationAnalyte option:"},
 			options = ExperimentMeasureRefractiveIndex[
 				Object[Sample, "Test water sample 1 for ExperimentMeasureRefractiveIndex"<>$SessionUUID],
@@ -1369,6 +1381,14 @@ DefineTests[
 			1000*RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureRefractiveIndex[Object[Sample, "Test water sample 1 for ExperimentMeasureRefractiveIndex"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 (*		Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},

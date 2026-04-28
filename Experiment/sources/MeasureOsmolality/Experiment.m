@@ -314,8 +314,8 @@ Error::OsmolalityCalibrantOsmolalitiesMisordered="In ExperimentMeasureOsmolality
 Warning::OsmolalityLowSampleVolume="In ExperimentMeasureOsmolality, the sample volumes, `1`, are lower than the minimum recommended volume for a reliable reading with `2`, of `3`. Consider specifying a larger volume of sample, or take this into consideration when interpreting the result.";
 Warning::OsmolalityLowControlVolume="In ExperimentMeasureOsmolality, the control volumes, `1`, are lower than the minimum recommended volume for a reliable reading with `2`, of `3`. Consider specifying a larger volume of control, or take this into consideration when interpreting the result.";
 Warning::OsmolalityUnknownViscosity="In ExperimentMeasureOsmolality, the viscosity of the samples `1` could not be found to determine the appropriate loading procedure for the instrument. The standard loading procedure for low viscosity samples is assumed - if your sample is not viscous, set ViscousLoading to False to silence this warning. If your sample is viscous, set ViscousLoading to True to avoid issues with loading. If you are unsure whether your sample is highly viscous, consider running ExperimentMeasureViscosity.";
-Error::OsmolalityTransferHighViscosity="In ExperimentMeasureOsmolality, the samples, `1`, are viscous, however ViscousLoading is set to False. Using standard loading techniques for viscous samples risks contaminating the thermocouple of the instrument, as the sample cannot be properly applied to the sample holder. Please consider setting ViscousLoading to True.";
-Warning::OsmolalitySampleCarryOver="In ExperimentMeasureOsmolality, the samples, `1`, are not viscous, however ViscousLoading is set to True. Viscous loading techniques have a higher risk of carry-over error, and therefore should only be used when necessary. Please consider setting ViscousLoading to False if not required.";
+Error::OsmolalityTransferHighViscosity="In ExperimentMeasureOsmolality, the samples, `1`, are viscous; however, ViscousLoading is set to False. Using standard loading techniques for viscous samples risks contaminating the thermocouple of the instrument, as the sample cannot be properly applied to the sample holder. Please consider setting ViscousLoading to True.";
+Warning::OsmolalitySampleCarryOver="In ExperimentMeasureOsmolality, the samples, `1`, are not viscous; however, ViscousLoading is set to True. Viscous loading techniques have a higher risk of carry-over error, and therefore should only be used when necessary. Please consider setting ViscousLoading to False if not required.";
 Warning::OsmolalityNoInoculationPaper="In ExperimentMeasureOsmolality, the samples, `1`, are specified/resolved not to use viscous loading techniques, and it is specified not to use inoculation paper. If your sample is not viscous, consider using inoculation paper as it helps to ensure an even distribution of sample in the sample holder, producing a more reliable measurement.";
 Warning::OsmolalityViscousTransferMinimumVolume="In ExperimentMeasureOsmolality, the samples, `1`, are specified/resolved to use viscous loading techniques which utilize a positive displacement pipette with a minimum measurable volume of 10 uL. The volumes `2` will not be measured accurately. If possible, consider specifying a sample volume of 10 uL or more.";
 Warning::OsmolalityInoculationPaperHighViscosity="In ExperimentMeasureOsmolality, the samples, `1`, are specified/resolved to use viscous loading techniques, and it is specified to use inoculation paper. If your sample is viscous, consider not using sample paper as the sample may not be effectively absorbed by the paper and more even distribution may be achieved by application directly to the sample holder, producing a more reliable measurement.";
@@ -826,7 +826,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Download *)
 	instrumentDownloadFields,listedSampleContainerPackets,instrumentPacket,calibrantsPackets,
 	samplePackets,sampleModelPackets,sampleContainerPackets,sampleComponentPackets,simulatedSampleContainerModels,simulatedSampleContainerObjects,osmolalityStandardsList,
-	calibrantsObjectsPackets,controlsObjectsPackets,instrumentModel,specifiedCalibrantModels,specifiedControlModels,
+	calibrantsObjectsPackets,initialControlsObjectsPackets,controlsObjectsPackets,instrumentModel,specifiedCalibrantModels,specifiedControlModels,
 	specifiedCalibrantObjectToModelAssociation,specifiedControlObjectToModelAssociation,controlVolumes,
 	rawControls,rawControlOsmolalities,rawControlVolumes,rawControlTolerances,
 	(* Invalid Input Tests*)
@@ -953,7 +953,7 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 		listedSampleContainerPackets,
 		{instrumentPacket},
 		calibrantsObjectsPackets,
-		controlsObjectsPackets,
+		initialControlsObjectsPackets,
 		calibrantsPackets
 	}=Quiet[Download[
 		(* Samples *)
@@ -1020,8 +1020,11 @@ resolveExperimentMeasureOsmolalityOptions[mySamples:{ObjectP[Object[Sample]]...}
 	(* Replace calibrant objects in options with models *)
 	specifiedCalibrantModels=ReplaceAll[ToList[calibrants],specifiedCalibrantObjectToModelAssociation];
 
+	(* Flatten control packets to get rid unnecessary nesting *)
+	controlsObjectsPackets = Flatten@initialControlsObjectsPackets;
+
 	(* Associate control object with model *)
-	specifiedControlObjectToModelAssociation=AssociationThread[Cases[ToList[controls],ObjectP[Object[Sample]]],Lookup[controlsObjectsPackets[[All,1]],Object]];
+	specifiedControlObjectToModelAssociation=AssociationThread[Cases[ToList[controls],ObjectP[Object[Sample]]],Lookup[controlsObjectsPackets,Object]];
 
 	(* Replace control objects in options with models *)
 	specifiedControlModels=ReplaceAll[ToList[controls],specifiedControlObjectToModelAssociation];

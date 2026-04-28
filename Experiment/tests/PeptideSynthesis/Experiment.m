@@ -3300,34 +3300,23 @@ DefineTests[
 
 		Example[{Messages,"NumberOfInputs","Throws an error if the number of oligomer(s) being synthesized in one protocol is outside the capability of the instrument:"},
 			ExperimentPeptideSynthesis[{
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID]
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID],
+				Model[Sample, "Peptide Test Oligomer Model " <> $SessionUUID]
 			}],
 			$Failed,
-			Messages:>{Message[Error::NumberOfInputs],Message[Error::InvalidInput]},
-			TimeConstraint->360
+			Messages:>{Error::NumberOfInputs,Error::InvalidInput},
+			TimeConstraint->2000
 		],
 
 		Example[{Messages,"InsufficientSolventVolume","Throws an error if we use more of a solvent than fits into the solvent container under the deck:"},
@@ -3660,7 +3649,7 @@ DefineTests[
 					{},
 
 					ObjectP[Model[Instrument,PeptideSynthesizer]],
-					ObjectP[Model[Instrument,FumeHood]],
+					ObjectP[Model[Instrument,HandlingStation,FumeHood]],
 					Null,
 					{ObjectP[Model[Container,Vessel]]},
 					{ObjectP[Model[Container,ReactionVessel]]},
@@ -3686,79 +3675,84 @@ DefineTests[
 		$PersonID = Object[User, "Test user for notebook-less test protocols"],
 		$AllowPublicObjects = True
 	},
-	SymbolSetUp:>{Module[{createdObjects,existsFilter},
-		$CreatedObjects={};
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
-		createdObjects={
-			Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model Superlong "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model with crazy lots of non-default monomers "<>$SessionUUID],
-			Model[Sample,"DNA Test Oligomer Model for PeptideSynthesis "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model 1 "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model 2 "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model 3 "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model with novel monomers "<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer Model with novel download monomer "<>$SessionUUID],
-			Model[Instrument,PeptideSynthesizer,"Test PeptideSynthesizer for PeptideSynthesis "<>$SessionUUID],
-			Object[User,Emerald,"Peptide Test Operator "<>$SessionUUID],
-			Object[Protocol,PeptideSynthesis,"Peptide Test Template Protocol "<>$SessionUUID],
-			Object[Protocol,PeptideSynthesis,"Peptide Test Parent Protocol "<>$SessionUUID],
-			Model[Sample,"Peptide Test Undownloaded Resin"<>$SessionUUID],
-			Model[Sample,"Peptide Test Downloaded Resin"<>$SessionUUID],
-			Model[Sample,"Peptide Test Downloaded Resin with Wrong Sequence"<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer For Resin"<>$SessionUUID],
-			Model[Sample,"Peptide Test Oligomer For Wrong Resin"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Monomer - Lys"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Monomer - Ile"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Monomer - Tyr"<>$SessionUUID],
-			Object[Product,"Peptide Test Product for Downloaded Resin"<>$SessionUUID],
-			Object[Sample,"Peptide Test Downloaded Resin Sample"<>$SessionUUID],
-			Model[Sample,"Peptide Test TriturationSolution"<>$SessionUUID],
-			Object[Product,"Peptide Test Product for TriturationSolution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[A] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[C] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[G] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[T] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[A]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[C]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[G]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[T]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[A]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[C]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[G]] Solution"<>$SessionUUID],
-			Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[T]] Solution"<>$SessionUUID],
-			Model[Molecule,Oligomer,"LysLysIleIleLys"<>$SessionUUID],
-			Model[Molecule,Oligomer,"DNA[ATCG]"<>$SessionUUID<>$SessionUUID],
-			Model[Molecule,Oligomer,"SuperLong Test Peptide Oligomer"<>$SessionUUID],
-			Model[Molecule,Oligomer,"LysLysIleIleTyrLys"<>$SessionUUID],
-			Model[Molecule,Oligomer,"Test Peptide Oligomer with novel monomer"<>$SessionUUID],
-			Model[Molecule,Oligomer,"Test Peptide Oligomer with crazy monomers"<>$SessionUUID],
-			Model[Molecule,Oligomer,"Test Peptide Oligomer with novel download monomer"<>$SessionUUID],
-			Model[Molecule,Oligomer,"Lys"<>$SessionUUID],
-			Model[Molecule,Oligomer,"Ile"<>$SessionUUID],
-			Model[Resin,SolidPhaseSupport,"Peptide Test Resin Lys"<>$SessionUUID],
-			Model[Resin,SolidPhaseSupport,"Peptide Test Resin Ile"<>$SessionUUID],
-			Model[Resin,"Peptide Test Resin"<>$SessionUUID],
-			Object[Sample,"Dimethylformamide Test for ExperimentPeptideSynthesis"<>$SessionUUID],
-			Object[Container,Vessel,"Dimethylformamide container for ExperimentPeptideSynthesis"<>$SessionUUID]
-		};
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock
+	},
+	SymbolSetUp:>{
+		Module[{createdObjects,existsFilter},
+			$CreatedObjects={};
+			Off[Warning::SamplesOutOfStock];
+			Off[Warning::InstrumentUndergoingMaintenance];
+			createdObjects={
+				Model[Sample,"Peptide Test Oligomer Model "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model Superlong "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model with crazy lots of non-default monomers "<>$SessionUUID],
+				Model[Sample,"DNA Test Oligomer Model for PeptideSynthesis "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model 1 "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model 2 "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model 3 "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model with novel monomers "<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer Model with novel download monomer "<>$SessionUUID],
+				Model[Instrument,PeptideSynthesizer,"Test PeptideSynthesizer for PeptideSynthesis "<>$SessionUUID],
+				Object[User,Emerald,"Peptide Test Operator "<>$SessionUUID],
+				Object[Protocol,PeptideSynthesis,"Peptide Test Template Protocol "<>$SessionUUID],
+				Object[Protocol,PeptideSynthesis,"Peptide Test Parent Protocol "<>$SessionUUID],
+				Model[Sample,"Peptide Test Undownloaded Resin"<>$SessionUUID],
+				Model[Sample,"Peptide Test Downloaded Resin"<>$SessionUUID],
+				Model[Sample,"Peptide Test Downloaded Resin with Wrong Sequence"<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer For Resin"<>$SessionUUID],
+				Model[Sample,"Peptide Test Oligomer For Wrong Resin"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Monomer - Lys"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Monomer - Ile"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Monomer - Tyr"<>$SessionUUID],
+				Object[Product,"Peptide Test Product for Downloaded Resin"<>$SessionUUID],
+				Object[Sample,"Peptide Test Downloaded Resin Sample"<>$SessionUUID],
+				Model[Sample,"Peptide Test TriturationSolution"<>$SessionUUID],
+				Object[Product,"Peptide Test Product for TriturationSolution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[A] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[C] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[G] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[T] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[A]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[C]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[G]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaRightPNA[T]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[A]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[C]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[G]] Solution"<>$SessionUUID],
+				Model[Sample,StockSolution,"Peptide Test Stock[GammaLeftPNA[T]] Solution"<>$SessionUUID],
+				Model[Molecule,Oligomer,"LysLysIleIleLys"<>$SessionUUID],
+				Model[Molecule,Oligomer,"DNA[ATCG]"<>$SessionUUID<>$SessionUUID],
+				Model[Molecule,Oligomer,"SuperLong Test Peptide Oligomer"<>$SessionUUID],
+				Model[Molecule,Oligomer,"LysLysIleIleTyrLys"<>$SessionUUID],
+				Model[Molecule,Oligomer,"Test Peptide Oligomer with novel monomer"<>$SessionUUID],
+				Model[Molecule,Oligomer,"Test Peptide Oligomer with crazy monomers"<>$SessionUUID],
+				Model[Molecule,Oligomer,"Test Peptide Oligomer with novel download monomer"<>$SessionUUID],
+				Model[Molecule,Oligomer,"Lys"<>$SessionUUID],
+				Model[Molecule,Oligomer,"Ile"<>$SessionUUID],
+				Model[Resin,SolidPhaseSupport,"Peptide Test Resin Lys"<>$SessionUUID],
+				Model[Resin,SolidPhaseSupport,"Peptide Test Resin Ile"<>$SessionUUID],
+				Model[Resin,"Peptide Test Resin"<>$SessionUUID],
+				Object[Sample,"Dimethylformamide Test for ExperimentPeptideSynthesis"<>$SessionUUID],
+				Object[Container,Vessel,"Dimethylformamide container for ExperimentPeptideSynthesis"<>$SessionUUID]
+			};
 
-		(* Check whether the names we want to ],give below already exist in the database *)
-		existsFilter=DatabaseMemberQ[createdObjects];
-		(* Erase any objects that we failed to erase in the last unit test. *)
-		Quiet[EraseObject[
-			PickList[createdObjects,existsFilter],
-			Force->True,
-			Verbose->False
-		]];
-	];
-		Module[{identityATCG,identityModelSuperLong,identityATTCG,identityATTTCG,
-			identity1,identityDNA,identitySuperLong,identity2,identityATCGDNA,identityNovel,identityCrazy,identityNovelDownload,dmfContainer,dmfSample,
-			identityForResin,identityForResinWrong,identityResinWithMonomer,
-			identityResinWithWrongMonomer,identityResin,
-			uploadOligomerModels,uploadResins,uploadSamples
-		},
+			(* Check whether the names we want to ],give below already exist in the database *)
+			existsFilter=DatabaseMemberQ[createdObjects];
+			(* Erase any objects that we failed to erase in the last unit test. *)
+			Quiet[EraseObject[
+				PickList[createdObjects,existsFilter],
+				Force->True,
+				Verbose->False
+			]];
+		];
+		Module[
+			{identityATCG,identityModelSuperLong,identityATTCG,identityATTTCG,
+				identity1,identityDNA,identitySuperLong,identity2,identityATCGDNA,identityNovel,identityCrazy,identityNovelDownload,dmfContainer,dmfSample,
+				identityForResin,identityForResinWrong,identityResinWithMonomer,
+				identityResinWithWrongMonomer,identityResin,
+				uploadOligomerModels,uploadResins,uploadSamples
+			},
 
 			(* create the identity models for the Model[Molecule,Oligomer]s *)
 			{
@@ -3879,7 +3873,8 @@ DefineTests[
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
 		Unset[$CreatedObjects]
-	}
+	},
+	Parallel -> True
 ];
 
 

@@ -420,7 +420,8 @@ DefineUsage[
 			"PriceStorage",
 			"PriceWaste",
 			"PriceMaterials",
-			"PriceTransactions"
+			"PriceTransactions",
+			"PriceExperiment"
 		},
 		Author -> {"xu.yi", "andrey.shur", "lei.tian", "jihan.kim", "steven"}
 	}

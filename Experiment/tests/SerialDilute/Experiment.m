@@ -1155,6 +1155,19 @@ DefineTests[ExperimentSerialDilute,
 				Error::InvalidInput
 			}
 		],
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If Preparation is set to or required to be Manual, WorkCell cannot be used:"},
+			ExperimentSerialDilute[
+				Object[Sample, "ExperimentSerialDilute New Test Chemical 2 (100 uL)"<>$SessionUUID],
+				FinalVolume -> {1000 Microliter},
+				Preparation -> Manual,
+				WorkCell -> microbioSTAR
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::InvalidOption
+			}
+		],
 		Example[{Messages, "MismatchedNumber", "Mismatched number of serial dilutions:"},
 			ExperimentSerialDilute[
 				{Object[Sample, "ExperimentSerialDilute New Test Chemical 2 (100 uL)"<>$SessionUUID]},

@@ -2388,7 +2388,7 @@ DefineTests[Download,
         packet=Download[Object[Sample, "Download Test Sample With Time"], Date -> downloadTime];
         (* Make sure the packet has a DownloadDate, and give it a fake name *)
         packet=Append[packet, {DownloadDate -> downloadTime, Name -> "FakeName"}];
-        (* First is a download with time so it uses the packet,the second is a temporal link, however date option takes precedence so it goes to the database with downloadTime *)
+        (* First is a download with time so it uses the packet,the second is a temporal link; however, date option takes precedence so it goes to the database with downloadTime *)
         Download[{Object[Sample, "Download Test Sample With Time"], Link[Object[Sample, "Download Test Sample With Time"], downloadTime]},
           Name, Cache -> {packet}, Date -> downloadTime]
       ],

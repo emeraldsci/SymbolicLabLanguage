@@ -44,6 +44,17 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Description -> "The probe instruments that should be used to measure the pH of the ProbeSamples.",
 			Category -> "General"
 		},
+		TemperatureControlInstruments -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Instrument,HeatBlock],
+				Object[Instrument,HeatBlock]
+			],
+			Description -> "The instruments that should be used to control the sample temperature during pH measurement.",
+			Category -> "General"
+		},
 		Probes -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -625,6 +636,144 @@ DefineObjectType[Object[Protocol, MeasurepH], {
 			Description -> "A list of placements used to hold calibration wash solution sachet for pH probe calibration.",
 			Headers -> {"Object to Place", "Destination Object","Destination Position"},
 			Category -> "Placements",
+			Developer -> True
+		},
+
+		(* These two fields are added temporarily to track if updatedMeasurepHFileQ can properly check temperature *)
+		CurrentTemperature -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The current temperature reading used by execute function.",
+			Category -> "General",
+			Developer->True
+		},
+		TemperatureFile -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation->Object[EmeraldCloudFile],
+			Description -> "The uploaded files of the raw data containing the current temperature reading used by execute function.",
+			Category -> "General",
+			Developer -> True
+		},
+		WashSolutionUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "The set of instructions specifying the aliquots of working samples to wash solutions.",
+			Category -> "General",
+			Developer -> True
+		},
+		WashSolutionManipulations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
+			Description -> "The sample preparation protocol used to aliquot the working samples to wash solutions.",
+			Category -> "General"
+		},
+		NominalTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The setting temperature of the device that is used to incubate the sample during pH measurement.",
+			Category -> "Temperature Compensation"
+		},
+		DisplayedNominalTemperature -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The setting temperature of the device as a string, as it will be displayed to the operator in the procedure.",
+			Category -> "Temperature Compensation",
+			Developer -> True
+		},
+		MinTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The lowest temperature of the incubation device at which the measurement is allowed.",
+			Category -> "Temperature Compensation"
+		},
+		MaxTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The highest temperature of the incubation device at which the measurement is allowed.",
+			Category -> "Temperature Compensation"
+		},
+		BathTemperatures -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Temperature],
+			Description -> "The temperature data that is recorded by sensornet probe in the bath during pH measurement.",
+			Category -> "Temperature Compensation"
+		},
+		OffsetTemperatures -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Celsius],
+			Units -> Celsius,
+			Description -> "The setting temperature offset of the device that is used to incubate the sample during pH measurement.",
+			Category -> "Temperature Compensation",
+			Developer->True
+		},
+		DisplayedOffsetTemperature -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The setting temperature offset of the device as a string, as it will be displayed to the operator in the procedure.",
+			Category -> "Temperature Compensation",
+			Developer -> True
+		},
+		TemperatureControlRacks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The racks used to hold sample, verification or calibration buffer in the bath for temperature control during pH measurement.",
+			Category -> "Temperature Compensation",
+			Developer->True
+		},
+		RackHandle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item, Handle], Model[Item, Handle]],
+			Description -> "The handler that is used to move temperature control racks.",
+			Category -> "Temperature Compensation",
+			Developer->True
+		},
+		CurrentTemperatureControlRacks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Container, Rack], Model[Container, Rack]],
+			Description -> "The racks that is currently used to hold sample, verification or calibration buffer in the bath for temperature control during pH measurement.",
+			Category -> "Temperature Compensation",
+			Developer->True
+		},
+		TemperatureControlPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Model[Sample], Model[Container, Rack]|Object[Container, Rack], Null},
+			Description -> "A list of placements used to hold sensornet temperature probe, sample, verification or calibration buffer for temperature control during pH measurement.",
+			Headers -> {"Object to Place", "Destination Object","Destination Position"},
+			Category -> "Temperature Compensation",
+			Developer -> True
+		},
+		ProcessingCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0, 1],
+			Description -> "The number of times sevenExcellenceTemperatureMonitoring has detected the bath temperature outside the desired range. Initialized to 0 by compileMeasurepH and incremented on each out-of-range check. An error is thrown when this count reaches 3.",
+			Category -> "Temperature Compensation",
 			Developer -> True
 		}
 	}

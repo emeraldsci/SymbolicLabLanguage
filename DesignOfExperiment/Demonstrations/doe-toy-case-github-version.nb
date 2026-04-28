@@ -19795,7 +19795,7 @@ user.", FontFamily -> "Helvetica", FontSize -> 11,
                 RowBox[{"Alignment", "\[Rule]", 
                   RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-              "]"}]& )], {"\<\"Inspect object in page\"\>":>If[None === None, 
+              "]"}]& )], {"\<\"Inspect object inline\"\>":>If[None === None, 
            ConstellationViewers`Private`printFullOpacity[
             ECL`Inspect[
              ECL`Link[
@@ -19808,7 +19808,7 @@ user.", FontFamily -> "Helvetica", FontSize -> 11,
               ECL`Object[
               ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
               "4pO6dMzbG8D7"], Date -> 
-             None]]], "\<\"Inspect object in new tab\"\>":>
+             None]]], "\<\"Inspect object in new page\"\>":>
           ConstellationViewers`Private`inspectInNewWindow[
            ECL`Object[
            ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -19985,7 +19985,7 @@ user.", FontFamily -> "Helvetica", FontSize -> 11,
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                  "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                  "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
               None === None, 
                ConstellationViewers`Private`printFullOpacity[
                 ECL`Inspect[
@@ -19997,7 +19997,7 @@ user.", FontFamily -> "Helvetica", FontSize -> 11,
                  ECL`Link[
                   ECL`Object[ECL`Protocol, "id:WNa4ZjKEG5a8"], ECL`Script, 
                   "P5ZnEjeGRbKO"], Date -> 
-                 None]]], "\<\"Inspect object in new tab\"\>":>
+                 None]]], "\<\"Inspect object in new page\"\>":>
               ConstellationViewers`Private`inspectInNewWindow[
                ECL`Object[ECL`Protocol, "id:WNa4ZjKEG5a8"], 
                None], "\<\"Copy object ID\"\>":>CopyToClipboard[
@@ -20919,7 +20919,7 @@ should resume.", FontFamily -> "Helvetica", FontSize -> 11,
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                  "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                  "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
               None === None, 
                ConstellationViewers`Private`printFullOpacity[
                 ECL`Inspect[
@@ -20931,7 +20931,7 @@ should resume.", FontFamily -> "Helvetica", FontSize -> 11,
                  ECL`Link[
                   ECL`Object[ECL`Protocol, "id:WNa4ZjKEG5a8"], 
                   "3em6ZvoKO8zo"], Date -> 
-                 None]]], "\<\"Inspect object in new tab\"\>":>
+                 None]]], "\<\"Inspect object in new page\"\>":>
               ConstellationViewers`Private`inspectInNewWindow[
                ECL`Object[ECL`Protocol, "id:WNa4ZjKEG5a8"], 
                None], "\<\"Copy object ID\"\>":>CopyToClipboard[
@@ -22619,7 +22619,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                    "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                    "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
                 None === None, 
                  ConstellationViewers`Private`printFullOpacity[
                   ECL`Inspect[
@@ -22633,7 +22633,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     ECL`Object[
                     ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
                     "qdkmxz9LMK5Y"], Date -> 
-                   None]]], "\<\"Inspect object in new tab\"\>":>
+                   None]]], "\<\"Inspect object in new page\"\>":>
                 ConstellationViewers`Private`inspectInNewWindow[
                  ECL`Object[
                  ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -23928,7 +23928,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                    "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                    "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
                 None === None, 
                  ConstellationViewers`Private`printFullOpacity[
                   ECL`Inspect[
@@ -23942,7 +23942,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     ECL`Object[
                     ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
                     "dORYzZaeM9ve"], Date -> 
-                   None]]], "\<\"Inspect object in new tab\"\>":>
+                   None]]], "\<\"Inspect object in new page\"\>":>
                 ConstellationViewers`Private`inspectInNewWindow[
                  ECL`Object[
                  ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -24447,7 +24447,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                    "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                    "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
                 None === None, 
                  ConstellationViewers`Private`printFullOpacity[
                   ECL`Inspect[
@@ -24461,7 +24461,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     ECL`Object[
                     ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
                     "1ZA60vG7qK8w"], Date -> 
-                   None]]], "\<\"Inspect object in new tab\"\>":>
+                   None]]], "\<\"Inspect object in new page\"\>":>
                 ConstellationViewers`Private`inspectInNewWindow[
                  ECL`Object[
                  ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -25757,7 +25757,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                    "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                    "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
                 None === None, 
                  ConstellationViewers`Private`printFullOpacity[
                   ECL`Inspect[
@@ -25771,7 +25771,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     ECL`Object[
                     ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
                     "01G6nvObX8Y4"], Date -> 
-                   None]]], "\<\"Inspect object in new tab\"\>":>
+                   None]]], "\<\"Inspect object in new page\"\>":>
                 ConstellationViewers`Private`inspectInNewWindow[
                  ECL`Object[
                  ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -26277,7 +26277,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     RowBox[{"Alignment", "\[Rule]", 
                     RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-                    "]"}]& )], {"\<\"Inspect object in page\"\>":>If[
+                    "]"}]& )], {"\<\"Inspect object inline\"\>":>If[
                 None === None, 
                  ConstellationViewers`Private`printFullOpacity[
                   ECL`Inspect[
@@ -26291,7 +26291,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                     ECL`Object[
                     ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
                     "54n6evlbANjP"], Date -> 
-                   None]]], "\<\"Inspect object in new tab\"\>":>
+                   None]]], "\<\"Inspect object in new page\"\>":>
                 ConstellationViewers`Private`inspectInNewWindow[
                  ECL`Object[
                  ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
@@ -26663,7 +26663,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
                 RowBox[{"Alignment", "\[Rule]", 
                   RowBox[{"{", 
                     RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-              "]"}]& )], {"\<\"Inspect object in page\"\>":>If[None === None, 
+              "]"}]& )], {"\<\"Inspect object inline\"\>":>If[None === None, 
            ConstellationViewers`Private`printFullOpacity[
             ECL`Inspect[
              ECL`Link[
@@ -26676,7 +26676,7 @@ sxDf/bbf/YrfBNrfBMSjdXwHK7mxAA==
               ECL`Object[
               ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 
               "eGakldwpM5xB"], Date -> 
-             None]]], "\<\"Inspect object in new tab\"\>":>
+             None]]], "\<\"Inspect object in new page\"\>":>
           ConstellationViewers`Private`inspectInNewWindow[
            ECL`Object[
            ECL`User, ECL`Emerald, ECL`Developer, "tommy.harrelson"], 

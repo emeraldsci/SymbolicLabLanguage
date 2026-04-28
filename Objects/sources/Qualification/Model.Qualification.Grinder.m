@@ -13,6 +13,14 @@ DefineObjectType[Model[Qualification, Grinder], {
 			Description -> "The sample model used to verify whether a grinder effectively reduces the particle sizes of a powder.",
 			Category -> "General"
 		},
+		ContainerModel -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container],
+			Description -> "The model of container that the sample will be stored in when images are taken of it before and after grinding.",
+			Category -> "General"
+		},
 		Amount -> {
 			Format -> Single,
 			Class -> Real,

@@ -797,7 +797,7 @@ DefineTests[
 			protocol=ExperimentDynamicFoamAnalysis[{Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID]},
 				Agitation->{Stir,Sparge}];
 			Download[protocol,Needles],
-			(*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+			(*"14Ga x 2In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 			{ObjectP[Model[Item, Needle, "id:4pO6dMmv9pnM"]],ObjectP[Model[Item, Needle, "id:4pO6dMmv9pnM"]]}
 		],
 		Test["The primary O-ring resources will be generated in the resource packets:",
@@ -1016,6 +1016,14 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentDynamicFoamAnalysis[Object[Sample, "DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID],CentrifugeTime->5*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -1051,13 +1059,13 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
-			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],FiltrationType->Syringe,FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],Output->Options];
+			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID],FiltrationType->Syringe,FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],Output->Options];
 			Lookup[options,FiltrationType],
 			Syringe,
 			Variables:>{options}
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
-			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],Output->Options];
+			options=ExperimentDynamicFoamAnalysis[Object[Sample,"DynamicFoamAnalysis Test Water Sample2"<> $SessionUUID],FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],FilterContainerOut->Model[Container,Vessel,"100 mL Glass Bottle"],Output->Options];
 			Lookup[options,FilterInstrument],
 			ObjectP[Model[Instrument,SyringePump,"NE-1010 Syringe Pump"]],
 			Variables:>{options}
@@ -1165,6 +1173,14 @@ DefineTests[
 			50*Milliliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentDynamicFoamAnalysis[Object[Sample, "DynamicFoamAnalysis Test Water Sample1"<> $SessionUUID], AliquotAmount -> 50.01 Milliliter, AliquotContainer -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			50 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
 			options=ExperimentDynamicFoamAnalysis[

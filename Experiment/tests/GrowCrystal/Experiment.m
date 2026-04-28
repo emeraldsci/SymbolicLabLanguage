@@ -819,6 +819,21 @@ DefineTests[ExperimentGrowCrystal,
 			Variables :> {options},
 			TimeConstraint -> 240
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentGrowCrystal[
+				Object[Sample, "Protein sample 1 for ExperimentGrowCrystal Testing" <> $SessionUUID],
+				Centrifuge -> True,
+				CentrifugeIntensity -> 1001 RPM,
+				CentrifugeTime -> 2 Minute,
+				CentrifugeTemperature -> Ambient,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
+			TimeConstraint -> 240
+		],
 		Example[{Options, {Filtration, FiltrationType, FilterTime, FilterMaterial, FilterPoreSize}, "Set Filtration, FiltrationType, FilterTime, FilterMaterial, FilterPoreSize options:"},
 			options = ExperimentGrowCrystal[
 				Object[Sample, "Protein sample 1 for ExperimentGrowCrystal Testing" <> $SessionUUID],
@@ -2608,8 +2623,8 @@ DefineTests[ExperimentGrowCrystal,
 
 				(* Create a Model[Sample] of DNA with Analytes *)
 				testDNAsampleModel = UploadSampleModel[
-					"Test DNA oligomer for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {{1 Millimolar, testDNAmodel}, {100 VolumePercent, Model[Molecule, "Water"]}},
+					{{1 Millimolar, testDNAmodel}, {100 VolumePercent, Model[Molecule, "Water"]}},
+					Name -> "Test DNA oligomer for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					Solvent -> Model[Sample, "Milli-Q water"],
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -2623,11 +2638,11 @@ DefineTests[ExperimentGrowCrystal,
 
 				(* Create a Model[Sample] of Protein with Analytes *)
 				testProtein1SampleModel = UploadSampleModel[
-					"Test 10mg/ml Lysozyme sample for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{10 Milligram/Milliliter, Model[Molecule, Protein, "Lysozyme from chicken egg white"]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test 10mg/ml Lysozyme sample for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					Solvent -> Model[Sample, "Milli-Q water"],
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -2639,11 +2654,11 @@ DefineTests[ExperimentGrowCrystal,
 				Upload[<|Object -> testProtein1SampleModel, DeveloperObject -> True, Replace[Analytes] -> {Link[Model[Molecule, Protein, "Lysozyme from chicken egg white"]]}|>];
 
 				testProtein2SampleModel = UploadSampleModel[
-					"Test 10mg/ml Lysozyme sample in Freezer for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{10 Milligram/Milliliter, Model[Molecule, Protein, "Lysozyme from chicken egg white"]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test 10mg/ml Lysozyme sample in Freezer for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					Solvent -> Model[Sample, "Milli-Q water"],
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],
@@ -2657,11 +2672,11 @@ DefineTests[ExperimentGrowCrystal,
 
 				(* Create a Model[Sample] of Protein without Analytes*)
 				testProtein3SampleModel = UploadSampleModel[
-					"Test 8mg/ml Lysozyme sample for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{8 Milligram/Milliliter, Model[Molecule, Protein, "Lysozyme from chicken egg white"]},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test 8mg/ml Lysozyme sample for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					Solvent -> Model[Sample, "Milli-Q water"],
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -2688,11 +2703,11 @@ DefineTests[ExperimentGrowCrystal,
 				Upload[<|Object -> testAbModel, DeveloperObject -> True|>];
 
 				testAbSampleModel = UploadSampleModel[
-					"Antibody sample model for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{0.01 Milligram/Milliliter, testAbModel},
 						{100 VolumePercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Antibody sample model for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					Solvent -> Model[Sample, "Milli-Q water"],
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -2704,10 +2719,10 @@ DefineTests[ExperimentGrowCrystal,
 
 				(* Create sample model for solid sample *)
 				testSolidSampleModel = UploadSampleModel[
-					"Solid sample model for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{100 MassPercent, testAbModel}
 					},
+					Name -> "Solid sample model for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
 					IncompatibleMaterials -> {None},
@@ -2719,11 +2734,11 @@ DefineTests[ExperimentGrowCrystal,
 
 				(* Create buffer Models *)
 				testRBmodel1 = UploadSampleModel[
-					"Test Reservoir Buffer Sodium Acetate for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Sodium Acetate"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Reservoir Buffer Sodium Acetate for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2740,11 +2755,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testRBmodel2 = UploadSampleModel[
-					"Test Reservoir Buffer Ammonium Chloride for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Ammonium Chloride"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Reservoir Buffer Ammonium Chloride for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2761,11 +2776,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testRBmodel3 = UploadSampleModel[
-					"Test Reservoir Buffer Ammonium Acetate for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Ammonium Acetate"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Reservoir Buffer Ammonium Acetate for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2782,11 +2797,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testRBmodel4 = UploadSampleModel[
-					"Test Reservoir Buffer Ammonium Acetate in refrigerator for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Ammonium Acetate"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Reservoir Buffer Ammonium Acetate in refrigerator for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Refrigerator"],
@@ -2803,11 +2818,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testRBmodel5 = UploadSampleModel[
-					"Test Deprecated Reservoir Buffer Model for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Ammonium Acetate"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Deprecated Reservoir Buffer Model for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
@@ -2825,11 +2840,11 @@ DefineTests[ExperimentGrowCrystal,
 				Upload[<|Object -> testRBmodel5, Deprecated -> True|>];
 
 				testADmodel1 = UploadSampleModel[
-					"Test Additive Urea for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{0.1 Molar, Model[Molecule, "Urea"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Additive Urea for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],
@@ -2846,11 +2861,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testADmodel2 = UploadSampleModel[
-					"Test Additive Spermidine for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{0.1 Molar, Model[Molecule, "Spermidine"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Additive Spermidine for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],
@@ -2865,11 +2880,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testADmodel3 = UploadSampleModel[
-					"Test Additive Sodium Chloride for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{1 Molar, Model[Molecule, "Spermidine"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test Additive Sodium Chloride for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],
@@ -2884,11 +2899,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testCCAmodel1 = UploadSampleModel[
-					"Test CoCrystallization Reagent1 for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{100 Milligram/Milliliter, Model[Molecule, Protein, "Lysozyme from chicken egg white"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test CoCrystallization Reagent1 for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],
@@ -2900,11 +2915,11 @@ DefineTests[ExperimentGrowCrystal,
 				];
 
 				testCCAmodel2 = UploadSampleModel[
-					"Test CoCrystallization Reagent2 for ExperimentGrowCrystal Testing" <> $SessionUUID,
-					Composition -> {
+					{
 						{2 Molar, Model[Molecule, Protein, "Ubiquitin"]},
 						{100 MassPercent, Model[Molecule, "Water"]}
 					},
+					Name -> "Test CoCrystallization Reagent2 for ExperimentGrowCrystal Testing" <> $SessionUUID,
 					MSDSFile -> NotApplicable,
 					Solvent -> {Model[Sample, "Milli-Q water"]},
 					DefaultStorageCondition -> Model[StorageCondition, "Freezer"],

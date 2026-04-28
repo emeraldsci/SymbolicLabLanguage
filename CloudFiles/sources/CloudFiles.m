@@ -931,9 +931,13 @@ ImportCloudFile[cloudFileObjects:{(ObjectP[Object[EmeraldCloudFile]] | Null)..},
 						{$ContextPath=contextPath},
 
 						expr=Check[
-							If[MatchQ[resolvedFormat, Indeterminate],
-								Import[path],
-								Import[path, resolvedFormat]
+							Which[
+								MatchQ[resolvedFormat, Indeterminate],
+									Import[path],
+								MatchQ[resolvedFormat, "CSV"|"TSV"],
+									Import[path, resolvedFormat, "Backend" -> "Table", MissingValuePattern -> None],
+								True,
+									Import[path, resolvedFormat]
 							],
 							Return[$Failed, Module]
 						]

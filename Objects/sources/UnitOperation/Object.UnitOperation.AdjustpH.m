@@ -581,6 +581,33 @@ DefineObjectType[Object[UnitOperation, AdjustpH], {
 			Pattern :> RangeP[0,14],
 			Description -> "The pH of the high calibration buffer that should be used to calibrate the pH probe.",
 			Category -> "General"
+		},
+		LowCalibrationWashSolution->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Developer->True,
+			Description->"The low pH reference buffer used to wash the probe before calibrating the pH instruments.",
+			Category->"General"
+		},
+		MediumCalibrationWashSolution->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Developer->True,
+			Description->"The medium pH reference buffer used to wash the probe before calibrating the pH instruments.",
+			Category->"General"
+		},
+		HighCalibrationWashSolution->{
+			Format->Single,
+			Class->Link,
+			Pattern:>ObjectP[{Object[Sample],Model[Sample]}],
+			Relation->Object[Sample]|Model[Sample],
+			Developer->True,
+			Description->"The high pH reference buffer used to wash the probe before calibrating the pH instruments.",
+			Category->"General"
 		}
 	}
 }];

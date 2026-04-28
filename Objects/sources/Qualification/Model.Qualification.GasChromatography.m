@@ -85,6 +85,15 @@ DefineObjectType[Model[Qualification, GasChromatography], {
 			Description -> "The volume of a test sample to inject during each qualification injection.",
 			Category -> "General"
 		},
+		SampleVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Micro*Liter],
+			Relation -> Null,
+			Units -> Micro*Liter,
+			Description -> "The volume of a test sample to load in each vial during the qualification.",
+			Category -> "General"
+		},
 		FlushMethod-> {
 			Format -> Single,
 			Class -> Link,

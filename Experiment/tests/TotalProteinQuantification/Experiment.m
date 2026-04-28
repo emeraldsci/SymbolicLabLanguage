@@ -981,9 +981,9 @@ DefineTests[
 		],
 		Example[{Options,StandardCurveBlank,"The StandardCurveBlank option defaults to the StandardCurveDiluent if either the ProteinStandardDiluent or ConcentratedProteinStandard have been specified:"},
 			options=ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
-				ProteinStandardDiluent->Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],Output->Options];
+				ProteinStandardDiluent->Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],Output->Options];
 			Lookup[options,StandardCurveBlank],
-			ObjectP[Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID]],
+			ObjectP[Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID]],
 			Variables :> {options}
 		],
 		Example[{Options,StandardCurveBlank,"The StandardCurveBlank option defaults to Model[Sample, \"Milli-Q water\"] if either the ProteinStandardDiluent has been set to or has resolved to Null and the DetectionMode is Absorbance:"},
@@ -1184,6 +1184,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentTotalProteinQuantification[Object[Sample, "Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -1245,7 +1253,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],PrefilterMaterial -> GxF, Output -> Options];
+			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],PrefilterMaterial -> GxF, Output -> Options];
 			Lookup[options, PrefilterMaterial],
 			GxF,
 			Variables :> {options}
@@ -1260,7 +1268,7 @@ DefineTests[
 			}
 		],
 		Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
+			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
 			Lookup[options, PrefilterPoreSize],
 			1.*Micrometer,
 			Variables :> {options}
@@ -1272,7 +1280,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
+			options = ExperimentTotalProteinQuantification[Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
 			Variables :> {options}
@@ -1338,9 +1346,17 @@ DefineTests[
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
 			options = ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], AliquotAmount -> 0.5*Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
-			0.5*Milliliter,
+			0.5 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentTotalProteinQuantification[Object[Sample, "Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], AliquotAmount -> 0.5001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.5 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentTotalProteinQuantification[Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID], AssayVolume -> 0.5*Milliliter, Output -> Options];
@@ -1531,7 +1547,7 @@ DefineTests[
 
 					Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test discarded test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
-					Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],
+					Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test 10 kDa test protein sample for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test non-default QuantificationReagent ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Protocol,TotalProteinQuantification,"Test TotalProteinQuantification option template protocol"<>$SessionUUID]
@@ -1639,14 +1655,14 @@ DefineTests[
 					InitialAmount->{
 						1*Milliliter,
 						1*Milliliter,
-						25*Milliliter,
+						50*Milliliter,
 						1*Milliliter,
 						25*Milliliter
 					},
 					Name->{
 						"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID,
 						"Test discarded test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID,
-						"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID,
+						"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID,
 						"Test 10 kDa test protein sample for ExperimentTotalProteinQuantification"<>$SessionUUID,
 						"Test non-default QuantificationReagent ExperimentTotalProteinQuantification"<>$SessionUUID
 					}
@@ -1698,7 +1714,7 @@ DefineTests[
 
 					Object[Sample,"Test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test discarded test lysate for ExperimentTotalProteinQuantification"<>$SessionUUID],
-					Object[Sample,"Test 25 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],
+					Object[Sample,"Test 50 mL water sample in 50mL Tube for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test 10 kDa test protein sample for ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Sample,"Test non-default QuantificationReagent ExperimentTotalProteinQuantification"<>$SessionUUID],
 					Object[Protocol,TotalProteinQuantification,"Test TotalProteinQuantification option template protocol"<>$SessionUUID]

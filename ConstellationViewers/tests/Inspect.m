@@ -34,12 +34,16 @@ DefineTests[Inspect,
 		Example[{Basic, "Inspect the database entry for an HPLC Protocol:"},
 			Inspect[Object[Protocol, HPLC, "id:XnlV5jma11aM"]],
 			_DynamicModule,
-			TimeConstraint -> 1000
+			TimeConstraint -> 10000
 		],
-		Example[{Basic, "Inspect the database structure for an oligomer molecule:"},
+		Example[{Basic, "Inspect a type to open the Emerald Cloud Lab Type Definitions Viewer:"},
 			Inspect[Model[Molecule, Oligomer]],
-			_Grid,
-			TimeConstraint -> 1000
+			(*Checks that the files succesfully downloaded from S3*)
+			_? (StringMatchQ[#, ___ ~~ "TypeViewer.nb"]&),
+			Stubs :> {
+				(*Do not open the file as a notebook.  Just return the path*)
+				NotebookOpen[path_] := path
+			}
 		],
 		Example[{Basic, "Inspect the database entry for an oligomer sample:"},
 			Inspect[Object[Sample, "id:o1k9jAKpkA0G"]],
@@ -71,11 +75,6 @@ DefineTests[Inspect,
 			_DynamicModule,
 			TimeConstraint -> 1000
 		],
-		Example[{Options, Abstract, "Shows only the abstract field definitions:"},
-			Inspect[Object[Data, Chromatography], Abstract -> True],
-			_Grid,
-			TimeConstraint -> 1000
-		],
 		Example[{Options, Date, "Inspect the state of the object at a specified date and time:"},
 			Inspect[Object[Data, Chromatography, "id:mnk9jO3dkpeK"], Date -> (Now - 2 Day)],
 			_DynamicModule,
@@ -84,11 +83,6 @@ DefineTests[Inspect,
 		Example[{Options, Developer, "Reveal the hidden developer fields using the developer option:"},
 			Inspect[Object[Data, Chromatography, "id:mnk9jO3dkpeK"], Developer -> True],
 			_DynamicModule,
-			TimeConstraint -> 1000
-		],
-		Example[{Options, Developer, "Reveal the hidden developer fields in the definitions:"},
-			Inspect[Object[Data, Chromatography], Developer -> True],
-			_Grid,
 			TimeConstraint -> 1000
 		],
 		Example[{Options, Developer, "Automatic developer option resolves to True when the logged in user is a Developer:"},

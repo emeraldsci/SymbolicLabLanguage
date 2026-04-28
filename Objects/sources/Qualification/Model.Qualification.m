@@ -99,7 +99,14 @@ DefineObjectType[Model[Qualification], {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> SamplePreparationP,
-			Description -> "A list of transfers, consolidations, aliquiots, mixes and diutions that will be performed in the order listed to prepare samples for the qualification.",
+			Description -> "A list of transfers, consolidations, aliquots, mixes and diutions that will be performed in the order listed to prepare samples for the qualification.",
+			Category -> "Sample Preparation"
+		},
+		QualificationSampleLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "The preparatory primitive-defined strings to provide as input to the experiment call.",
 			Category -> "Sample Preparation"
 		},
 		LegacyID -> {
@@ -150,6 +157,62 @@ DefineObjectType[Model[Qualification], {
 			Description -> "A list of primary literature sources that were referenced to design this qualification model.",
 			Category -> "Qualifications & Maintenance",
 			Headers->{"Label","Report"}
+		},
+		TargetSubprotocolCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0,1],
+			Description -> "The number of subprotocols expected to run during the execution of a qualification.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		TargetResourceCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0,1],
+			Description -> "The number of unique resource requests in the SubprotocolRequiredResources field for a qualification of this model. This information ensures consistent execution of the qualification.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		BaselineOperatorProcessingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Hour],
+			Units -> Hour,
+			Description -> "The least amount of time required to complete a qualification of this model. This information is used for scheduling qualifications.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		Verification -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this qualification is performed as a daily check of instrument performance.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		AccuracyThreshold -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Percent],
+			Units -> Percent,
+			Description -> "The maximum allowable threshold for accuracy to achieve a passing result.",
+			Category -> "Qualifications & Maintenance"
+		},
+		PrecisionThreshold -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Percent],
+			Units -> Percent,
+			Description -> "The maximum allowable threshold for precision to achieve a passing result.",
+			Category -> "Qualifications & Maintenance"
+		},
+		OutlierThreshold -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0,1],
+			Description->"The maximum number of outliers permitted per channel to achieve a passing result.",
+			Category->"Qualifications & Maintenance"
 		}
 	}
 }];

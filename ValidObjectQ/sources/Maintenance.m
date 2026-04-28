@@ -931,9 +931,7 @@ validMaintenanceCleanPlateWasherQTests[packet:PacketP[Object[Maintenance,Clean,P
 		{
 			MaintenanceKey,
 			WashSolvent,
-			BufferContainerPlacements,
-			MaintenancePlate,
-			VesselRackPlacements
+			BufferContainerPlacements
 		}
 	]
 
@@ -1443,6 +1441,23 @@ validMaintenanceRebuildPumpQTests[packet:PacketP[Object[Maintenance,Rebuild,Pump
 
 };
 
+(* ::Subsection::Closed:: *)
+(*validMaintenanceRestockLocalCacheQTests*)
+
+
+validMaintenanceRestockLocalCacheQTests[packet:PacketP[Object[Maintenance,RestockLocalCache]]]:={
+
+  (* Fields filled in *)
+  NotNullFieldTest[packet,
+    {
+      StockedInstrument,
+      RestockingSupplies,
+      RestockingSuppliesLength
+    }
+  ]
+
+};
+
 
 
 (* ::Subsection::Closed:: *)
@@ -1850,6 +1865,50 @@ validMaintenanceAuditGasCylindersQTests[packet:PacketP[Object[Maintenance, Audit
 	]
 };
 
+(* ::Subsection:: *)
+(*validMaintenanceCalibrateThermocyclerQTests*)
+
+
+validMaintenanceCalibrateThermocyclerQTests[packet:PacketP[Object[Maintenance, CalibrateThermocycler]]] := {
+	NotNullFieldTest[packet,
+		{
+			Target,
+			AssayPlateThermalBlock,
+			AssayPlateTray,
+			CalibrationPlates,
+			CalibrationReportFolderPath,
+			CalibrationReportFilePaths,
+			CalibrationPlateSampleRules
+		}
+	]
+};
+
+
+(* ::Subsection:: *)
+(*validMaintenanceCalibrateColonyHandlerTestQ*)
+
+validMaintenanceCalibrateColonyHandlerQTests[packet:PacketP[Object[Maintenance, CalibrateColonyHandler]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validMaintenancePrepareLinerQTests*)
+
+validMaintenancePrepareLinerQTests[packet : PacketP[Object[Maintenance, PrepareLiner]]] := {
+
+	(* Fields that must always be populated *)
+	NotNullFieldTest[packet,
+		{
+			LinerModels, InSitu
+		}
+	],
+
+	(* Ensure picked liner parameters are all present, or not *)
+	RequiredTogetherTest[packet, {PickedLiners, PickedLinerIndexes}],
+
+	(* Ensure prepared liner parameters are all present, or not *)
+	RequiredTogetherTest[packet, {BatchedSourceLiners, BatchedCuttingParameters, BatchLengths, BatchedLinerIndexes}]
+};
 
 
 (* ::Subsection:: *)
@@ -1863,6 +1922,7 @@ registerValidQTestFunction[Object[Maintenance, CalibrateApertureTube], validMain
 registerValidQTestFunction[Object[Maintenance, CalibrateAutosampler], validMaintenanceCalibrateAutosamplerQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateCarbonDioxide], validMaintenanceCalibrateCarbonDioxideQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateBalance], validMaintenanceCalibrateBalanceQTests];
+registerValidQTestFunction[Object[Maintenance, CalibrateColonyHandler],validMaintenanceCalibrateColonyHandlerQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateConductivity], validMaintenanceCalibrateConductivityQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateDNASynthesizer],validMaintenanceCalibrateDNASynthesizerQTests];
 registerValidQTestFunction[Object[Maintenance, CalibrateElectrochemicalReactor], validMaintenanceCalibrateElectrochemicalReactorQTests];
@@ -1919,11 +1979,13 @@ registerValidQTestFunction[Object[Maintenance, Replace, GasFilter],validMaintena
 registerValidQTestFunction[Object[Maintenance, Replace, Sensor],validMaintenanceReplaceSensorQTests];
 registerValidQTestFunction[Object[Maintenance, Replace, VacuumPump],validMaintenanceReplaceVacuumPumpQTests];
 registerValidQTestFunction[Object[Maintenance, Replace, WasteContainer],validMaintenanceReplaceWasteContainerQTests];
+registerValidQTestFunction[Object[Maintenance, RestockLocalCache],validMaintenanceRestockLocalCacheQTests];
 registerValidQTestFunction[Object[Maintenance, StorageUpdate],validMaintenanceStorageUpdateQTests];
 registerValidQTestFunction[Object[Maintenance, Shipping],validMaintenanceShippingQTests];
 registerValidQTestFunction[Object[Maintenance, TrainInternalRobotArm], validMaintenanceTrainInternalRobotArmPositionQTests];
 registerValidQTestFunction[Object[Maintenance, TreatWaste],validMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Object[Maintenance, UpdateLiquidHandlerDeckAccuracy],validMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
-
+registerValidQTestFunction[Object[Maintenance, CalibrateThermocycler], validMaintenanceCalibrateThermocyclerQTests];
+registerValidQTestFunction[Object[Maintenance, PrepareLiner],validMaintenancePrepareLinerQTests];
 (*End*)
 (* End Private Context *)

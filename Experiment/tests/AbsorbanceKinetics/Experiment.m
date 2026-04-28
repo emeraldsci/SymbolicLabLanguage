@@ -1301,6 +1301,15 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Variables :> {options},
 			TimeConstraint -> 500
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			TimeConstraint -> 500,
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (1.5 mL)" <> $SessionUUID], CentrifugeTime -> 40*Minute, Aliquot->True, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1343,7 +1352,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FiltrationType, "The type of filtration method that should be used to perform the filtration:"},
-			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options},
@@ -1357,7 +1366,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, Filter, "The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (1.5 mL)" <> $SessionUUID], Filter -> Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, Filter],
 			ObjectP[Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"]],
 			Variables :> {options},
@@ -1397,7 +1406,7 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Variables :> {options}
 		],
 		Example[{Options, FilterSyringe, "The syringe used to force the sample through a filter:"},
-			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 1 (1.5 mL)" <> $SessionUUID], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"], Instrument -> Model[Instrument, PlateReader, "FLUOstar Omega"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "20mL All-Plastic Disposable Luer-Lock Syringe"]],
 			Variables :> {options},
@@ -1479,12 +1488,20 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.08*Milliliter, Output -> Options];
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.18*Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
-			0.08*Milliliter,
+			0.18*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
-			Messages :> {Warning::AbsSpecInsufficientSampleVolume},
+			TimeConstraint -> 500
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAbsorbanceKinetics[Object[Sample, "ExperimentAbsorbanceKinetics New Test Chemical 2 (300 uL)" <> $SessionUUID], AliquotAmount -> 0.18101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			181 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
@@ -1604,13 +1621,13 @@ DefineTests[ExperimentAbsorbanceKinetics,
 			$Failed,
 			Messages:>{Error::InvalidBlankContainer,Error::InvalidOption}
 		],
-		Example[{Messages,"BlankStateWarning","If the blanks have a state of non-liquid, a warning is given:"},
+		Example[{Messages, "InvalidBlankStandardState", "Returns an error if a solid Blanks sample is used:"},
 			ExperimentAbsorbanceKinetics[
 				Object[Sample,"ExperimentAbsorbanceKinetics New Test Chemical 1" <> $SessionUUID],
 				Blanks->Object[Sample, "ExperimentAbsorbanceKinetics New Test Peptide oligomer 1 (220 uL)" <> $SessionUUID]
 			],
-			ObjectP[Object[Protocol,AbsorbanceKinetics]],
-			Messages:>{Warning::BlankStateWarning}
+			$Failed,
+			Messages:>{Error::InvalidBlankStandardState,Error::InvalidOption}
 		],
 		Example[{Messages,"UnnecessaryBlankTransfer","Specifying a blank volume indicates that an aliquot of the blank should be taken and read. Gives a warning if this is set to happen even though the blank is already in a valid container:"},
 			ExperimentAbsorbanceKinetics[

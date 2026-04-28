@@ -53,6 +53,7 @@ Error::NephelometryMissingDilutionCurve = "A Diluent `1` is specified, but Dilut
 Error::NephelometryDilutionVolumeTooLarge = "The total volume needed to make the dilutions for DilutionCurve `1` and/or SerialDilutionCurve `2` plus the injection volumes if any, are more than the container's maximum volume `3`. Please specify smaller volumes for injections and/or dilutions.";
 Error::NephelometryIntegrationTimeTooLarge = "When SamplingPattern is `1` and SamplingDistance is `2`, IntegrationTime must be less than `3`. Please specify an IntegrationTime that is less than `3` or set SamplingDistance to a larger value to allow for a longer IntegrationTime, or allow IntegrationTime to be set automatically.";
 Warning::NephelometryIncomputableConcentration="For sample(s) `1`, the input analyte concentration cannot be calculated because the analyte(s) `2` do not have `3` fields populated.";
+Warning::BlankStateWarning = "The blanks (`1`) do not have a state of liquid. If this is not intended, please check the blank samples (`1`).";
 
 (* Kinetics specific error messages *)
 Error::NephelometryKineticsCycleTimeTooLong = "If KineticWindowDurations are not All, the total CycleTime `1` multiplied by the corresponding NumberOfCycles `3` (subracting 1 cycle from the first NumberOfCycles to account for a measurement at time 0) cannot be longer than the corresponding KineticWindowDurations `2`. Please change the CycleTime, NumberOfCycles, or KineticWindowDurations accordingly, or leave NumberOfCycles or CycleTime as Automatic.";

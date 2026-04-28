@@ -1026,7 +1026,7 @@ resolveExperimentMeasureRefractiveIndexOptions[
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]], OptionValue::nodef];
 	output = ToList[outputSpecification];
 
-	(* Determine if we should keep a running list of tests; if Ture, then silence messages *)
+	(* Determine if we should keep a running list of tests; if True, then silence messages *)
 	gatherTests = MemberQ[output,Tests];
 
 	(* Fetch our cache from the parent function. *)
@@ -2475,11 +2475,11 @@ experimentMeasureRefractiveIndexResourcePackets[
 		Replace[WaterNeedle] -> Link[waterNeedleResource],
 
 		Replace[Checkpoints] -> {
-			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 10 Minute]]},
-			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 1 Minute]]},
-			{"Measuring Refractive Index", instrumentTime, "The refractive index of the samples are measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> instrumentTime ]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 1*Hour]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 10*Minute]]}
+			{"Picking Resources",10 Minute,"Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 10 Minute]]},
+			{"Preparing Samples",1 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 1 Minute]]},
+			{"Measuring Refractive Index", instrumentTime, "The refractive index of the samples are measured.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> instrumentTime ]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 1*Hour]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 10*Minute]]}
 		}
 	|>;
 
@@ -2791,10 +2791,10 @@ preferredNeedle[input:ObjectP[{Model[Container],Object[Container]}]]:=Module[
 	needleToUse = Switch[containerDepth,
 
 		(* Reusable Stainless Steel Non-Coring 4 in x 18G Needle *)
-		RangeP[0 Inch,4 Inch],  Model[Item, Needle, "id:AEqRl9x4OE7p"],(*"14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+		RangeP[0 Inch,4 Inch],  Model[Item, Needle, "id:AEqRl9x4OE7p"],(*"14Ga x 4In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 
 		(* Reusable Stainless Steel Non-Coring 6 in x 18G Needle *)
-		GreaterP[4 Inch],  Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+		GreaterP[4 Inch],  Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 	];
 	needleToUse
 ];

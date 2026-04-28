@@ -61,6 +61,15 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Category -> "General",
 			Abstract -> True
 		},
+		EluentGeneratorInletSolution -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample]],
+			Description -> "The solvent pumped through eluent generator flow path.",
+			Category -> "General",
+			Abstract -> True
+		},
 		FlushTime -> {
 			Format -> Single,
 			Class -> Expression,
@@ -109,6 +118,14 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Description -> "The volume of BufferD immediately before the experiment is started.",
 			Category -> "General"
 		},
+		InitialInletSolutionVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of the eluent generator source immediately before the experiment is started.",
+			Category -> "General"
+		},
 		InitialBufferAAppearance -> {
 			Format -> Single,
 			Class -> Link,
@@ -141,6 +158,14 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Description -> "The image of BufferD taken immediately before the experiment is started.",
 			Category -> "General"
 		},
+		InitialInletSolutionAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The image of the eluent generator source taken immediately before the experiment is started.",
+			Category -> "General"
+		},
 		FinalBufferAVolume -> {
 			Format -> Single,
 			Class -> Real,
@@ -166,6 +191,14 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Category -> "Gradient"
 		},
 		FinalBufferDVolume -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0*Liter],
+			Units -> Liter,
+			Description -> "The volume of BufferD immediately after the experiment is completed.",
+			Category -> "Gradient"
+		},
+		FinalInletSolutionVolume -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Liter],
@@ -203,6 +236,14 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Pattern :> _Link,
 			Relation -> Object[EmeraldCloudFile],
 			Description -> "The image of BufferD taken immediately after the experiment is completed.",
+			Category -> "Gradient"
+		},
+		FinalInletSolutionAppearance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description ->  "The image of the eluent generator source taken immediately after the experiment is completed.",
 			Category -> "Gradient"
 		},
 		TubingRinseSolution -> {
@@ -262,6 +303,22 @@ DefineObjectType[Object[Maintenance, Flush], {
 			Class -> String,
 			Pattern :> FilePathP,
 			Description -> "The compiled file describing the system flush imported onto the system.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		AnionSystemFlushWorklistFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The compiled file describing the system flush imported onto the system for anion channel.",
+			Category -> "Cleaning",
+			Developer -> True
+		},
+		CationSystemFlushWorklistFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "The compiled file describing the system flush imported onto the system for cation channel.",
 			Category -> "Cleaning",
 			Developer -> True
 		},

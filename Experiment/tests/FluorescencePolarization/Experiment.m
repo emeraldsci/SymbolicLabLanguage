@@ -1633,6 +1633,15 @@ DefineTests[
 			Variables:>{options},
 			TimeConstraint->240
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFluorescencePolarization[Object[Container, Plate, "Test plate 1 for ExperimentFluorescencePolarization"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
+			TimeConstraint -> 240
+		],
 		Example[{Options,CentrifugeTime,"Specify the SamplesIn should be centrifuged for 2 minutes:"},
 			options=ExperimentFluorescencePolarization[Object[Container,Plate,"Test plate 1 for ExperimentFluorescencePolarization"<>$SessionUUID],CentrifugeTime->2*Minute,Output->Options];
 			Lookup[options,CentrifugeTime],
@@ -1797,6 +1806,14 @@ DefineTests[
 			100 Microliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFluorescencePolarization[Object[Sample, "Test sample 7 for ExperimentFluorescencePolarization"<>$SessionUUID], AliquotAmount -> 100.01 Microliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			100 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"Specify the total volume of the aliquot. Here a 100uL aliquot containing 50uL of the input sample and 50uL of buffer will be generated:"},
 			options=ExperimentFluorescencePolarization[Object[Sample,"Test sample 7 for ExperimentFluorescencePolarization"<>$SessionUUID],AssayVolume->100 Microliter,AliquotAmount->50 Microliter,Output->Options];
@@ -2158,8 +2175,8 @@ DefineTests[
 			vesselPacket = <|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects], DeveloperObject -> True, Site -> Link[$Site]|>;
 			bottlePacket = <|Type -> Object[Container, Vessel], Model -> Link[Model[Container, Vessel, "250mL Glass Bottle"], Objects], DeveloperObject -> True, Site -> Link[$Site]|>;
 			modelSample = UploadSampleModel[
-				"Test Oligomer for ExperimentFluorescencePolarization"<>$SessionUUID,
-				Composition-> {{Null, Null}},
+				{{Null, Null}},
+				Name -> "Test Oligomer for ExperimentFluorescencePolarization"<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],

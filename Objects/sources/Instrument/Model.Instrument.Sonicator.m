@@ -59,6 +59,13 @@ DefineObjectType[Model[Instrument, Sonicator], {
 			Relation -> Model[Part, FlaskRing][CompatibleMixers]|Model[Container, Rack][CompatibleMixers],
 			Description -> "The flask ring or container rack that can be used as sonication adpater with this sonicator.",
 			Category -> "Model Information"
+		},
+		Knob -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this model of instrument has a physical knob that must be turned in order for the instrument to function, in addition to a PDU.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

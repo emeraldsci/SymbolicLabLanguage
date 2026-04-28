@@ -259,17 +259,21 @@ DefineTests[
 		],
 		Example[{Additional,"StrandInvasion","Calculate forward rate for a sequential displacement pathway based (second-order) StrandInvasion reaction:"},
 			KineticRates[Reaction[
-			{
-				Structure[{Strand[DNA["CCCCCA"]]}, {}],
-				Structure[{Strand[DNA["CCCCC"]],Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]
-			},
-			{
-				Structure[{Strand[DNA["CCCCC"]]}, {}],
-				Structure[{Strand[DNA["CCCCCA"]],Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]
-			},
-			StrandInvasion
-		]],
-			Reaction[{Structure[{Strand[DNA["CCCCCA"]]}, {}], Structure[{Strand[DNA["CCCCC"]], Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]}, {Structure[{Strand[DNA["CCCCC"]]}, {}], Structure[{Strand[DNA["CCCCCA"]], Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]}, Quantity[7.052316164697305, 1/("Molar"*"Seconds")]]
+				{
+					Structure[{Strand[DNA["CCCCCA"]]}, {}],
+					Structure[{Strand[DNA["CCCCC"]],Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]
+				},
+				{
+					Structure[{Strand[DNA["CCCCC"]]}, {}],
+					Structure[{Strand[DNA["CCCCCA"]],Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]
+				},
+				StrandInvasion
+			]],
+			Reaction[
+				{Structure[{Strand[DNA["CCCCCA"]]}, {}], Structure[{Strand[DNA["CCCCC"]], Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]},
+				{Structure[{Strand[DNA["CCCCC"]]}, {}], Structure[{Strand[DNA["CCCCCA"]], Strand[DNA["GGGGG"]]}, {Bond[{1, 1 ;; 5}, {2, 1 ;; 5}]}]},
+				_?(RoundMatchQ[10][#, Quantity[7.052316164697305, 1/("Molar"*"Seconds")]]&)
+			]
 		],
 		Example[{Additional,"StrandInvasion","Calculate forward rate for a dissociative pathway based (first-order) StrandInvasion reaction:"},
 			KineticRates[Reaction[

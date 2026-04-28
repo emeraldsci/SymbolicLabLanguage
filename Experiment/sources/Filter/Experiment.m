@@ -251,7 +251,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FiltrationTypeP], (* PeristalticPump | Centrifuge | Vacuum | Syringe | AirPressure *)
-				Description -> "The type of dead-end filtration method that should be used to perform the filtration. This option can only be set to AirPressure if Preparation->Robotic.",
+				Description -> "The type of dead-end filtration method that is used to perform the filtration. This option can only be set to AirPressure if Preparation->Robotic.",
 				ResolutionDescription -> "Will be automatically set to a filtration type appropriate for the volume of sample being filtered.",
 				Category -> "Method"
 			},
@@ -261,7 +261,7 @@ DefineOptions[ExperimentFilter,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Quantity, Pattern :> GreaterP[0 Minute], Units -> {Second, {Second, Minute, Hour}}],
 				Category -> "Method",
-				Description -> "The amount of time for which the samples will be filtered.",
+				Description -> "The amount of time for which force is applied to move the sample through the filter.",
 				ResolutionDescription -> "For Syringe filtration, automatically set to the MaxVolume of the syringe divided by the desired flow rate. This option may be overwritten if both FlowRate and Time options are provided. For other filtration types, automatically set to 5 minutes, or the value of MaxTime, whichever is shorter."
 			},
 			{
@@ -273,7 +273,7 @@ DefineOptions[ExperimentFilter,
 					Pattern :> BooleanP
 				],
 				Category -> "Method",
-				Description -> "Indicates if the filtration should be continued until the sample has all been filtered, or up to the MaxTime, in an attempt to filter the entire sample.",
+				Description -> "Indicates if the filtration is continued until the sample has all been filtered, or up to the MaxTime, in an attempt to filter the entire sample.",
 				ResolutionDescription -> "Automatically set to True if MaxTime is specified, or if Type is set to PeristalticPump or Vacuum.  Automatically set to False otherwise."
 			},
 			{
@@ -356,7 +356,7 @@ DefineOptions[ExperimentFilter,
 						}
 					}
 				],
-				Description -> "The instrument that should be used to perform the filtration. This option can only be set to pressure filter if Preparation->Robotic.",
+				Description -> "The instrument that is used to perform the filtration. This option can only be set to pressure filter if Preparation->Robotic.",
 				ResolutionDescription -> "Will be automatically set to an instrument appropriate for the filtration type.",
 				Category -> "Method"
 			},
@@ -397,7 +397,7 @@ DefineOptions[ExperimentFilter,
 			{
 				OptionName -> Sterile,
 				Default -> Automatic,
-				Description -> "Indicates if the filtration of the samples should be done in a sterile environment.",
+				Description -> "Indicates if the filtration of the samples is done in a sterile environment.",
 				ResolutionDescription -> "Automatically set to True if WorkCell is set to bioSTAR, or if Instrument is set to Model[Instrument, Centrifuge, \"HiG4\"].",
 				AllowNull -> False,
 				Category -> "Method",
@@ -424,7 +424,7 @@ DefineOptions[ExperimentFilter,
 						}
 					}
 				],
-				Description -> "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane on peristaltic pump.",
+				Description -> "The filter housing that is used to hold the filter membrane when filtration is performed using a standalone filter membrane on peristaltic pump.",
 				ResolutionDescription -> "Automatically set to a housing capable of holding the size of the membrane being used, if filter with Membrane FilterType is being used.",
 				Category -> "Method"
 			},
@@ -468,7 +468,7 @@ DefineOptions[ExperimentFilter,
 						}
 					}
 				],
-				Description -> "The filter that should be used to remove impurities from the sample.",
+				Description -> "The filter that is used to remove impurities from the sample.",
 				ResolutionDescription -> "Will be automatically set to a filter appropriate for the filtration type and instrument. If the sample is already in a filter, it will not be moved to a new one unless explicitly specified.",
 				Category -> "Filter Properties"
 			},
@@ -482,7 +482,7 @@ DefineOptions[ExperimentFilter,
 					Size -> Line,
 					PatternTooltip -> "Enumeration must be any well from A1 to H12."
 				],
-				Description -> "The desired position in the Filter in which the samples should be placed for the filtering.",
+				Description -> "The desired position in the Filter in which the samples are placed for the filtering.",
 				ResolutionDescription -> "If the input sample is already in a filter, automatically set to the current position.  Otherwise, selects the first empty position in the Filter according to the order indicated in Flatten[AllWells[]] if using container filters, or Null otherwise.",
 				Category -> "Filter Properties"
 			},
@@ -515,11 +515,20 @@ DefineOptions[ExperimentFilter,
 				]
 			},
 			{
+				OptionName -> SampleLoadingDrainTime,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Quantity, Pattern :> RangeP[0 Minute, 1 Hour], Units -> {Second, {Second, Minute, Hour}}],
+				Description -> "The amount of time to wait after the sample has been loaded into the filter plate before proceeding with filtering, in order to capture any gravity-drainage from the top filter plate to the bottom collection container. This option can only be set if Preparation->Robotic.",
+				ResolutionDescription -> "Automatically set to 5 Minutes if filtering robotically.",
+				Category -> "Method"
+			},
+			{
 				OptionName -> MembraneMaterial,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FilterMembraneMaterialP],
-				Description -> "The material from which the filtration membrane should be made of.",
+				Description -> "The material from which the filtration membrane is made of.",
 				ResolutionDescription -> "Will be automatically set to PES or to the MembraneMaterial of Filter if it is specified.",
 				Category -> "Filter Properties"
 			},
@@ -528,7 +537,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FilterMembraneMaterialP],
-				Description -> "The material from which the prefilter filtration membrane should be made of.",
+				Description -> "The material from which the prefilter filtration membrane is made of.",
 				ResolutionDescription -> "Will be automatically set to GxF if a prefilter pore size is specified.",
 				Category -> "Filter Properties"
 			},
@@ -537,7 +546,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FilterSizeP],
-				Description -> "The pore size of the filter; all particles larger than this should be removed during the filtration.",
+				Description -> "The pore size of the filter; all particles larger than this are removed during the filtration.",
 				ResolutionDescription -> "Will be automatically set to .22 Micron or to the PoreSize of Filter if it is specified. Will be automatically set to Null if MolecularWeightCutoff is specified.",
 				Category -> "Filter Properties"
 			},
@@ -546,7 +555,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FilterMolecularWeightCutoffP],
-				Description -> "The molecular weight cutoff of the filter; all particles larger than this should be removed during the filtration.",
+				Description -> "The molecular weight cutoff of the filter; all particles larger than this are removed during the filtration.",
 				ResolutionDescription -> "Will be automatically set to Null or to the MolecularWeightCutoff of Filter if it is specified.",
 				Category -> "Filter Properties"
 			},
@@ -555,7 +564,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> FilterSizeP],
-				Description -> "The pore size of the prefilter; all particles larger than this should be removed during the filtration.",
+				Description -> "The pore size of the prefilter; all particles larger than this are removed during the filtration.",
 				ResolutionDescription -> "Will be automatically set to .45 Micron if a prefilter membrane material is specified.",
 				Category -> "Filter Properties"
 			},
@@ -581,7 +590,7 @@ DefineOptions[ExperimentFilter,
 						}
 					]
 				],
-				Description -> "The conditions under which any filters used by this experiment should be stored after the protocol is completed.",
+				Description -> "The conditions under which any filters used by this experiment are stored after the protocol is completed.",
 				Category -> "Filter Properties"
 			},
 			{
@@ -611,7 +620,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if the retentate captured by the filter should be retrieved by direct transfer or resuspension in a new buffer. Note that the Filtrate will always be collected as well, and whether the Filtrate or Retentate are the SamplesOut is dictated by the Target option.",
+				Description -> "Indicates if the retentate captured by the filter is retrieved by direct transfer or resuspension in a new buffer. Note that the Filtrate will always be collected as well, and whether the Filtrate or Retentate are the SamplesOut is dictated by the Target option.",
 				ResolutionDescription -> "Automatically set to True if RetentateContainerOut, RetentateDestinationWell, ResuspensionVolume, ResuspensionBuffer, RetentateCollectionMethod, ResuspensionCentrifugeIntensity, or ResuspensionCentrifugeTime are specified, or False otherwise.",
 				Category -> "Retentate Collection"
 			},
@@ -623,7 +632,7 @@ DefineOptions[ExperimentFilter,
 					Type -> Enumeration,
 					Pattern :> Resuspend | Centrifuge | Transfer (* Transfer could be liquid or solid *)
 				],
-				Description -> "Indicates how resuspended retentate should be transferred into RetentateContainerOut.",
+				Description -> "Indicates how resuspended retentate is transferred into RetentateContainerOut.",
 				ResolutionDescription -> "Automatically set to Centrifuge if CollectRetentate -> True and using centrifuge filters that can be inverted inside a new tube and centrifuged again in order to collect retentate.  In all other cases, if CollectRetentate is True then set to Resuspend, or Null otherwise.",
 				Category -> "Retentate Collection"
 			},
@@ -664,7 +673,7 @@ DefineOptions[ExperimentFilter,
 						]
 					}
 				],
-				Description -> "The desired container retentate samples should be transferred into after filtering, with indices indicating grouping of samples in the same plates.",
+				Description -> "The desired container retentate samples are transferred into after filtering, with indices indicating grouping of samples in the same plates.",
 				ResolutionDescription -> "Automatically set as the PreferredContainer for the ResuspensionVolume of the sample. For plates, attempts to fill all wells of a single plate with the same model before using another one. If not collecting the retentate, automatically set to Null.",
 				Category -> "Retentate Collection"
 			},
@@ -687,7 +696,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates that if the filter becomes occluded or clogged during the course of filtration, all retentate that cannot be passed through the filter should be collected into the OccludingRetentateContainer.  Note that this is currently only done during syringe filtering; for all other filtration types, use the CollectRetentate boolean directly.",
+				Description -> "Indicates that if the filter becomes occluded or clogged during the course of filtration, all retentate that cannot be passed through the filter is collected into the OccludingRetentateContainer.  Note that this is currently only done during syringe filtering; for all other filtration types, use the CollectRetentate boolean directly.",
 				ResolutionDescription -> "Automatically set to True if FiltrationType is set to Syringe or if OccludingRetentateContainer or OccludingRetentateContainerLabel are specified, and False otherwise.",
 				Category -> "Retentate Collection"
 			},
@@ -706,7 +715,7 @@ DefineOptions[ExperimentFilter,
 						}
 					}
 				],
-				Description -> "Indicates the container into which the retentate should be transferred if the filter becomes clogged.",
+				Description -> "Indicates the container into which the retentate is transferred if the filter becomes clogged.",
 				ResolutionDescription -> "Automatically set to Null if CollectOccludingRetentate is False, and set to the PreferredContainer of the input sample volume if CollectOccludingRetentate is True",
 				Category -> "Retentate Collection"
 			},
@@ -742,8 +751,8 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if the retentate captured by the filter should be washed with a buffer prior to collection.",
-				ResolutionDescription -> "Automatically set to True if RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, or RetentateWashCentrifugeIntensity is specified, or False otherwise.",
+				Description -> "Indicates if the retentate captured by the filter is washed with a buffer prior to collection.",
+				ResolutionDescription -> "Automatically set to True if RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, RetentateWashDrainTime, or RetentateWashCentrifugeIntensity is specified, or False otherwise.",
 				Category -> "Retentate Washing"
 			},
 			(* all of the RetentateWash options below need to be multiple multiple *)
@@ -827,14 +836,28 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Alternatives[
+					Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Minute], Units -> {Second, {Second, Minute, Hour}}],
+					Adder[Alternatives[
+						Widget[Type -> Quantity, Pattern :> GreaterEqualP[0 Minute], Units -> {Second, {Second, Minute, Hour}}],
+						Widget[Type -> Enumeration,Pattern :> Alternatives[Null, Automatic]]
+					]]
+				],
+				Description -> "The amount of time to wait after the retentate wash buffer has been added to the filter before applying force, in order to allow gravity drainage. This option is only applicable for when Preparation is set to Robotic.",
+				ResolutionDescription -> "Automatically set to the value of the SampleLoadingDrainTime option if WashRetentate -> True and Preparation -> Robotic, or Null otherwise.",
+				Category -> "Retentate Washing"
+			},
+			{
+				OptionName -> RetentateWashTime,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Alternatives[
 					Widget[Type -> Quantity, Pattern :> GreaterP[0 Minute], Units -> {Second, {Second, Minute, Hour}}],
 					Adder[Alternatives[
 						Widget[Type -> Quantity, Pattern :> GreaterP[0 Minute], Units -> {Second, {Second, Minute, Hour}}],
 						Widget[Type -> Enumeration,Pattern :> Alternatives[Null, Automatic]]
 					]]
 				],
-				Category -> "Protocol",
-				Description -> "The amount of time for which the samples will be washed with RetentateWashBuffer after initial filtration and prior to retentate collection.",
+				Description -> "The amount of time for which force is applied to move the retentate wash buffer through the filter after initial filtration and prior to retentate collection.",
 				ResolutionDescription -> "Automatically set to the value of the Time option if WashRetentate -> True, or Null otherwise.",
 				Category -> "Retentate Washing"
 			},
@@ -879,7 +902,7 @@ DefineOptions[ExperimentFilter,
 						Widget[Type -> Enumeration, Pattern :> Alternatives[Null, Automatic]]
 					]]
 				],
-				Description -> "Indicates if after RetentateWashBuffer is added to the retentate, the retentate should be mixed prior to filtering wash buffer out.",
+				Description -> "Indicates if after RetentateWashBuffer is added to the retentate, the retentate is mixed prior to filtering wash buffer out.",
 				ResolutionDescription -> "Automatically set to False if CollectRetentate -> True, or Null otherwise.",
 				Category -> "Retentate Washing"
 			},
@@ -894,7 +917,7 @@ DefineOptions[ExperimentFilter,
 						Widget[Type -> Enumeration, Pattern :> Alternatives[Null, Automatic]]
 					]]
 				],
-				Description -> "Number of times the retentate should be pipetted if WashRetentate -> True and RetentateWashMix -> True.",
+				Description -> "Number of times the retentate is pipetted if WashRetentate -> True and RetentateWashMix -> True.",
 				ResolutionDescription -> "Automatically set to 10 if WashRetentate -> True and RetentateWashMix -> True, or Null otherwise.",
 				Category -> "Retentate Washing"
 			},
@@ -918,6 +941,20 @@ DefineOptions[ExperimentFilter,
 							Units -> {PSI, {PSI, Bar, Pascal}}
 						],
 						Widget[Type -> Enumeration, Pattern :> Alternatives[Null, Automatic]]
+					]]
+				]
+			},
+			{
+				OptionName -> RetentateWashPipettingMethod,
+				Default -> Null,
+				Description -> "The set of pipetting parameters used to manipulate the RetentateWashBuffer when transferring it into the filter plate. This option can only be set if Preparation is set to Robotic.",
+				AllowNull -> True,
+				Category -> "Retentate Washing",
+				Widget -> Alternatives[
+					Widget[Type -> Object, Pattern :> ObjectP[Model[Method, Pipetting]]],
+					Adder[Alternatives[
+						Widget[Type -> Object, Pattern :> ObjectP[Model[Method, Pipetting]]],
+						Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 					]]
 				]
 			},
@@ -1075,7 +1112,7 @@ DefineOptions[ExperimentFilter,
 						]]
 					]
 				],
-				Description -> "The conditions under which any retentate wash flow through generated by this experiment should be stored after the protocol is completed.",
+				Description -> "The conditions under which any retentate wash flow through generated by this experiment is stored after the protocol is completed.",
 				ResolutionDescription -> "Automatically set to the same value as SamplesOutStorageCondition if WashRetentate -> True, or Null otherwise.",
 				Category -> "Filter Properties"
 			},
@@ -1118,7 +1155,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> True,
 				Widget -> Widget[Type -> Number, Pattern :> RangeP[1, 50, 1]],
-				Description -> "Number of times the retentate should be pipetted if RetentateCollectionMethod -> Transfer.",
+				Description -> "Number of times the retentate is pipetted if RetentateCollectionMethod -> Transfer.",
 				ResolutionDescription -> "Automatically set to 10 if RetentateCollectionMethod -> Transfer, or Null otherwise.",
 				Category -> "Retentate Collection"
 			},
@@ -1128,7 +1165,7 @@ DefineOptions[ExperimentFilter,
 				Default -> Automatic,
 				AllowNull -> False,
 				Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP],
-				Description -> "Indicates if the filter should be pre-wet with PrewetFilterBuffer before the input sample is run through it.",
+				Description -> "Indicates if the filter is pre-wet with PrewetFilterBuffer before the input sample is run through it.",
 				ResolutionDescription -> "Automatically set to True if any of the other prewetting options are specified or if the filter has StorageBuffer -> True, or False otherwise.",
 				Category -> "Prewetting"
 			},
@@ -1141,7 +1178,7 @@ DefineOptions[ExperimentFilter,
 					(* Note that setting the maximum to 5 here is significant because the procedure only allows you to do it that many times; if you change that you have to change the procedure too *)
 					Pattern :> RangeP[1, 5, 1]
 				],
-				Description -> "Number of times the filter should be pre-wet with PrewetFilterBuffer before the input sample is run through it.  Note that if there is liquid already in the filter, the first iteration will NOT add any buffer.",
+				Description -> "Number of times the filter is pre-wet with PrewetFilterBuffer before the input sample is run through it.  Note that if there is liquid already in the filter, the first iteration will NOT add any buffer.",
 				ResolutionDescription -> "Automatically set to 3 if PrewetFilter -> True and the Filter has StorageBuffer -> True, or 1 if PrewetFilter -> True otherwise, or Null if PrewetFilter -> False.",
 				Category -> "Prewetting"
 			},
@@ -1245,6 +1282,116 @@ DefineOptions[ExperimentFilter,
 				],
 				UnitOperation -> True
 			},
+			{
+				OptionName -> InitialFiltrate,
+				Default -> Automatic,
+				Description -> "Indicates if a portion of the sample is filtered before retentate collection to prime the filter with the sample.",
+				ResolutionDescription -> "Automatically set to True if FiltrationType is Syringe or any other InitialFiltration options are specified. Otherwise set to False.",
+				AllowNull -> False,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				]
+			},
+			{
+				OptionName -> InitialFiltrateVolume,
+				Default -> Automatic,
+				Description -> "The amount of sample to push through the filter before retentate collection in order to prime the filter.",
+				ResolutionDescription -> "Automatically set to 5 Percent of the sample volume if InitialFiltrate is set to True. Otherwise, set to Null.",
+				AllowNull -> True,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[1 Microliter, 20 Liter],
+					Units -> {Milliliter, {Microliter, Milliliter, Liter}}
+				]
+			},
+			{
+				OptionName -> InitialFiltrateContainerOut,
+				Default -> Automatic,
+				Description -> "The container used to accumulate the filtrate during the initial filtration step.",
+				ResolutionDescription -> "Automatically set to the same model of FiltrateContainerOut if InitialFiltrate is set to True. Otherwise, set to Null.",
+				AllowNull -> True,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> Object,
+					Pattern :> ObjectP[{Model[Container], Object[Container]}],
+					ObjectTypes -> {Model[Container], Object[Container]},
+					OpenPaths -> {
+						{
+							Object[Catalog, "Root"],
+							"Containers"
+						}
+					}
+				]
+			},
+			{
+				OptionName -> InitialFiltrateLabel,
+				Default -> Automatic,
+				Description -> "A user defined word or phrase used to identify the sample collected during the initial filtration step, for use in downstream unit operations.",
+				AllowNull -> True,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
+				],
+				UnitOperation -> True
+			},
+			{
+				OptionName -> InitialFiltrateContainerLabel,
+				Default -> Automatic,
+				Description -> "The label of the container that is used to accumulate the filtrate during the initial filtration step.",
+				AllowNull -> True,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> _String,
+					Size -> Line
+				],
+				UnitOperation -> True
+			},
+			{
+				OptionName -> InitialFiltrateDestinationWell,
+				Default -> Automatic,
+				AllowNull -> True,
+				Category -> "Initial Filtration",
+				Widget -> Widget[
+					Type -> String,
+					Pattern :> WellPositionP,
+					Size -> Line,
+					PatternTooltip -> "Enumeration must be any well from A1 to H12."
+				],
+				Description -> "The desired position in the corresponding InitialFiltrateContainerOut in which the initial filtrate sample is placed.",
+				ResolutionDescription -> "Automatically set to A1 if InitialFiltrate is True and the container is a vessel. For plates, automatically set to the first empty well. Otherwise, set to Null."
+			},
+			{
+				OptionName -> InitialFiltrateStorageCondition,
+				Default -> Automatic,
+				AllowNull -> True,
+				Description -> "The conditions under which any initial filtrate generated by this experiment is stored after the protocol is completed.",
+				ResolutionDescription -> "Automatically set to SamplesOutStorageCondition if InitialFiltrate is set to True. Otherwise set to Null.",
+				Widget -> Alternatives[
+					"Storage Type" -> Widget[
+						Type -> Enumeration,
+						Pattern :> SampleStorageTypeP | Disposal
+					],
+					"Storage Object" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[Model[StorageCondition]],
+						PreparedSample -> False,
+						PreparedContainer -> False,
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Storage Conditions"
+							}
+						}
+					]
+				],
+				Category -> "Initial Filtration"
+			},
 			(* Old SM needs this; new framework does _not_ need this  *)
 			{
 				OptionName -> SampleOut,
@@ -1257,7 +1404,7 @@ DefineOptions[ExperimentFilter,
 			{
 				OptionName -> FiltrateContainerOut,
 				Default -> Automatic,
-				Description -> "The desired container generated samples should be produced in or transferred into by the end of the experiment, with indices indicating grouping of samples in the same plates.",
+				Description -> "The desired container generated samples are produced in or transferred into by the end of the experiment, with indices indicating grouping of samples in the same plates.",
 				ResolutionDescription -> "Automatically set as the PreferredContainer for the Volume of the sample. For plates, attempts to fill all wells of a single plate with the same model before using another one.",
 				AllowNull -> False,
 				Category -> "Protocol",
@@ -1393,6 +1540,13 @@ DefineOptions[ExperimentFilter,
 (* ::Subsection:: *)
 (*ExperimentFilter*)
 
+(* Filtration type to volume range look up. This is a little silly to hard code, but it is for now *)
+filtrationTypeVolumeRangeAssoc = <|
+	Centrifuge -> {15 Microliter, 94 Milliliter},
+	Syringe -> {0.5 Milliliter, 50 Milliliter},
+	Vacuum -> {20 Microliter, 4 Liter},
+	PeristalticPump -> {50 Milliliter, 20 Liter}
+|>;
 
 (* Mixed Input *)
 ExperimentFilter[myInputs: ListableP[ObjectP[{Object[Container], Object[Sample], Model[Sample]}] | _String|{LocationPositionP,_String|ObjectP[Object[Container]]}], myOptions: OptionsPattern[]] := Module[
@@ -1599,10 +1753,12 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 		RetentateWashVolume,
 		NumberOfRetentateWashes,
 		RetentateWashDrainTime,
+		RetentateWashTime,
 		RetentateWashCentrifugeIntensity,
 		RetentateWashMix,
 		NumberOfRetentateWashMixes,
 		RetentateWashPressure,
+		RetentateWashPipettingMethod,
 		RetentateWashBufferLabel,
 		RetentateWashBufferContainerLabel,
 		WashFlowThroughLabel,
@@ -1681,11 +1837,11 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 
 	(* Any container the user provided (in case it's not on the PreferredContainer list) *)
 	containerOutObjects = DeleteDuplicates[Cases[
-		Flatten[Lookup[expandedSafeOpsWithoutMultipleMultiples, {FiltrateContainerOut, RetentateContainerOut}]],
+		Flatten[Lookup[expandedSafeOpsWithoutMultipleMultiples, {FiltrateContainerOut, RetentateContainerOut, PrewetFilterContainerOut, InitialFiltrateContainerOut}]],
 		ObjectP[Object]
 	]];
 	containerOutModels = DeleteDuplicates[Cases[
-		Flatten[Lookup[expandedSafeOpsWithoutMultipleMultiples, {FiltrateContainerOut, RetentateContainerOut}]],
+		Flatten[Lookup[expandedSafeOpsWithoutMultipleMultiples, {FiltrateContainerOut, RetentateContainerOut, PrewetFilterContainerOut, InitialFiltrateContainerOut}]],
 		ObjectP[Model]
 	]];
 	sampleOutObjects = DeleteDuplicates[Cases[Flatten[{Lookup[templatedOptions, SampleOut]}], ObjectP[Object]]];
@@ -1851,6 +2007,7 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 	downloadedStuff = Quiet[Download[
 		{
 			(*1*)samplesWithPreparedSamples,
+			(*1.5*)samplesWithPreparedSamples,
 			(*2*)containerOutObjects,
 			(*3*)containerOutModels,
 			(*4*)sampleOutObjects,
@@ -1879,10 +2036,12 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			(*27*)allTips[[All, 1]],
 			(*28*)disposableNeedles
 		},
-		Evaluate[{
+		{
 			(* samples *)
 			(*1*)
 			packetObjectSample,
+			(*1.5 sample composition cell models packets. Somehow this does not work either in the packetObjectSample or with any overhauling Evaluate*)
+			{Packet[Composition[[All,2]][{CellType, BiosafetyLevel}]]},
 			(* containerOut *)
 			(*2*)
 			{
@@ -1971,12 +2130,12 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 			packetObjectSample,
 			(*26*)
 			(* buffer samples model *)
-			{Packet[Sequence @@ modelSampleFields]},
+			{Evaluate[Packet[Sequence @@ modelSampleFields]]},
 			(*27*)
 			tipFields,
 			(* allNeedleModelPackets *)
 			(*28*){Packet[Name, Sterile, ConnectionType, Gauge, NeedleLength, Bevel, DeveloperObject]}
-		}],
+		},
 		Cache -> cache,
 		Simulation -> updatedSimulation,
 		Date -> Now
@@ -2110,7 +2269,7 @@ ExperimentFilter[mySamples: ListableP[ObjectP[Object[Sample]]], myOptions: Optio
 
 	uniqueTimes = DeleteDuplicatesBy[Transpose[{times, filterLabel}], Last][[All, 1]];
 
-	totalTimesEstimate = 1.2 * Total[uniqueTimes/.{Null -> 1 Minute}];
+	totalTimesEstimate = 2 * Total[uniqueTimes/.{Null -> 1 Minute}];
 
 	(* We have to return the result. Call UploadProtocol[...] to prepare our protocol packet (and upload it if asked). *)
 	result = Which[
@@ -2321,9 +2480,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		sampleContainerModelPackets, sampleContainerPackets, allFootprints, allFootprintCentrifugeEquipment,
 		footprintCentrifugeEquipmentLookup, messages, discardedSamplePackets, discardedInvalidInputs, discardedTest,
 		missingVolumeSamplePackets, missingVolumeInvalidInputs, missingVolumeTest, sampleVolumes, nonLiquidSamplePackets,
-		nonLiquidSampleInvalidInputs, nonLiquidSampleTest, typeInstrumentInvalidOptions, allBuchnerFunnels,
-		widestBuchnerFunnelDiameteter, typeInstrumentTest, typeAndSyringeInvalidOptions, typeAndSyringeTest, centrifugePackets,
-		allProvidedFilters, possibleAutomaticFilters, allCentrifugeDevicesFilters, expandedCentrifugeDevicesTime,
+		nonLiquidSampleInvalidInputs, nonLiquidSampleTest, typeInstrumentInvalidOptions, allBuchnerFunnels, widestBuchnerFunnelDiameteter,
+		typeInstrumentTest, typeAndSyringeInvalidOptions, typeAndSyringeTest, centrifugePackets, optionPrecisions, roundedOptions,
+		precisionTests, allProvidedFilters, possibleAutomaticFilters, allCentrifugeDevicesFilters, expandedCentrifugeDevicesTime,
 		expandedCentrifugeDevicesTemperatures, expandedCentrifugeDevicesIntensities, centrifugeTuples, uniqueCentrifugeTuples,
 		centrifugeReturnPosition, centrifugeDevicesReturn, centrifugeDevicesReplaceRule, centrifugeDevicesNonUnique,
 		centrifugesAndContainersByOptionSet, mapThreadFriendlyOptions, instrumentMismatchTypes, instrumentMismatchInstruments,
@@ -2367,7 +2526,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		incompatibleFilterTimeOptions, incompatibleFilterTimeWithTypeTests, incompatibleFilterTimeTests,
 		resolvedRetentateWashBuffer, resolvedRetentateWashVolume, resolvedNumberOfRetentateWashes,
 		retentateContainerOutPlateInvalidOptions, retentateContainerOutPlateInvalidTest,
-		resolvedRetentateWashDrainTime, resolvedRetentateWashCentrifugeIntensity, resolvedNumberOfRetentateWashMixes,
+		resolvedRetentateWashDrainTime, resolvedRetentateWashTime, resolvedRetentateWashCentrifugeIntensity, resolvedNumberOfRetentateWashMixes,
 		optionsForAliquot, typeAndFilterHousingMismatchErrors, centrifugeCollectionMethodErrors, centrifugeContainerDestErrors,
 		filterHousingMismatchTypes, filterHousingMismatchSyringes, filterHousingMismatchSamples, totalCollectionVolumes,
 		filterHousingMismatchOptions, filterHousingMismatchTest, sterileInstrumentMismatchTypes, retentateContainerOutPlateErrors,
@@ -2380,7 +2539,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		sterileContainerOutMismatchTest, filtrateContainerOutMaxVolumeErrors, filtrateContainerOutMaxVolumes,
 		filtrateContainerOutMaxVolumeOptions, filtrateContainerOutMaxVolumeTest, syringeMaxVolumeErrors,
 		syringeMaxVolumes, syringeMaxVolumeOptions, syringeMaxVolumeTest, syringeConnectionTypes, resolvedPressure,
-		resolvedRetentateWashPressure,resolvedVolumes, resolvedPrewetFilter, resolvedPrewetFilterTime,
+		resolvedRetentateWashPressure,resolvedRetentateWashPipettingMethod, resolvedVolumes, resolvedSampleLoadingDrainTime, resolvedPrewetFilter, resolvedPrewetFilterTime,
 		resolvedPrewetFilterBufferVolume, resolvedPrewetFilterCentrifugeIntensity, resolvedPrewetFilterBuffer,
 		resolvedPrewetFilterBufferLabel, resolvedPrewetFilterContainerOut, resolvedPrewetFilterContainerLabel,
 		incorrectSyringeConnectionErrors, incorrectSyringeConnectionOptions, incorrectSyringeConnectionTest,
@@ -2406,7 +2565,10 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		overOccupiedFilters, overOccupiedErrorOptions, overOccupiedErrorTests, newMassesPerFilter, resolvedCounterweight,
 		noCounterweightsErrors, noCounterweightCollectionContainers, noCounterweightOptions, noCounterweightTest,
 		sameFilterConflictingOptions, sameFilterConflictingFilters, sameFilterConflictingSamples, filtrateContainerLabelToIndexReplaceRules,
-		sameFilterConflictingErrorOptions, sameFilterConflictingErrorTests, collectionContainerPlateMismatchErrorSamples,
+		sameFilterConflictingErrorOptions, sameFilterConflictingErrorTests, centrifugeModelPackets, roundedIntensities,
+		roundedRetentateWashCentrifugeIntensities, roundedPrewetFilterCentrifugeIntensities, intensityPrecisionInvalidInfos,
+		additionalRoundPrecisionInfos, updatedIntensityPrecisionInvalidInfos, updatedAdditionalRoundPrecisionInfos,
+		joinSingleQuantityString, additionalRoundPrecisionTests, collectionContainerPlateMismatchErrorSamples,
 		collectionContainerPlateMismatchErrorOptions, collectionContainerPlateMismatchErrorTests,
 		pipettingOptionNames, pipettingOptionsToPass, mapThreadFriendlyPreResolvedPipettingParameterOptions, samplesToTransfer,
 		samplesToNotTransfer, filtersToTransfer, filtersToNotTransfer, volumesToTransfer, volumesToNotTransfer, optionsToTransfer,
@@ -2452,7 +2614,15 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		numberOfFilterPrewettingsTooHighOptions, numberOfFilterPrewettingsTooHighTest, prewettingTypeMismatchOptions,
 		prewettingTypeMismatchTest, destWellPositionConflict, destWellPositionErrorOptions, destWellPositionErrorTest,
 		collectionContainerMaxVolumeErrors, collectionContainerMaxVolumeOptions, collectionContainerMaxVolumeTest, collectionContainerMaxVolumes,
-		equivalentFilterLookup, parentProtocolSite
+		invalidTypeForVolumeErrors, invalidTypeForVolumeErrorOptions, invalidTypeForVolumeErrorTests,
+		initialFiltrateMismatchErrors, initialFiltrateMismatchOptions, initialFiltrateMismatchTest,
+		initialFiltrateVolumeTooHighErrors, initialFiltrateVolumeTooHighOptions, initialFiltrateVolumeTooHighTest,
+		initialFiltrateContainerOutMaxVolumeErrors, initialFiltrateContainerOutMaxVolumeOptions, initialFiltrateContainerOutMaxVolumeTest,
+		initialFiltrateTypeMismatchErrors, initialFiltrateTypeMismatchOptions, initialFiltrateTypeMismatchTest,
+		resolvedInitialFiltrate, resolvedInitialFiltrateVolume, resolvedInitialFiltrateContainerOut,
+		resolvedInitialFiltrateLabel, resolvedInitialFiltrateContainerLabel, resolvedInitialFiltrateDestinationWell, resolvedInitialFiltrateStorageCondition,
+		initialFiltrateDestWellPositionErrors, initialFiltrateDestWellPositionOptions, initialFiltrateDestWellPositionTest,
+		equivalentFilterLookup, parentProtocolSite, componentModelPackets, centrifugeBiohazardSampleQs, expandedCentrifugeDevicesBiohazards
 	},
 
 	(* Determine the requested output format of this function. *)
@@ -2483,10 +2653,12 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		RetentateWashVolume,
 		NumberOfRetentateWashes,
 		RetentateWashDrainTime,
+		RetentateWashTime,
 		RetentateWashCentrifugeIntensity,
 		RetentateWashMix,
 		NumberOfRetentateWashMixes,
 		RetentateWashPressure,
+		RetentateWashPipettingMethod,
 		RetentateWashBufferLabel,
 		RetentateWashBufferContainerLabel,
 		WashFlowThroughLabel,
@@ -2669,7 +2841,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		{
 			Packet[Name, Volume, State, Status, Container, LiquidHandlerIncompatible, Solvent, Position],
 			Packet[Container[{Object, Model, KitComponents}]],
-			Packet[Container[Model[{MaxVolume, DestinationContainerModel, RetentateCollectionContainerModel, Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape}]]]
+			Packet[Container[Model[{MaxVolume, DestinationContainerModel, RetentateCollectionContainerModel, Graduations, GraduationTypes, GraduationLabels, CrossSectionalShape}]]],
+			Packet[Composition[[All,2]][{CellType, BiosafetyLevel}]]
 		},
 		Simulation -> updatedSimulation
 	], {Download::FieldDoesntExist, Download::NotLinkField}];
@@ -2691,7 +2864,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 	{
 		samplePackets,
 		sampleContainerPacketsWithNulls,
-		sampleContainerModelPacketsWithNulls
+		sampleContainerModelPacketsWithNulls,
+		componentModelPackets
 	} = Transpose[sampleDownloads];
 
 	(* If the sample is discarded, it doesn't have a container, so the corresponding container packet is Null.
@@ -2816,6 +2990,41 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 	];
 
 
+	(*-- OPTION PRECISION CHECKS I--*)
+
+	(* Round non-Intensity related options *)
+	optionPrecisions = {
+		{Time, 10^0 * Second},
+		{MaxTime, 10^0 * Second},
+		{FlowRate, 10^-2 * Milliliter / Minute},
+		{Temperature, 1 Celsius},
+		{Volume, 10^-1 * Microliter},
+		{Pressure, 10^0 * PSI},
+		{SampleLoadingDrainTime, 10^0 * Second},
+		{RetentateWashVolume, 10^-1 * Microliter},
+		{RetentateWashDrainTime, 10^0 * Second},
+		{RetentateWashTime, 10^0 * Second},
+		{RetentateWashPressure, 10^0 * PSI},
+		{PrewetFilterTime, 10^0 * Second},
+		{PrewetFilterBufferVolume, 10^-1 * Microliter},
+		{InitialFiltrateVolume, 10^-1 * Microliter}
+	};
+	{roundedOptions, precisionTests} = If[gatherTests,
+		RoundOptionPrecision[
+			Association[filterOptions],
+			optionPrecisions[[All, 1]],
+			optionPrecisions[[All, 2]],
+			Output -> {Result, Tests}],
+		{
+			RoundOptionPrecision[
+				Association[filterOptions],
+				optionPrecisions[[All, 1]],
+				optionPrecisions[[All, 2]]
+			],
+			Null
+		}
+	];
+
 	(* -- CONFLICTING OPTIONS CHECKS -- *)
 
 
@@ -2842,6 +3051,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		]&,
 		allProvidedFilters
 	];
+	(* Preparing for Step 3 - evaluate the biohazardness of the samples *)
+	(* Call the helper function to determine, for each sample, if it should be handled as biohazardous sample for centrifugation, i.e. buckets are treated as covered secondary containers, with sample loading and unloading happening in biosafety cabinets. *)
+	centrifugeBiohazardSampleQs = evaluateSamplesBiohazard[samplePackets, componentModelPackets];
 
 	(* Step 3 - Expand the options for CentrifugeDevices *)
 	expandedCentrifugeDevicesTime = MapThread[
@@ -2856,13 +3068,18 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		ConstantArray[#1, Length[#2]]&,
 		{Lookup[filterOptions, Intensity], allCentrifugeDevicesFilters}
 	];
+	expandedCentrifugeDevicesBiohazards = MapThread[
+		ConstantArray[#1, Length[#2]]&,
+		{centrifugeBiohazardSampleQs, allCentrifugeDevicesFilters}
+	];
 
 	(* Combine the input and conditions into one list so that CentrifugeDevices is faster *)
 	centrifugeTuples = Transpose[{
 		Flatten[allCentrifugeDevicesFilters],
 		Flatten[expandedCentrifugeDevicesTime],
 		Flatten[expandedCentrifugeDevicesTemperatures],
-		Flatten[expandedCentrifugeDevicesIntensities]
+		Flatten[expandedCentrifugeDevicesIntensities],
+		Flatten[expandedCentrifugeDevicesBiohazards]
 	}];
 
 	(* Get the unique Tuple for CentrifugeDevices *)
@@ -2877,6 +3094,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		Time -> Flatten[uniqueCentrifugeTuples[[All, 2]]] /. {Null -> Automatic},
 		Temperature -> Flatten[uniqueCentrifugeTuples[[All, 3]]] /. {RangeP[24.999 Celsius, 25.001 Celsius] -> Ambient, Null -> Automatic},
 		Intensity -> Flatten[uniqueCentrifugeTuples[[All, 4]]] /. {Null -> Automatic},
+		Biohazard -> Flatten[uniqueCentrifugeTuples[[All, 5]]],
 		Cache -> Flatten[{cacheBall, centrifugePackets}],
 		Simulation -> updatedSimulation
 	];
@@ -3002,7 +3220,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 	(* NOTE: MAPPING*)
 	(* Convert our options into a MapThread friendly version. *)
-	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFilter, filterOptions];
+	mapThreadFriendlyOptions = OptionsHandling`Private`mapThreadOptions[ExperimentFilter, roundedOptions];
 
 	(* Big MapThread to get all the options resolved *)
 	{
@@ -3042,102 +3260,119 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		(*34*)resolvedRetentateWashVolume,
 		(*35*)resolvedNumberOfRetentateWashes,
 		(*36*)resolvedRetentateWashDrainTime,
-		(*37*)resolvedRetentateWashCentrifugeIntensity,
-		(*38*)resolvedNumberOfRetentateWashMixes,
-		(*39*)resolvedSampleLabel,
-		(*40*)resolvedSampleContainerLabel,
-		(*41*)resolvedFiltrateLabel,
-		(*42*)semiResolvedFiltrateContainerLabel,
-		(*43*)resolvedRetentateLabel,
-		(*44*)semiResolvedRetentateContainerLabel,
-		(*45*)resolvedSampleOutLabel,
-		(*46*)semiResolvedContainerOutLabel,
-		(*47*)resolvedResuspensionBufferLabel,
-		(*48*)resolvedResuspensionBufferContainerLabel,
-		(*49*)resolvedRetentateWashBufferLabel,
-		(*50*)resolvedRetentateWashBufferContainerLabel,
-		(*51*)filtrateContainerOutMaxVolumes,
-		(*52*)syringeMaxVolumes,
-		(*53*)syringeConnectionTypes,
-		(*54*)resolvedPressure,
-		(*55*)resolvedRetentateWashPressure,
-		(*56*)filterTypeMismatchErrors,
-		(*57*)filterMembraneMaterialMismatchErrors,
-		(*58*)filterPoreSizeMismatchErrors,
-		(*59*)noFilterAvailableErrors,
-		(*60*)filterMaxVolumeMismatchErrors,
-		(*61*)filterInletConnectionTypeMismatchErrors,
-		(*62*)badCentrifugeErrors,
-		(*63*)noUsableCentrifugeErrors,
-		(*64*)typeAndInstrumentMismatchErrors,
-		(*65*)typeAndSyringeMismatchErrors,
-		(*66*)collectRetentateErrors,
-		(*67*)retentateCollectionMethodErrors,
-		(*68*)transferCollectionMethodErrors,
-		(*69*)poreSizeAndMWCOMismatchErrors,
-		(*70*)prefilterOptionMismatchErrors,
-		(*71*)filterMolecularWeightMismatchErrors,
-		(*72*)incompatibleFilterTimeWithTypeErrors,
-		(*73*)incompatibleFilterTimeOptionsErrors,
-		(*74*)typeAndFilterHousingMismatchErrors,
-		(*75*)sterileInstrumentMismatchErrors,
-		(*76*)typeAndCentrifugeIntensityMismatchErrors,
-		(*77*)sterileContainerOutMismatchErrors,
-		(*78*)filtrateContainerOutMaxVolumeErrors,
-		(*79*)syringeMaxVolumeErrors,
-		(*80*)incorrectSyringeConnectionErrors,
-		(*81*)temperatureInvalidErrors,
-		(*82*)retentateWashCentrifugeIntensityTypeErrors,
-		(*83*)washRetentateTypeErrors,
-		(*84*)retentateWashMixErrors,
-		(*85*)washRetentateConflictErrors,
-		(*86*)resuspensionVolumeTooHighErrors,
-		(*87*)flowRateNullErrors,
-		(*88*)centrifugeContainerDestErrors,
-		(*89*)centrifugeCollectionMethodErrors,
-		(*90*)retentateContainerOutPlateErrors,
-		(*91*)intensityTooHighErrors,
-		(*92*)typePressureMismatchErrors,
-		(*93*)pressureTooHighErrors,
-		(*94*)transferringToNewFilterQs,
-		(*95*)resolvedVolumes,
-		(*96*)resolvedPrewetFilter,
-		(*97*)resolvedPrewetFilterTime,
-		(*98*)resolvedPrewetFilterBufferVolume,
-		(*99*)resolvedPrewetFilterCentrifugeIntensity,
-		(*100*)resolvedPrewetFilterBuffer,
-		(*101*)resolvedPrewetFilterBufferLabel,
-		(*102*)resolvedPrewetFilterContainerOut,
-		(*103*)semiResolvedPrewetFilterContainerLabel,
-		(*104*)prewetFilterMismatchErrors,
-		(*105*)prewetFilterCentrifugeIntensityTypeErrors,
-		(*106*)resolvedWashFlowThroughStorageCondition,
-		(*107*)resolvedWashFlowThroughContainer,
-		(*108*)semiResolvedWashFlowThroughDestinationWell,
-		(*109*)resolvedWashFlowThroughLabel,
-		(*110*)semiResolvedWashFlowThroughContainerLabel,
-		(*111*)washFlowThroughSameAsFiltrateQs,
-		(*112*)collectionContainerPlateMismatchErrors,
-		(*113*)resolvedFilterStorageCondition,
-		(*114*)resolvedCollectOccludingRetentate,
-		(*115*)resolvedOccludingRetentateContainer,
-		(*116*)preResolvedOccludingRetentateDestWell,
-		(*117*)occludingRetentateMismatchErrors,
-		(*118*)occludingRetentateNotSupportedErrors,
-		(*119*)filterAirPressureDimensionsErrors,
-		(*120*)resolvedNumberOfFilterPrewettings,
-		(*121*)numberOfFilterPrewettingsTooHighErrors,
-		(*122*)prewettingTypeMismatchErrors,
-		(*123*)collectionContainerMaxVolumeErrors,
-		(*124*)collectionContainerMaxVolumes
+		(*37*)resolvedRetentateWashTime,
+		(*38*)resolvedRetentateWashCentrifugeIntensity,
+		(*39*)resolvedNumberOfRetentateWashMixes,
+		(*40*)resolvedSampleLabel,
+		(*41*)resolvedSampleContainerLabel,
+		(*42*)resolvedFiltrateLabel,
+		(*43*)semiResolvedFiltrateContainerLabel,
+		(*44*)resolvedRetentateLabel,
+		(*45*)semiResolvedRetentateContainerLabel,
+		(*46*)resolvedSampleOutLabel,
+		(*47*)semiResolvedContainerOutLabel,
+		(*48*)resolvedResuspensionBufferLabel,
+		(*49*)resolvedResuspensionBufferContainerLabel,
+		(*50*)resolvedRetentateWashBufferLabel,
+		(*51*)resolvedRetentateWashBufferContainerLabel,
+		(*52*)filtrateContainerOutMaxVolumes,
+		(*53*)syringeMaxVolumes,
+		(*54*)syringeConnectionTypes,
+		(*55*)resolvedPressure,
+		(*56*)resolvedRetentateWashPressure,
+		(*57*)resolvedRetentateWashPipettingMethod,
+		(*58*)filterTypeMismatchErrors,
+		(*59*)filterMembraneMaterialMismatchErrors,
+		(*60*)filterPoreSizeMismatchErrors,
+		(*61*)noFilterAvailableErrors,
+		(*62*)filterMaxVolumeMismatchErrors,
+		(*63*)filterInletConnectionTypeMismatchErrors,
+		(*64*)badCentrifugeErrors,
+		(*65*)noUsableCentrifugeErrors,
+		(*66*)typeAndInstrumentMismatchErrors,
+		(*67*)typeAndSyringeMismatchErrors,
+		(*68*)collectRetentateErrors,
+		(*69*)retentateCollectionMethodErrors,
+		(*70*)transferCollectionMethodErrors,
+		(*71*)poreSizeAndMWCOMismatchErrors,
+		(*72*)prefilterOptionMismatchErrors,
+		(*73*)filterMolecularWeightMismatchErrors,
+		(*74*)incompatibleFilterTimeWithTypeErrors,
+		(*75*)incompatibleFilterTimeOptionsErrors,
+		(*76*)typeAndFilterHousingMismatchErrors,
+		(*77*)sterileInstrumentMismatchErrors,
+		(*78*)typeAndCentrifugeIntensityMismatchErrors,
+		(*79*)sterileContainerOutMismatchErrors,
+		(*80*)filtrateContainerOutMaxVolumeErrors,
+		(*81*)syringeMaxVolumeErrors,
+		(*82*)incorrectSyringeConnectionErrors,
+		(*83*)temperatureInvalidErrors,
+		(*84*)retentateWashCentrifugeIntensityTypeErrors,
+		(*85*)washRetentateTypeErrors,
+		(*86*)retentateWashMixErrors,
+		(*87*)washRetentateConflictErrors,
+		(*88*)resuspensionVolumeTooHighErrors,
+		(*89*)flowRateNullErrors,
+		(*90*)centrifugeContainerDestErrors,
+		(*91*)centrifugeCollectionMethodErrors,
+		(*92*)retentateContainerOutPlateErrors,
+		(*93*)intensityTooHighErrors,
+		(*94*)typePressureMismatchErrors,
+		(*95*)pressureTooHighErrors,
+		(*96*)transferringToNewFilterQs,
+		(*97*)resolvedVolumes,
+		(*98*)resolvedSampleLoadingDrainTime,
+		(*99*)resolvedPrewetFilter,
+		(*100*)resolvedPrewetFilterTime,
+		(*101*)resolvedPrewetFilterBufferVolume,
+		(*102*)resolvedPrewetFilterCentrifugeIntensity,
+		(*103*)resolvedPrewetFilterBuffer,
+		(*104*)resolvedPrewetFilterBufferLabel,
+		(*105*)resolvedPrewetFilterContainerOut,
+		(*106*)semiResolvedPrewetFilterContainerLabel,
+		(*107*)prewetFilterMismatchErrors,
+		(*108*)prewetFilterCentrifugeIntensityTypeErrors,
+		(*109*)resolvedWashFlowThroughStorageCondition,
+		(*110*)resolvedWashFlowThroughContainer,
+		(*111*)semiResolvedWashFlowThroughDestinationWell,
+		(*112*)resolvedWashFlowThroughLabel,
+		(*113*)semiResolvedWashFlowThroughContainerLabel,
+		(*114*)washFlowThroughSameAsFiltrateQs,
+		(*115*)collectionContainerPlateMismatchErrors,
+		(*116*)resolvedFilterStorageCondition,
+		(*117*)resolvedCollectOccludingRetentate,
+		(*118*)resolvedOccludingRetentateContainer,
+		(*119*)preResolvedOccludingRetentateDestWell,
+		(*120*)occludingRetentateMismatchErrors,
+		(*121*)occludingRetentateNotSupportedErrors,
+		(*122*)filterAirPressureDimensionsErrors,
+		(*123*)resolvedNumberOfFilterPrewettings,
+		(*124*)numberOfFilterPrewettingsTooHighErrors,
+		(*125*)prewettingTypeMismatchErrors,
+		(*126*)collectionContainerMaxVolumeErrors,
+		(*127*)collectionContainerMaxVolumes,
+		(*128*)invalidTypeForVolumeErrors,
+		(*129*)initialFiltrateMismatchErrors,
+		(*130*)initialFiltrateVolumeTooHighErrors,
+		(*131*)initialFiltrateContainerOutMaxVolumeErrors,
+		(*132*)initialFiltrateTypeMismatchErrors,
+		(*133*)resolvedInitialFiltrate,
+		(*134*)resolvedInitialFiltrateVolume,
+		(*135*)resolvedInitialFiltrateContainerOut,
+		(*136*)resolvedInitialFiltrateLabel,
+		(*137*)resolvedInitialFiltrateContainerLabel,
+		(*137*)resolvedInitialFiltrateDestinationWell,
+		(*138*)resolvedInitialFiltrateStorageCondition,
+		(*139*)initialFiltrateDestWellPositionErrors
 	} = Transpose[
 		MapThread[
-			Function[{samplePacket, volume, options, sampleContainerPacket ,sampleContainerModelPacket},
+			Function[{samplePacket, volume, options, sampleContainerPacket ,sampleContainerModelPacket, biohazardQ},
 				Module[
 					{
 						typeBasedOnFilter, typeBasedOnInstrument, typeBasedOnOtherOptions, typeBasedOnCentrifugeOptions,
-						membraneBasedOnFilter, poreSizeBasedOnFilter, molecularWeightCutoffBasedOnFilter, unresolvedType, type,
-						typeBasedOnSyringeOption, unresolvedInstrument, unresolvedInstrumentModel, instrument, semiResolvedInstrument,
+						membraneBasedOnFilter, poreSizeBasedOnFilter, molecularWeightCutoffBasedOnFilter, unresolvedType,
+						type, possibleTypes, possibleFiltersPerType, possibleFiltersOfTypesLookup, possibleTypesWithFiltersFound,preferredPossibleType,invalidTypeForVolumeError,
+						typeBasedOnSyringeOption, unresolvedInstrument, unresolvedInstrumentModel, instrument, semiResolvedInstrumentOfTypeLookup,
 						unresolvedSyringe, syringe, unresolvedFlowRate, flowRate, unresolvedPoreSize, poreSize, maxRotationRate,
 						unresolvedVolume, unresolvedMolecularWeightCutoff, molecularWeightCutoff, unresolvedSterile, unresolvedSterileFromOptions, sterile, filter,
 						resolvedFilterModelPacket, unresovledPrefilterPoreSize, prefilterPoreSize, prefilterPoreSizeBasedOnFilter,
@@ -3147,7 +3382,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						unresolvedFilterHousing, filterHousing, plateFilterQ, resolvedFilterFilterType, filtrateContainerTag, unTaggedContainer,
 						taggedFiltrateContainerOut, filtrateContainerOut, samplesOutStorageCondition, filterUntilDrained, defaultModelDestinationContainer,
 						unresolvedIntensity, intensity, washRetentate, maxTime, unresolvedTime, time, retentateCollectionOptions,
-						retentateWashOptions, retentateWashMixOptions, collectRetentate, unresolvedTemperature, temperature,
+						retentateWashOptions, retentateWashMixOptions, initialFiltrateOptions, collectRetentate, unresolvedTemperature, temperature,
 						sampleOut, temperatureInvalidError, filterTypeMismatchError, filterMembraneMaterialMismatchError,
 						filterPoreSizeMismatchError, filterMolecularWeightMismatchError, noFilterAvailableError, unresolvedRetentateContainerOut,
 						unresolvedFiltrateContainerOut, filterMaxVolumeMismatchError, filterInletConnectionTypeMismatchError, instrumentModel,
@@ -3156,8 +3391,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						badCentrifugeError, noUsableCentrifugeError, unresolvedCollectionContainer, collectionContainer, collectionContainerModelPacket,
 						unresolvedFilterUntilDrained, unresolvedMaxTime, target, unresolvedRetentateCollectionContainer, retentateCollectionContainer,
 						unresolvedCollectRetentate, unresolvedRetentateCollectionMethod, unresolvedWashRetentate, unresolvedRetentateWashBuffer,
-						retentateWashMix, retentateCollectionMethod, typePressureMismatchError, pressureTooHighError, unresolvedRetentateWashVolume,
-						unresolvedNumberOfRetentateWashes, unresolvedRetentateWashDrainTime, unresolvedRetentateWashCentrifugeIntensity,
+						retentateWashMix, initialFiltrate, retentateCollectionMethod, typePressureMismatchError, pressureTooHighError, unresolvedRetentateWashVolume,
+						unresolvedNumberOfRetentateWashes, unresolvedRetentateWashDrainTime, unresolvedRetentateWashTime, unresolvedRetentateWashCentrifugeIntensity,
 						preResolvedFilter, unresolvedRetentateWashMix, unresolvedNumberOfRetentateWashMixes, centrifugeCollectionMethodError,
 						unresolvedResuspensionVolume, unresolvedResuspensionBuffer, unresolvedResuspensionNumberOfMixes, resuspensionBuffer,
 						resuspensionNumberOfMixes, retentateCollectionContainerModelQ, poreSizeAndMWCOMismatchQ, prefilterOptionMismatchQ,
@@ -3165,12 +3400,12 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						typeAndInstrumentMismatchError, typeAndSyringeMismatchError, collectRetentateError, unresolvedRetentateContainerOutModelPacket,
 						resuspensionVolume, retentateContainerOut, retentateDestinationWell, transferCollectionMethodError,
 						retentateCollectionMethodError, retentateWashBuffer, retentateWashVolume, numberOfRetentateWashes, retentateWashDrainTime,
-						retentateWashCentrifugeIntensity, numberOfRetentateWashMixes, typeAndFilterHousingMismatchError, sterileInstrumentMismatchError,
+						retentateWashTime, retentateWashCentrifugeIntensity, numberOfRetentateWashMixes, typeAndFilterHousingMismatchError, sterileInstrumentMismatchError,
 						totalRetentateWashVolume, typeAndCentrifugeIntensityMismatchError, sterileContainerOutMismatchError, actualSampleVolume,
 						filtrateContainerOutMaxVolume, filtrateContainerOutSampleVolume, filtrateContainerOutMaxVolumeError, syringeMaxVolume,
 						syringeMaxVolumeError, storageBufferQ, syringeConnectionType, incorrectSyringeConnectionError, totalCollectedVolume,
 						vacuumType, vacuCapQ, retentateWashBufferWithListyNulls, retentateWashVolumeWithListyNulls, numberOfRetentateWashesWithListyNulls,
-						numberOfRetentateWashMixesWithListyNulls,resolvedVolume, maxVolumePerCycle, retentateWashDrainTimeWithListyNulls,
+						numberOfRetentateWashMixesWithListyNulls,resolvedVolume, sampleLoadingDrainTime, maxVolumePerCycle, retentateWashDrainTimeWithListyNulls, retentateWashTimeWithListyNulls,
 						retentateWashCentrifugeIntensityWithListyNulls, retentateWashCentrifugeIntensityTypeError, washRetentateTypeError,
 						retentateWashMixError, washRetentateConflictError, resuspensionVolumeTooHighError, unresolvedSampleLabel,
 						unresolvedSampleContainerLabel, unresolvedFiltrateLabel, unresolvedFiltrateContainerLabel, unresolvedRetentateLabel,
@@ -3186,7 +3421,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						prewetFilterBufferLabel, prewetFilterContainerOut, prewetFilterContainerLabel, unresolvedPrewetFilter,
 						unresolvedPrewetFilterTime, unresolvedPrewetFilterBufferVolume, numberOfFilterPrewettings,
 						unresolvedPrewetFilterCentrifugeIntensity, unresolvedPrewetFilterBuffer, unresolvedPrewetFilterBufferLabel,
-						unresolvedPrewetFilterContainerOut, unresolvedPrewetFilterContainerLabel, prewetFilterMismatchError,
+						unresolvedPrewetFilterContainerOut, unresolvedPrewetFilterContainerLabel, unresolvedInitialFiltrate,
+						unresolvedInitialFiltrateVolume, unresolvedInitialFiltrateContainerOut, unresolvedInitialFiltrateLabel, unresolvedInitialFiltrateContainerLabel,
+						unresolvedInitialFiltrateDestinationWell, unresolvedInitialFiltrateStorageCondition, prewetFilterMismatchError,
 						prewetFilterCentrifugeIntensityTypeError, unresolvedWashFlowThroughLabel, unresolvedWashFlowThroughContainerLabel,
 						unresolvedWashFlowThroughContainer, unresolvedWashFlowThroughDestinationWell, unresolvedWashFlowThroughStorageCondition,
 						washThroughSameAsFiltrateQs, washFlowThroughStorageCondition, washFlowThroughContainer, washFlowThroughDestinationWell,
@@ -3196,8 +3433,14 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						unresolvedOccludingRetentateDestWell, unresolvedOccludingRetentateContainerLabel, collectOccludingRetentate,
 						occludingRetentateContainer, occludingRetentateDestinationWell, unresolvedNumberOfFilterPrewettings,
 						numberOfFilterPrewettingsTooHighError, prewettingTypeMismatchError, semiResolvedInstrumentFilterPosition,
-						semiResolvedInstrumentFilterDimensions,semiResolvedInstrumentFilterDimensionPattern,filterAirPressureDimensionsError,
-						collectOccludingRetentateBool,collectionContainerMaxVolumeError, collectionContainerMaxVolume
+						semiResolvedAirPressureInstrument, semiResolvedInstrument, semiResolvedAirPressureFilterDimensions,
+						semiResolvedAirPressureFilterDimensionPattern,filterAirPressureDimensionsError, unresolvedSampleLoadingDrainTime,
+						collectOccludingRetentateBool,collectionContainerMaxVolumeError, collectionContainerMaxVolume,
+						initialFiltrateVolume, initialFiltrateContainerOut, initialFiltrateLabel, initialFiltrateContainerLabel, initialFiltrateDestinationWell,
+						initialFiltrateStorageCondition,
+						initialFiltrateMismatchError, initialFiltrateVolumeTooHighError, initialFiltrateContainerOutMaxVolumeError,
+						initialFiltrateTypeMismatchError, initialFiltrateContainerOutMaxVolume,
+						initialFiltrateDestWellPositionError, initialFiltrateContainerOutAllowedPositions
 					},
 
 					(* Error checking variables *)
@@ -3248,162 +3491,187 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						filterAirPressureDimensionsError,
 						numberOfFilterPrewettingsTooHighError,
 						prewettingTypeMismatchError,
-						collectionContainerMaxVolumeError
-					} = ConstantArray[False, 47];
+						collectionContainerMaxVolumeError,
+						initialFiltrateMismatchError,
+						initialFiltrateVolumeTooHighError,
+						initialFiltrateContainerOutMaxVolumeError,
+						initialFiltrateTypeMismatchError,
+						initialFiltrateDestWellPositionError
+					} = ConstantArray[False, 52];
 
 					(* Pull out all the relevant unresolved options *)
 					{
-						unresolvedType,
-						unresolvedInstrument,
-						unresolvedSyringe,
-						unresolvedFlowRate,
-						unresolvedPoreSize,
-						unresolvedMolecularWeightCutoff,
-						unresovledPrefilterPoreSize,
-						unresolvedMembraneMaterial,
-						unresolvedPrefilterMembraneMaterial,
-						unresolvedFilter,
-						unresolvedFilterHousing,
-						unresolvedRetentateContainerOut,
-						unresolvedRetentateDestinationWell,
-						unresolvedFiltrateContainerOut,
-						unresolvedFiltrateDestinationWell,
-						sampleOut,
-						samplesOutStorageCondition,
-						unresolvedIntensity,
-						unresolvedTime,
-						unresolvedTemperature,
-						unresolvedSterileFromOptions,
-						unresolvedCollectionContainer,
-						unresolvedRetentateCollectionContainer,
-						unresolvedFilterUntilDrained,
-						unresolvedMaxTime,
-						target,
-						unresolvedCollectRetentate,
-						unresolvedRetentateCollectionMethod,
-						unresolvedWashRetentate,
-						unresolvedRetentateWashBuffer,
-						unresolvedRetentateWashVolume,
-						unresolvedNumberOfRetentateWashes,
-						unresolvedRetentateWashDrainTime,
-						unresolvedRetentateWashCentrifugeIntensity,
-						unresolvedRetentateWashMix,
-						unresolvedNumberOfRetentateWashMixes,
-						unresolvedResuspensionVolume,
-						unresolvedResuspensionBuffer,
-						unresolvedResuspensionNumberOfMixes,
-						unresolvedSampleLabel,
-						unresolvedSampleContainerLabel,
-						unresolvedFiltrateLabel,
-						unresolvedFiltrateContainerLabel,
-						unresolvedRetentateLabel,
-						unresolvedRetentateContainerLabel,
-						unresolvedCollectionContainerLabel,
-						unresolvedSampleOutLabel,
-						unresolvedContainerOutLabel,
-						unresolvedResuspensionBufferLabel,
-						unresolvedResuspensionBufferContainerLabel,
-						unresolvedRetentateWashBufferLabel,
-						unresolvedRetentateWashBufferContainerLabel,
-						unresolvedPressure,
-						unresolvedRetentateWashPressure,
-						unresolvedVolume,
-						unresolvedPrewetFilter,
-						unresolvedPrewetFilterTime,
-						unresolvedNumberOfFilterPrewettings,
-						unresolvedPrewetFilterBufferVolume,
-						unresolvedPrewetFilterCentrifugeIntensity,
-						unresolvedPrewetFilterBuffer,
-						unresolvedPrewetFilterBufferLabel,
-						unresolvedPrewetFilterContainerOut,
-						unresolvedPrewetFilterContainerLabel,
-						unresolvedWashFlowThroughLabel,
-						unresolvedWashFlowThroughContainerLabel,
-						unresolvedWashFlowThroughContainer,
-						unresolvedWashFlowThroughDestinationWell,
-						unresolvedWashFlowThroughStorageCondition,
-						filterStorageCondition,
-						unresolvedCollectOccludingRetentate,
-						unresolvedOccludingRetentateContainer,
-						unresolvedOccludingRetentateDestWell,
-						unresolvedOccludingRetentateContainerLabel
+						(*1*)unresolvedType,
+						(*2*)unresolvedInstrument,
+						(*3*)unresolvedSyringe,
+						(*4*)unresolvedFlowRate,
+						(*5*)unresolvedPoreSize,
+						(*6*)unresolvedMolecularWeightCutoff,
+						(*7*)unresovledPrefilterPoreSize,
+						(*8*)unresolvedMembraneMaterial,
+						(*9*)unresolvedPrefilterMembraneMaterial,
+						(*10*)unresolvedFilter,
+						(*11*)unresolvedFilterHousing,
+						(*12*)unresolvedRetentateContainerOut,
+						(*13*)unresolvedRetentateDestinationWell,
+						(*14*)unresolvedFiltrateContainerOut,
+						(*15*)unresolvedFiltrateDestinationWell,
+						(*16*)sampleOut,
+						(*17*)samplesOutStorageCondition,
+						(*18*)unresolvedIntensity,
+						(*19*)unresolvedTime,
+						(*20*)unresolvedTemperature,
+						(*21*)unresolvedSterileFromOptions,
+						(*22*)unresolvedCollectionContainer,
+						(*23*)unresolvedRetentateCollectionContainer,
+						(*24*)unresolvedFilterUntilDrained,
+						(*25*)unresolvedMaxTime,
+						(*26*)target,
+						(*27*)unresolvedCollectRetentate,
+						(*28*)unresolvedRetentateCollectionMethod,
+						(*29*)unresolvedWashRetentate,
+						(*30*)unresolvedRetentateWashBuffer,
+						(*31*)unresolvedRetentateWashVolume,
+						(*32*)unresolvedNumberOfRetentateWashes,
+						(*33*)unresolvedRetentateWashDrainTime,
+						(*34*)unresolvedRetentateWashTime,
+						(*35*)unresolvedRetentateWashCentrifugeIntensity,
+						(*36*)unresolvedRetentateWashMix,
+						(*37*)unresolvedNumberOfRetentateWashMixes,
+						(*38*)unresolvedResuspensionVolume,
+						(*39*)unresolvedResuspensionBuffer,
+						(*40*)unresolvedResuspensionNumberOfMixes,
+						(*41*)unresolvedSampleLabel,
+						(*42*)unresolvedSampleContainerLabel,
+						(*43*)unresolvedFiltrateLabel,
+						(*44*)unresolvedFiltrateContainerLabel,
+						(*45*)unresolvedRetentateLabel,
+						(*46*)unresolvedRetentateContainerLabel,
+						(*47*)unresolvedCollectionContainerLabel,
+						(*48*)unresolvedSampleOutLabel,
+						(*49*)unresolvedContainerOutLabel,
+						(*50*)unresolvedResuspensionBufferLabel,
+						(*51*)unresolvedResuspensionBufferContainerLabel,
+						(*52*)unresolvedRetentateWashBufferLabel,
+						(*53*)unresolvedRetentateWashBufferContainerLabel,
+						(*54*)unresolvedPressure,
+						(*55*)unresolvedRetentateWashPressure,
+						(*56*)resolvedRetentateWashPipettingMethod, (* this one is defaulted to Null so we don't need to say unresolved *)
+						(*57*)unresolvedVolume,
+						(*58*)unresolvedSampleLoadingDrainTime,
+						(*59*)unresolvedPrewetFilter,
+						(*60*)unresolvedPrewetFilterTime,
+						(*61*)unresolvedNumberOfFilterPrewettings,
+						(*62*)unresolvedPrewetFilterBufferVolume,
+						(*63*)unresolvedPrewetFilterCentrifugeIntensity,
+						(*64*)unresolvedPrewetFilterBuffer,
+						(*65*)unresolvedPrewetFilterBufferLabel,
+						(*66*)unresolvedPrewetFilterContainerOut,
+						(*67*)unresolvedPrewetFilterContainerLabel,
+						(*68*)unresolvedInitialFiltrate,
+						(*69*)unresolvedInitialFiltrateVolume,
+						(*70*)unresolvedInitialFiltrateContainerOut,
+						(*71*)unresolvedInitialFiltrateLabel,
+						(*72*)unresolvedInitialFiltrateContainerLabel,
+						(*73*)unresolvedInitialFiltrateDestinationWell,
+						(*74*)unresolvedInitialFiltrateStorageCondition,
+						(*75*)unresolvedWashFlowThroughLabel,
+						(*76*)unresolvedWashFlowThroughContainerLabel,
+						(*77*)unresolvedWashFlowThroughContainer,
+						(*78*)unresolvedWashFlowThroughDestinationWell,
+						(*79*)unresolvedWashFlowThroughStorageCondition,
+						(*80*)filterStorageCondition,
+						(*81*)unresolvedCollectOccludingRetentate,
+						(*82*)unresolvedOccludingRetentateContainer,
+						(*83*)unresolvedOccludingRetentateDestWell,
+						(*84*)unresolvedOccludingRetentateContainerLabel
 					} = Lookup[
 						options,
 						{
-							FiltrationType,
-							Instrument,
-							Syringe,
-							FlowRate,
-							PoreSize,
-							MolecularWeightCutoff,
-							PrefilterPoreSize,
-							MembraneMaterial,
-							PrefilterMembraneMaterial,
-							Filter,
-							FilterHousing,
-							RetentateContainerOut,
-							RetentateDestinationWell,
-							FiltrateContainerOut,
-							FiltrateDestinationWell,
-							SampleOut,
-							SamplesOutStorageCondition,
-							Intensity,
-							Time,
-							Temperature,
-							Sterile,
-							CollectionContainer,
-							RetentateCollectionContainer,
-							FilterUntilDrained,
-							MaxTime,
-							Target,
-							CollectRetentate,
-							RetentateCollectionMethod,
-							WashRetentate,
-							RetentateWashBuffer,
-							RetentateWashVolume,
-							NumberOfRetentateWashes,
-							RetentateWashDrainTime,
-							RetentateWashCentrifugeIntensity,
-							RetentateWashMix,
-							NumberOfRetentateWashMixes,
-							ResuspensionVolume,
-							ResuspensionBuffer,
-							NumberOfResuspensionMixes,
-							SampleLabel,
-							SampleContainerLabel,
-							FiltrateLabel,
-							FiltrateContainerLabel,
-							RetentateLabel,
-							RetentateContainerLabel,
-							CollectionContainerLabel,
-							SampleOutLabel,
-							ContainerOutLabel,
-							ResuspensionBufferLabel,
-							ResuspensionBufferContainerLabel,
-							RetentateWashBufferLabel,
-							RetentateWashBufferContainerLabel,
-							Pressure,
-							RetentateWashPressure,
-							Volume,
-							PrewetFilter,
-							PrewetFilterTime,
-							NumberOfFilterPrewettings,
-							PrewetFilterBufferVolume,
-							PrewetFilterCentrifugeIntensity,
-							PrewetFilterBuffer,
-							PrewetFilterBufferLabel,
-							PrewetFilterContainerOut,
-							PrewetFilterContainerLabel,
-							WashFlowThroughLabel,
-							WashFlowThroughContainerLabel,
-							WashFlowThroughContainer,
-							WashFlowThroughDestinationWell,
-							WashFlowThroughStorageCondition,
-							FilterStorageCondition,
-							CollectOccludingRetentate,
-							OccludingRetentateContainer,
-							OccludingRetentateDestinationWell,
-							OccludingRetentateContainerLabel
+							(*1*)FiltrationType,
+							(*2*)Instrument,
+							(*3*)Syringe,
+							(*4*)FlowRate,
+							(*5*)PoreSize,
+							(*6*)MolecularWeightCutoff,
+							(*7*)PrefilterPoreSize,
+							(*8*)MembraneMaterial,
+							(*9*)PrefilterMembraneMaterial,
+							(*10*)Filter,
+							(*11*)FilterHousing,
+							(*12*)RetentateContainerOut,
+							(*13*)RetentateDestinationWell,
+							(*14*)FiltrateContainerOut,
+							(*15*)FiltrateDestinationWell,
+							(*16*)SampleOut,
+							(*17*)SamplesOutStorageCondition,
+							(*18*)Intensity,
+							(*19*)Time,
+							(*20*)Temperature,
+							(*21*)Sterile,
+							(*22*)CollectionContainer,
+							(*23*)RetentateCollectionContainer,
+							(*24*)FilterUntilDrained,
+							(*25*)MaxTime,
+							(*26*)Target,
+							(*27*)CollectRetentate,
+							(*28*)RetentateCollectionMethod,
+							(*29*)WashRetentate,
+							(*30*)RetentateWashBuffer,
+							(*31*)RetentateWashVolume,
+							(*32*)NumberOfRetentateWashes,
+							(*33*)RetentateWashDrainTime,
+							(*34*)RetentateWashTime,
+							(*35*)RetentateWashCentrifugeIntensity,
+							(*36*)RetentateWashMix,
+							(*37*)NumberOfRetentateWashMixes,
+							(*38*)ResuspensionVolume,
+							(*39*)ResuspensionBuffer,
+							(*40*)NumberOfResuspensionMixes,
+							(*41*)SampleLabel,
+							(*42*)SampleContainerLabel,
+							(*43*)FiltrateLabel,
+							(*44*)FiltrateContainerLabel,
+							(*45*)RetentateLabel,
+							(*46*)RetentateContainerLabel,
+							(*47*)CollectionContainerLabel,
+							(*48*)SampleOutLabel,
+							(*49*)ContainerOutLabel,
+							(*50*)ResuspensionBufferLabel,
+							(*51*)ResuspensionBufferContainerLabel,
+							(*52*)RetentateWashBufferLabel,
+							(*53*)RetentateWashBufferContainerLabel,
+							(*54*)Pressure,
+							(*55*)RetentateWashPressure,
+							(*56*)RetentateWashPipettingMethod,
+							(*57*)Volume,
+							(*58*)SampleLoadingDrainTime,
+							(*59*)PrewetFilter,
+							(*60*)PrewetFilterTime,
+							(*61*)NumberOfFilterPrewettings,
+							(*62*)PrewetFilterBufferVolume,
+							(*63*)PrewetFilterCentrifugeIntensity,
+							(*64*)PrewetFilterBuffer,
+							(*65*)PrewetFilterBufferLabel,
+							(*66*)PrewetFilterContainerOut,
+							(*67*)PrewetFilterContainerLabel,
+							(*68*)InitialFiltrate,
+							(*69*)InitialFiltrateVolume,
+							(*70*)InitialFiltrateContainerOut,
+							(*71*)InitialFiltrateLabel,
+							(*72*)InitialFiltrateContainerLabel,
+							(*73*)InitialFiltrateDestinationWell,
+							(*74*)InitialFiltrateStorageCondition,
+							(*75*)WashFlowThroughLabel,
+							(*76*)WashFlowThroughContainerLabel,
+							(*77*)WashFlowThroughContainer,
+							(*78*)WashFlowThroughDestinationWell,
+							(*79*)WashFlowThroughStorageCondition,
+							(*80*)FilterStorageCondition,
+							(*81*)CollectOccludingRetentate,
+							(*82*)OccludingRetentateContainer,
+							(*83*)OccludingRetentateDestinationWell,
+							(*84*)OccludingRetentateContainerLabel
 						}
 					];
 
@@ -3440,6 +3708,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						unresolvedRetentateWashVolume,
 						unresolvedNumberOfRetentateWashes,
 						unresolvedRetentateWashDrainTime,
+						unresolvedRetentateWashTime,
 						unresolvedRetentateWashCentrifugeIntensity,
 						unresolvedRetentateWashMix,
 						unresolvedNumberOfRetentateWashMixes,
@@ -3447,11 +3716,21 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						unresolvedWashFlowThroughContainerLabel,
 						unresolvedWashFlowThroughContainer,
 						unresolvedWashFlowThroughDestinationWell,
-						unresolvedWashFlowThroughStorageCondition
+						unresolvedWashFlowThroughStorageCondition,
+						resolvedRetentateWashPipettingMethod
 					};
 					retentateWashMixOptions = {
 						unresolvedNumberOfRetentateWashMixes
 					};
+					initialFiltrateOptions = {
+						unresolvedInitialFiltrateVolume,
+						unresolvedInitialFiltrateContainerOut,
+						unresolvedInitialFiltrateLabel,
+						unresolvedInitialFiltrateContainerLabel,
+						unresolvedInitialFiltrateDestinationWell,
+						unresolvedInitialFiltrateStorageCondition
+					};
+
 
 					(* First resolved Volume for the robotic primitive *)
 					resolvedVolume = Which[
@@ -3463,6 +3742,16 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						MatchQ[volume, EqualP[0 Liter]], All,
 						(* Otherwise, if they specified All or Automatic, convert that to the sample volume *)
 						True, volume
+					];
+
+					(* Resolve SampleLoadingDrainTime: how long to wait after loading sample into filter plate before filtering (gravity drainage) *)
+					sampleLoadingDrainTime = Which[
+						(* If it's already set, use it *)
+						Not[MatchQ[unresolvedSampleLoadingDrainTime, Automatic]], unresolvedSampleLoadingDrainTime,
+						(* Only applicable for robotic preparation *)
+						Not[roboticQ], Null,
+						(* Default to 5 Minutes for robotic *)
+						True, 5 Minute
 					];
 
 					(* Resolve the master switch options *)
@@ -3504,6 +3793,16 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						unresolvedRetentateWashMix
 					];
 
+					(* Figure out whether InitialFiltrate is True or False *)
+					initialFiltrate = Which[
+						(* If it's set then it's set *)
+						BooleanQ[unresolvedInitialFiltrate], unresolvedInitialFiltrate,
+						(* If it's not set but any of the initial filtrate options are specified, resolve to True *)
+						MemberQ[Flatten[initialFiltrateOptions], Except[Automatic | Null]], True,
+						(* Default to False *)
+						True, False
+					];
+
 					(* Get the destination model if there is one *)
 					(* Note that this field only exists in Model[Container, Vessel, Filter] and so can only be an object if the sample container model packet is a filter *)
 					sampleContainerModelDestination = Lookup[sampleContainerModelPacket, DestinationContainerModel, Null];
@@ -3512,7 +3811,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 					preResolvedFilter = Which[
 						And[
 							MatchQ[unresolvedFilter, ObjectP[{Model[Container, Plate, Filter], Model[Container, Vessel, Filter]}]],
-         			MatchQ[Lookup[sampleContainerModelPacket, Object], ObjectP[unresolvedFilter]]
+         					MatchQ[Lookup[sampleContainerModelPacket, Object], ObjectP[unresolvedFilter]]
 						],
 							(* If user has specified the model of filter in Filter option and the samples are in the same filter, update the filter option from model to object *)
 							Lookup[sampleContainerPacket, Object],
@@ -3602,8 +3901,12 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						True, Automatic
 					];
 
-					(* If Syringe is specified, then type is going to be Syringe *)
-					typeBasedOnSyringeOption = If[MatchQ[unresolvedSyringe, ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}]],
+					(* If Syringe or InitialFiltrate is specified, then type is going to be Syringe *)
+					typeBasedOnSyringeOption = If[
+						Or[
+							MatchQ[unresolvedSyringe, ObjectP[{Model[Container, Syringe], Object[Container, Syringe]}]],
+							TrueQ[initialFiltrate]
+						],
 						Syringe,
 						Automatic
 					];
@@ -3722,123 +4025,66 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						Except[VolumeP] -> 0 Milliliter
 					];
 
-					(* The sterile part can be mostly ignored, since the limiting step is going to be finding a sterile filter *)
-					type = Switch[{resolvedPreparation, unresolvedSterile, typeBasedOnOtherOptions, totalCollectedVolume},
-						{Manual, _, Automatic, LessP[2. Milliliter]}, Centrifuge, (* under 2mL, goes through a plate *)
-						{Manual, True, Automatic, RangeP[2 Milliliter, 5 Milliliter]}, Centrifuge, (* 5mL or under and sterile, goes in centrifuge tube *)
-						{Manual, Automatic | False, Automatic, RangeP[2 Milliliter, 50 Milliliter]}, Syringe, (* between 2mL and 50mL use a syringe *)
-						{Manual, True, Automatic, RangeP[5 Milliliter, 4 Liter, Inclusive -> Right]}, Vacuum, (* 55mL to 4L sterile,uses a sterile VacCap *)
-						{Manual, Automatic | False, Automatic, RangeP[50 Milliliter, 1 Liter, Inclusive -> Left]}, Vacuum, (* 50mL to 1L not sterile, still use bottle tops or buchner funnel (though don't actually include 1L; that should roll over onto PeristalticPump) *)
-						{Manual, Automatic | False, Automatic, RangeP[1 Liter, 20 Liter, Inclusive -> All]}, PeristalticPump, (* over 4L user the filter housing and PP*)
-						{Manual, True, Automatic, RangeP[4 Liter, 20 Liter, Inclusive -> Right]}, PeristalticPump, (* over 4L user the filter housing and PP*)
-						_, typeBasedOnOtherOptions
+					(* Get a list of possible types we can use, so that downstream filter resolver does not get unnecessarily limited *)
+					possibleTypes = If[MatchQ[resolvedPreparation, Robotic],
+						(* Robotic can only support Centrifuge and AirPressure filtration. For robotic, the volume constraint is based solely on the filter plate. So no need to exclude any based on volume yet *)
+						ToList[typeBasedOnOtherOptions /. Automatic -> {Centrifuge, AirPressure}],
+						(* Manual can go through the rest of the types list and retain only those compatible with volume *)
+						KeyValueMap[
+							Function[{type, volRange},
+								Which[
+									(* Centrifuge is kinda special, only per-round volume matters when we consider the range *)
+									MatchQ[type, Centrifuge] && MatchQ[maxVolumePerCycle, RangeP[Sequence@@volRange, Inclusive -> All]],
+										type,
+									(*For other types, either retentate washing is not a thing, e.g. syringe, or we actually should consider the whole total volume *)
+									MatchQ[type, Except[Centrifuge]] && MatchQ[totalCollectedVolume, RangeP[Sequence@@volRange, Inclusive -> All]],
+										type,
+									True,
+										Nothing
+								]
+							],
+							filtrationTypeVolumeRangeAssoc
+						]
+					];
+					semiResolvedInstrumentOfTypeLookup = Map[
+						Function[{possibleType},
+							possibleType -> Switch[{resolvedPreparation, unresolvedSterile, possibleType, unresolvedInstrument, volume, preResolvedFilter},
+								{_, _, _, ObjectP[], _, _}, unresolvedInstrument, (* take the user option no matter what *)
+								{Manual, Automatic | False, PeristalticPump, Automatic, _, _}, Model[Instrument, PeristalticPump, "id:n0k9mG8KZlb6"],(*"VWR Peristaltic Variable Pump PP3400"*)
+								(* If Filter is unspecified or specified to a plate filter and the volume is right then go with the vacuum for plate filtering *)
+								{Manual, Automatic | False, Vacuum, Automatic, LessEqualP[2 Milliliter], Automatic | ObjectP[Model[Container, Plate, Filter]]}, Model[Instrument, VacuumPump, "id:01G6nvkKr3oA"], (* "Welch 2030B-01"Model" this is the filter pump that goes with Model[Instrument, FilterBlock, "Filter Block"] *)
+								{Manual, Automatic | False, Vacuum, Automatic, _, ObjectP[{Model[Item, Filter], Object[Item, Filter]}]}, Model[Instrument, VacuumPump, "id:N80DNj18E15W"],(*"VACSTAR Control"]*)
+								{Manual, True, Vacuum, Automatic, _, _}, Model[Instrument, VacuumPump, "id:GmzlKjPepoxE"],(*"Rocker 300 for Filtration, Sterile"*)
+								{Manual, Automatic | False, Vacuum, Automatic, _, _}, Model[Instrument, VacuumPump, "id:lYq9jRzZjNmA"],(*"Rocker 300 for Filtration, Non-sterile"*)
+								{Manual, _, Syringe, Automatic, _, _}, Model[Instrument, SyringePump, "id:GmzlKjPzN9l4"],(*"NE-1010 Syringe Pump"*)
+								{Manual, _, Centrifuge, Automatic, _, ObjectP[{Object[Container, Plate, Filter], Model[Container, Plate, Filter]}]}, Model[Instrument, Centrifuge, "id:eGakldJEz14E"], (* "Eppendorf 5920R" If it's a plate filter then we have to resolve to this centrifuge *)
+								{Robotic, _, Centrifuge, Automatic, _, _}, unresolvedInstrument,(* For robotic centrifuge, can be HiG or VSpin, deal with it later *)
+								{Robotic, True, AirPressure, Automatic, _, _}, Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"],(*"MPE2 Sterile"*)
+								{Robotic, _, AirPressure, Automatic, _, _}, Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"],(*"MPE2"*)
+								(* All other cases, just stick with the unresolved value and deal with it later *)
+								{_, _, _, _, _, _}, unresolvedInstrument
+							]
+						],
+						{PeristalticPump, Vacuum, Centrifuge, Syringe, AirPressure}
 					];
 
-					(* Get the semi-resolved instrument object *)
-					(* calling it semi-resolved because depending on what CentrifugeDevices says, it's possible *)
-					semiResolvedInstrument = Switch[{resolvedPreparation, unresolvedSterile, type, unresolvedInstrument, volume, preResolvedFilter},
-						{_, _, _, ObjectP[], _, _}, unresolvedInstrument, (* take the user option no matter what *)
-						{Manual, Automatic | False, PeristalticPump, Automatic, _, _}, Model[Instrument, PeristalticPump, "id:n0k9mG8KZlb6"],(*"VWR Peristaltic Variable Pump PP3400"*)
-						(* If Filter is unspecified or specified to a plate filter and the volume is right then go with the vacuum for plate filtering *)
-						{Manual, Automatic | False, Vacuum, Automatic, LessEqualP[2 Milliliter], Automatic | ObjectP[Model[Container, Plate, Filter]]}, Model[Instrument, VacuumPump, "id:01G6nvkKr3oA"], (* "Welch 2030B-01"Model" this is the filter pump that goes with Model[Instrument, FilterBlock, "Filter Block"] *)
-						{Manual, Automatic | False, Vacuum, Automatic, _, ObjectP[{Model[Item, Filter], Object[Item, Filter]}]}, Model[Instrument, VacuumPump, "id:N80DNj18E15W"],(*"VACSTAR Control"]*)
-						{Manual, True, Vacuum, Automatic, _, _}, Model[Instrument, VacuumPump, "id:GmzlKjPepoxE"],(*"Rocker 300 for Filtration, Sterile"*)
-						{Manual, Automatic | False, Vacuum, Automatic, _, _}, Model[Instrument, VacuumPump, "id:lYq9jRzZjNmA"],(*"Rocker 300 for Filtration, Non-sterile"*)
-						{Manual, _, Syringe, Automatic, _, _}, Model[Instrument, SyringePump, "id:GmzlKjPzN9l4"],(*"NE-1010 Syringe Pump"*)
-						{Manual, _, Centrifuge, Automatic, _, ObjectP[{Object[Container, Plate, Filter], Model[Container, Plate, Filter]}]}, Model[Instrument, Centrifuge, "id:eGakldJEz14E"], (* "Eppendorf 5920R" If it's a plate filter then we have to resolve to this centrifuge *)
-						{Robotic, _, Centrifuge, Automatic, _, _}, unresolvedInstrument,(* For robotic centrifuge, can be HiG or VSpin, deal with it later *)
-						{Robotic, True, AirPressure, Automatic, _, _}, Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"],(*"MPE2 Sterile"*)
-						{Robotic, _, AirPressure, Automatic, _, _}, Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"],(*"MPE2"*)
-						(* All other cases, just stick with the unresolved value and deal with it later *)
-						{_, _, _, _, _, _}, unresolvedInstrument
-					];
-
+					semiResolvedAirPressureInstrument = Lookup[semiResolvedInstrumentOfTypeLookup, AirPressure, Null];
 					(* Based on the semi-resolved instrument, check for the dimension requirements for AirPressure - MPE2 as not all plates fit in there *)
 					semiResolvedInstrumentFilterPosition = If[Or[
-						MatchQ[semiResolvedInstrument, ObjectP[{Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"], Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"]}]],
+						MatchQ[semiResolvedAirPressureInstrument, ObjectP[{Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"], Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"]}]],
 						MatchQ[unresolvedInstrumentModel, ObjectP[{Model[Instrument, PressureManifold, "id:4pO6dMOqXNpX"], Model[Instrument, PressureManifold, "id:J8AY5jD1okLb"]}]]
 					],
 						FirstCase[
-							Lookup[fetchPacketFromFastAssoc[FirstCase[{unresolvedInstrumentModel, semiResolvedInstrument}, ObjectP[Model]], fastAssoc], Positions, {}],
+							Lookup[fetchPacketFromFastAssoc[FirstCase[{unresolvedInstrumentModel, semiResolvedAirPressureInstrument}, ObjectP[Model]], fastAssoc], Positions, {}],
 							KeyValuePattern[Name -> "Filter Plate Slot"],
 							<||>
 						],
 						<||>
 					];
+					(*The semi-resolved dimensions and its pattern is only applicable to AirPressure case. *)
+					semiResolvedAirPressureFilterDimensions = {Lookup[semiResolvedInstrumentFilterPosition, MaxWidth, Null], Lookup[semiResolvedInstrumentFilterPosition, MaxDepth, Null], Null};
 
-					semiResolvedInstrumentFilterDimensions = {Lookup[semiResolvedInstrumentFilterPosition, MaxWidth, Null], Lookup[semiResolvedInstrumentFilterPosition, MaxDepth, Null], Null};
-
-					semiResolvedInstrumentFilterDimensionPattern = semiResolvedInstrumentFilterDimensions/.{length:(GreaterP[0 Millimeter]) :> LessEqualP[length], Null -> (_)};
-
-					(* Get the syringe based on the smallest LuerLock syringe that fits the volume *)
-					syringe = Switch[{resolvedPreparation, unresolvedSyringe, type},
-						{Manual, Except[Automatic], _}, unresolvedSyringe,
-						{Manual, Automatic, Syringe},
-							Lookup[
-								FirstCase[allContainerPackets, KeyValuePattern[{Type -> Model[Container, Syringe], ConnectionType -> LuerLock, MaxVolume -> GreaterEqualP[volume]}], <||>],
-								Object,
-								Null
-							],
-						{_, _, _}, Null
-					];
-
-					(* Get the syringe MaxVolume *)
-					syringeMaxVolume = Which[
-						NullQ[syringe], Null,
-						MatchQ[syringe, ObjectP[Model[Container, Syringe]]], fastAssocLookup[fastAssoc, syringe, MaxVolume],
-						MatchQ[syringe, ObjectP[Object[Container, Syringe]]], fastAssocLookup[fastAssoc, syringe, {Model, MaxVolume}],
-						True, Null
-					];
-
-					(* Resolve the flow rate *)
-					flowRate = Which[
-						Not[MatchQ[unresolvedFlowRate, Automatic]], unresolvedFlowRate,
-						Not[MatchQ[type, Syringe]], Null,
-						MatchQ[unresolvedTime, TimeP], (syringeMaxVolume/unresolvedTime),
-						VolumeQ[syringeMaxVolume], syringeMaxVolume * 0.2 / Minute,
-						True, Null
-					];
-
-					(* Flip error switch if FlowRate is specified when FiltrationType is not Syringe *)
-					flowRateNullError = Or[
-						NullQ[flowRate] && MatchQ[type, Syringe],
-						Not[NullQ[flowRate]] && Not[MatchQ[type, Syringe]]
-					];
-
-					(* Determine whether we are collecting the occluding retentate *)
-					collectOccludingRetentate = Which[
-						Not[MatchQ[unresolvedCollectOccludingRetentate, Automatic]], unresolvedCollectOccludingRetentate,
-						MatchQ[type, Syringe], True,
-						(* note that it can be Null if we're not doing Syringe; seemingly it looks better in the command builder if this is Null and not False for non-syringe filtering *)
-						True, Null
-					];
-
-					(* need a variable that is always a Boolean here *)
-					collectOccludingRetentateBool = TrueQ[collectOccludingRetentate];
-
-					(* Determine the container we're going to put the occluding retentate into *)
-					occludingRetentateContainer = Which[
-						Not[MatchQ[unresolvedOccludingRetentateContainer, Automatic]], unresolvedOccludingRetentateContainer,
-						Not[collectOccludingRetentateBool], Null,
-						True, PreferredContainer[actualSampleVolume](* Note if we use volume which could be All, PreferredContainer will return a list of containers instead of 1. *)
-					];
-
-					(* Semi-resolve the OccludingRetentateDestinationWell because if it's a plate then keep it as Automatic or what was specified; otherwise set to A1 *)
-					occludingRetentateDestinationWell = Which[
-						Not[MatchQ[unresolvedOccludingRetentateDestWell, Automatic]], unresolvedOccludingRetentateDestWell,
-						NullQ[occludingRetentateContainer], Null,
-						Not[MatchQ[occludingRetentateContainer, ObjectP[{Model[Container, Plate], Object[Container, Plate]}]]], "A1",
-						True, Automatic
-					];
-
-					(* Flip the occluding retentate conflict error switch if CollectOccludingRetentate -> True and the other options are Null, or it's True and the other options are unspecified *)
-					occludingRetentateMismatchError = Or[
-						collectOccludingRetentateBool && (NullQ[occludingRetentateContainer] || NullQ[occludingRetentateDestinationWell] || NullQ[unresolvedOccludingRetentateContainerLabel]),
-						Not[collectOccludingRetentateBool] && (Not[NullQ[occludingRetentateContainer]] || Not[NullQ[occludingRetentateDestinationWell]] || Not[MatchQ[unresolvedOccludingRetentateContainerLabel, Null | Automatic]])
-					];
-
-					(* flip the occluding retentate not supported error switch if we're trying to do this with any type of filtering besides syringe filtering *)
-					occludingRetentateNotSupportedError = collectOccludingRetentateBool && Not[MatchQ[type, Syringe]];
+					semiResolvedAirPressureFilterDimensionPattern = semiResolvedAirPressureFilterDimensions/.{length:(GreaterP[0 Millimeter]) :> LessEqualP[length], Null -> (_)};
 
 					(* Get the potential option values; if Automatic, then it becomes _ because we let anything be in there for the pattern *)
 					{
@@ -3856,9 +4102,10 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						prefilterMembraneMaterialBasedOnFilter
 					} /. {Automatic -> _};
 
-					(* Get the possible filters and filter types given the options we have *)
-					possibleFilters = Switch[
-						{resolvedPreparation, type, unresolvedSterile},
+					(* Local helper to go through each manual type that we did not screen out. *)
+					(* Robotic ones we actually need to resolve the instrument first to decied the filter *)
+					possibleFiltersPerType[possibleType: FiltrationTypeP]:=Switch[
+						{resolvedPreparation, possibleType, unresolvedSterile},
 
 						{Manual, PeristalticPump, _},
 							Cases[allFilterPackets,
@@ -3966,9 +4213,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 								(* We should eventually remove this hard-code, but if the user specifically requests the plate centrifuge, resolve to using filter plates *)
 								(* {Model[Instrument, Centrifuge, "Eppendorf 5920R"], Object[Instrument, Centrifuge, "Eppendorf 5920R"]}*)
 								(* also if you have a plate centrifuge but you need to collect retentate via centrifuge, then you're hosed already so just give up *)
-								MatchQ[semiResolvedInstrument, ObjectP[{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], Object[Instrument, Centrifuge, "id:KBL5Dvw93km7"]}]] && MatchQ[unresolvedRetentateCollectionMethod, Centrifuge],
+								MatchQ[Lookup[semiResolvedInstrumentOfTypeLookup, Centrifuge], ObjectP[{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], Object[Instrument, Centrifuge, "id:KBL5Dvw93km7"]}]] && MatchQ[unresolvedRetentateCollectionMethod, Centrifuge],
 									{},
-								MatchQ[semiResolvedInstrument, ObjectP[{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], Object[Instrument, Centrifuge, "id:KBL5Dvw93km7"]}]],
+								MatchQ[Lookup[semiResolvedInstrumentOfTypeLookup, Centrifuge], ObjectP[{Model[Instrument, Centrifuge, "id:eGakldJEz14E"], Object[Instrument, Centrifuge, "id:KBL5Dvw93km7"]}]],
 									Cases[
 										allFilterPackets,
 										KeyValuePattern[{
@@ -4027,9 +4274,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 								(* We should eventually remove this hard-code, but if the user specifically requests the plate centrifuge, resolve to using filter plates *)
 								(* {Model[Instrument, Centrifuge, "HiG4"], Object[Instrument, Centrifuge, "HiG4 Method Man"],Object[Instrument, Centrifuge, "HiG4 Johnny Five"], Model[Instrument, Centrifuge, "VSpin"],Object[Instrument, Centrifuge, "VSpin Lin Manuel"]}*)
 								(* also if you have a plate centrifuge but you need to collect retentate via centrifuge, then you're hosed already so just give up *)
-								MatchQ[semiResolvedInstrument, ObjectP[{Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"], Object[Instrument, Centrifuge, "id:Vrbp1jG80PPE"], Object[Instrument, Centrifuge, "id:lYq9jRzX3DDp"], Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"],Object[Instrument, Centrifuge, "id:R8e1Pjpk3k1a"]}]] && MatchQ[unresolvedRetentateCollectionMethod, Centrifuge],
+								MatchQ[Lookup[semiResolvedInstrumentOfTypeLookup, Centrifuge], ObjectP[{Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"], Object[Instrument, Centrifuge, "id:Vrbp1jG80PPE"], Object[Instrument, Centrifuge, "id:lYq9jRzX3DDp"], Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"],Object[Instrument, Centrifuge, "id:R8e1Pjpk3k1a"]}]] && MatchQ[unresolvedRetentateCollectionMethod, Centrifuge],
 									{},
-								MatchQ[semiResolvedInstrument, ObjectP[{Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"], Object[Instrument, Centrifuge, "id:Vrbp1jG80PPE"], Object[Instrument, Centrifuge, "id:lYq9jRzX3DDp"], Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"],Object[Instrument, Centrifuge, "id:R8e1Pjpk3k1a"]}]],
+								MatchQ[Lookup[semiResolvedInstrumentOfTypeLookup, Centrifuge], ObjectP[{Model[Instrument, Centrifuge, "id:kEJ9mqaVPAXe"], Object[Instrument, Centrifuge, "id:Vrbp1jG80PPE"], Object[Instrument, Centrifuge, "id:lYq9jRzX3DDp"], Model[Instrument, Centrifuge, "id:vXl9j57YaYrk"],Object[Instrument, Centrifuge, "id:R8e1Pjpk3k1a"]}]],
 									Cases[
 										allFilterPackets,
 										KeyValuePattern[{
@@ -4069,13 +4316,28 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 									PoreSize -> potentialPoreSize, MolecularWeightCutoff -> potentialMolecularWeightCutoff, MembraneMaterial -> potentialMembraneMaterial,
 									PrefilterPoreSize -> potentialPrefilterPoreSize, PrefilterMembraneMaterial -> potentialPrefilterMembraneMaterial, Footprint -> FootprintP,
 									If[TrueQ[unresolvedSterile], Sterile -> True, Nothing], LiquidHandlerPrefix -> Except[Null],
-									Dimensions -> semiResolvedInstrumentFilterDimensionPattern
+									Dimensions -> semiResolvedAirPressureFilterDimensionPattern
 								}]
 							]
 						],
 
 						{_, _, _},
 						{}
+					];
+
+					(* Get the possible filters and corresponding filter types given the options we have *)
+					possibleFiltersOfTypesLookup = Map[
+						Function[possibleType,
+							Module[{filtersPerType},
+								filtersPerType = possibleFiltersPerType[possibleType];
+								If[MatchQ[filtersPerType, {}],
+									(* If no filter can be found for this type, don't put this type in the lookup anymore *)
+									Nothing,
+									possibleType -> filtersPerType
+								]
+							]
+						],
+						possibleTypes
 					];
 
 					(* Double check the filters *)
@@ -4085,14 +4347,47 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						If the option was not automatic and the selected filter is on the list of found ones, then that's ok
 						If the option was not automatic and the selected filter is not on the list, then error and such
 					*)
+					possibleTypesWithFiltersFound = Keys[possibleFiltersOfTypesLookup];
+					preferredPossibleType[preferredType: FiltrationTypeP] := Which[
+						MemberQ[possibleTypesWithFiltersFound, preferredType],
+						(* If the preferred type for this scenario is one of the allowed types that we found filters for *)
+							preferredType,
+						(* If we did not find filter for any possible type, just use preferred type, and noFilterAvailableError will catch it *)
+						MatchQ[possibleTypesWithFiltersFound, {}],
+							preferredType,
+						(* Otherwise, just use the first one from allowed *)
+						True,
+							First[possibleTypesWithFiltersFound]
+					];
+					(* Now determine the type based one, if a type is set from *)
+					(* The sterile part can be mostly ignored, since the limiting step is going to be finding a sterile filter *)
+					type = Switch[{resolvedPreparation, unresolvedSterile, typeBasedOnOtherOptions, totalCollectedVolume},
+						{Manual, _, Automatic, LessP[2. Milliliter]}, preferredPossibleType[Centrifuge], (* under 2mL, goes through a plate *)
+						{Manual, True, Automatic, RangeP[2 Milliliter, 5 Milliliter]}, preferredPossibleType[Centrifuge], (* 5mL or under and sterile, goes in centrifuge tube *)
+						{Manual, Automatic | False, Automatic, RangeP[2 Milliliter, 50 Milliliter]}, preferredPossibleType[Syringe], (* between 2mL and 50mL use a syringe *)
+						{Manual, True, Automatic, RangeP[5 Milliliter, 4 Liter, Inclusive -> Right]}, preferredPossibleType[Vacuum], (* 55mL to 4L sterile,uses a sterile VacCap *)
+						{Manual, Automatic | False, Automatic, RangeP[50 Milliliter, 1 Liter, Inclusive -> Left]}, preferredPossibleType[Vacuum], (* 50mL to 1L not sterile, still use bottle tops or buchner funnel (though don't actually include 1L; that should roll over onto PeristalticPump) *)
+						{Manual, Automatic | False, Automatic, RangeP[1 Liter, 20 Liter, Inclusive -> All]}, preferredPossibleType[PeristalticPump], (* over 4L user the filter housing and PP*)
+						{Manual, True, Automatic, RangeP[4 Liter, 20 Liter, Inclusive -> Right]}, preferredPossibleType[PeristalticPump], (* over 4L user the filter housing and PP*)
+						(* Type is effectively specified through other options, like Instrument, we just use it regardless of whether possible, and complain about other conflicts later, if any *)
+						{_, _, Except[Automatic], _}, typeBasedOnOtherOptions,
+						(* Catch-all: should not get here *)
+						_, preferredPossibleType[PeristalticPump]
+					];
+					(* Pull the semi-resolved instrument of the chosen type *)
+					semiResolvedInstrument = Lookup[semiResolvedInstrumentOfTypeLookup, type];
+					(* It is possible that the type was specified directly or indirectly via related options, and it does not support the sample volume. Then it would not be included in possibleTypes, and therefore no possibleFilters found. Therefore, in case of invalidTypeForVolumeError, noFilterAvailableError should not be thrown. *)
+					invalidTypeForVolumeError = !MemberQ[possibleTypes, type];
+					(* Pull the possible filters for the resolved type *)
+					possibleFilters = Lookup[possibleFiltersOfTypesLookup, type, {}];
 
 					(* This indicates that no viable filter could be found, whether that's because there is no filter period, or because the filter the user provides
 					doesn't fulfill one of the criteria that makes a good filter or we couldn't even find a good backup filter (that doesn't quite fit ideal resolution) *)
 					(* we'll show either an error that says no filter could be found at all, or that the relevant error saying the they filter they picked it bad *)
-					noFilterAvailableError = MatchQ[possibleFilters, {}];
+					noFilterAvailableError = MatchQ[possibleFilters, {}] && !invalidTypeForVolumeError;
 
 					(* Pick the filter we need based on potential filters *)
-					vettedFilter = Switch[{noFilterAvailableError, preResolvedFilter, possibleFilters, sampleContainerModelDestination},
+					vettedFilter = Switch[{noFilterAvailableError||invalidTypeForVolumeError, preResolvedFilter, possibleFilters, sampleContainerModelDestination},
 						(* If the container in is a filter and has a destination, then use that model of the container holding the sample *)
 						{False, Automatic, _, ObjectP[]}, Lookup[sampleContainerModelPacket, Object],
 						(* awesome, we found a usable filter *)
@@ -4160,12 +4455,83 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 					(* Determine if we have a sterile filter or not *)
 					sterileFilterQ = Lookup[filterModelPacket, Sterile, False];
 
+
+					(* Get the syringe based on the smallest LuerLock syringe that fits the volume *)
+					syringe = Switch[{resolvedPreparation, unresolvedSyringe, type},
+						{Manual, Except[Automatic], _}, unresolvedSyringe,
+						{Manual, Automatic, Syringe},
+						Lookup[
+							FirstCase[allContainerPackets, KeyValuePattern[{Type -> Model[Container, Syringe], ConnectionType -> LuerLock, MaxVolume -> GreaterEqualP[volume]}], <||>],
+							Object,
+							Null
+						],
+						{_, _, _}, Null
+					];
+
+					(* Get the syringe MaxVolume *)
+					syringeMaxVolume = Which[
+						NullQ[syringe], Null,
+						MatchQ[syringe, ObjectP[Model[Container, Syringe]]], fastAssocLookup[fastAssoc, syringe, MaxVolume],
+						MatchQ[syringe, ObjectP[Object[Container, Syringe]]], fastAssocLookup[fastAssoc, syringe, {Model, MaxVolume}],
+						True, Null
+					];
+
+					(* Resolve the flow rate *)
+					flowRate = Which[
+						Not[MatchQ[unresolvedFlowRate, Automatic]], unresolvedFlowRate,
+						Not[MatchQ[type, Syringe]], Null,
+						MatchQ[unresolvedTime, TimeP], (syringeMaxVolume/unresolvedTime),
+						VolumeQ[syringeMaxVolume], syringeMaxVolume * 0.2 / Minute,
+						True, Null
+					];
+
+					(* Flip error switch if FlowRate is specified when FiltrationType is not Syringe *)
+					flowRateNullError = Or[
+						NullQ[flowRate] && MatchQ[type, Syringe],
+						Not[NullQ[flowRate]] && Not[MatchQ[type, Syringe]]
+					];
+
+					(* Determine whether we are collecting the occluding retentate *)
+					collectOccludingRetentate = Which[
+						Not[MatchQ[unresolvedCollectOccludingRetentate, Automatic]], unresolvedCollectOccludingRetentate,
+						MatchQ[type, Syringe], True,
+						(* note that it can be Null if we're not doing Syringe; seemingly it looks better in the command builder if this is Null and not False for non-syringe filtering *)
+						True, Null
+					];
+
+					(* need a variable that is always a Boolean here *)
+					collectOccludingRetentateBool = TrueQ[collectOccludingRetentate];
+
+					(* Determine the container we're going to put the occluding retentate into *)
+					occludingRetentateContainer = Which[
+						Not[MatchQ[unresolvedOccludingRetentateContainer, Automatic]], unresolvedOccludingRetentateContainer,
+						Not[collectOccludingRetentateBool], Null,
+						True, PreferredContainer[actualSampleVolume](* Note if we use volume which could be All, PreferredContainer will return a list of containers instead of 1. *)
+					];
+
+					(* Semi-resolve the OccludingRetentateDestinationWell because if it's a plate then keep it as Automatic or what was specified; otherwise set to A1 *)
+					occludingRetentateDestinationWell = Which[
+						Not[MatchQ[unresolvedOccludingRetentateDestWell, Automatic]], unresolvedOccludingRetentateDestWell,
+						NullQ[occludingRetentateContainer], Null,
+						Not[MatchQ[occludingRetentateContainer, ObjectP[{Model[Container, Plate], Object[Container, Plate]}]]], "A1",
+						True, Automatic
+					];
+
+					(* Flip the occluding retentate conflict error switch if CollectOccludingRetentate -> True and the other options are Null, or it's True and the other options are unspecified *)
+					occludingRetentateMismatchError = Or[
+						collectOccludingRetentateBool && (NullQ[occludingRetentateContainer] || NullQ[occludingRetentateDestinationWell] || NullQ[unresolvedOccludingRetentateContainerLabel]),
+						Not[collectOccludingRetentateBool] && (Not[NullQ[occludingRetentateContainer]] || Not[NullQ[occludingRetentateDestinationWell]] || Not[MatchQ[unresolvedOccludingRetentateContainerLabel, Null | Automatic]])
+					];
+
+					(* flip the occluding retentate not supported error switch if we're trying to do this with any type of filtering besides syringe filtering *)
+					occludingRetentateNotSupportedError = collectOccludingRetentateBool && Not[MatchQ[type, Syringe]];
+
 					(* Now we have the filter. decide if the filter is too large for the tolerance of MPE2 for AirPressure *)
 					(* we do not want to transfer stuff into another filter plate on deck as the current filter plate is only too large if provided from the user in RSP. need to hard-error on that *)
 					filterAirPressureDimensionsError = If[MatchQ[type, AirPressure],
 						!MatchQ[
 							Lookup[filterModelPacket, Dimensions],
-							semiResolvedInstrumentFilterDimensionPattern
+							semiResolvedAirPressureFilterDimensionPattern
 						],
 						False
 					];
@@ -4452,6 +4818,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 								(* Resolve intensity based on what we choose here so can't have it resolved yet *)
 								Intensity -> unresolvedIntensity /. {Null -> Automatic},
 								CollectionContainer -> collectionContainer,
+								Biohazard -> biohazardQ,
 								WorkCell -> Lookup[options, WorkCell, Automatic],
 								Preparation -> resolvedPreparation,
 								Cache -> Flatten[{cacheBall, centrifugePackets}],
@@ -4693,18 +5060,27 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						MatchQ[LastOrDefault[retentateContainerOut], ObjectP[{Model[Container, Plate], Object[Container, Plate]}]]
 					];
 
-					(* Resolve the RetentateWashDrainTime and RetentateWashCentrifugeIntensity options to mirror what the Time and Intensity options are *)
-					(* also do a bunch of error checking on the retentate wash options *)
+					(* Resolve the RetentateWashDrainTime, RetentateWashTime, and RetentateWashCentrifugeIntensity options *)
+					(* RetentateWashTime is the time force is applied; RetentateWashDrainTime is the gravity drain wait time (Robotic only) *)
 					{
 						retentateWashDrainTimeWithListyNulls,
+						retentateWashTimeWithListyNulls,
 						retentateWashCentrifugeIntensityWithListyNulls
 					} = Transpose[MapThread[
-						Function[{washDrainTime, washCentrifugeIntensity},
-							Module[{singleDrainTime, singleCentrifugeIntensity},
+						Function[{washDrainTime, washTime, washCentrifugeIntensity},
+							Module[{singleDrainTime, singleWashTime, singleCentrifugeIntensity},
 
-								(* Resolve wash drain time to the Time option if not set and we're washing *)
+								(* Resolve RetentateWashDrainTime: the gravity drain wait time before applying force (Robotic only) *)
 								singleDrainTime = Which[
 									Not[MatchQ[washDrainTime, Automatic]], washDrainTime,
+									Not[TrueQ[washRetentate]], Null,
+									roboticQ, sampleLoadingDrainTime,
+									True, Null
+								];
+
+								(* Resolve RetentateWashTime: the time force is applied *)
+								singleWashTime = Which[
+									Not[MatchQ[washTime, Automatic]], washTime,
 									Not[TrueQ[washRetentate]], Null,
 									True, time
 								];
@@ -4718,15 +5094,17 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 								{
 									singleDrainTime,
+									singleWashTime,
 									singleCentrifugeIntensity
 								}
 							]
 						],
-						{unresolvedRetentateWashDrainTime, unresolvedRetentateWashCentrifugeIntensity}
+						{unresolvedRetentateWashDrainTime, unresolvedRetentateWashTime, unresolvedRetentateWashCentrifugeIntensity}
 					]];
 
 					(* Make the listy nulls into flat nulls so that the command builder works nicely *)
 					retentateWashDrainTime = retentateWashDrainTimeWithListyNulls /. {{Null..} :> Null};
+					retentateWashTime = retentateWashTimeWithListyNulls /. {{Null..} :> Null};
 					retentateWashCentrifugeIntensity = retentateWashCentrifugeIntensityWithListyNulls /. {{Null..} :> Null};
 
 					(* Resolve the retentate collection container option; this is a hidden option only relevant to centrifuging using the goofy invert-in-new-tube method but whatever *)
@@ -5153,8 +5531,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 					(* Flip an error switch if RetentateWashPressure is Null when RetentateWash is True (if we're doing AirPressure), or not Null when RetentateWash is False for Robotic preparation *)
 					washRetentateConflictError =If[Not[roboticQ],
 						Or[
-							TrueQ[washRetentate] && (NullQ[retentateWashBuffer] || NullQ[retentateWashVolume] || NullQ[numberOfRetentateWashes] || NullQ[retentateWashDrainTime]),
-							Not[TrueQ[washRetentate]] && (Not[NullQ[retentateWashBuffer]] || Not[NullQ[retentateWashVolume]] || Not[NullQ[numberOfRetentateWashes]] || Not[NullQ[retentateWashDrainTime]] || Not[NullQ[retentateWashCentrifugeIntensity]] || Not[NullQ[numberOfRetentateWashMixes]])
+							TrueQ[washRetentate] && (NullQ[retentateWashBuffer] || NullQ[retentateWashVolume] || NullQ[numberOfRetentateWashes] || NullQ[retentateWashTime]),
+							Not[TrueQ[washRetentate]] && (Not[NullQ[retentateWashBuffer]] || Not[NullQ[retentateWashVolume]] || Not[NullQ[numberOfRetentateWashes]] || Not[NullQ[retentateWashTime]] || Not[NullQ[retentateWashCentrifugeIntensity]] || Not[NullQ[numberOfRetentateWashMixes]])
 						],
 						Or[
 							TrueQ[washRetentate] && MatchQ[type, AirPressure] && NullQ[retentateWashPressure],
@@ -5410,6 +5788,150 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						]
 					];
 
+					(* Resolve the rest of the initial filtrate options *)
+					(* InitialFiltrateVolume *)
+					(* If it's set it's set *)
+					(* If we're not initialFiltering it's Null *)
+					(* If we are aliquoting it's 5% of the aliquot amount *)
+					(* If we're not aliquoting it's 5% of the input sample's volume *)
+					(* If we don't have that then something is wrong so we're just picking Null *)
+					initialFiltrateVolume = Which[
+						Not[MatchQ[unresolvedInitialFiltrateVolume, Automatic]], unresolvedInitialFiltrateVolume,
+						Not[initialFiltrate], Null,
+						VolumeQ[Lookup[options, AliquotAmount]], 0.05 * Lookup[options, AliquotAmount],
+						VolumeQ[Lookup[samplePacket, Volume]], 0.05 * Lookup[samplePacket, Volume],
+						True, Null
+					];
+
+					(* InitialFiltrateContainerOut *)
+					(* If it's set it's set *)
+					(* If we're not initial filtering it's Null *)
+					(* If we have a FiltrateContainerOut is a Model, then use that model *)
+					(* If we have a FiltrateContainerOut is an object, then use the model of that object *)
+					(* othewise, Null *)
+					initialFiltrateContainerOut = Which[
+						Not[MatchQ[unresolvedInitialFiltrateContainerOut, Automatic]], unresolvedInitialFiltrateContainerOut,
+						Not[initialFiltrate], Null,
+						MatchQ[filtrateContainerOut, ObjectP[Model[Container]]], filtrateContainerOut,
+						MatchQ[filtrateContainerOut, ObjectP[Object[Container]]], Download[fastAssocLookup[fastAssoc, filtrateContainerOut, Model], Object],
+						True, Null
+					];
+
+					(* InitialFiltrateLabel *)
+					(* If it's set it's set *)
+					(* If we're not initial filtering it's Null *)
+					(* Otherwise create a unique label *)
+					initialFiltrateLabel = Which[
+						Not[MatchQ[unresolvedInitialFiltrateLabel, Automatic]], unresolvedInitialFiltrateLabel,
+						Not[initialFiltrate], Null,
+						True, CreateUniqueLabel["initial filtrate sample"]
+					];
+
+					(* InitialFiltrateContainerOutLabel *)
+					(* If it's set it's set *)
+					(* If we're not initial filtering it's Null *)
+					(* Otherwise create a label because we'll figure it out at the end *)
+					initialFiltrateContainerLabel = Which[
+						Not[MatchQ[unresolvedInitialFiltrateContainerLabel, Automatic]], unresolvedInitialFiltrateContainerLabel,
+						Not[initialFiltrate], Null,
+						True, CreateUniqueLabel["initial filtrate container"]
+					];
+
+					(* InitialFiltrateDestinationWell *)
+					(* If it's set it's set *)
+					(* If we're not initial filtering it's Null *)
+					(* If the container is not a plate, default to A1 *)
+					(* If the container is a plate, find the first empty well *)
+					initialFiltrateDestinationWell = Which[
+						Not[MatchQ[unresolvedInitialFiltrateDestinationWell, Automatic]], unresolvedInitialFiltrateDestinationWell,
+						Not[initialFiltrate], Null,
+						(* If the container is not a plate, set to A1 *)
+						Not[MatchQ[initialFiltrateContainerOut, ObjectP[{Model[Container, Plate], Object[Container, Plate]}]]], "A1",
+						(* If the container is a plate, find the first available well *)
+						True, Module[{containerModelPacket, allWells, occupiedPositions},
+							containerModelPacket = If[MatchQ[initialFiltrateContainerOut, ObjectP[Model[Container]]],
+								fetchPacketFromFastAssoc[initialFiltrateContainerOut, fastAssoc],
+								fetchPacketFromFastAssoc[fastAssocLookup[fastAssoc, initialFiltrateContainerOut, Model], fastAssoc]
+							];
+							allWells = Flatten[AllWells[Lookup[containerModelPacket, Object]]];
+							occupiedPositions = If[MatchQ[initialFiltrateContainerOut, ObjectP[Object[Container]]],
+								Lookup[fetchPacketFromFastAssoc[initialFiltrateContainerOut, fastAssoc], Contents][[All, 1]],
+								{}
+							];
+							FirstOrDefault[Complement[allWells, occupiedPositions], "A1"]
+						]
+					];
+
+					(* InitialFiltrateStorageCondition *)
+					(* If it's set it's set *)
+					(* If we're not initial filtering its Null *)
+					(* Otherwise set as SamplesOutStorageCondition *)
+					initialFiltrateStorageCondition = Which[
+						Not[MatchQ[unresolvedInitialFiltrateStorageCondition, Automatic]], unresolvedInitialFiltrateStorageCondition,
+						Not[initialFiltrate], Null,
+						True, samplesOutStorageCondition
+					];
+
+					(* Flip an error switch if InitialFiltrate -> True and any of the resolved options are Null, or if InitialFiltrate -> False and any option isn't Null *)
+					initialFiltrateMismatchError = Or[
+						initialFiltrate && MemberQ[
+							{initialFiltrateVolume, initialFiltrateContainerOut, initialFiltrateLabel, initialFiltrateContainerLabel, initialFiltrateDestinationWell},
+							Null
+						],
+						Not[initialFiltrate] && Not[MatchQ[
+							initialFiltrateOptions,
+							{(Automatic | Null) ..}
+						]]
+					];
+
+					(* Flip an error switch if the initialFiltrateVolume exceeds the sample volume *)
+					initialFiltrateVolumeTooHighError = And[
+						initialFiltrate,
+						VolumeQ[initialFiltrateVolume],
+						VolumeQ[actualSampleVolume],
+						GreaterQ[initialFiltrateVolume, actualSampleVolume]
+					];
+
+					(* Get the MaxVolume of the InitialFiltrateContainerOut *)
+					initialFiltrateContainerOutMaxVolume = Which[
+						MatchQ[initialFiltrateContainerOut, ObjectP[Object[Container]]],
+							fastAssocLookup[fastAssoc, initialFiltrateContainerOut, {Model, MaxVolume}],
+						MatchQ[initialFiltrateContainerOut, ObjectP[Model[Container]]],
+							fastAssocLookup[fastAssoc, initialFiltrateContainerOut, MaxVolume],
+						True, Null
+					];
+
+					(* Flip an error switch if InitialFiltrateVolume is greater than the MaxVolume of the InitialFiltrateContainerOut *)
+					initialFiltrateContainerOutMaxVolumeError = And[
+						initialFiltrate,
+						VolumeQ[initialFiltrateVolume],
+						VolumeQ[initialFiltrateContainerOutMaxVolume],
+						GreaterQ[initialFiltrateVolume, initialFiltrateContainerOutMaxVolume]
+					];
+
+					(* Flip an error switch if InitialFiltrate is True but FiltrationType is not Syringe *)
+					initialFiltrateTypeMismatchError = And[
+						initialFiltrate,
+						Not[MatchQ[type, Syringe]]
+					];
+
+					(* Get the allowed positions of the InitialFiltrateContainerOut model *)
+					initialFiltrateContainerOutAllowedPositions = Which[
+						MatchQ[initialFiltrateContainerOut, ObjectP[Object[Container]]],
+							Lookup[#, Name]& /@ Lookup[fetchPacketFromFastAssoc[fastAssocLookup[fastAssoc, initialFiltrateContainerOut, Model], fastAssoc], Positions],
+						MatchQ[initialFiltrateContainerOut, ObjectP[Model[Container]]],
+							Lookup[#, Name]& /@ Lookup[fetchPacketFromFastAssoc[initialFiltrateContainerOut, fastAssoc], Positions],
+						True, {}
+					];
+
+					(* Flip an error switch if the InitialFiltrateDestinationWell does not exist in the InitialFiltrateContainerOut *)
+					initialFiltrateDestWellPositionError = And[
+						initialFiltrate,
+						StringQ[initialFiltrateDestinationWell],
+						Not[MatchQ[initialFiltrateContainerOutAllowedPositions, {}]],
+						Not[MemberQ[initialFiltrateContainerOutAllowedPositions, initialFiltrateDestinationWell]]
+					];
+
 					{
 						(*1*)type,
 						(*2*)instrument,
@@ -5447,99 +5969,115 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						(*34*)retentateWashVolume,
 						(*35*)numberOfRetentateWashes,
 						(*36*)retentateWashDrainTime,
-						(*37*)retentateWashCentrifugeIntensity,
-						(*38*)numberOfRetentateWashMixes,
-						(*39*)sampleLabel,
-						(*40*)sampleContainerLabel,
-						(*41*)filtrateLabel,
-						(*42*)filtrateContainerLabel,
-						(*43*)retentateLabel,
-						(*44*)retentateContainerLabel,
-						(*45*)sampleOutLabel,
-						(*46*)containerOutLabel,
-						(*47*)resuspensionBufferLabel,
-						(*48*)resuspensionBufferContainerLabel,
-						(*49*)retentateWashBufferLabel,
-						(*50*)retentateWashBufferContainerLabel,
-						(*51*)filtrateContainerOutMaxVolume,
-						(*52*)syringeMaxVolume,
-						(*53*)syringeConnectionType,
-						(*54*)pressure,
-						(*55*)retentateWashPressure,
-						(*56*)filterTypeMismatchError,
-						(*57*)filterMembraneMaterialMismatchError,
-						(*58*)filterPoreSizeMismatchError,
-						(*59*)noFilterAvailableError,
-						(*60*)filterMaxVolumeMismatchError,
-						(*61*)filterInletConnectionTypeMismatchError,
-						(*62*)badCentrifugeError,
-						(*63*)noUsableCentrifugeError,
-						(*64*)typeAndInstrumentMismatchError,
-						(*65*)typeAndSyringeMismatchError,
-						(*66*)collectRetentateError,
-						(*67*)retentateCollectionMethodError,
-						(*68*)transferCollectionMethodError,
-						(*69*)poreSizeAndMWCOMismatchQ,
-						(*70*)prefilterOptionMismatchQ,
-						(*71*)filterMolecularWeightMismatchError,
-						(*72*)incompatibleFilterTimeWithTypeError,
-						(*73*)incompatibleFilterTimeOptionsError,
-						(*74*)typeAndFilterHousingMismatchError,
-						(*75*)sterileInstrumentMismatchError,
-						(*76*)typeAndCentrifugeIntensityMismatchError,
-						(*77*)sterileContainerOutMismatchError,
-						(*78*)filtrateContainerOutMaxVolumeError,
-						(*79*)syringeMaxVolumeError,
-						(*80*)incorrectSyringeConnectionError,
-						(*81*)temperatureInvalidError,
-						(*82*)retentateWashCentrifugeIntensityTypeError,
-						(*83*)washRetentateTypeError,
-						(*84*)retentateWashMixError,
-						(*85*)washRetentateConflictError,
-						(*86*)resuspensionVolumeTooHighError,
-						(*87*)flowRateNullError,
-						(*88*)centrifugeContainerDestError,
-						(*89*)centrifugeCollectionMethodError,
-						(*90*)retentateContainerOutPlateError,
-						(*91*)intensityTooHighError,
-						(*92*)typePressureMismatchError,
-						(*93*)pressureTooHighError,
-						(*94*)transferringToNewFilterQ,
-						(*95*)resolvedVolume,
-						(*96*)prewetFilter,
-						(*97*)prewetFilterTime,
-						(*98*)prewetFilterBufferVolume,
-						(*99*)prewetFilterCentrifugeIntensity,
-						(*100*)prewetFilterBuffer,
-						(*101*)prewetFilterBufferLabel,
-						(*102*)prewetFilterContainerOut,
-						(*103*)prewetFilterContainerLabel,
-						(*104*)prewetFilterMismatchError,
-						(*105*)prewetFilterCentrifugeIntensityTypeError,
-						(*106*)washFlowThroughStorageCondition/. {{Null..} :> Null},
-						(*107*)washFlowThroughContainer/. {{Null..} :> Null},
-						(*108*)washFlowThroughDestinationWell/. {{Null..} :> Null},
-						(*109*)washFlowThroughLabel/. {{Null..} :> Null},
-						(*110*)washFlowThroughContainerLabel/. {{Null..} :> Null},
-						(*111*)washThroughSameAsFiltrateQs,
-						(*112*)collectionContainerPlateMismatchError,
-						(*113*)filterStorageCondition,
-						(*114*)collectOccludingRetentate,
-						(*115*)occludingRetentateContainer,
-						(*116*)occludingRetentateDestinationWell,
-						(*117*)occludingRetentateMismatchError,
-						(*118*)occludingRetentateNotSupportedError,
-						(*119*)filterAirPressureDimensionsError,
-						(*120*)numberOfFilterPrewettings,
-						(*121*)numberOfFilterPrewettingsTooHighError,
-						(*122*)prewettingTypeMismatchError,
-						(*123*)collectionContainerMaxVolumeError,
-						(*124*)collectionContainerMaxVolume
+						(*37*)retentateWashTime,
+						(*38*)retentateWashCentrifugeIntensity,
+						(*39*)numberOfRetentateWashMixes,
+						(*40*)sampleLabel,
+						(*41*)sampleContainerLabel,
+						(*42*)filtrateLabel,
+						(*43*)filtrateContainerLabel,
+						(*44*)retentateLabel,
+						(*45*)retentateContainerLabel,
+						(*46*)sampleOutLabel,
+						(*47*)containerOutLabel,
+						(*48*)resuspensionBufferLabel,
+						(*49*)resuspensionBufferContainerLabel,
+						(*50*)retentateWashBufferLabel,
+						(*51*)retentateWashBufferContainerLabel,
+						(*52*)filtrateContainerOutMaxVolume,
+						(*53*)syringeMaxVolume,
+						(*54*)syringeConnectionType,
+						(*55*)pressure,
+						(*56*)retentateWashPressure,
+						(*57*)resolvedRetentateWashPipettingMethod,
+						(*58*)filterTypeMismatchError,
+						(*59*)filterMembraneMaterialMismatchError,
+						(*60*)filterPoreSizeMismatchError,
+						(*61*)noFilterAvailableError,
+						(*62*)filterMaxVolumeMismatchError,
+						(*63*)filterInletConnectionTypeMismatchError,
+						(*64*)badCentrifugeError,
+						(*65*)noUsableCentrifugeError,
+						(*66*)typeAndInstrumentMismatchError,
+						(*67*)typeAndSyringeMismatchError,
+						(*68*)collectRetentateError,
+						(*69*)retentateCollectionMethodError,
+						(*70*)transferCollectionMethodError,
+						(*71*)poreSizeAndMWCOMismatchQ,
+						(*72*)prefilterOptionMismatchQ,
+						(*73*)filterMolecularWeightMismatchError,
+						(*74*)incompatibleFilterTimeWithTypeError,
+						(*75*)incompatibleFilterTimeOptionsError,
+						(*76*)typeAndFilterHousingMismatchError,
+						(*77*)sterileInstrumentMismatchError,
+						(*78*)typeAndCentrifugeIntensityMismatchError,
+						(*79*)sterileContainerOutMismatchError,
+						(*80*)filtrateContainerOutMaxVolumeError,
+						(*81*)syringeMaxVolumeError,
+						(*82*)incorrectSyringeConnectionError,
+						(*83*)temperatureInvalidError,
+						(*84*)retentateWashCentrifugeIntensityTypeError,
+						(*85*)washRetentateTypeError,
+						(*86*)retentateWashMixError,
+						(*87*)washRetentateConflictError,
+						(*88*)resuspensionVolumeTooHighError,
+						(*89*)flowRateNullError,
+						(*90*)centrifugeContainerDestError,
+						(*91*)centrifugeCollectionMethodError,
+						(*92*)retentateContainerOutPlateError,
+						(*93*)intensityTooHighError,
+						(*94*)typePressureMismatchError,
+						(*95*)pressureTooHighError,
+						(*96*)transferringToNewFilterQ,
+						(*97*)resolvedVolume,
+						(*98*)sampleLoadingDrainTime,
+						(*99*)prewetFilter,
+						(*100*)prewetFilterTime,
+						(*101*)prewetFilterBufferVolume,
+						(*102*)prewetFilterCentrifugeIntensity,
+						(*103*)prewetFilterBuffer,
+						(*104*)prewetFilterBufferLabel,
+						(*105*)prewetFilterContainerOut,
+						(*106*)prewetFilterContainerLabel,
+						(*107*)prewetFilterMismatchError,
+						(*108*)prewetFilterCentrifugeIntensityTypeError,
+						(*109*)washFlowThroughStorageCondition/. {{Null..} :> Null},
+						(*110*)washFlowThroughContainer/. {{Null..} :> Null},
+						(*111*)washFlowThroughDestinationWell/. {{Null..} :> Null},
+						(*112*)washFlowThroughLabel/. {{Null..} :> Null},
+						(*113*)washFlowThroughContainerLabel/. {{Null..} :> Null},
+						(*114*)washThroughSameAsFiltrateQs,
+						(*115*)collectionContainerPlateMismatchError,
+						(*116*)filterStorageCondition,
+						(*117*)collectOccludingRetentate,
+						(*118*)occludingRetentateContainer,
+						(*119*)occludingRetentateDestinationWell,
+						(*120*)occludingRetentateMismatchError,
+						(*121*)occludingRetentateNotSupportedError,
+						(*122*)filterAirPressureDimensionsError,
+						(*123*)numberOfFilterPrewettings,
+						(*124*)numberOfFilterPrewettingsTooHighError,
+						(*125*)prewettingTypeMismatchError,
+						(*126*)collectionContainerMaxVolumeError,
+						(*127*)collectionContainerMaxVolume,
+						(*128*)invalidTypeForVolumeError,
+						(*129*)initialFiltrateMismatchError,
+						(*130*)initialFiltrateVolumeTooHighError,
+						(*131*)initialFiltrateContainerOutMaxVolumeError,
+						(*132*)initialFiltrateTypeMismatchError,
+						(*133*)initialFiltrate,
+						(*134*)initialFiltrateVolume,
+						(*135*)initialFiltrateContainerOut,
+						(*136*)initialFiltrateLabel,
+						(*137*)initialFiltrateContainerLabel,
+						(*137*)initialFiltrateDestinationWell,
+						(*138*)initialFiltrateStorageCondition,
+						(*139*)initialFiltrateDestWellPositionError
 					}
 
 				]
 			],
-			{samplePackets, sampleVolumes, mapThreadFriendlyOptions, sampleContainerPackets, sampleContainerModelPackets}
+			{samplePackets, sampleVolumes, mapThreadFriendlyOptions, sampleContainerPackets, sampleContainerModelPackets, centrifugeBiohazardSampleQs}
 		]
 	];
 
@@ -6023,12 +6561,12 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 				Error::WashRetentateMismatch,
 				ObjectToString[PickList[simulatedSamples, washRetentateConflictErrors], Cache -> cacheBall],
 				If[Not[roboticQ],
-					{RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashDrainTime, RetentateWashCentrifugeIntensity, NumberOfRetentateWashMixes},
+					{RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, RetentateWashCentrifugeIntensity, NumberOfRetentateWashMixes},
 					{RetentateWashPressure}
 				]
 			];
 			If[Not[roboticQ],
-				{WashRetentate, RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashDrainTime, RetentateWashCentrifugeIntensity, NumberOfRetentateWashMixes},
+				{WashRetentate, RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, RetentateWashCentrifugeIntensity, NumberOfRetentateWashMixes},
 				{RetentateWashPressure}]
 		),
 		{}
@@ -6041,12 +6579,12 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			passingInputs = Complement[simulatedSamples, nonPassingInputs];
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["If WashRetentate -> True, then in manual preparation: RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashDrainTime, RetentateWashCentrifugeIntensity, and NumberOfRetentateWashMixes are not Null; in robotic preparation: RetentateWashPressure cannot be Null when FiltrationType -> AirPressure; if WashRetentate -> False, these options are not specified for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Test["If WashRetentate -> True, then in manual preparation: RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, RetentateWashCentrifugeIntensity, and NumberOfRetentateWashMixes are not Null; in robotic preparation: RetentateWashPressure cannot be Null when FiltrationType -> AirPressure; if WashRetentate -> False, these options are not specified for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
 				Nothing
 			];
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-				Test["If WashRetentate -> True, then in manual preparation: RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashDrainTime, RetentateWashCentrifugeIntensity, and NumberOfRetentateWashMixes are not Null; in robotic preparation: RetentateWashPressure cannot be Null when FiltrationType -> AirPressure; if WashRetentate -> False, these options are not specified for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
+				Test["If WashRetentate -> True, then in manual preparation: RetentateWashBuffer, RetentateWashVolume, NumberOfRetentateWashes, RetentateWashTime, RetentateWashCentrifugeIntensity, and NumberOfRetentateWashMixes are not Null; in robotic preparation: RetentateWashPressure cannot be Null when FiltrationType -> AirPressure; if WashRetentate -> False, these options are not specified for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
 				Nothing
 			];
 			(* Return our created tests. *)
@@ -6422,13 +6960,13 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 			(* Create a test for the passing inputs. *)
 			passingInputsTest = If[Length[passingInputs] > 0,
-				Test["The MaxVolume of the specified Filters are not less than the volume of the provied sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Test["The MaxVolume of the specified Filters are not less than the volume of the provided sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
 				Nothing
 			];
 
 			(* Create a test for the non-passing inputs. *)
 			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
-				Test["The MaxVolume of the specified Filters are not less than the volume of the provied sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, False],
+				Test["The MaxVolume of the specified Filters are not less than the volume of the provided sample(s) " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, False],
 				Nothing
 			];
 
@@ -7286,7 +7824,76 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 	];
 
 
-	(* Final error chceks *)
+	(* Final error checks *)
+	(* Check that we have a type valid for the sample volume *)
+	invalidTypeForVolumeErrorOptions = If[MemberQ[invalidTypeForVolumeErrors, True] && Not[gatherTests],
+		(
+			Message[Error::InvalidFiltrationTypeForVolume,
+				Module[{sampleVolumeTypeTuples, groupedTuples, messageClause},
+					(* Grab pairs of samples, volumes, and resolved types that triggered invalidTypeForVolumeError *)
+					sampleVolumeTypeTuples = Transpose[{
+						PickList[simulatedSamples, invalidTypeForVolumeErrors],
+						PickList[sampleVolumes, invalidTypeForVolumeErrors],
+						PickList[resolvedFiltrationType, invalidTypeForVolumeErrors]
+					}];
+					(* Group them by resolved type *)
+					groupedTuples = GroupBy[sampleVolumeTypeTuples, Last];
+					(* Build the clauses by mapping through type groups *)
+					(* Note that it is unlikely that the number of invalid types would surpass $MaxNumberOfErrorDetails, currently at 3, so the branch of super concise message is not considered here *)
+					(* output string to plug as ``1` in the message *)
+					messageClause = StringJoin @@ KeyValueMap[
+						Function[{resolvedType, sampleVolumeTuples},
+							StringJoin[
+								Capitalize@samplesForMessages[sampleVolumeTuples[[All, 1]], simulatedSamples, Cache -> cacheBall, Simulation -> updatedSimulation],
+								" ",
+								hasOrHave[sampleVolumeTuples[[All, 1]]],
+								" a volume of ",
+								joinClauses[Flatten@sampleVolumeTuples[[All, 2]]],
+								", which cannot be filtered using ",
+								ToString[resolvedType],
+								", as it only supports volumes between ",
+								(* joinClause converts this list indicative of range into xx and xx nicely *)
+								joinClauses[Lookup[filtrationTypeVolumeRangeAssoc, resolvedType]],
+								". "
+							]
+						],
+						groupedTuples
+					];
+					(* output string to plug as ``1` in the message *)
+					messageClause
+				]
+			];
+			{FiltrationType}
+		),
+		{}
+	];
+
+	(* Create appropriate tests if gathering them, or return {} *)
+	invalidTypeForVolumeErrorTests = If[gatherTests,
+		Module[{failingInputs, passingInputs, passingInputsTest, failingInputTest},
+
+			(* Get the failing and not failing samples *)
+			failingInputs = PickList[simulatedSamples, invalidTypeForVolumeErrors];
+			passingInputs = PickList[simulatedSamples, invalidTypeForVolumeErrors, False];
+
+			(* Create the passing and failing tests *)
+			failingInputTest = If[Length[failingInputs] > 0,
+				Test["The following samples, " <> ObjectToString[failingInputs, Cache -> cacheBall] <> " must have a volume suitable for the filtration type.", True, False],
+				Nothing
+			];
+
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The following samples, " <> ObjectToString[passingInputs, Cache -> cacheBall] <> " must have a volume suitable for the filtration type.", True, True],
+				Nothing
+			];
+
+			(* Return our created tests. *)
+			{passingInputsTest, failingInputTest}
+		],
+		{}
+	];
+
 	(* Check that we found a filter that matches all of the criteria *)
 	noFilterAvailableInvalidOptions = If[MemberQ[noFilterAvailableErrors, True] && Not[gatherTests],
 		(
@@ -7451,6 +8058,157 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			];
 			(* Return our created tests. *)
 			{passingInputsTest, nonPassingInputsTest}
+		]
+	];
+
+	(* If InitialFiltrate -> True but any of the initial filtrate options are Null, or vice versa *)
+	initialFiltrateMismatchOptions = If[MemberQ[initialFiltrateMismatchErrors, True] && messages,
+		(
+			Message[
+				Error::InitialFiltrateMismatch,
+				ObjectToString[PickList[simulatedSamples, initialFiltrateMismatchErrors], Cache -> cacheBall],
+				{InitialFiltrateVolume, InitialFiltrateContainerOut, InitialFiltrateLabel, InitialFiltrateContainerLabel, InitialFiltrateDestinationWell, InitialFiltrateStorageCondition}
+			];
+			{InitialFiltrate, InitialFiltrateVolume, InitialFiltrateContainerOut, InitialFiltrateLabel, InitialFiltrateContainerLabel, InitialFiltrateDestinationWell, InitialFiltrateStorageCondition}
+		),
+		{}
+	];
+	initialFiltrateMismatchTest = If[gatherTests,
+		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
+			(* Get the inputs that pass this test. *)
+			nonPassingInputs = PickList[simulatedSamples, initialFiltrateMismatchErrors];
+			passingInputs = Complement[simulatedSamples, nonPassingInputs];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["If InitialFiltrate -> True, then InitialFiltrateVolume, InitialFiltrateContainerOut, InitialFiltrateLabel, InitialFiltrateContainerLabel, and InitialFiltrateStorageCondition are not Null; if InitialFiltrate -> False, these options are not specified for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Nothing
+			];
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
+				Test["If InitialFiltrate -> True, then InitialFiltrateVolume, InitialFiltrateContainerOut, InitialFiltrateLabel, InitialFiltrateContainerLabel, and InitialFiltrateStorageCondition are not Null; if InitialFiltrate -> False, these options are not specified for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
+				Nothing
+			];
+			(* Return our created tests. *)
+			{passingInputsTest, nonPassingInputsTest}
+		],
+		{}
+	];
+
+	(* InitialFiltrateVolume cannot exceed the sample volume *)
+	initialFiltrateVolumeTooHighOptions = If[MemberQ[initialFiltrateVolumeTooHighErrors, True] && messages,
+		(
+			Message[
+				Error::InitialFiltrateVolumeTooHigh,
+				ObjectToString[PickList[simulatedSamples, initialFiltrateVolumeTooHighErrors], Cache -> cacheBall]
+			];
+			{InitialFiltrateVolume}
+		),
+		{}
+	];
+	initialFiltrateVolumeTooHighTest = If[gatherTests,
+		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
+			(* Get the inputs that pass this test. *)
+			nonPassingInputs = PickList[simulatedSamples, initialFiltrateVolumeTooHighErrors];
+			passingInputs = Complement[simulatedSamples, nonPassingInputs];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The InitialFiltrateVolume does not exceed the sample volume for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Nothing
+			];
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
+				Test["The InitialFiltrateVolume does not exceed the sample volume for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
+				Nothing
+			];
+			(* Return our created tests. *)
+			{passingInputsTest, nonPassingInputsTest}
+		],
+		{}
+	];
+
+	(* InitialFiltrateVolume cannot exceed the MaxVolume of the InitialFiltrateContainerOut *)
+	initialFiltrateContainerOutMaxVolumeOptions = If[MemberQ[initialFiltrateContainerOutMaxVolumeErrors, True] && messages,
+		(
+			Message[
+				Error::InitialFiltrateContainerOutMaxVolume,
+				ObjectToString[PickList[simulatedSamples, initialFiltrateContainerOutMaxVolumeErrors], Cache -> cacheBall]
+			];
+			{InitialFiltrateVolume, InitialFiltrateContainerOut}
+		),
+		{}
+	];
+	initialFiltrateContainerOutMaxVolumeTest = If[gatherTests,
+		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
+			(* Get the inputs that pass this test. *)
+			nonPassingInputs = PickList[simulatedSamples, initialFiltrateContainerOutMaxVolumeErrors];
+			passingInputs = Complement[simulatedSamples, nonPassingInputs];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["The InitialFiltrateVolume does not exceed the MaxVolume of the InitialFiltrateContainerOut for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Nothing
+			];
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
+				Test["The InitialFiltrateVolume does not exceed the MaxVolume of the InitialFiltrateContainerOut for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
+				Nothing
+			];
+			(* Return our created tests. *)
+			{passingInputsTest, nonPassingInputsTest}
+		],
+		{}
+	];
+
+	(* If InitialFiltrate -> True, FiltrationType must be Syringe *)
+	initialFiltrateTypeMismatchOptions = If[MemberQ[initialFiltrateTypeMismatchErrors, True] && messages,
+		(
+			Message[
+				Error::InitialFiltrateTypeMismatch,
+				ObjectToString[PickList[simulatedSamples, initialFiltrateTypeMismatchErrors], Cache -> cacheBall]
+			];
+			{InitialFiltrate, FiltrationType}
+		),
+		{}
+	];
+	initialFiltrateTypeMismatchTest = If[gatherTests,
+		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
+			(* Get the inputs that pass this test. *)
+			nonPassingInputs = PickList[simulatedSamples, initialFiltrateTypeMismatchErrors];
+			passingInputs = Complement[simulatedSamples, nonPassingInputs];
+			(* Create a test for the passing inputs. *)
+			passingInputsTest = If[Length[passingInputs] > 0,
+				Test["If InitialFiltrate -> True, then FiltrationType is Syringe for the inputs " <> ObjectToString[passingInputs, Cache -> cacheBall] <> ":", True, True],
+				Nothing
+			];
+			(* Create a test for the non-passing inputs. *)
+			nonPassingInputsTest = If[Length[nonPassingInputs] > 0,
+				Test["If InitialFiltrate -> True, then FiltrationType is Syringe for the inputs " <> ObjectToString[nonPassingInputs, Cache -> cacheBall] <> ":", True, False],
+				Nothing
+			];
+			(* Return our created tests. *)
+			{passingInputsTest, nonPassingInputsTest}
+		],
+		{}
+	];
+
+	(* If InitialFiltrateDestinationWell does not exist in the Positions of the InitialFiltrateContainerOut model *)
+	initialFiltrateDestWellPositionOptions = If[MemberQ[initialFiltrateDestWellPositionErrors, True] && messages,
+		(
+			Message[
+				Error::DestinationWellDoesntExist,
+				InitialFiltrateDestinationWell,
+				PickList[resolvedInitialFiltrateDestinationWell, initialFiltrateDestWellPositionErrors],
+				InitialFiltrateContainerOut,
+				PickList[resolvedInitialFiltrateContainerOut, initialFiltrateDestWellPositionErrors]
+			];
+			{InitialFiltrateDestinationWell}
+		),
+		{}
+	];
+
+	initialFiltrateDestWellPositionTest = If[gatherTests,
+		Test["The specified InitialFiltrateDestinationWell values exist for all specified or resolved InitialFiltrateContainerOut values:",
+			MemberQ[initialFiltrateDestWellPositionErrors, True],
+			False
 		]
 	];
 
@@ -8366,7 +9124,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		resolvedCounterweight,
 		noCounterweightsErrors
 	} = Transpose[MapThread[
-		Function[{specifiedOptions, filter, filterModelPacket, collectionContainerModelPacket, type, resolvedExperimentOptions, filterLabel},
+		Function[{specifiedOptions, filter, filterModelPacket, collectionContainerModelPacket, type, collectionContainer, filterLabel},
 			Module[
 				{requiredCounterweight, collectionContainerHeight, filterHeight, stackHeight, noCounterweightsError,
 				counterweight, filterContentsSamples, filterContentsMass, filterTareWeight, collectionContainerTareWeight},
@@ -8379,8 +9137,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 						fastAssocLookup[fastAssoc, filter, Contents][[All, 2]],
 						{}
 					],
-					If[MatchQ[Lookup[resolvedExperimentOptions, CollectionContainer], ObjectP[Object]],
-						fastAssocLookup[fastAssoc, Lookup[resolvedExperimentOptions, CollectionContainer], Contents][[All, 2]],
+					If[MatchQ[collectionContainer, ObjectP[Object]],
+						fastAssocLookup[fastAssoc, collectionContainer, Contents][[All, 2]],
 						{}
 					]
 				];
@@ -8436,7 +9194,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 
 			]
 		],
-		{mapThreadFriendlyOptions, resolvedFilter, filterModelPackets, collectionContainerModelPackets, resolvedFiltrationType, mapThreadFriendlyOptions, resolvedFilterLabel}
+		{mapThreadFriendlyOptions, resolvedFilter, filterModelPackets, collectionContainerModelPackets, resolvedFiltrationType, resolvedCollectionContainer, resolvedFilterLabel}
 	]];
 
 	(* Throw a message if there is no counterweight *)
@@ -8467,7 +9225,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		{}
 	];
 
-	(* mkae a test if we have a mismatch between Filter and CollectionContainer *)
+	(* make a test if we have a mismatch between Filter and CollectionContainer *)
 	collectionContainerPlateMismatchErrorTests = If[gatherTests,
 		Module[{passingInputs, passingInputsTest, nonPassingInputsTest, nonPassingInputs},
 			(* Get the inputs that pass this test. *)
@@ -8573,6 +9331,323 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			(* Return our created tests. *)
 			{passingInputsTest, failingInputTest}
 		]
+	];
+
+	(*-- OPTION PRECISION CHECKS II --*)
+	(* Get the resolution of each centrifuge model *)
+	centrifugeModelPackets = Map[
+		Which[
+			MatchQ[#, ObjectP[Object[Instrument, Centrifuge]]],
+				fastAssocLookup[fastAssoc, #, Model],
+			MatchQ[#, ObjectP[Model[Instrument, Centrifuge]]],
+				fetchPacketFromFastAssoc[#, fastAssoc],
+			True,
+				Null
+		]&,
+		resolvedInstrument
+	];
+
+	(* If the user supplied a centrifuge intensity, check if we can attain that precision. *)
+	(* Note:since ExperimentFilter is not calling full ExperimentCentrifuge due to speed reason, we cannot *)
+	(* convert between RCF and RPM since we have no rotor info. However, if user gives a RPM and its manual centrifuge, round it if necessary; *)
+	(* if user gives a RCF and its robotic centrifuge, round it if necessary. Otherwise, do generic rounding *)
+	{
+		roundedIntensities,
+		roundedRetentateWashCentrifugeIntensities,
+		roundedPrewetFilterCentrifugeIntensities,
+		intensityPrecisionInvalidInfos,
+		additionalRoundPrecisionInfos
+	} = Transpose@MapThread[
+		Function[{userSpecifiedOptions, finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, centrifugePacket},
+			Which[
+
+				(* If we are not using a Centrifuge, no need to round CentrifugeIntensity *)
+				(* If intensity is Automatic, no need to round CentrifugeIntensity *)
+				Or[
+					MatchQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], {(Null|Automatic)..}],
+					!MatchQ[centrifugePacket, PacketP[Model[Instrument, Centrifuge]]]
+				],
+					{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+
+				(* If intensity is specified as a rate and the rate is attainable at the manual centrifuge precision,
+				keep the value as is and set the precision info tuples as {}. Otherwise,round the value and record the option *)
+				And[
+					MatchQ[resolvedPreparation, Manual],
+					MemberQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], GreaterP[0 RPM]]
+				],
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						resolution = Lookup[centrifugePacket, SpeedResolution];
+						(* Intensity and PrewetFilterCentrifugeIntensity options have single value per sample *)
+						roundedSingleOptions = Map[
+							If[!RPMQ[Lookup[userSpecifiedOptions, #]] || PossibleZeroQ[Mod[Lookup[userSpecifiedOptions, #], resolution]],
+								Nothing,
+								{#, Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								If[!RPMQ[#1] || PossibleZeroQ[Mod[#1, resolution]],
+									{Null, #1, #2},
+									{RetentateWashCentrifugeIntensity, #1,  SafeRound[#1, resolution]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, GreaterP[0 RPM], GreaterP[0 RPM]}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, GreaterP[0 RPM], GreaterP[0 RPM]}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{
+									DeleteDuplicates@roundedValuesPerOption[[All, 1]],
+									resolution,
+									Lookup[centrifugePacket, Object],
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								},
+								{}
+							}
+						]
+					],
+
+				(* If intensity is specified as a g and we are doing robotic, we need to check if rounding is necessary *)
+				And[
+					MatchQ[resolvedPreparation, Robotic],
+					MemberQ[Flatten@Lookup[userSpecifiedOptions, {Intensity, RetentateWashCentrifugeIntensity, PrewetFilterCentrifugeIntensity}], GreaterP[0 GravitationalAcceleration]]
+				],
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+						resolution = 0.1 GravitationalAcceleration;
+						(* Intensity and PrewetFilterCentrifugeIntensity options have single value per sample *)
+						roundedSingleOptions = Map[
+							If[!MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]] || EqualQ[Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]],
+								Nothing,
+								{#, Lookup[userSpecifiedOptions, #], SafeRound[Lookup[userSpecifiedOptions, #], resolution]}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								If[!MatchQ[#1, GreaterP[0 GravitationalAcceleration]] || EqualQ[#1, SafeRound[#1, resolution]],
+									{Null, #1, #2},
+									{RetentateWashCentrifugeIntensity, #1,  SafeRound[#1, resolution]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, GreaterP[0 GravitationalAcceleration], GreaterP[0 GravitationalAcceleration]}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, GreaterP[0 GravitationalAcceleration], GreaterP[0 GravitationalAcceleration]}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{
+									DeleteDuplicates@roundedValuesPerOption[[All, 1]],
+									resolution,
+									Lookup[centrifugePacket, Object],
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								},
+								{}
+							}
+						]
+					],
+
+				(* if we don't know the max radius of the rotor then we can't calculate the force, do generic rounding *)
+				True,
+					Module[{resolution, roundedSingleOptions, specifiedRetentateWashCentrifugeIntensity, roundedListedOption, roundedValuesPerOption},
+						resolution = {1 RPM, 0.1 GravitationalAcceleration};
+						roundedSingleOptions = Map[
+							If[Or[
+								!MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]],
+								MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]] && EqualQ[Lookup[userSpecifiedOptions, #], RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[2]]]],
+								MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 RPM]] && EqualQ[Lookup[userSpecifiedOptions, #], RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[1]]]]
+							],
+								Nothing,
+								{
+									#,
+									Lookup[userSpecifiedOptions, #],
+									If[MatchQ[Lookup[userSpecifiedOptions, #], GreaterP[0 GravitationalAcceleration]],
+										RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[2]]],
+										RoundOptionPrecision[Lookup[userSpecifiedOptions, #], resolution[[1]]]
+									]
+								}
+							]&,
+							{Intensity, PrewetFilterCentrifugeIntensity}
+						];
+						(* RetentateWashCentrifugeIntensity can be a list of values per sample *)
+						specifiedRetentateWashCentrifugeIntensity = Lookup[userSpecifiedOptions, RetentateWashCentrifugeIntensity];
+						roundedListedOption = If[ListQ[finalRetentateWashCentrifugeIntensity] && ListQ[specifiedRetentateWashCentrifugeIntensity],
+							MapThread[
+								Which[
+									!MatchQ[#1, GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 RPM]] && PossibleZeroQ[Mod[#1, resolution]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 GravitationalAcceleration]] && EqualQ[#1, SafeRound[#1, 0.1 GravitationalAcceleration]],
+										{Null, #1, #2},
+									MatchQ[#1, GreaterP[0 RPM]],
+										{RetentateWashCentrifugeIntensity, #1, RoundOptionPrecision[#1, resolution[[1]]]},
+									True,
+										{RetentateWashCentrifugeIntensity, #1, RoundOptionPrecision[#1, resolution[[2]]]}
+								]&,
+								{specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							],
+							(* Only when finalRetentateWashCentrifugeIntensity is Null it is possible the option is not a list of values *)
+							{
+								{Null, specifiedRetentateWashCentrifugeIntensity, finalRetentateWashCentrifugeIntensity}
+							}
+						];
+						roundedValuesPerOption = Join[
+							roundedSingleOptions,
+							Cases[roundedListedOption, {RetentateWashCentrifugeIntensity, _, _}]
+						];
+						If[MatchQ[roundedValuesPerOption, {}],
+							{finalIntensity, finalRetentateWashCentrifugeIntensity, finalPrewetFilterCentrifugeIntensity, {}, {}},
+							{
+								If[MemberQ[roundedValuesPerOption[[All, 1]], Intensity],
+									FirstCase[roundedValuesPerOption, {Intensity, _, _}][[3]],
+									finalIntensity
+								],
+								roundedListedOption[[All, 3]],
+								If[MemberQ[roundedValuesPerOption[[All, 1]], PrewetFilterCentrifugeIntensity],
+									FirstCase[roundedValuesPerOption, {PrewetFilterCentrifugeIntensity, _, _}][[3]],
+									finalPrewetFilterCentrifugeIntensity
+								],
+								{},
+								{
+									roundedValuesPerOption[[All, 1]],
+									resolution,
+									roundedValuesPerOption[[All, 2]],
+									roundedValuesPerOption[[All, 3]]
+								}
+							}
+						]
+					]
+			]
+		],
+		{mapThreadFriendlyOptions, resolvedIntensity, resolvedRetentateWashCentrifugeIntensity, resolvedPrewetFilterCentrifugeIntensity, centrifugeModelPackets}
+	];
+
+	(* Since Intensity is called FilterIntensity when doing sample prep, update the option name based on EnableSamplePreparation *)
+	updatedIntensityPrecisionInvalidInfos = DeleteCases[intensityPrecisionInvalidInfos, {}]/.If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], {}, {Intensity -> FilterIntensity}];
+	updatedAdditionalRoundPrecisionInfos = DeleteCases[additionalRoundPrecisionInfos, {}]/.If[MatchQ[Lookup[myOptions, EnableSamplePreparation], True], {}, {Intensity -> FilterIntensity}];
+	(* Helper function to display string version or RCF/RPM the same way as InstrumentPrecision warning in OptionsHandling or CentrifugePrecision in ExperimentCentrifuge *)
+	(* We do not want to use built-in ToString since GravitationalAcceleration is converted to standard acceleration due to gravity on the surface of the earth by MM *)
+	joinSingleQuantityString[rate:GreaterP[0 GravitationalAcceleration]|GreaterP[0 RPM]] := If[RPMQ[rate],
+		StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " RPM"],
+		StringJoin[ToString[QuantityMagnitude[rate] /. (number_Real :> InputForm[number, NumberMarks -> False])], " GravitationalAcceleration"]
+	];
+	If[!MatchQ[updatedIntensityPrecisionInvalidInfos, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{finalRoundAndConvertedIntensities},
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				Map[
+					If[MatchQ[#, GreaterP[0 GravitationalAcceleration]],
+						StringJoin[ToString[NumberForm[QuantityMagnitude[#], {$MachinePrecision, 1}]], " GravitationalAcceleration"],
+						joinSingleQuantityString[#1]
+					]&,
+					Flatten[updatedIntensityPrecisionInvalidInfos[[All, 5]]]
+				]
+			];
+			Message[
+				Warning::CentrifugePrecision,
+				(*1*)joinClauses[Flatten@updatedIntensityPrecisionInvalidInfos[[All, 1]]],
+				(*2*)StringJoin[
+					joinClauses[joinSingleQuantityString /@ Flatten[updatedIntensityPrecisionInvalidInfos[[All, 4]]]],
+					" ",
+					isOrAre[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 1]][[All, 1]]]
+				],
+				(*3*)If[MatchQ[resolvedPreparation, Manual],
+					StringJoin[
+						pluralize[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 2]], "precision ", "precisions "],
+						joinClauses[joinSingleQuantityString /@ updatedIntensityPrecisionInvalidInfos[[All, 2]]],
+						" of the manual ",
+						pluralize[DeleteDuplicates@updatedIntensityPrecisionInvalidInfos[[All, 3]], "centrifuge ", "centrifuges "],
+						samplesForMessages[updatedIntensityPrecisionInvalidInfos[[All, 3]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+					],
+					(* From exportCentrifugeRoboticPrimitive and VSpin/HiG manual, the precision of robotic centrifuge is 0.1G *)
+					StringJoin[
+						"precision 0.1 GravitationalAcceleration of the robotic ",
+						pluralize[updatedIntensityPrecisionInvalidInfos[[All, 3]], "centrifuge ", "centrifuges "],
+						samplesForMessages[updatedIntensityPrecisionInvalidInfos[[All, 3]], CollapseForDisplay -> False, Cache -> cacheBall, Simulation -> updatedSimulation]
+					]
+				],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	If[!MatchQ[updatedAdditionalRoundPrecisionInfos, {}] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Module[{finalRoundAndConvertedIntensities},
+			finalRoundAndConvertedIntensities = With[{$MachinePrecision = 100},
+				Map[
+					If[MatchQ[#, GreaterP[0 GravitationalAcceleration]],
+						StringJoin[ToString[NumberForm[QuantityMagnitude[#], {$MachinePrecision, 1}]], " GravitationalAcceleration"],
+						joinSingleQuantityString[#1]
+					]&,
+					Flatten[updatedAdditionalRoundPrecisionInfos[[All, 4]]]
+				]
+			];
+			Message[
+				Warning::InstrumentPrecision,
+				(*1*)joinClauses[Flatten@updatedAdditionalRoundPrecisionInfos[[All, 1]]],
+				(*2*)joinClauses[joinSingleQuantityString /@ Flatten[updatedAdditionalRoundPrecisionInfos[[All, 2]]]],
+				(*3*)joinClauses[joinSingleQuantityString /@ Flatten[updatedAdditionalRoundPrecisionInfos[[All, 3]]]],
+				(*4*)joinClauses[finalRoundAndConvertedIntensities]
+			]
+		]
+	];
+
+	(* Make warnings regarding intensity precision rounding *)
+	additionalRoundPrecisionTests = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[!MatchQ[updatedIntensityPrecisionInvalidInfos, {}] || !MatchQ[updatedAdditionalRoundPrecisionInfos, {}],
+				Warning["The precision of any user-supplied Centrifuge Intensity options is compatible with instrumental precision:", True, False],
+				Nothing
+			];
+
+			passingTest = If[MatchQ[updatedIntensityPrecisionInvalidInfos, {}] && MatchQ[updatedAdditionalRoundPrecisionInfos, {}],
+				Warning["The precision of any user-supplied Centrifuge Intensity options is compatible with instrumental precision:", True, True],
+				Nothing
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
 	];
 
 
@@ -8987,7 +10062,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			FiltrateDestinationWell -> resolvedFiltrateDestinationWell,
 			SampleOut -> resolvedSampleOut,
 			SamplesOutStorageCondition -> resolvedSamplesOutStorageCondition,
-			Intensity -> resolvedIntensity,
+			Intensity -> roundedIntensities,
 			Time -> resolvedTime,
 			FilterUntilDrained -> resolvedFilterUntilDrained,
 			MaxTime -> resolvedMaxTime,
@@ -9002,7 +10077,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			RetentateWashVolume -> resolvedRetentateWashVolume,
 			NumberOfRetentateWashes -> resolvedNumberOfRetentateWashes,
 			RetentateWashDrainTime -> resolvedRetentateWashDrainTime,
-			RetentateWashCentrifugeIntensity -> resolvedRetentateWashCentrifugeIntensity,
+			RetentateWashTime -> resolvedRetentateWashTime,
+			RetentateWashCentrifugeIntensity -> roundedRetentateWashCentrifugeIntensities,
 			NumberOfRetentateWashMixes -> resolvedNumberOfRetentateWashMixes,
 			RetentateCollectionMethod -> resolvedRetentateCollectionMethod,
 			ResuspensionVolume -> resolvedResuspensionVolume,
@@ -9029,12 +10105,19 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 			PrewetFilter -> resolvedPrewetFilter,
 			PrewetFilterTime -> resolvedPrewetFilterTime,
 			PrewetFilterBufferVolume -> resolvedPrewetFilterBufferVolume,
-			PrewetFilterCentrifugeIntensity -> resolvedPrewetFilterCentrifugeIntensity,
+			PrewetFilterCentrifugeIntensity -> roundedPrewetFilterCentrifugeIntensities,
 			PrewetFilterBuffer -> resolvedPrewetFilterBuffer,
 			PrewetFilterBufferLabel -> finalResolvedPrewetFilterBufferLabel,
 			PrewetFilterContainerOut -> resolvedPrewetFilterContainerOut,
 			PrewetFilterContainerLabel -> resolvedPrewetFilterContainerLabel,
 			NumberOfFilterPrewettings -> resolvedNumberOfFilterPrewettings,
+			InitialFiltrate -> resolvedInitialFiltrate,
+			InitialFiltrateVolume -> resolvedInitialFiltrateVolume,
+			InitialFiltrateContainerOut -> resolvedInitialFiltrateContainerOut,
+			InitialFiltrateLabel -> resolvedInitialFiltrateLabel,
+			InitialFiltrateContainerLabel -> resolvedInitialFiltrateContainerLabel,
+			InitialFiltrateDestinationWell -> resolvedInitialFiltrateDestinationWell,
+			InitialFiltrateStorageCondition -> resolvedInitialFiltrateStorageCondition,
 			WashFlowThroughLabel -> resolvedWashFlowThroughLabel,
 			WashFlowThroughContainerLabel -> resolvedWashFlowThroughContainerLabel,
 			WashFlowThroughContainer -> resolvedWashFlowThroughContainer,
@@ -9057,7 +10140,9 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 				resolvedVolumes
 			],
 			Pressure -> resolvedPressure,
+			SampleLoadingDrainTime -> resolvedSampleLoadingDrainTime,
 			RetentateWashPressure -> Replace[resolvedRetentateWashPressure, {{Null..} :> Null}, {1}],
+			RetentateWashPipettingMethod -> Replace[resolvedRetentateWashPipettingMethod, {{Null..} :> Null}, {1}],
 			Counterweight -> resolvedCounterweight,
 			WashAndResuspensionTips -> Flatten[{retentateWashTips, resuspensionTips}],
 			FiltrateContainerOutTips -> filtrateContainerOutTips,
@@ -9082,6 +10167,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		filterAirPressureDimensionsErrorsOptions,
 		badCentrifugeErrorsOptions,
 		noUsableCentrifugeErrorsOptions,
+		invalidTypeForVolumeErrorOptions,
 		noFilterAvailableInvalidOptions,
 		invalidFiltrateDestWellPositionOptions,
 		filtrateContainerOverOccupiedOptions,
@@ -9136,6 +10222,11 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		numberOfFilterPrewettingsTooHighOptions,
 		prewettingTypeMismatchOptions,
 		collectionContainerMaxVolumeOptions,
+		initialFiltrateMismatchOptions,
+		initialFiltrateVolumeTooHighOptions,
+		initialFiltrateContainerOutMaxVolumeOptions,
+		initialFiltrateTypeMismatchOptions,
+		initialFiltrateDestWellPositionOptions,
 		If[MatchQ[preparationResult, $Failed],
 			{Preparation},
 			Nothing
@@ -9159,6 +10250,8 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		discardedTest,
 		missingVolumeTest,
 		nonLiquidSampleTest,
+		precisionTests,
+		additionalRoundPrecisionTests,
 		nameInvalidTest,
 		typeInstrumentTest,
 		typeAndSyringeTest,
@@ -9170,6 +10263,7 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		filterAirPressureDimensionsErrorTests,
 		badCentrifugeErrorTests,
 		noUsableCentrifugeErrorsTests,
+		invalidTypeForVolumeErrorTests,
 		noFilterAvailableInvalidTest,
 		invalidFiltrateDestWellPositionTest,
 		filtrateContainerOverOccupiedTest,
@@ -9226,6 +10320,11 @@ resolveExperimentFilterOptions[myInputSamples:{ObjectP[Object[Sample]]...}, myOp
 		prewettingTypeMismatchTest,
 		occludingRetentateNotSupportedTest,
 		collectionContainerMaxVolumeTest,
+		initialFiltrateMismatchTest,
+		initialFiltrateVolumeTooHighTest,
+		initialFiltrateContainerOutMaxVolumeTest,
+		initialFiltrateTypeMismatchTest,
+		initialFiltrateDestWellPositionTest,
 		allCompatibleMaterialsTests
 	}], TestP];
 
@@ -9252,7 +10351,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		outputSpecification,output,containersIn,containersInInternalDepth,samplesOut,containersInModels,
 		cache,sterile,operator,filtrateContainerOut,sampleOut,
 		resolvedPreparation,filtrationType,targets,filters,filterLabel,instruments,filterHousings,membraneMaterials,prefilterMembraneMaterials,poreSizes,prefilterPoreSizes,molecularWeightCutoffs, filterModelFilterTypes,
-		intensities,times,volumes,pressures,temperatures,syringes, filterPackets, buchnerFunnelQs,
+		intensities,times,volumes,pressures,sampleLoadingDrainTime,temperatures,syringes, filterPackets, buchnerFunnelQs,
 		needles,allResourceBlobs, safeOps, allIDs, protocolID, primitiveIDs,
 		groupedOptions,defaultDestinationContainers, filterModelPackets, storageBufferQs,
 		instrumentResources,samplesInResources,containersInResources,filtrateContainerOutResources,
@@ -9264,7 +10363,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		filtrateDestinationWell, retentateContainerOut, retentateDestinationWell, filterStorageConditions,
 		collectionContainers, filterUntilDrained, maxTimes, collectRetentate,
 		retentateCollectionMethod, washRetentate, retentateWashBuffer, retentateWashVolume, numRetentateWashes,
-		retentateWashDrainTime, retentateWashCentrifugeIntensity,retentateWashPressure, retentateWashMix, numRetentateWashMixes,
+		retentateWashDrainTime, retentateWashTime, retentateWashCentrifugeIntensity,retentateWashPressure, retentateWashPipettingMethod, retentateWashMix, numRetentateWashMixes,
 		resuspensionBuffer, resuspensionVolume, resuspensionNumberOfMixes, retentateCollectionContainers,
 		allSortedBuchnerFunnels, allSortedFilterAdapters, buchnerFunnelsToUse, tubingAdapterResource,
 		allVacuumFlaskPackets, collectionContainerPackets, collectionContainerModelPackets, filterAdaptersToUse,
@@ -9276,14 +10375,16 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		retentateContainerLabel, retentateContainerOutResources, linklessRetentateContainerOut, sampleLabel,
 		sampleContainerLabel, filtrateLabel, filtrateContainerLabel, retentateLabel, sampleOutLabel, containerOutLabel,collectionContainerLabel,
 		simulatedSamples, updatedSimulation, simulatedSampleContainers, fakeContainersOut, expandRetentateWashOptions,
-		expandedRetentateWashBuffer, expandedRetentateWashVolume, expandedRetentateWashDrainTime,
-		expandedRetentateWashCentrifugeIntensity, expandedRetentateWashMix, expandedNumRetentateWashMixes,expandedRetentateWashPressures,
+		expandedRetentateWashBuffer, expandedRetentateWashVolume, expandedRetentateWashDrainTime, expandedRetentateWashTime,
+		expandedRetentateWashCentrifugeIntensity, expandedRetentateWashMix, expandedNumRetentateWashMixes,expandedRetentateWashPressures, expandedRetentateWashPipettingMethod,
 		resuspensionBufferObjs, spatulaResource,filtrateSampleResources,retentateSampleResources,collectionContainerResources,resuspensionBufferContainerResources,retentateWashBufferContainerResources,counterweightResourceRules, groupedFilters, filtersTimesIntensities,
 		filterResourceLabelReplaceRules, filterResourceLabels, filterResourceIndices, fakeFilterPositions,
 		primitiveRetentateWashBatchLengths, primitiveRetentateWashBuffers, primitiveRetentateWashVolume,
-		primitiveRetentateWashDrainTime, primitiveRetentateWashCentrifugeIntensity, primitiveRetentateWashMix,
+		primitiveRetentateWashDrainTime, primitiveRetentateWashTime, primitiveRetentateWashCentrifugeIntensity, primitiveRetentateWashMix,
 		primitiveNumberOfRetentateWashMixes, primitiveWashRetentate, flowRates, schlenkLineResources,
-		filtrateContainerModelPackets, allSelfStandingContainers, destinationRackResources, samplesOutStorage,
+		filtrateContainerModelPackets, allSelfStandingContainers, destinationRackResources,
+		initialFiltrateContainerModelPackets, allInitialFiltrateSelfStandingContainersOrEmptyList,
+		allInitialFiltrateSelfStandingContainers, initialFiltrateDestinationRackResources, samplesOutStorage,
 		allSelfStandingContainersOrEmptyList,
 		collectionContainerResourceReplaceRules, resuspensionBufferLabel, resuspensionBufferContainerLabel,
 		retentateWashBufferLabel, retentateWashBufferContainerLabel, primitiveRetentateWashBufferLabels,
@@ -9291,7 +10392,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		resuspensionBufferContainerResourceRules, retentateWashBufferContainerResourceRules, prewetFilter,
 		prewetFilterTime, prewetFilterBufferVolume, prewetFilterCentrifugeIntensity, prewetFilterBuffer,
 		prewetFilterContainerOut, prewetFilterBufferLabel, prewetFilterContainerLabel, prewetFilterBufferPackets,
-		prewetFilterContainerResources, primitiveNumberOfRetentateWashes, filterPositions,
+		prewetFilterContainerResources, initialFiltrateContainerResources, initialFiltrateContainerOutResources, primitiveNumberOfRetentateWashes, filterPositions,
 		fastAssoc, washFlowThroughLabel, washFlowThroughContainerLabel, washFlowThroughContainer, washFlowThroughDestinationWell,
 		washFlowThroughStorageCondition, primitiveWashFlowThroughLabel, primitiveWashFlowThroughContainerLabel,
 		primitiveWashFlowThroughContainer, primitiveWashFlowThroughDestinationWell, primitiveWashFlowThroughStorageCondition,
@@ -9300,6 +10401,8 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		expandedWashFlowThroughContainerObjs, washFlowThroughResources, collectOccludingRetentate, occludingRetentateContainer,
 		occludingRetentateDestinationWell, occludingRetentateContainerLabel, occludingRetentateContainerResourceReplaceRules,
 		occludingRetentateContainerResources, numberOfFilterPrewettings, prewetFilterBufferVolumeWithReplicates,
+		initialFiltrateContainerOut, initialFiltrateContainerLabel, initialFiltrateLabel, initialFiltrateDestinationWell,
+		initialFiltrate, initialFiltrateVolume, initialFiltrateStorageCondition, initialFiltrateTime,
 		fastAssocKeysIDOnly, allNeedleModelPackets, samplesInSampleHandling
 	},
 
@@ -9328,171 +10431,191 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 
 	(* Lookup option values *)
 	{
-		sterile,
-		operator,
-		filtrateContainerOut,
-		filtrateDestinationWell,
-		retentateContainerOut,
-		retentateDestinationWell,
-		sampleOut,
-		resolvedPreparation,
-		filtrationType,
-		targets,
-		filters,
-		filterPositions,
-		filterLabel,
-		filterStorageConditions,
-		instruments,
-		filterHousings,
-		membraneMaterials,
-		prefilterMembraneMaterials,
-		poreSizes,
-		prefilterPoreSizes,
-		molecularWeightCutoffs,
-		intensities,
-		times,
-		volumes,
-		pressures,
-		temperatures,
-		syringes,
-		flowRates,
-		collectionContainers,
-		retentateCollectionContainers,
-		filterUntilDrained,
-		maxTimes,
-		collectRetentate,
-		retentateCollectionMethod,
-		washRetentate,
-		retentateWashBuffer,
-		retentateWashVolume,
-		numRetentateWashes,
-		retentateWashDrainTime,
-		retentateWashCentrifugeIntensity,
-		retentateWashPressure,
-		retentateWashMix,
-		numRetentateWashMixes,
-		resuspensionBuffer,
-		resuspensionVolume,
-		resuspensionNumberOfMixes,
-		counterbalanceWeights,
-		target,
-		samplesOutStorage,
-		prewetFilter,
-		prewetFilterTime,
-		prewetFilterBufferVolume,
-		prewetFilterCentrifugeIntensity,
-		prewetFilterBuffer,
-		prewetFilterContainerOut,
-		numberOfFilterPrewettings,
-		washFlowThroughContainer,
-		washFlowThroughDestinationWell,
-		washFlowThroughStorageCondition,
-		sampleLabel,
-		sampleContainerLabel,
-		filtrateLabel,
-		filtrateContainerLabel,
-		retentateLabel,
-		retentateContainerLabel,
-		sampleOutLabel,
-		containerOutLabel,
-		collectionContainerLabel,
-		resuspensionBufferLabel,
-		resuspensionBufferContainerLabel,
-		retentateWashBufferLabel,
-		retentateWashBufferContainerLabel,
-		counterweight,
-		prewetFilterBufferLabel,
-		prewetFilterContainerLabel,
-		washFlowThroughLabel,
-		washFlowThroughContainerLabel,
-		collectOccludingRetentate,
-		occludingRetentateContainer,
-		occludingRetentateDestinationWell,
-		occludingRetentateContainerLabel
+		(*1*)sterile,
+		(*2*)operator,
+		(*3*)filtrateContainerOut,
+		(*4*)filtrateDestinationWell,
+		(*5*)retentateContainerOut,
+		(*6*)retentateDestinationWell,
+		(*7*)sampleOut,
+		(*8*)resolvedPreparation,
+		(*9*)filtrationType,
+		(*10*)targets,
+		(*11*)filters,
+		(*12*)filterPositions,
+		(*13*)filterLabel,
+		(*14*)filterStorageConditions,
+		(*15*)instruments,
+		(*16*)filterHousings,
+		(*17*)membraneMaterials,
+		(*18*)prefilterMembraneMaterials,
+		(*19*)poreSizes,
+		(*20*)prefilterPoreSizes,
+		(*21*)molecularWeightCutoffs,
+		(*22*)intensities,
+		(*23*)times,
+		(*24*)volumes,
+		(*25*)pressures,
+		(*26*)sampleLoadingDrainTime,
+		(*27*)temperatures,
+		(*28*)syringes,
+		(*29*)flowRates,
+		(*30*)collectionContainers,
+		(*31*)retentateCollectionContainers,
+		(*32*)filterUntilDrained,
+		(*33*)maxTimes,
+		(*34*)collectRetentate,
+		(*35*)retentateCollectionMethod,
+		(*36*)washRetentate,
+		(*37*)retentateWashBuffer,
+		(*38*)retentateWashVolume,
+		(*39*)numRetentateWashes,
+		(*40*)retentateWashDrainTime,
+		(*41*)retentateWashTime,
+		(*42*)retentateWashCentrifugeIntensity,
+		(*43*)retentateWashPressure,
+		(*44*)retentateWashPipettingMethod,
+		(*45*)retentateWashMix,
+		(*46*)numRetentateWashMixes,
+		(*47*)resuspensionBuffer,
+		(*48*)resuspensionVolume,
+		(*49*)resuspensionNumberOfMixes,
+		(*50*)counterbalanceWeights,
+		(*51*)target,
+		(*52*)samplesOutStorage,
+		(*53*)prewetFilter,
+		(*54*)prewetFilterTime,
+		(*55*)prewetFilterBufferVolume,
+		(*56*)prewetFilterCentrifugeIntensity,
+		(*57*)prewetFilterBuffer,
+		(*58*)prewetFilterContainerOut,
+		(*59*)numberOfFilterPrewettings,
+		(*60*)washFlowThroughContainer,
+		(*61*)washFlowThroughDestinationWell,
+		(*62*)washFlowThroughStorageCondition,
+		(*63*)sampleLabel,
+		(*64*)sampleContainerLabel,
+		(*65*)filtrateLabel,
+		(*66*)filtrateContainerLabel,
+		(*67*)retentateLabel,
+		(*68*)retentateContainerLabel,
+		(*69*)sampleOutLabel,
+		(*70*)containerOutLabel,
+		(*71*)collectionContainerLabel,
+		(*72*)resuspensionBufferLabel,
+		(*73*)resuspensionBufferContainerLabel,
+		(*74*)retentateWashBufferLabel,
+		(*75*)retentateWashBufferContainerLabel,
+		(*76*)counterweight,
+		(*77*)prewetFilterBufferLabel,
+		(*78*)prewetFilterContainerLabel,
+		(*79*)washFlowThroughLabel,
+		(*80*)washFlowThroughContainerLabel,
+		(*81*)collectOccludingRetentate,
+		(*82*)occludingRetentateContainer,
+		(*83*)occludingRetentateDestinationWell,
+		(*84*)occludingRetentateContainerLabel,
+		(*85*)initialFiltrateContainerOut,
+		(*86*)initialFiltrateContainerLabel,
+		(*87*)initialFiltrateLabel,
+		(*88*)initialFiltrateDestinationWell,
+		(*89*)initialFiltrate,
+		(*90*)initialFiltrateVolume,
+		(*91*)initialFiltrateStorageCondition
 	} = Lookup[
 		myResolvedOptions,
 		{
-			Sterile,
-			Operator,
-			FiltrateContainerOut,
-			FiltrateDestinationWell,
-			RetentateContainerOut,
-			RetentateDestinationWell,
-			SampleOut,
-			Preparation,
-			FiltrationType,
-			Target,
-			Filter,
-			FilterPosition,
-			FilterLabel,
-			FilterStorageCondition,
-			Instrument,
-			FilterHousing,
-			MembraneMaterial,
-			PrefilterMembraneMaterial,
-			PoreSize,
-			PrefilterPoreSize,
-			MolecularWeightCutoff,
-			Intensity,
-			Time,
-			Volume,
-			Pressure,
-			Temperature,
-			Syringe,
-			FlowRate,
-			CollectionContainer,
-			RetentateCollectionContainer,
-			FilterUntilDrained,
-			MaxTime,
-			CollectRetentate,
-			RetentateCollectionMethod,
-			WashRetentate,
-			RetentateWashBuffer,
-			RetentateWashVolume,
-			NumberOfRetentateWashes,
-			RetentateWashDrainTime,
-			RetentateWashCentrifugeIntensity,
-			RetentateWashPressure,
-			RetentateWashMix,
-			NumberOfRetentateWashMixes,
-			ResuspensionBuffer,
-			ResuspensionVolume,
-			NumberOfResuspensionMixes,
-			CounterbalanceWeight,
-			Target,
-			SamplesOutStorageCondition,
-			PrewetFilter,
-			PrewetFilterTime,
-			PrewetFilterBufferVolume,
-			PrewetFilterCentrifugeIntensity,
-			PrewetFilterBuffer,
-			PrewetFilterContainerOut,
-			NumberOfFilterPrewettings,
-			WashFlowThroughContainer,
-			WashFlowThroughDestinationWell,
-			WashFlowThroughStorageCondition,
-			SampleLabel,
-			SampleContainerLabel,
-			FiltrateLabel,
-			FiltrateContainerLabel,
-			RetentateLabel,
-			RetentateContainerLabel,
-			SampleOutLabel,
-			ContainerOutLabel,
-			CollectionContainerLabel,
-			ResuspensionBufferLabel,
-			ResuspensionBufferContainerLabel,
-			RetentateWashBufferLabel,
-			RetentateWashBufferContainerLabel,
-			Counterweight,
-			PrewetFilterBufferLabel,
-			PrewetFilterContainerLabel,
-			WashFlowThroughLabel,
-			WashFlowThroughContainerLabel,
-			CollectOccludingRetentate,
-			OccludingRetentateContainer,
-			OccludingRetentateDestinationWell,
-			OccludingRetentateContainerLabel
+			(*1*)Sterile,
+			(*2*)Operator,
+			(*3*)FiltrateContainerOut,
+			(*4*)FiltrateDestinationWell,
+			(*5*)RetentateContainerOut,
+			(*6*)RetentateDestinationWell,
+			(*7*)SampleOut,
+			(*8*)Preparation,
+			(*9*)FiltrationType,
+			(*10*)Target,
+			(*11*)Filter,
+			(*12*)FilterPosition,
+			(*13*)FilterLabel,
+			(*14*)FilterStorageCondition,
+			(*15*)Instrument,
+			(*16*)FilterHousing,
+			(*17*)MembraneMaterial,
+			(*18*)PrefilterMembraneMaterial,
+			(*19*)PoreSize,
+			(*20*)PrefilterPoreSize,
+			(*21*)MolecularWeightCutoff,
+			(*22*)Intensity,
+			(*23*)Time,
+			(*24*)Volume,
+			(*25*)Pressure,
+			(*26*)SampleLoadingDrainTime,
+			(*27*)Temperature,
+			(*28*)Syringe,
+			(*29*)FlowRate,
+			(*30*)CollectionContainer,
+			(*31*)RetentateCollectionContainer,
+			(*32*)FilterUntilDrained,
+			(*33*)MaxTime,
+			(*34*)CollectRetentate,
+			(*35*)RetentateCollectionMethod,
+			(*36*)WashRetentate,
+			(*37*)RetentateWashBuffer,
+			(*38*)RetentateWashVolume,
+			(*39*)NumberOfRetentateWashes,
+			(*40*)RetentateWashDrainTime,
+			(*41*)RetentateWashTime,
+			(*42*)RetentateWashCentrifugeIntensity,
+			(*43*)RetentateWashPressure,
+			(*44*)RetentateWashPipettingMethod,
+			(*45*)RetentateWashMix,
+			(*46*)NumberOfRetentateWashMixes,
+			(*47*)ResuspensionBuffer,
+			(*48*)ResuspensionVolume,
+			(*49*)NumberOfResuspensionMixes,
+			(*50*)CounterbalanceWeight,
+			(*51*)Target,
+			(*52*)SamplesOutStorageCondition,
+			(*53*)PrewetFilter,
+			(*54*)PrewetFilterTime,
+			(*55*)PrewetFilterBufferVolume,
+			(*56*)PrewetFilterCentrifugeIntensity,
+			(*57*)PrewetFilterBuffer,
+			(*58*)PrewetFilterContainerOut,
+			(*59*)NumberOfFilterPrewettings,
+			(*60*)WashFlowThroughContainer,
+			(*61*)WashFlowThroughDestinationWell,
+			(*62*)WashFlowThroughStorageCondition,
+			(*63*)SampleLabel,
+			(*64*)SampleContainerLabel,
+			(*65*)FiltrateLabel,
+			(*66*)FiltrateContainerLabel,
+			(*67*)RetentateLabel,
+			(*68*)RetentateContainerLabel,
+			(*69*)SampleOutLabel,
+			(*70*)ContainerOutLabel,
+			(*71*)CollectionContainerLabel,
+			(*72*)ResuspensionBufferLabel,
+			(*73*)ResuspensionBufferContainerLabel,
+			(*74*)RetentateWashBufferLabel,
+			(*75*)RetentateWashBufferContainerLabel,
+			(*76*)Counterweight,
+			(*77*)PrewetFilterBufferLabel,
+			(*78*)PrewetFilterContainerLabel,
+			(*79*)WashFlowThroughLabel,
+			(*80*)WashFlowThroughContainerLabel,
+			(*81*)CollectOccludingRetentate,
+			(*82*)OccludingRetentateContainer,
+			(*83*)OccludingRetentateDestinationWell,
+			(*84*)OccludingRetentateContainerLabel,
+			(*85*)InitialFiltrateContainerOut,
+			(*86*)InitialFiltrateContainerLabel,
+			(*87*)InitialFiltrateLabel,
+			(*88*)InitialFiltrateDestinationWell,
+			(*89*)InitialFiltrate,
+			(*90*)InitialFiltrateVolume,
+			(*91*)InitialFiltrateStorageCondition
 		}
 	];
 
@@ -9540,7 +10663,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 			Which[
 				(* Container is a plate, use the short disposable one *)
 				MatchQ[filtrationType, Syringe] && MatchQ[containersInModels, ObjectP[Model[Container, Plate]]],
-				Model[Item, Needle, "id:4pO6dMmv9pnM"],(*"14Ga x 2In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+				Model[Item, Needle, "id:4pO6dMmv9pnM"],(*"14Ga x 2In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 				(* Container is not a plate, use compatibleNeedles to find one *)
 				MatchQ[filtrationType, Syringe],
 					FirstOrDefault[
@@ -9556,7 +10679,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 							Blunt -> True
 						],
 						(* Default to use the longest one to be safe *)
-						Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+						Model[Item, Needle, "id:Y0lXejrKm0Po"](*"14Ga x 10.7In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 					],
 				(* Not doing syringe filtration, no needle involved *)
 				True,
@@ -9849,6 +10972,71 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		{filtrationType, filtrateContainerModelPackets, allSelfStandingContainers}
 	];
 
+	(* Get the packets for the initial filtrate container models *)
+	initialFiltrateContainerModelPackets = Map[
+		Which[
+			MatchQ[#, ObjectP[Model[Container]]],
+				fetchPacketFromFastAssoc[#, fastAssoc],
+			MatchQ[#, ObjectP[Object[Container]]],
+				fetchPacketFromFastAssoc[Download[Lookup[fetchPacketFromFastAssoc[#, fastAssoc], Model], Object], fastAssoc],
+			True,
+				<||>
+		]&,
+		initialFiltrateContainerOut
+	];
+
+	(* Pull out the racks for the initial filtrate containers using a single RackFinder call *)
+	allInitialFiltrateSelfStandingContainersOrEmptyList = ToList[Quiet[RackFinder[
+		DeleteCases[Lookup[initialFiltrateContainerModelPackets, Object, Null], Null]
+	]]];
+	allInitialFiltrateSelfStandingContainers = If[MatchQ[allInitialFiltrateSelfStandingContainersOrEmptyList, {} | {Null}],
+		ConstantArray[Null, Length[initialFiltrateContainerOut]],
+		(* Pad with Null for any entries that were filtered out by DeleteCases *)
+		Module[{objectsWithRacks, rackIndex},
+			objectsWithRacks = DeleteCases[Lookup[initialFiltrateContainerModelPackets, Object, Null], Null];
+			rackIndex = 1;
+			Map[
+				If[NullQ[Lookup[#, Object, Null]],
+					Null,
+					Module[{rack},
+						rack = If[rackIndex <= Length[allInitialFiltrateSelfStandingContainersOrEmptyList],
+							allInitialFiltrateSelfStandingContainersOrEmptyList[[rackIndex]],
+							Null
+						];
+						rackIndex++;
+						rack
+					]
+				]&,
+				initialFiltrateContainerModelPackets
+			]
+		]
+	];
+
+	(* Make resources for the rack holding the initial filtrate destination container *)
+	initialFiltrateDestinationRackResources = MapThread[
+		Function[{initialFiltrateQ, filterType, containerModelPacket, selfStandingContainer},
+			If[TrueQ[initialFiltrateQ] && MatchQ[filterType, Syringe] && MatchQ[Lookup[containerModelPacket, SelfStanding, True], False] && MatchQ[selfStandingContainer, ObjectP[]],
+				Resource[
+					Sample -> Download[selfStandingContainer, Object],
+					Rent -> True,
+					Name -> (ToString[Download[selfStandingContainer, Object]] <> " initial filtrate destination rack")
+				]
+			]
+		],
+		{initialFiltrate, filtrationType, initialFiltrateContainerModelPackets, allInitialFiltrateSelfStandingContainers}
+	];
+
+	(* Calculate the time required for the initial filtrate step based on the flow rate and volume *)
+	initialFiltrateTime = MapThread[
+		Function[{initialFiltrateQ, initialFiltrateVol, flowRate},
+			If[TrueQ[initialFiltrateQ] && VolumeQ[initialFiltrateVol] && MatchQ[flowRate, GreaterP[0 Milliliter / Minute]],
+				Max[Round[initialFiltrateVol / flowRate, 1 Minute], 1 Minute],
+				Null
+			]
+		],
+		{initialFiltrate, initialFiltrateVolume, flowRates}
+	];
+
 	(* Figure out if we're using a buchner funnel or not (i.e., membrane filter with vacuum) *)
 	buchnerFunnelQs = MapThread[
 		MatchQ[#1, Vacuum] && MatchQ[#2, Membrane]&,
@@ -9987,7 +11175,9 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 				NullQ[collectionContainerLabel] || NullQ[collectionContainer],
 					Nothing,
 				MatchQ[collectionContainerLabel, filtrateContainerLabel],
-					collectionContainerLabel -> filtrateContainerOutResource /. {Link[x_] :> x},
+					(* The filtrateContainerOutResource has Link already as Link[modelResource] or Link[objectResource, Protocols] *)
+					(* This link will be replaced later in collectionContainerResources so it does not have backlink *)
+					collectionContainerLabel -> filtrateContainerOutResource,
 				True,
 					collectionContainerLabel -> Resource[Name -> collectionContainerLabel, Sample -> collectionContainer]
 			]
@@ -10026,6 +11216,17 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		]&,
 		Lookup[myResolvedOptions, {PrewetFilterContainerLabel, PrewetFilterContainerOut}]
 	]];
+
+	(* Make the InitialFiltrateContainerOut resources *)
+	initialFiltrateContainerResources = DeleteDuplicates[MapThread[
+		If[NullQ[#1] || NullQ[#2],
+			Nothing,
+			#1 -> Resource[Name -> #1, Sample -> #2]
+		]&,
+		Lookup[myResolvedOptions, {InitialFiltrateContainerLabel, InitialFiltrateContainerOut}]
+	]];
+
+	initialFiltrateContainerOutResources = initialFiltrateContainerLabel /. initialFiltrateContainerResources;
 
 	(* Get the resources for all the resuspension buffers *)
 	resuspensionBufferContainerResourceRules = MapThread[
@@ -10168,6 +11369,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 	expandedRetentateWashBufferContainerLabel = expandRetentateWashOptions[retentateWashBufferContainerLabel];
 	expandedRetentateWashVolume = expandRetentateWashOptions[retentateWashVolume];
 	expandedRetentateWashDrainTime = expandRetentateWashOptions[retentateWashDrainTime];
+	expandedRetentateWashTime = expandRetentateWashOptions[retentateWashTime];
 	expandedRetentateWashCentrifugeIntensity = expandRetentateWashOptions[retentateWashCentrifugeIntensity];
 	expandedRetentateWashMix = expandRetentateWashOptions[retentateWashMix];
 	expandedNumRetentateWashMixes = MapThread[
@@ -10178,6 +11380,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		{expandedRetentateWashMix, expandRetentateWashOptions[numRetentateWashMixes]}
 	];
 	expandedRetentateWashPressures = expandRetentateWashOptions[retentateWashPressure];
+	expandedRetentateWashPipettingMethod = expandRetentateWashOptions[retentateWashPipettingMethod];
 
 	(* Also expand all the wash flow through options *)
 	expandedWashFlowThroughContainerObjs = expandRetentateWashOptions[washFlowThroughContainer];
@@ -10253,10 +11456,12 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 			RetentateWashBuffer -> expandedRetentateWashBuffer,
 			RetentateWashVolume -> expandedRetentateWashVolume,
 			RetentateWashDrainTime -> expandedRetentateWashDrainTime,
+			RetentateWashTime -> expandedRetentateWashTime,
 			RetentateWashCentrifugeIntensity -> expandedRetentateWashCentrifugeIntensity,
 			RetentateWashMix -> expandedRetentateWashMix,
 			NumberOfRetentateWashMixes -> expandedNumRetentateWashMixes,
 			RetentateWashPressures -> expandedRetentateWashPressures,
+			RetentateWashPipettingMethod -> expandedRetentateWashPipettingMethod,
 			ResuspensionBuffer -> resuspensionBufferResources,
 			ResuspensionVolume -> resuspensionVolume,
 			NumberOfResuspensionMixes -> resuspensionNumberOfMixes,
@@ -10270,6 +11475,16 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 			PrewetFilterContainerOut -> (prewetFilterContainerLabel /. prewetFilterContainerResources),
 			PrewetFilterContainerLabel -> prewetFilterContainerLabel,
 			NumberOfFilterPrewettings -> numberOfFilterPrewettings,
+
+			InitialFiltrate -> initialFiltrate,
+			InitialFiltrateVolume -> initialFiltrateVolume,
+			InitialFiltrateContainerOut -> initialFiltrateContainerOutResources,
+			InitialFiltrateLabel -> initialFiltrateLabel,
+			InitialFiltrateContainerLabel -> initialFiltrateContainerLabel,
+			InitialFiltrateDestinationWell -> initialFiltrateDestinationWell,
+			InitialFiltrateDestinationRack -> (Link /@ initialFiltrateDestinationRackResources),
+			InitialFiltrateTime -> initialFiltrateTime,
+			InitialFiltrateStorageCondition -> initialFiltrateStorageCondition,
 
 			WashFlowThroughLabel -> expandedWashFlowThroughLabel,
 			WashFlowThroughContainerLabel -> expandedWashFlowThroughContainerLabel,
@@ -10316,6 +11531,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		primitiveRetentateWashBuffers,
 		primitiveRetentateWashVolume,
 		primitiveRetentateWashDrainTime,
+		primitiveRetentateWashTime,
 		primitiveRetentateWashCentrifugeIntensity,
 		primitiveRetentateWashMix,
 		primitiveNumberOfRetentateWashMixes,
@@ -10372,6 +11588,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 							padAndTranspose[RetentateWashBuffer],
 							padAndTranspose[RetentateWashVolume],
 							padAndTranspose[RetentateWashDrainTime],
+							padAndTranspose[RetentateWashTime],
 							padAndTranspose[RetentateWashCentrifugeIntensity],
 							padAndTranspose[RetentateWashMix],
 							padAndTranspose[NumberOfRetentateWashMixes],
@@ -10390,6 +11607,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 							Flatten[Lookup[options, RetentateWashBuffer]],
 							Flatten[Lookup[options, RetentateWashVolume]],
 							Flatten[Lookup[options, RetentateWashDrainTime]],
+							Flatten[Lookup[options, RetentateWashTime]],
 							Flatten[Lookup[options, RetentateWashCentrifugeIntensity]],
 							Flatten[Lookup[options, RetentateWashMix]],
 							Flatten[Lookup[options, NumberOfRetentateWashMixes]],
@@ -10407,7 +11625,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 			],
 			groupedOptions[[All, 2]]
 		]],
-		ConstantArray[{}, 16]
+		ConstantArray[{}, 17]
 	];
 
 	(* Preparing protocol and unitOperationObject packets: Are we making resources for Manual or Robotic? *)
@@ -10422,6 +11640,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 					washBuffers,
 					washVolume,
 					washDrainTime,
+					washTime,
 					washIntensity,
 					washMix,
 					numWashMixes,
@@ -10502,6 +11721,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 								NumberOfRetentateWashes -> numRetentateWashes,
 								RetentateWashVolume -> washVolume,
 								RetentateWashDrainTime -> washDrainTime,
+								RetentateWashTime -> washTime,
 								RetentateWashCentrifugeIntensity -> washIntensity,
 								RetentateWashMix -> washMix,
 								NumberOfRetentateWashMixes -> numWashMixes,
@@ -10520,6 +11740,16 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 								PrewetFilterContainerOut -> Lookup[options, PrewetFilterContainerOut],
 								PrewetFilterContainerLabel -> Lookup[options, PrewetFilterContainerLabel],
 								NumberOfFilterPrewettings -> Lookup[options, NumberOfFilterPrewettings],
+
+								InitialFiltrate -> Lookup[options, InitialFiltrate],
+								InitialFiltrateVolume -> Lookup[options, InitialFiltrateVolume],
+								InitialFiltrateContainerOut -> Lookup[options, InitialFiltrateContainerOut],
+								InitialFiltrateLabel -> Lookup[options, InitialFiltrateLabel],
+								InitialFiltrateContainerLabel -> Lookup[options, InitialFiltrateContainerLabel],
+								InitialFiltrateDestinationWell -> Lookup[options, InitialFiltrateDestinationWell],
+								InitialFiltrateDestinationRack -> Lookup[options, InitialFiltrateDestinationRack],
+								InitialFiltrateTime -> Lookup[options, InitialFiltrateTime],
+								InitialFiltrateStorageCondition -> Lookup[options, InitialFiltrateStorageCondition],
 
 								WashFlowThroughLabel -> washFlowThroughLabels,
 								WashFlowThroughContainerLabel -> washFlowThroughContainerLabels,
@@ -10544,6 +11774,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 								Volume -> Lookup[options, Volume],
 								Pressure -> Lookup[options, Pressure],
 								RetentateWashPressure -> Lookup[options, RetentateWashPressures],
+								RetentateWashPipettingMethod -> Lookup[options, RetentateWashPipettingMethod],
 								Counterweight -> Lookup[options, Counterweight],
 
 								(* Developer fields *)
@@ -10570,6 +11801,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 					primitiveRetentateWashBuffers,
 					primitiveRetentateWashVolume,
 					primitiveRetentateWashDrainTime,
+					primitiveRetentateWashTime,
 					primitiveRetentateWashCentrifugeIntensity,
 					primitiveRetentateWashMix,
 					primitiveNumberOfRetentateWashMixes,
@@ -10628,7 +11860,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 								Filter -> filterResources,
 								FiltrateContainerOut -> linklessFiltrateContainerOut,
 								RetentateContainerOut -> linklessRetentateContainerOut,
-								CollectionContainer -> (Lookup[myResolvedOptions, CollectionContainerLabel] /. collectionContainerResourceReplaceRules),
+								CollectionContainer -> collectionContainerResources,
 								PrewetFilterContainerOut -> (prewetFilterContainerLabel /. prewetFilterContainerResources),
 								PrewetFilterBuffer -> prewetFilterBufferResources,
 								ResuspensionBuffer -> resuspensionBufferResources,
@@ -10792,7 +12024,7 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 							{_String, Verbatim[Link][Resource[___]] | _Resource}
 						],
 						Cases[
-							Transpose[{Lookup[myResolvedOptions, CollectionContainerLabel], Link /@ (Lookup[myResolvedOptions, CollectionContainerLabel] /. collectionContainerResourceReplaceRules)}],
+							Transpose[{Lookup[myResolvedOptions, CollectionContainerLabel], collectionContainerResources}],
 							{_String, Verbatim[Link][Resource[___]] | _Resource}
 						],
 						Cases[
@@ -10859,6 +12091,8 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		Replace[FiltrateDestinationWell] -> filtrateDestinationWell,
 		Replace[RetentateContainersOut] -> Link /@ linklessRetentateContainerOut,
 		Replace[RetentateDestinationWell] -> retentateDestinationWell,
+		Replace[InitialFiltrateContainersOut] -> Map[If[NullQ[#], Null, Link[#]]&, initialFiltrateContainerOutResources],
+		Replace[InitialFiltrateDestinationWell] -> initialFiltrateDestinationWell,
 		Replace[CollectionContainers] -> collectionContainerResources,
 		Replace[RetentateCollectionContainers] -> Link /@ retentateCollectionContainers,
 		Replace[Filters] -> filterResources,
@@ -10876,6 +12110,9 @@ filterResourcePackets[mySamples: {ObjectP[Object[Sample]]..}, myUnresolvedOption
 		Replace[Intensity] -> intensities,
 		Replace[Times] -> times,
 		Replace[Temperatures] -> temperatures,
+		Replace[SampleLoadingDrainTime] -> sampleLoadingDrainTime,
+		Replace[RetentateWashDrainTime] -> retentateWashDrainTime,
+		Replace[RetentateWashTime] -> retentateWashTime,
 		UnresolvedOptions -> RemoveHiddenOptions[ExperimentFilter, myUnresolvedOptions],
 		ResolvedOptions -> RemoveHiddenOptions[ExperimentFilter, myResolvedOptions],
 		Replace[Checkpoints] -> {
@@ -10970,6 +12207,9 @@ simulateExperimentFilter[
 		simulatedPrewetFilterBufferPackets, washFlowThroughContainerPositions, filtrateSameAsWashFlowThroughQs,
 		washFlowThroughLabelsToUse, washFlowThroughContainerLabelsToUse, washFlowThroughObjects, washFlowThroughSamples,
 		washFlowThroughVolumes, washFlowThroughSampleObjectsWithDupes, primitiveWashRetentate, primitiveRetentateWashBatchLengths,
+		initialFiltrateContainerOutPositions, initialFiltrateSampleObjects, initialFiltrateSampleSamples,
+		initialFiltrateSampleVolumes, initialFiltrateSampleObjectsWithDupes, initialFiltrateUploadSampleTransferInput,
+		initialFiltrateUploadSampleTransferPackets, simulatedInitialFiltrateContainerContents,
 		primitiveRetentateWashBuffers, primitiveRetentateWashVolume, primitiveRetentateWashBufferLabels, primitiveRetentateWashBufferContainerLabels,
 		primitiveNumberOfRetentateWashes, primitiveWashFlowThroughLabel, primitiveWashFlowThroughContainerLabel,
 		primitiveWashFlowThroughContainer, primitiveWashFlowThroughDestinationWell, primitiveWashFlowThroughStorageCondition,
@@ -11107,6 +12347,14 @@ simulateExperimentFilter[
 		PrewetFilterContainerOutString,
 		PrewetFilterContainerLabel,
 		NumberOfFilterPrewettings,
+		InitialFiltrate,
+		InitialFiltrateVolume,
+		InitialFiltrateContainerOutLink,
+		InitialFiltrateContainerOutString,
+		InitialFiltrateLabel,
+		InitialFiltrateContainerLabel,
+		InitialFiltrateSample,
+		InitialFiltrateDestinationWell,
 		WashFlowThroughLabel,
 		WashFlowThroughContainerLabel,
 		WashFlowThroughContainer,
@@ -11126,7 +12374,8 @@ simulateExperimentFilter[
 		simulatedFiltrateContainerContents,
 		simulatedRetentateContainerContents,
 		simulatedCollectionContainerContents,
-		simulatedRetentateCollectionContainerContents
+		simulatedRetentateCollectionContainerContents,
+		simulatedInitialFiltrateContainerContents
 	} = Quiet[
 
 		With[{insertMe=unitOperationField},
@@ -11145,7 +12394,8 @@ simulateExperimentFilter[
 				Packet[insertMe[FiltrateContainerOutLink][{Model, Name, Contents}]],
 				Packet[insertMe[RetentateContainerOutLink][{Model, Name, Contents}]],
 				Packet[insertMe[CollectionContainerLink][{Model, Name, Contents}]],
-				Packet[insertMe[RetentateCollectionContainerLink][{Model, Name, Contents}]]
+				Packet[insertMe[RetentateCollectionContainerLink][{Model, Name, Contents}]],
+				Packet[insertMe[InitialFiltrateContainerOutLink][{Model, Name, Contents}]]
 			},
 			Simulation -> currentSimulation
 		]],
@@ -11339,6 +12589,27 @@ simulateExperimentFilter[
 		simulatedPrimitivePackets
 	];
 
+	(* Get all the locations that samples are going to be created in for the initial filtrate; only applicable for syringe filtration *)
+	initialFiltrateContainerOutPositions = Join @@ Map[
+		Function[{primitivePacket},
+			If[Not[MatchQ[Lookup[primitivePacket, InitialFiltrateContainerOutLink], {ObjectP[]..}]],
+				{},
+				MapThread[
+					If[TrueQ[#1] && MatchQ[#2, ObjectP[]],
+						{#3, #2},
+						Nothing
+					]&,
+					{
+						Lookup[primitivePacket, InitialFiltrate],
+						Lookup[primitivePacket, InitialFiltrateContainerOutLink],
+						Lookup[primitivePacket, InitialFiltrateDestinationWell]
+					}
+				]
+			]
+		],
+		simulatedPrimitivePackets
+	];
+
 	(* Determine if the wash flow through sample is the same as the filtrate sample *)
 	filtrateSameAsWashFlowThroughQs = MapThread[
 		Function[{primitivePacket, washFlowThroughLabels},
@@ -11432,7 +12703,7 @@ simulateExperimentFilter[
 	]];
 
 	(* Get all the ContainerOut-and-positions *)
-	containerOutPositions = Join[filtrateContainerOutPositions, washFlowThroughContainerPositions, retentateContainerOutPositions];
+	containerOutPositions = Join[filtrateContainerOutPositions, washFlowThroughContainerPositions, retentateContainerOutPositions, initialFiltrateContainerOutPositions];
 
 	(* Get the state of the destination samples *)
 	(* Filtrate is always liquid; retentate is solid if we're Transferring and not Resuspending *)
@@ -11452,7 +12723,9 @@ simulateExperimentFilter[
 				]
 			],
 			simulatedPrimitivePackets
-		]]
+		]],
+		(* Initial filtrate is always liquid *)
+		ConstantArray[Liquid, Length[initialFiltrateContainerOutPositions]]
 	];
 
 	(* Prep collection container packets *)
@@ -11460,7 +12733,8 @@ simulateExperimentFilter[
 		simulatedFiltrateContainerContents,
 		simulatedRetentateContainerContents,
 		simulatedCollectionContainerContents,
-		simulatedRetentateCollectionContainerContents
+		simulatedRetentateCollectionContainerContents,
+		simulatedInitialFiltrateContainerContents
 	}];
 
 	(* Note: edge case scenario is that we are actually filtering into a destination that already contains a sample. In this case we need to
@@ -11567,11 +12841,11 @@ simulateExperimentFilter[
 
 	(* Split all samples into the filtrate, wash flow through, and retentate samples *)
 	(* this is a little cumbersome in one line I know, but basically take the new-object packets and then split them into filtrate, wash flow through, and retentate ones *)
-	{filtrateSampleObjects, washFlowThroughObjects, retentateSampleObjects} = If[MatchQ[allFiltrateAndRetentateSamples, {}],
-		{{}, {}, {}},
+	{filtrateSampleObjects, washFlowThroughObjects, retentateSampleObjects, initialFiltrateSampleObjects} = If[MatchQ[allFiltrateAndRetentateSamples, {}],
+		{{}, {}, {}, {}},
 		TakeList[
 			allFiltrateAndRetentateSamples,
-			{Length[filtrateContainerOutPositions], Length[washFlowThroughContainerPositions], Length[retentateContainerOutPositions]}
+			{Length[filtrateContainerOutPositions], Length[washFlowThroughContainerPositions], Length[retentateContainerOutPositions], Length[initialFiltrateContainerOutPositions]}
 		]
 	];
 
@@ -11635,41 +12909,66 @@ simulateExperimentFilter[
 				MatchQ[batchLengths,{}|{(0)..}],
 					{
 						MapThread[
-							{
-								If[VolumeQ[#1], #1, #2]
-							}&,
-							{Lookup[primitivePacket, VolumeReal], Lookup[sourcePackets, Volume]}
+							Function[{primVolumeReal, sampleVolume, initFiltrate, initFiltrateVol},
+								Module[{baseVol},
+
+									(* Get the base volume for this sample *)
+									baseVol = If[VolumeQ[primVolumeReal], primVolumeReal, sampleVolume];
+
+									(* Subtract the initial filtrate volume if applicable *)
+									{If[TrueQ[initFiltrate] && VolumeQ[initFiltrateVol], baseVol - initFiltrateVol, baseVol]}
+								]
+							],
+							{Lookup[primitivePacket, VolumeReal], Lookup[sourcePackets, Volume], Lookup[primitivePacket, InitialFiltrate], Lookup[primitivePacket, InitialFiltrateVolume]}
 						]
 					},
 				transposeQ,
 					MapThread[
-						Function[{primVolumeReal, sampleVolume, retentateWashVolume, numRetentateWashes, washSameAsFiltrateQ},
-							{
-								If[VolumeQ[primVolumeReal], primVolumeReal, sampleVolume],
-								If[NullQ[retentateWashVolume], Nothing, Replace[PickList[retentateWashVolume, washSameAsFiltrateQ, True] * PickList[numRetentateWashes, washSameAsFiltrateQ, True], 0 -> Nothing, {1}]]
-							}
+						Function[{primVolumeReal, sampleVolume, retentateWashVolume, numRetentateWashes, washSameAsFiltrateQ, initFiltrate, initFiltrateVol},
+							Module[{baseVol},
+
+								(* Get the base volume for this sample *)
+								baseVol = If[VolumeQ[primVolumeReal], primVolumeReal, sampleVolume];
+
+								(* Subtract the initial filtrate volume if applicable *)
+								{
+									If[TrueQ[initFiltrate] && VolumeQ[initFiltrateVol], baseVol - initFiltrateVol, baseVol],
+									If[NullQ[retentateWashVolume], Nothing, Replace[PickList[retentateWashVolume, washSameAsFiltrateQ, True] * PickList[numRetentateWashes, washSameAsFiltrateQ, True], 0 -> Nothing, {1}]]
+								}
+							]
 						],
 						{
 							Lookup[primitivePacket, VolumeReal],
 							Lookup[sourcePackets, Volume],
 							Transpose[TakeList[washVolume, batchLengths]],
 							Transpose[TakeList[numWashes, batchLengths]],
-							Transpose[TakeList[filtrateSameAsWashFlowThroughQ, batchLengths]]
+							Transpose[TakeList[filtrateSameAsWashFlowThroughQ, batchLengths]],
+							Lookup[primitivePacket, InitialFiltrate],
+							Lookup[primitivePacket, InitialFiltrateVolume]
 						}
 					],
 				True,
 					MapThread[
-						Function[{primVolumeReal, sampleVolume, retentateWashVolume, washSameAsFiltrateQ},
-							{
-								If[VolumeQ[primVolumeReal], primVolumeReal, sampleVolume],
-								If[NullQ[retentateWashVolume], Nothing, Replace[PickList[retentateWashVolume, washSameAsFiltrateQ, True], 0 -> Nothing, {1}]]
-							}
+						Function[{primVolumeReal, sampleVolume, retentateWashVolume, washSameAsFiltrateQ, initFiltrate, initFiltrateVol},
+							Module[{baseVol},
+
+								(* Get the base volume for this sample *)
+								baseVol = If[VolumeQ[primVolumeReal], primVolumeReal, sampleVolume];
+
+								(* Subtract the initial filtrate volume if applicable *)
+								{
+									If[TrueQ[initFiltrate] && VolumeQ[initFiltrateVol], baseVol - initFiltrateVol, baseVol],
+									If[NullQ[retentateWashVolume], Nothing, Replace[PickList[retentateWashVolume, washSameAsFiltrateQ, True], 0 -> Nothing, {1}]]
+								}
+							]
 						],
 						{
 							Lookup[primitivePacket, VolumeReal],
 							Lookup[sourcePackets, Volume],
 							TakeList[washVolume, batchLengths],
-							TakeList[filtrateSameAsWashFlowThroughQ, batchLengths]
+							TakeList[filtrateSameAsWashFlowThroughQ, batchLengths],
+							Lookup[primitivePacket, InitialFiltrate],
+							Lookup[primitivePacket, InitialFiltrateVolume]
 						}
 					]
 			]
@@ -11889,6 +13188,73 @@ simulateExperimentFilter[
 		{retentateSampleObjects, retentateSampleSamples}
 	];
 
+	(* Get the source samples for the initial filtrate transfer *)
+	initialFiltrateSampleSamples = Join @@ Map[
+		Function[{primitivePacket},
+			If[Not[MatchQ[Lookup[primitivePacket, InitialFiltrateContainerOutLink], {ObjectP[]..}]],
+				{},
+				MapThread[
+					If[TrueQ[#1], {#2}, Nothing]&,
+					{
+						Lookup[primitivePacket, InitialFiltrate],
+						Lookup[primitivePacket, SampleLink]
+					}
+				]
+			]
+		],
+		simulatedPrimitivePackets
+	];
+
+	(* Get the volumes to transfer for initial filtrate *)
+	initialFiltrateSampleVolumes = Join @@ Map[
+		Function[{primitivePacket},
+			If[Not[MatchQ[Lookup[primitivePacket, InitialFiltrateContainerOutLink], {ObjectP[]..}]],
+				{},
+				MapThread[
+					If[TrueQ[#1] && VolumeQ[#2], {#2}, Nothing]&,
+					{
+						Lookup[primitivePacket, InitialFiltrate],
+						Lookup[primitivePacket, InitialFiltrateVolume]
+					}
+				]
+			]
+		],
+		simulatedPrimitivePackets
+	];
+
+	(* Get the destinations we're transferring into for the initial filtrate *)
+	initialFiltrateSampleObjectsWithDupes = MapThread[
+		ConstantArray[#1, Length[Flatten[#2]]]&,
+		{initialFiltrateSampleObjects, initialFiltrateSampleSamples}
+	];
+
+	(* Transfer the InitialFiltrateVolume from the source samples into InitialFiltrateContainerOut before the main filtrate transfer *)
+	initialFiltrateUploadSampleTransferInput = If[MatchQ[initialFiltrateSampleSamples, {}],
+		{},
+		Cases[
+			Transpose[{
+				Flatten[initialFiltrateSampleSamples],
+				Flatten[initialFiltrateSampleObjectsWithDupes],
+				Flatten[initialFiltrateSampleVolumes]
+			}],
+			{ObjectP[], ObjectP[], VolumeP}
+		]
+	];
+
+	initialFiltrateUploadSampleTransferPackets = If[Length[initialFiltrateUploadSampleTransferInput] > 0,
+		UploadSampleTransfer[
+			Sequence @@ Transpose[initialFiltrateUploadSampleTransferInput],
+			Upload -> False,
+			FastTrack -> True,
+			Simulation -> currentSimulation,
+			UpdatedBy -> protocolObject
+		],
+		{}
+	];
+
+	(* Update the simulation after the initial filtrate transfer *)
+	currentSimulation = UpdateSimulation[currentSimulation, Simulation[initialFiltrateUploadSampleTransferPackets]];
+
 	(* Call UploadSampleTransfer on our source and destination samples *)
 	uploadSampleTransferInput=Cases[
 		Transpose[{
@@ -11913,7 +13279,7 @@ simulateExperimentFilter[
 	(* Update our simulation. *)
 	currentSimulation = UpdateSimulation[currentSimulation, Simulation[uploadSampleTransferPackets]];
 	(* Pull out the packets of the filtrate and retentate samples with their new post-transfer compositions *)
-	filtrateAndRetentateCompositionPackets = Download[Flatten[{filtrateSampleObjects, washFlowThroughObjects, retentateSampleObjects}], Packet[Composition], Simulation -> currentSimulation];
+	filtrateAndRetentateCompositionPackets = Download[Flatten[{filtrateSampleObjects, washFlowThroughObjects, retentateSampleObjects, initialFiltrateSampleObjects}], Packet[Composition], Simulation -> currentSimulation];
 
 	(* Update the composition of the filtrate and retentate samples to have Null for their amounts *)
 	(* Since this is a simulation, do not update time element for composition yet *)
@@ -11977,6 +13343,28 @@ simulateExperimentFilter[
 					Nothing
 				]&,
 				{Flatten[Lookup[simulatedPrimitivePackets, FiltrateContainerLabel]], Download[filtrateContainerOutPositions[[All, 2]], Object]}
+			]
+		],
+		(* Labels for initial filtrate samples *)
+		If[MatchQ[Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateLabel]], {}] || MatchQ[Flatten[initialFiltrateSampleObjects], {}],
+			{},
+			MapThread[
+				If[MatchQ[#2, ObjectP[]] && StringQ[#1],
+					#1 -> #2,
+					Nothing
+				]&,
+				{Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateLabel]], Flatten[initialFiltrateSampleObjects]}
+			]
+		],
+		(* Labels for initial filtrate container *)
+		If[MatchQ[Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerLabel]], {}] || MatchQ[initialFiltrateContainerOutPositions[[All, 2]], {}],
+			{},
+			MapThread[
+				If[MatchQ[#2, ObjectP[]] && StringQ[#1],
+					#1 -> #2,
+					Nothing
+				]&,
+				{Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerLabel]], Download[initialFiltrateContainerOutPositions[[All, 2]], Object]}
 			]
 		],
 		If[MatchQ[retentateLabelsToUse, {}],
@@ -12091,6 +13479,17 @@ simulateExperimentFilter[
 				{Flatten[Lookup[simulatedPrimitivePackets, PrewetFilterContainerLabel]], Flatten[Lookup[simulatedPrimitivePackets, PrewetFilterContainerOutLink]]}
 			]
 		],
+		(* Labels for initial filtrate container *)
+		If[MatchQ[Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerLabel]], {}] || MatchQ[Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerOutLink]], {}],
+			{},
+			MapThread[
+				If[MatchQ[#2, ObjectP[]] && StringQ[#1],
+					#1 -> #2,
+					Nothing
+				]&,
+				{Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerLabel]], Flatten[Lookup[simulatedPrimitivePackets, InitialFiltrateContainerOutLink]]}
+			]
+		],
 		If[MatchQ[Flatten[Lookup[simulatedPrimitivePackets, FilterLabel]], {}],
 			{},
 			MapThread[
@@ -12147,6 +13546,8 @@ simulateExperimentFilter[
 								SampleContainerLabel -> Field[SampleLink[[actualIndex]][Container]],
 								FiltrateLabel -> Field[FiltrateSample[[actualIndex]]],
 								FiltrateContainerLabel -> Field[FiltrateContainerOutLink[[actualIndex]]],
+								InitialFiltrateLabel -> Field[InitialFiltrateSample[[actualIndex]]],
+								InitialFiltrateContainerLabel -> Field[InitialFiltrateContainerOutLink[[actualIndex]]],
 								PrewetFilterBufferLabel -> Field[PrewetFilterBufferLink[[actualIndex]]],
 								PrewetFilterContainerLabel -> Field[PrewetFilterContainerOutLink[[actualIndex]]],
 								(* I am putting the [[actualIndex, 0]] here because the 0 becomes an actual number inside the KeyValueMap but this is an N-Multiple so I can't know based on actualIndex what this is supposed to be *)
@@ -12225,6 +13626,10 @@ Error::WashRetentateTypeMismatch="The following FiltrationType `1` and WashReten
 Error::RetentateWashMixMismatch="If RetentateWashMix -> False, then NumberOfRetentateWashes must not be specified.  If RetentateWashMix -> True, then this option must not be Null.  Please adjust these options for the following sample(s) `1`.";
 Error::WashRetentateMismatch="If WashRetentate -> False, then `2` must not be specified. If WashRetentate -> True, these must not be set to Null.  Please adjust these options for the following sample(s) `1`.";
 Error::PrewetFilterMismatch="If PrewetFilter -> True, then `2` must not be specified. If PrewetFilter -> True, these must not be set to Null.  Please adjust these options for the following sample(s) `1`.";
+Error::InitialFiltrateMismatch="If InitialFiltrate -> False, then `2` must not be specified. If InitialFiltrate -> True, these must not be set to Null.  Please adjust these options for the following sample(s) `1`.";
+Error::InitialFiltrateVolumeTooHigh="The InitialFiltrateVolume exceeds the sample volume for the following sample(s): `1`.  Please decrease the InitialFiltrateVolume or increase the sample volume.";
+Error::InitialFiltrateContainerOutMaxVolume="The InitialFiltrateVolume exceeds the MaxVolume of the InitialFiltrateContainerOut for the following sample(s): `1`.  Please decrease the InitialFiltrateVolume or select a larger InitialFiltrateContainerOut.";
+Error::InitialFiltrateTypeMismatch="InitialFiltrate is set to True but FiltrationType is not Syringe for the following sample(s): `1`.  InitialFiltrate is only supported for Syringe filtration.  Please set InitialFiltrate to False or change FiltrationType to Syringe.";
 Error::PrewetFilterCentrifugeIntensityTypeMismatch="The following FiltrationType `1` and PrewetFilterCentrifugeIntensity options `2` are conflicting for input(s) `3`.  If PrewetFilterCentrifugeIntensity is specified, FiltrationType must be Centrifuge.";
 Error::NumberOfFilterPrewettingsTooHigh="The specified NumberOfFilterPrewettings `1` is greater than 1 for the following filters `2`. NumberOfFilterPrewettings may not be greater than 1 for BottleTop or PeristalticPump filters.  Please set it to 1, or allow it to be set automatically.";
 Error::PrewetFilterIncompatibleWithFilterType="Filter prewetting was enabled for the following filters `1`.  Filter prewetting may not be done for syringe filters or vacuum filter plates.  Please allow it to be set automatically, or select a different filter type that is compatible with prewetting.";
@@ -12254,6 +13659,8 @@ Error::CollectionContainerNoCounterweights = "The following CollectionContainer(
 Error::OccludingRetentateMismatch = "If CollectOccludingRetentate is set to False, then OccludingRetentateContainer, OccludingRetentateDestinationWell, and OccludingRetentateContainerLabel cannot be specified.  If CollectOccludingRetentate is True, then these options cannot be set to Null.  Please update these options for the following sample(s): `1`.";
 Error::OccludingRetentateNotSupported = "CollectOccludingRetentate may only be set to True if FiltrationType is Syringe.  Please change the FiltrationType, or set CollectOccludingRetentate to False.";
 Error::FilterPositionDestinationWellConflict = "If CollectionContainer and FiltrateContainerOut are the same container, then FilterPosition (`1`) and FiltrateDestinationWell (`2`) must be the same values as well.  Please change one or both of these options to agree.";
+Error::InvalidFiltrationTypeForVolume = "`1`The FiltrationType(s) were specified directly or inferred from related options. Please aliquot the sample using a suitable AliquotAmount, or allow the FiltrationType and related options to be set automatically.";
+Error::OverOccupiedFilter = "The following filter(s) (`1`) in well(s) `2` cannot hold the specified amounts and will be overfilled. Please either reduce the amount to be filtered or specify more filters to be used.";
 
 (* ::Subsubsection::Closed:: *)
 (*ExperimentFilterOptions *)

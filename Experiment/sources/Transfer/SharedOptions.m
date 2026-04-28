@@ -21,18 +21,18 @@ DefineOptionSet[TransferDestinationWellOption :> {
 				Widget[
 					Type -> String,
 					Pattern :> WellPositionP,
-					Size->Line,
+					Size -> Line,
 					PatternTooltip -> "Enumeration must be any well from A1 to H12."
 				],
 				Widget[
 					Type -> String,
 					Pattern :> LocationPositionP,
 					PatternTooltip -> "Any valid container position.",
-					Size->Line
+					Size -> Line
 				]
 			],
 			Description -> "The position in the destination container in which the source sample will be placed.",
-			Category->"General"
+			Category -> "General"
 		}
 	]
 }];
@@ -60,6 +60,8 @@ DefineOptionSet[TransferInstrumentOption :> {
 					Model[Item, TransferTube],
 					Model[Item, ChippingHammer],
 					Model[Item, Scissors],
+					Model[Container, Vessel],
+					Model[Instrument, BarrelMediaDispenser],
 
 					Object[Container, Syringe],
 					Object[Container, GraduatedCylinder],
@@ -69,7 +71,9 @@ DefineOptionSet[TransferInstrumentOption :> {
 					Object[Item, Tweezer],
 					Object[Item, TransferTube],
 					Object[Item, ChippingHammer],
-					Object[Item, Scissors]
+					Object[Item, Scissors],
+					Object[Container, Vessel],
+					Object[Instrument, BarrelMediaDispenser]
 				}],
 				OpenPaths -> {
 					{
@@ -107,7 +111,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 				Pattern :> BooleanP
 			],
 			Description -> "Indicates if this transfer will occur simultaneously with the other transfer that occur before/after it, up to the number of channels that are available in the pipette chosen via the Instrument option.",
-			Category->"General"
+			Category -> "General"
 		},
 		{
 			OptionName -> MultichannelTransferName,
@@ -129,7 +133,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[0,8,1]
+				Pattern :> RangeP[0, 8, 1]
 			],
 			Description -> "The number of rows used for this manipulation with the multiprobe head.",
 			Category -> "Hidden"
@@ -141,7 +145,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[0,12,1]
+				Pattern :> RangeP[0, 12, 1]
 			],
 			Description -> "The number of columns used for this manipulation with the multiprobe head.",
 			Category -> "Hidden"
@@ -153,7 +157,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[-16,16,1]
+				Pattern :> RangeP[-16, 16, 1]
 			],
 			Description -> "The row offset used for the aspiration with the multiprobe head (0 means that A1 of the multiprobe head will aspirate from A1 of the plate, 1 means that A1 of the multiprobe head will aspirate from B1, -1 means that B1 of the multiprobe head will aspirate from the A1 of the plate).",
 			Category -> "Hidden"
@@ -165,7 +169,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[-24,24,1]
+				Pattern :> RangeP[-24, 24, 1]
 			],
 			Description -> "The column offset used for the aspiration with the multiprobe head (0 means that A1 of the multiprobe head will aspirate from A1 of the plate, 1 means that A1 of the multiprobe head will aspirate from A2, -1 means that A2 of the multiprobe head will aspirate from the A1 of the plate).",
 			Category -> "Hidden"
@@ -177,7 +181,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[-16,16,1]
+				Pattern :> RangeP[-16, 16, 1]
 			],
 			Description -> "The row offset used for dispensing with the multiprobe head (0 means that A1 of the multiprobe head will dispense into A1 of the plate, 1 means that A1 of the multiprobe head will dispense into B1 of the plate, -1 means that B1 of the multiprobe head will dispense into A1 of the plate).",
 			Category -> "Hidden"
@@ -189,7 +193,7 @@ DefineOptionSet[MultichannelTransferOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Number,
-				Pattern :> RangeP[-24,24,1]
+				Pattern :> RangeP[-24, 24, 1]
 			],
 			Description -> "The column offset used for dispensing with the multiprobe head (0 means that A1 of the multiprobe head will dispense into A1 of the plate, 1 means that A1 of the multiprobe head will dispense into A2 of the plate, -1 means that A2 of the multiprobe head will dispense into A1 of the plate).",
 			Category -> "Hidden"
@@ -204,16 +208,16 @@ DefineOptionSet[TransferCoverOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->KeepSourceCovered,
-			Default->Automatic,
-			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the source sample/container, or True if SterileTechnique is True.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			OptionName -> KeepSourceCovered,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the source sample/container, or True if SterileTechnique is True.",
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
-			Category->"Container Covering"
+			Description -> "Indicates if the cover on the source container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> ReplaceSourceCover,
@@ -225,7 +229,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "Indicates if the cover on the source container will be replaced at the end of the transfer with a new type of cover. If set to False, the previous cover (or a new instance of the previous cover if the previous cover is not reusable) will be used to cover the container after the transfer occurs.",
 			ResolutionDescription -> "Automatically set to True if any of the SourceCover options are specified.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> SourceCover,
@@ -250,7 +254,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new cover that will be placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover will be used.",
 			ResolutionDescription -> "Automatically set to a cover that is compatible with the source container if ReplaceSourceCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> SourceSeptum,
@@ -271,7 +275,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new septum that will be placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous septum will be used (if there was previously a septum on the container). This option can only be set if a new SourceCover is to be used and that SourceCover is a Model[Item, Cap]/Object[Item, Cap] that has CoverType->Crimp and SeptumRequired->True.",
 			ResolutionDescription -> "Automatically set to a septum that is compatible with the source container if ReplaceSourceCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> SourceStopper,
@@ -284,19 +288,19 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new stopper that will be placed on the source container after the transfer occurs. By default, this option is set to Null which indicates that the previous stopper will be used (if there was previously a stopper on the container). This option can only be set if a new SourceCover is to be used and that SourceCover is a Model[Item, Cap]/Object[Item, Cap] that has CoverType->Crimp.",
 			ResolutionDescription -> "Automatically set to a stopper that is compatible with the source container if ReplaceSourceCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
-			OptionName->KeepDestinationCovered,
-			Default->Automatic,
-			ResolutionDescription->"Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the destination sample/container, or True if SterileTechnique is True.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			OptionName -> KeepDestinationCovered,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to True if Preparation->Manual. If Preparation->Robotic, set based on the KeepCovered field in Object[Sample]/Object[Container] for the destination sample/container, or True if SterileTechnique is True.",
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. When performing robotic manipulations, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
-			Category->"Container Covering"
+			Description -> "Indicates if the cover on the destination container should be \"peaked\" off when transferred into/out of instead of taken off completely when performing Manual Transfers in order to reduce chances of contamination or minimize light exposure. For manual preparation, this option is only applicable for transferring using a pipette. For robotic preparation, this indicates that the container should be re-covered after any manipulation that uncovers it is completed.",
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> ReplaceDestinationCover,
@@ -308,7 +312,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "Indicates if the cover on the destination container will be replaced at the end of the transfer with a new type of cover. If set to False, the previous cover (or a new instance of the previous cover if the previous cover is not reusable) will be used to cover the container after the transfer occurs.",
 			ResolutionDescription -> "Automatically set to True if any of the DestinationCover options are specified.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> DestinationCover,
@@ -333,7 +337,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new cover that will be placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous cover will be used.",
 			ResolutionDescription -> "Automatically set to a cover that is compatible with the destination container if ReplaceDestinationCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> DestinationSeptum,
@@ -354,7 +358,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new septum that will be placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous septum will be used (if there was previously a septum on the container). This option can only be set if a new DestinationCover is to be used and that DestinationCover is a Model[Item, Cap]/Object[Item, Cap] that has SeptumRequired->True.",
 			ResolutionDescription -> "Automatically set to a septum that is compatible with the destination container if ReplaceDestinationCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		},
 		{
 			OptionName -> DestinationStopper,
@@ -367,7 +371,7 @@ DefineOptionSet[TransferCoverOptions :> {
 			],
 			Description -> "The new stopper that will be placed on the destination container after the transfer occurs. By default, this option is set to Null which indicates that the previous stopper will be used (if there was previously a stopper on the container). This option can only be set if a new DestinationCover is to be used and that DestinationCover is a Model[Item, Cap]/Object[Item, Cap] that has CoverType->Crimp.",
 			ResolutionDescription -> "Automatically set to a stopper that is compatible with the destination container if ReplaceDestinationCover->True.",
-			Category->"Container Covering"
+			Category -> "Container Covering"
 		}
 	]
 }];
@@ -386,7 +390,7 @@ DefineOptionSet[HandlingConditionOption :> {
 			ResolutionDescription -> "Automatically set to a condition that fulfills all safety requirements of the samples being transferred.",
 			AllowNull -> True,
 			Widget -> Alternatives[
-				Widget[Type -> Expression, Pattern :> ObjectP[{Model[HandlingCondition]}]|{ObjectP[{Model[HandlingCondition]}]...}, Size -> Line]
+				Widget[Type -> Expression, Pattern :> ObjectP[{Model[HandlingCondition]}] | {ObjectP[{Model[HandlingCondition]}]...}, Size -> Line]
 			],
 			Description -> "The abstract condition that describes the environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). This option cannot be set when Preparation->Robotic.",
 			Category -> "Hidden"
@@ -401,17 +405,16 @@ DefineOptionSet[TransferEnvironmentOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->TransferEnvironment,
-			Default->Automatic,
+			OptionName -> TransferEnvironment,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to an instrument that can handle the any safety requirements of the samples being transferred.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Instrument, BiosafetyCabinet],
 					Model[Instrument, FumeHood],
 					Model[Instrument, GloveBox],
-					Model[Container, Bench],
 					Model[Container, Enclosure],
 					Model[Instrument, HandlingStation],
 					Object[Instrument, BiosafetyCabinet],
@@ -421,7 +424,7 @@ DefineOptionSet[TransferEnvironmentOption :> {
 					Object[Container, Enclosure],
 					Object[Instrument, HandlingStation]
 				}],
-				PreparedContainer->False,
+				PreparedContainer -> False,
 				OpenPaths -> {
 					{
 						Object[Catalog, "Root"],
@@ -429,8 +432,8 @@ DefineOptionSet[TransferEnvironmentOption :> {
 					}
 				}
 			],
-			Description->"The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
-			Category->"Instrument Specifications"
+			Description -> "The environment in which the transfer will be performed (Biosafety Cabinet, Fume Hood, Glove Box, or Benchtop Handling Station). Containers involved in the transfer will first be moved into the TransferEnvironment (with covers on), uncovered inside of the TransferEnvironment, then covered after the Transfer has finished -- before they're moved back onto the operator cart. Consult the SterileTechnique/RNaseFreeTechnique option when using a BSC. This option cannot be set when Preparation->Robotic.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -460,15 +463,15 @@ DefineOptionSet[TransferBalanceOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Balance,
-			Default->Automatic,
+			OptionName -> Balance,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a balance whose MinWeight and MaxWeight is compatible with the transfer amount to be measured, if the transfer is occurring gravimetrically (MassP).",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
-					Model[Instrument,Balance],
-					Object[Instrument,Balance]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[Instrument, Balance],
+					Object[Instrument, Balance]
 				}],
 				OpenPaths -> {
 					{
@@ -479,8 +482,8 @@ DefineOptionSet[TransferBalanceOption :> {
 					}
 				}
 			],
-			Description->"The balance used to weigh the transfer amount, if the transfer is occurring gravimetrically.",
-			Category->"Instrument Specifications"
+			Description -> "The balance used to weigh the transfer amount, if the transfer is occurring gravimetrically.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -492,19 +495,19 @@ DefineOptionSet[TabletCrusherOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->TabletCrusher,
-			Default->Automatic,
+			OptionName -> TabletCrusher,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Model[Item, TabletCrusher, \"Silent Knight Pill Crusher\"] if an Itemized sample with Tablet -> True is being transferred by mass and not count.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, TabletCrusher],
 					Object[Item, TabletCrusher]
 				}]
 			],
-			Description->"The pill crusher that will be used to crush any itemized tablet source samples if they are being transferred by mass and not by count.",
-			Category->"Instrument Specifications"
+			Description -> "The pill crusher that will be used to crush any itemized tablet source samples if they are being transferred by mass and not by count.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -516,31 +519,31 @@ DefineOptionSet[SachetOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->IncludeSachetPouch,
-			Default->Automatic,
+			OptionName -> IncludeSachetPouch,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to False if the sample has Sachet -> True.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the pouch is also transferred to the destination along with the filler. If IncludeSachetPouch -> False, the pouch is directly discarded after emptied.",
-			Category->"Instrument Specifications"
+			Description -> "Indicates if the pouch is also transferred to the destination along with the filler. If IncludeSachetPouch -> False, the pouch is directly discarded after emptied.",
+			Category -> "Instrument Specifications"
 		},
 		{
-			OptionName->SachetIntermediateContainer,
-			Default->Automatic,
+			OptionName -> SachetIntermediateContainer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a compatible weigh boat model if Sachet -> True and WeighingContainer is Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, WeighBoat],
 					Object[Item, WeighBoat]
 				}]
 			],
-			Description->"The weigh boat item that the filler is emptied into after cutting open the source sachet in order to transfer to the destination, if not transferring gravimetrically using a weigh boat already.",
-			Category->"General"
+			Description -> "The weigh boat item that the filler is emptied into after cutting open the source sachet in order to transfer to the destination, if not transferring gravimetrically using a weigh boat already.",
+			Category -> "General"
 		}
 	]
 }];
@@ -553,13 +556,13 @@ DefineOptionSet[TransferTipOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Tips,
-			Default->Automatic,
+			OptionName -> Tips,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a tip that does not conflict with the incompatible materials of the sample(s) that the tip will come in contact with, the amount being transferred, and the source and destination containers of the transfer (accessibility). For more information, please refer to the function TransferDevices[].",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, Tips],
 					Object[Item, Tips],
 					Model[Item, Consumable],
@@ -573,56 +576,56 @@ DefineOptionSet[TransferTipOptions :> {
 					}
 				}
 			],
-			Description->"The pipette tips used to aspirate and dispense the requested volume.",
-			Category->"Instrument Specifications"
+			Description -> "The pipette tips used to aspirate and dispense the requested volume.",
+			Category -> "Instrument Specifications"
 		},
 		{
-			OptionName->TipType,
-			Default->Automatic,
+			OptionName -> TipType,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the TipType field of the calculated Tips that will be used to perform the transfer.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>TipTypeP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> TipTypeP
 			],
-			Description->"The type of pipette tips used to aspirate and dispense the requested volume during the transfer.",
-			Category->"Instrument Specifications"
+			Description -> "The type of pipette tips used to aspirate and dispense the requested volume during the transfer.",
+			Category -> "Instrument Specifications"
 		},
 		{
-			OptionName->TipMaterial,
-			Default->Automatic,
+			OptionName -> TipMaterial,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the chemistry of the calculated Tips that will be used to perform the transfer.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>MaterialP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> MaterialP
 			],
-			Description->"The material of the pipette tips used to aspirate and dispense the requested volume during the transfer.",
-			Category->"Instrument Specifications"
+			Description -> "The material of the pipette tips used to aspirate and dispense the requested volume during the transfer.",
+			Category -> "Instrument Specifications"
 		},
 		{
-			OptionName->ReversePipetting,
-			Default->Automatic,
+			OptionName -> ReversePipetting,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if the source or destination sample has the ReversePipetting field set and the transfer is occurring via pipette.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if additional source sample will be aspirated (past the first stop of the pipette) to reduce the chance of bubble formation when dispensing into the destination position. This option can only be set if Preparation->Manual.",
-			Category->"Transfer Technique"
+			Description -> "Indicates if additional source sample will be aspirated (past the first stop of the pipette) to reduce the chance of bubble formation when dispensing into the destination position. This option can only be set if Preparation->Manual.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->SlurryTransfer,
-			Default->Automatic,
+			OptionName -> SlurryTransfer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if the SampleHandling of the source sample is set to Slurry.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the source sample should be mixed via pipette until it becomes homogeneous, up to MaxNumberOfAspirationMixes times.",
-			Category->"Transfer Technique"
+			Description -> "Indicates if the source sample should be mixed via pipette until it becomes homogeneous, up to MaxNumberOfAspirationMixes times.",
+			Category -> "Transfer Technique"
 		},
 		{
 			OptionName -> AspirationMix,
@@ -630,8 +633,8 @@ DefineOptionSet[TransferTipOptions :> {
 			Description -> "Indicates if the source sample will be mixed immediately before it is transferred into the destination sample.",
 			ResolutionDescription -> "Automatically set to True if any of the other AspirationMix options are set. Otherwise, set to Null.",
 			AllowNull -> False,
-			Category->"Transfer Technique",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+			Category -> "Transfer Technique",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 		},
 		{
 			OptionName -> DispenseMix,
@@ -639,22 +642,22 @@ DefineOptionSet[TransferTipOptions :> {
 			Description -> "Indicates if the destination sample will be mixed immediately after the source sample is transferred into the destination sample.",
 			ResolutionDescription -> "Automatically set to True if any of the other DispenseMix options are set. Otherwise, set to Null.",
 			AllowNull -> False,
-			Category->"Transfer Technique",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+			Category -> "Transfer Technique",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 		},
 		{
-			OptionName->AspirationMixVolume,
-			Default->Automatic,
+			OptionName -> AspirationMixVolume,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1/2 the volume of the source sample or the maximum volume of the pipette being used, depending on which value is smaller.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
 				(* NOTE: The largest serological pipette tips are 50 mL. *)
 				Pattern :> RangeP[0 Microliter, 50 Milliliter],
-				Units -> {Microliter,{Microliter,Milliliter}}
+				Units -> {Microliter, {Microliter, Milliliter}}
 			],
-			Description->"The volume that will be repeatedly aspirated and dispensed via pipette from the source sample in order to mix the source sample immediately before the transfer occurs. The same pipette and tips used in the transfer will be used to mix the source sample.",
-			Category->"Transfer Technique"
+			Description -> "The volume that will be repeatedly aspirated and dispensed via pipette from the source sample in order to mix the source sample immediately before the transfer occurs. The same pipette and tips used in the transfer will be used to mix the source sample.",
+			Category -> "Transfer Technique"
 		},
 		{
 			OptionName -> NumberOfAspirationMixes,
@@ -662,10 +665,10 @@ DefineOptionSet[TransferTipOptions :> {
 			Description -> "The number of times the source is quickly aspirated and dispensed to mix the source sample immediately before it is transferred into the destination.",
 			ResolutionDescription -> "Automatically set to 5 if any of the other AspirationMix options are set. Otherwise, set to Null.",
 			AllowNull -> True,
-			Category->"Transfer Technique",
+			Category -> "Transfer Technique",
 			Widget -> Widget[
-				Type->Number,
-				Pattern:>RangeP[0, 50, 1]
+				Type -> Number,
+				Pattern :> RangeP[0, 50, 1]
 			]
 		},
 		{
@@ -674,25 +677,25 @@ DefineOptionSet[TransferTipOptions :> {
 			Description -> "The number of times the source is quickly aspirated and dispensed to mix the source sample immediately before it is transferred into the destination.",
 			ResolutionDescription -> "Automatically set to 5 if any of the other AspirationMix options are set. Otherwise, set to Null.",
 			AllowNull -> True,
-			Category->"Transfer Technique",
+			Category -> "Transfer Technique",
 			Widget -> Widget[
-				Type->Number,
-				Pattern:>RangeP[0, 100, 1]
+				Type -> Number,
+				Pattern :> RangeP[0, 100, 1]
 			]
 		},
 		{
-			OptionName->DispenseMixVolume,
-			Default->Automatic,
+			OptionName -> DispenseMixVolume,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1/2 the volume of the destination sample or the maximum volume of the pipette being used, depending on which value is smaller.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
 				(* NOTE: The largest serological pipette tips are 50 mL. *)
 				Pattern :> RangeP[0 Microliter, 50 Milliliter],
-				Units -> {Microliter,{Microliter,Milliliter}}
+				Units -> {Microliter, {Microliter, Milliliter}}
 			],
-			Description->"The volume that will be repeatedly aspirated and dispensed via pipette from the destination sample in order to mix the destination sample immediately after the transfer occurs. The same pipette and tips used in the transfer will be used to mix the destination sample.",
-			Category->"Transfer Technique"
+			Description -> "The volume that will be repeatedly aspirated and dispensed via pipette from the destination sample in order to mix the destination sample immediately after the transfer occurs. The same pipette and tips used in the transfer will be used to mix the destination sample.",
+			Category -> "Transfer Technique"
 		},
 		{
 			OptionName -> NumberOfDispenseMixes,
@@ -700,10 +703,10 @@ DefineOptionSet[TransferTipOptions :> {
 			Description -> "The number of times the destination is quickly aspirated and dispensed to mix the destination sample immediately after the source is dispensed.",
 			ResolutionDescription -> "Automatically set to 5 if any of the other DispenseMix options are set. Otherwise, set to Null.",
 			AllowNull -> True,
-			Category->"Transfer Technique",
+			Category -> "Transfer Technique",
 			Widget -> Widget[
-				Type->Number,
-				Pattern:>RangeP[0, 50, 1]
+				Type -> Number,
+				Pattern :> RangeP[0, 50, 1]
 			]
 		}
 	]
@@ -722,13 +725,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which liquid will be drawn up into the pipette tip. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to DispenseRate if it is specified, otherwise set to 100 Microliter/Second if Preparation->Robotic.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Pattern :> RangeP[0.4 Microliter / Second, 500 Microliter / Second],
 				Units -> CompoundUnit[
-					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Milliliter, {Microliter, Milliliter, Liter}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -738,13 +741,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which liquid will be expelled from the pipette tip. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to AspirationRate if it is specified, otherwise set to 100 Microliter/Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Pattern :> RangeP[0.4 Microliter / Second, 500 Microliter / Second],
 				Units -> CompoundUnit[
-					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Milliliter, {Microliter, Milliliter, Liter}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -754,11 +757,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The volume of air drawn into the pipette tip at the end of the aspiration of a liquid. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to OverDispenseVolume if it is specified, otherwise set to 5 Microliter.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Microliter,50 Microliter],
-				Units -> {Microliter,{Microliter,Milliliter}}
+				Pattern :> RangeP[0 Microliter, 50 Microliter],
+				Units -> {Microliter, {Microliter, Milliliter}}
 			]
 		},
 		{
@@ -767,11 +770,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The volume of air blown out at the end of the dispensing of a liquid. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to 5 Microliter if Preparation->Robotic.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Microliter,300 Microliter],
-				Units -> {Microliter,{Microliter,Milliliter}}
+				Pattern :> RangeP[0 Microliter, 300 Microliter],
+				Units -> {Microliter, {Microliter, Milliliter}}
 			]
 		},
 		{
@@ -780,13 +783,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which the pipette is removed from the liquid after an aspiration. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to DispenseWithdrawalRate if it is specified, otherwise set to 2 Millimeter/Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.3 Millimeter/Second, 160 Millimeter/Second],
+				Pattern :> RangeP[0.3 Millimeter / Second, 160 Millimeter / Second],
 				Units -> CompoundUnit[
-					{1,{Millimeter,{Millimeter,Micrometer}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Millimeter, {Millimeter, Micrometer}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -796,13 +799,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which the pipette is removed from the liquid after a dispense. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to AspirationWithdrawalRate if it is specified, otherwise set to 2 Millimeter/Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.3 Millimeter/Second, 160 Millimeter/Second],
+				Pattern :> RangeP[0.3 Millimeter / Second, 160 Millimeter / Second],
 				Units -> CompoundUnit[
-					{1,{Millimeter,{Millimeter,Micrometer}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Millimeter, {Millimeter, Micrometer}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -812,11 +815,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The delay length the pipette waits after aspirating before it is removed from the liquid. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to DispenseEquilibrationTime if it is specified, otherwise set to 1 Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
 				Pattern :> RangeP[0 Second, 9.9 Second],
-				Units -> {Second,{Second,Minute}}
+				Units -> {Second, {Second, Minute}}
 			]
 		},
 		{
@@ -825,11 +828,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The delay length the pipette waits after dispensing before it is removed from the liquid. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to AspirationEquilibrationTime if it is specified, otherwise set to 1 Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
 				Pattern :> RangeP[0 Second, 9.9 Second],
-				Units -> {Second,{Second,Minute}}
+				Units -> {Second, {Second, Minute}}
 			]
 		},
 		{
@@ -838,13 +841,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which liquid is aspirated and dispensed in a liquid before it is aspirated. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to DispenseMixRate or AspirationRate if either is specified, otherwise set to 100 Microliter/Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Pattern :> RangeP[0.4 Microliter / Second, 500 Microliter / Second],
 				Units -> CompoundUnit[
-					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Milliliter, {Microliter, Milliliter, Liter}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -854,13 +857,13 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The speed at which liquid is aspirated and dispensed in a liquid after a dispense. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to AspirationMixRate or DispenseRate if either is specified, otherwise set to 100 Microliter/Second.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0.4 Microliter/Second,500 Microliter/Second],
+				Pattern :> RangeP[0.4 Microliter / Second, 500 Microliter / Second],
 				Units -> CompoundUnit[
-					{1,{Milliliter,{Microliter,Milliliter,Liter}}},
-					{-1,{Second,{Second,Minute}}}
+					{1, {Milliliter, {Microliter, Milliliter, Liter}}},
+					{-1, {Second, {Second, Minute}}}
 				]
 			]
 		},
@@ -870,7 +873,7 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The location from which liquid should be aspirated. Top will aspirate AspirationPositionOffset below the Top of the container, Bottom will aspirate AspirationPositionOffset above the Bottom of the container, LiquidLevel will aspirate AspirationPositionOffset below the liquid level of the sample in the container, and TouchOff will touch the bottom of the container before moving the specified AspirationPositionOffset above the bottom of the container to start aspirate the sample.",
 			ResolutionDescription -> "Automatically set to the AspirationPosition in the PipettingMethod if it is specified and Preparation->Robotic, otherwise resolves to TouchOff if Preparation->Robotic.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> PipettingPositionP
@@ -882,7 +885,7 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The location from which liquid should be dispensed. Top will dispense DispensePositionOffset below the Top of the container, Bottom will dispense DispensePositionOffset above the Bottom of the container, LiquidLevel will dispense DispensePositionOffset below the liquid level of the sample in the container, and TouchOff will touch the bottom of the container before moving the specified DispensePositionOffset above the bottom of the container to start dispensing the sample.",
 			ResolutionDescription -> "Automatically set to the DispensePosition in the PipettingMethod if it is specified and Preparation->Robotic, resolved to Bottom for MxN MultiProbeHead transfers, otherwise resolves to TouchOff if Preparation->Robotic.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> PipettingPositionP
@@ -894,12 +897,12 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The distance from the center of the well that liquid will aspirated. The Z Offset is based on the AspirationPosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel), see the AspirationPosition diagram in the help file for more information. If an X and Y offset is not specified, the liquid will be aspirated in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively. When the source container is tilted (via AspirationAngle), the AspirationPositionOffset automatically accounts for the angle of tilt.",
 			ResolutionDescription -> "Automatically set to the AspirationPositionOffset field in the pipetting method, if specified. If AspirationAngle is set, automatically set to the left most point in the well since liquid will pool in the direction that the plate is tilted. Otherwise, is set to 2 Millimeter.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Alternatives[
 				"Z Offset" -> Widget[
 					Type -> Quantity,
 					Pattern :> GreaterEqualP[0 Millimeter],
-					Units -> {Millimeter,{Millimeter}}
+					Units -> {Millimeter, {Millimeter}}
 				],
 				"{X,Y,Z} Coordinate Offset" -> Widget[
 					Type -> Expression,
@@ -914,11 +917,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The angle that the source container will be tilted during the aspiration of liquid. The container is pivoted on its left edge when tilting occurs. This option can only be provided if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to 0 AngularDegree if Preparation->Robotic. Otherwise, set to Null.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
 				Pattern :> RangeP[0 AngularDegree, 10 AngularDegree, 1 AngularDegree],
-				Units -> {AngularDegree,{AngularDegree}}
+				Units -> {AngularDegree, {AngularDegree}}
 			]
 		},
 		{
@@ -927,12 +930,12 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The distance from the center of the well that liquid will dispensed. The Z Offset is based on the DispensePosition option -- measured as the height below the top of the well (Top), the height above the bottom of the well (Bottom), or the height below the detected liquid level (LiquidLevel), see the DispensePosition diagram in the help file for more information. If an X and Y offset is not specified, the liquid will be dispensed in the center of the well, otherwise, -X/+X values will shift the position left and right, respectively, and -Y/+Y values will shift the position down and up, respectively. When the destination container is tilted (via DispenseAngle), the DispensePositionOffset automatically accounts for the angle of tilt.",
 			ResolutionDescription -> "Automatically set to the DispensePositionOffset field in the pipetting method, if specified. If DispenseAngle is set, automatically set to the left most point in the well since liquid will pool in the direction that the plate is tilted. Otherwise, is set to 2 Millimeter.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Alternatives[
 				"Z Offset" -> Widget[
 					Type -> Quantity,
 					Pattern :> GreaterEqualP[0 Millimeter],
-					Units -> {Millimeter,{Millimeter}}
+					Units -> {Millimeter, {Millimeter}}
 				],
 				"{X,Y,Z} Coordinate Offset" -> Widget[
 					Type -> Expression,
@@ -947,11 +950,11 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The angle that the destination container will be tilted during the dispensing of liquid. The container is pivoted on its left edge when tilting occurs. This option can only be provided if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to 0 AngularDegree if Preparation->Robotic. Otherwise, set to Null.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Widget[
 				Type -> Quantity,
 				Pattern :> RangeP[0 AngularDegree, 10 AngularDegree, 1 AngularDegree],
-				Units -> {AngularDegree,{AngularDegree}}
+				Units -> {AngularDegree, {AngularDegree}}
 			]
 		},
 		{
@@ -960,18 +963,18 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			AllowNull -> True,
 			Description -> "The relationship between a target volume and the corrected volume that needs to be aspirated or dispensed to reach the target volume. The correction curve is derived empirically from the relationship between the target and actual amount of volume transferred when on a specific robotic liquid handler instrument model. It is recommended when building one of these curves to measure the volume of sample transferred gravimetrically to get a more accurate CorrectionCurve. Use the function UploadPipettingMethod to create a new pipetting method for a sample model to have all robotic transfers of this sample model to use the derived CorrectionCurve automatically. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to PipettingMethod if it is specified. Otherwise, is set to Null (no correction curve).",
-			Category->"Instrument Specifications",
+			Category -> "Instrument Specifications",
 			Widget -> Adder[
 				{
 					"Target Volume" -> Widget[
 						Type -> Quantity,
 						Pattern :> RangeP[0 Microliter, 1000 Microliter],
-						Units -> {Microliter,{Microliter,Milliliter}}
+						Units -> {Microliter, {Microliter, Milliliter}}
 					],
 					"Actual Volume" -> Widget[
 						Type -> Quantity,
 						Pattern :> RangeP[0 Microliter, 1250 Microliter],
-						Units -> {Microliter,{Microliter,Milliliter}}
+						Units -> {Microliter, {Microliter, Milliliter}}
 					]
 				},
 				Orientation -> Vertical
@@ -984,7 +987,7 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Widget -> Widget[Type -> Object, Pattern :> ObjectP[Model[Method, Pipetting]]],
 			Description -> "The pipetting parameters used to manipulate the source sample. This option can only be set if Preparation->Robotic. If other pipetting options are specified, the parameters from the method here are overwritten.",
 			ResolutionDescription -> "Automatically set to the PipettingMethod of the model of the sample if available.",
-			Category->"Instrument Specifications"
+			Category -> "Instrument Specifications"
 		},
 		{
 			OptionName -> DynamicAspiration,
@@ -992,8 +995,8 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "Indicates if droplet formation will be prevented during liquid transfer. This will only be used for solvents that have high vapor pressure. This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to the DynamicAspiration field in the pipetting method, if available.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
-			Widget->Widget[Type->Enumeration,Pattern:>BooleanP]
+			Category -> "Instrument Specifications",
+			Widget -> Widget[Type -> Enumeration, Pattern :> BooleanP]
 		},
 		{
 			OptionName -> DeviceChannel,
@@ -1001,8 +1004,8 @@ DefineOptionSet[TransferRoboticTipOptions :> {
 			Description -> "The channel of the work cell that will be used to perform the transfer (MultiProbeHead | SingleProbe1 | SingleProbe2 | SingleProbe3 | SingleProbe4 | SingleProbe5 | SingleProbe6 | SingleProbe7 | SingleProbe8). This option can only be set if Preparation->Robotic.",
 			ResolutionDescription -> "Automatically set to SingleProbe1 if MultichannelTransfer->False. Otherwise, set to the appropriate channel to perform the transfer.",
 			AllowNull -> True,
-			Category->"Instrument Specifications",
-			Widget->Widget[Type->Enumeration,Pattern:>DeviceChannelP]
+			Category -> "Instrument Specifications",
+			Widget -> Widget[Type -> Enumeration, Pattern :> DeviceChannelP]
 		}
 	]
 }];
@@ -1014,13 +1017,13 @@ DefineOptionSet[TransferNeedleOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Needle,
-			Default->Automatic,
+			OptionName -> Needle,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a needle that does not conflict with the incompatible materials of the sample(s) that the tip will come in contact with, the amount being transferred, and the source and destination containers of the transfer (accessibility). For more information, please refer to the function TransferDevices[].",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, Needle],
 					Object[Item, Needle]
 				}],
@@ -1032,8 +1035,8 @@ DefineOptionSet[TransferNeedleOption :> {
 					}
 				}
 			],
-			Description->"The needle used to aspirate and dispense the requested volume.",
-			Category->"Instrument Specifications"
+			Description -> "The needle used to aspirate and dispense the requested volume.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1046,13 +1049,13 @@ DefineOptionSet[TransferFunnelOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Funnel,
-			Default->Automatic,
+			OptionName -> Funnel,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a funnel that can fit into the aperture of the destination container if 1) the transfer Instrument is set to Null (pouring)/GraduatedCylinder or 2) liquid is being transferred from a weighing container to the destination (pouring).",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Part, Funnel],
 					Object[Part, Funnel]
 				}],
@@ -1064,8 +1067,8 @@ DefineOptionSet[TransferFunnelOption :> {
 					}
 				}
 			],
-			Description->"The funnel that is used to guide the source sample into the destination container when pouring or using a graduated cylinder.",
-			Category->"Instrument Specifications"
+			Description -> "The funnel that is used to guide the source sample into the destination container when pouring or using a graduated cylinder.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1078,13 +1081,13 @@ DefineOptionSet[WeighingContainerOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->WeighingContainer,
-			Default->Automatic,
+			OptionName -> WeighingContainer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a weigh boat (for solids) or container (for liquids) that can hold the Amount of the transfer specified if transferring gravimetrically (MassP). Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, WeighBoat],
 					Object[Item, WeighBoat],
 					Model[Container, Vessel],
@@ -1100,8 +1103,8 @@ DefineOptionSet[WeighingContainerOption :> {
 					}
 				}
 			],
-			Description->"The container that will be placed on the Balance and used to weigh out the specified amount of the source that will be transferred to the destination.",
-			Category->"Instrument Specifications"
+			Description -> "The container that will be placed on the Balance and used to weigh out the specified amount of the source that will be transferred to the destination.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1114,17 +1117,24 @@ DefineOptionSet[TransferToleranceOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Tolerance,
-			Default->Automatic,
+			OptionName -> Tolerance,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 5X of the ParticleSize (if specified). Otherwise, set to 2X of the Resolution of the balance being used, if the sample being transferred is a solid. If the sample is not being transferred gravimetrically, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern:>GreaterP[0 Gram],
-				Units->{1,{Gram,{Milligram,Gram}}}
+			AllowNull -> True,
+			Widget -> Alternatives[
+				Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 Gram],
+					Units -> {1, {Gram, {Milligram, Gram}}}
+				],
+				Widget[
+					Type -> Quantity,
+					Pattern :> GreaterP[0 Milliliter],
+					Units -> {1, {Milliliter, {Milliliter, Liter}}}
+				]
 			],
-			Description->"The allowed tolerance of the weighed source sample from the specified amount requested to be transferred.",
-			Category->"Instrument Specifications"
+			Description -> "The allowed tolerance of the weighed source sample from the specified amount requested to be transferred.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1139,19 +1149,19 @@ DefineOptionSet[HandPumpOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->HandPump,
-			Default->Automatic,
+			OptionName -> HandPump,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Model[Part, HandPump, \"id:L8kPEjNLDld6\"] if the source is in a container with a MaxVolume over 5 Liters and either (1) the transfer instrument used is a graduated cylinder or (2) an intermediate decant is specified.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Part, HandPump],
 					Object[Part, HandPump]
 				}]
 			],
-			Description->"The hand pump used to get liquid out of the source container.",
-			Category->"Instrument Specifications"
+			Description -> "The hand pump used to get liquid out of the source container.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1165,28 +1175,28 @@ DefineOptionSet[TransferHermeticSourceOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->BackfillGas,
-			Default->Automatic,
+			OptionName -> BackfillGas,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Nitrogen if the source's container is hermetic and UnsealHermeticSource->False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>Alternatives[
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Alternatives[
 					Nitrogen,
 					Argon
 				]
 			],
-			Description->"The inert gas that is used equalize the pressure in the source's hermetic container while the transfer out of the source's container occurs.",
-			Category->"Hermetic Transfers"
+			Description -> "The inert gas that is used equalize the pressure in the source's hermetic container while the transfer out of the source's container occurs.",
+			Category -> "Hermetic Transfers"
 		},
 		{
-			OptionName->BackfillNeedle,
-			Default->Automatic,
+			OptionName -> BackfillNeedle,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the same model of Needle that will be used to perform the transfer, if the source's container is hermetic and UnsealHermeticSource->False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, Needle],
 					Object[Item, Needle]
 				}],
@@ -1198,20 +1208,20 @@ DefineOptionSet[TransferHermeticSourceOptions :> {
 					}
 				}
 			],
-			Description->"The needle used to backfill the source's hermetic container with BackfillGas.",
-			Category->"Hermetic Transfers"
+			Description -> "The needle used to backfill the source's hermetic container with BackfillGas.",
+			Category -> "Hermetic Transfers"
 		},
 		{
-			OptionName->UnsealHermeticSource,
-			Default->Automatic,
+			OptionName -> UnsealHermeticSource,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if it is indicated that a syringe/needle will not be used to perform the transfer and the source is in a hermetic container. Otherwise, is set to False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the source's hermetic container will be unsealed before sample is transferred out of it.",
-			Category->"Hermetic Transfers"
+			Description -> "Indicates if the source's hermetic container will be unsealed before sample is transferred out of it.",
+			Category -> "Hermetic Transfers"
 		}
 	]
 }];
@@ -1224,13 +1234,13 @@ DefineOptionSet[TransferHermeticDestinationOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->VentingNeedle,
-			Default->Automatic,
+			OptionName -> VentingNeedle,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the same model of Needle that will be used to perform the transfer, if the destination's container is hermetic and UnsealHermeticDestination->False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, Needle],
 					Object[Item, Needle]
 				}],
@@ -1242,20 +1252,20 @@ DefineOptionSet[TransferHermeticDestinationOptions :> {
 					}
 				}
 			],
-			Description->"The needle that is used equalize the pressure in the destination's hermetic container while the transfer into the destination's container occurs.",
-			Category->"Hermetic Transfers"
+			Description -> "The needle that is used equalize the pressure in the destination's hermetic container while the transfer into the destination's container occurs.",
+			Category -> "Hermetic Transfers"
 		},
 		{
-			OptionName->UnsealHermeticDestination,
-			Default->Automatic,
+			OptionName -> UnsealHermeticDestination,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if it is indicated that a syringe/needle will not be used to perform the transfer and the destination is in a hermetic container. Otherwise, is set to False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the destination's hermetic container will be unsealed before sample is transferred out of it.",
-			Category->"Hermetic Transfers"
+			Description -> "Indicates if the destination's hermetic container will be unsealed before sample is transferred out of it.",
+			Category -> "Hermetic Transfers"
 		}
 	]
 }];
@@ -1268,25 +1278,25 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->QuantitativeTransfer,
-			Default->Automatic,
+			OptionName -> QuantitativeTransfer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if any of the other QuantitativeTransfer options are set. Otherwise, is set to False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if additional QuantitativeTransferWashSolution will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "Indicates if additional QuantitativeTransferWashSolution will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		},
 		{
-			OptionName->QuantitativeTransferWashSolution,
-			Default->Automatic,
+			OptionName -> QuantitativeTransferWashSolution,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Model[Sample, \"Milli-Q water\"] if any of the other QuantitativeTransfer options are set. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Sample],
 					Object[Sample]
 				}],
@@ -1297,32 +1307,32 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 					}
 				}
 			],
-			Description->"The solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "The solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		},
 		{
-			OptionName->QuantitativeTransferWashVolume,
-			Default->Automatic,
+			OptionName -> QuantitativeTransferWashVolume,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1/4 of the MaxVolume of the weigh boat that will be used if any of the other QuantitativeTransfer options are set, up to a maximum of 10 mL. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern:>GreaterP[0 Liter],
-				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
 			],
-			Description->"The volume of the solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "The volume of the solution that will be used to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		},
 		{
-			OptionName->QuantitativeTransferWashInstrument,
-			Default->Automatic,
+			OptionName -> QuantitativeTransferWashInstrument,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a pipette that can transfer the requested QuantitativeTransferWashVolume. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
-					Model[Instrument,Pipette],
-					Object[Instrument,Pipette]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[Instrument, Pipette],
+					Object[Instrument, Pipette]
 				}],
 				OpenPaths -> {
 					{
@@ -1333,17 +1343,17 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 					}
 				}
 			],
-			Description->"The pipette that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "The pipette that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		},
 		{
-			OptionName->QuantitativeTransferWashTips,
-			Default->Automatic,
+			OptionName -> QuantitativeTransferWashTips,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to tips that can transfer the requested QuantitativeTransferWashVolume. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Item, Tips],
 					Object[Item, Tips]
 				}],
@@ -1355,20 +1365,20 @@ DefineOptionSet[QuantitativeTransferOptions :> {
 					}
 				}
 			],
-			Description->"The tips that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "The tips that will be used to transfer the wash solution to wash the weigh boat, NumberOfQuantitativeTransferWashes times, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		},
 		{
-			OptionName->NumberOfQuantitativeTransferWashes,
-			Default->Automatic,
+			OptionName -> NumberOfQuantitativeTransferWashes,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 3 if any of the other QuantitativeTransfer options are set. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>GreaterEqualP[2,1]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> GreaterEqualP[2, 1]
 			],
-			Description->"Indicates the number of washes of the weight boat with QuantitativeTransferWashSolution that will occur, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
-			Category->"Quantitative Transfers"
+			Description -> "Indicates the number of washes of the weight boat with QuantitativeTransferWashSolution that will occur, to maximize the amount of solid that is transferred from the weigh boat (after measurement) to the destination.",
+			Category -> "Quantitative Transfers"
 		}
 	]
 }];
@@ -1381,25 +1391,25 @@ DefineOptionSet[TipRinseOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->TipRinse,
-			Default->Automatic,
+			OptionName -> TipRinse,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if any of the other TipRinse options are set. Otherwise, is set to False.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the Tips will first be rinsed with a TipRinseSolution before they are used to aspirate from the source sample.",
-			Category->"Tip Rinsing"
+			Description -> "Indicates if the Tips will first be rinsed with a TipRinseSolution before they are used to aspirate from the source sample.",
+			Category -> "Tip Rinsing"
 		},
 		{
-			OptionName->TipRinseSolution,
-			Default->Automatic,
+			OptionName -> TipRinseSolution,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Model[Sample, \"Milli-Q water\"] if any of the other TipRinse options are set. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Sample],
 					Object[Sample]
 				}],
@@ -1410,33 +1420,33 @@ DefineOptionSet[TipRinseOptions :> {
 					}
 				}
 			],
-			Description->"The solution that the Tips will be rinsed before they are used to aspirate from the source sample.",
-			Category->"Tip Rinsing"
+			Description -> "The solution that the Tips will be rinsed before they are used to aspirate from the source sample.",
+			Category -> "Tip Rinsing"
 		},
 		{
-			OptionName->TipRinseVolume,
-			Default->Automatic,
+			OptionName -> TipRinseVolume,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 125% of the volume to be transferred, or the MaxVolume of the Tips (which ever is smaller) if any of the other TipRinse options are set. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern:>GreaterP[0 Liter],
-				Units->{1,{Milliliter,{Microliter,Milliliter}}}
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
 			],
-			Description->"The volume of the solution that the Tips will be rinsed before they are used to aspirate from the source sample.",
-			Category->"Tip Rinsing"
+			Description -> "The volume of the solution that the Tips will be rinsed before they are used to aspirate from the source sample.",
+			Category -> "Tip Rinsing"
 		},
 		{
-			OptionName->NumberOfTipRinses,
-			Default->Automatic,
+			OptionName -> NumberOfTipRinses,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1 if any of the other TipRinse options are set. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>GreaterP[0, 1]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> GreaterP[0, 1]
 			],
-			Description->"The number of times that the Tips will be rinsed before they are used to aspirate from the source sample.",
-			Category->"Tip Rinsing"
+			Description -> "The number of times that the Tips will be rinsed before they are used to aspirate from the source sample.",
+			Category -> "Tip Rinsing"
 		}
 	]
 }];
@@ -1450,40 +1460,40 @@ DefineOptionSet[AspirationMixOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->AspirationMix,
-			Default->Automatic,
+			OptionName -> AspirationMix,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if any of the other AspirationMix options are set. Otherwise, set to Null.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if mixing will occur during aspiration from the source sample.",
-			Category->"Mixing"
+			Description -> "Indicates if mixing will occur immediately prior to or during aspiration from the source sample.",
+			Category -> "Mixing"
 		},
 		{
-			OptionName->AspirationMixType,
-			Default->Automatic,
+			OptionName -> AspirationMixType,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Pipette if any of the other AspirationMix options are set and we're using a pipette to do the transfer. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>Swirl|Pipette|Tilt
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Swirl | Pipette | Tilt
 			],
-			Description->"The type of mixing that will occur immediately before aspiration from the source container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfAspirationMixes clockwise rotations of the container. Pipette performs NumberOfAspirationMixes aspiration/dispense cycle(s) of AspirationMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfAspirationMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic.",
-			Category->"Mixing"
+			Description -> "The type of mixing that will occur immediately before or during aspiration from the source container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfAspirationMixes clockwise rotations of the container. Pipette performs NumberOfAspirationMixes aspiration/dispense cycle(s) of AspirationMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfAspirationMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic. Other mix types are accomplished via a Mix subprotocol. See ExperimentMix for more information.",
+			Category -> "Mixing"
 		},
 		{
-			OptionName->NumberOfAspirationMixes,
-			Default->Automatic,
+			OptionName -> NumberOfAspirationMixes,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 5 if any of the other AspirationMix options are set. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>RangeP[0, 50, 1]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> RangeP[0, 50, 1]
 			],
-			Description->"The number of times that the source sample will be mixed during aspiration.",
-			Category->"Mixing"
+			Description -> "The number of times that the source sample will be mixed immediately prior to or during aspiration.",
+			Category -> "Mixing"
 		}
 	]
 }];
@@ -1496,40 +1506,40 @@ DefineOptionSet[DispenseMixOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->DispenseMix,
-			Default->Automatic,
+			OptionName -> DispenseMix,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if any of the other DispenseMix options are set. Otherwise, set to Null.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if mixing will occur after the sample is dispensed into the destination container.",
-			Category->"Mixing"
+			Description -> "Indicates if mixing will occur after the sample is dispensed into the destination container.",
+			Category -> "Mixing"
 		},
 		{
-			OptionName->DispenseMixType,
-			Default->Automatic,
+			OptionName -> DispenseMixType,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Pipette if any of the other DispenseMix options are set and we're using a pipette to do the transfer. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>Swirl|Pipette|Tilt
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> Swirl | Pipette | Tilt
 			],
-			Description->"The type of mixing that will occur immediately after the sample is dispensed into the destination container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfDispenseMixes clockwise rotations of the container. Pipette performs NumberOfDispenseMixes aspiration/dispense cycle(s) of DispenseMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfDispenseMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic.",
-			Category->"Mixing"
+			Description -> "The type of mixing that will occur immediately after the sample is dispensed into the destination container. Swirl has the operator place the container on the surface of the TransferEnvironment and perform NumberOfDispenseMixes clockwise rotations of the container. Pipette performs NumberOfDispenseMixes aspiration/dispense cycle(s) of DispenseMixVolume using a pipette. Tilt changes the angle of the container to (1) 0 AngularDegrees, (2) 10 AngularDegrees, (3) 0 AngularDegrees, a total of NumberOfDispenseMixes times on a Hamilton integrated tilt plate position. Swirl is only available when Preparation->Manual and Tilt is only available when Preparation->Robotic. Other mix types are accomplished via a Mix subprotocol. See ExperimentMix for more information.",
+			Category -> "Mixing"
 		},
 		{
-			OptionName->NumberOfDispenseMixes,
-			Default->Automatic,
+			OptionName -> NumberOfDispenseMixes,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 5 if any of the other DispenseMix options are set. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Number,
-				Pattern:>RangeP[0, 50, 1]
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> RangeP[0, 50, 1]
 			],
-			Description->"The number of times that the destination sample will be mixed after the sample is dispensed into the destination container.",
-			Category->"Mixing"
+			Description -> "The number of times that the destination sample will be mixed after the source sample is dispensed into the destination container.",
+			Category -> "Mixing"
 		}
 	]
 }];
@@ -1542,25 +1552,25 @@ DefineOptionSet[IntermediateDecantOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->IntermediateDecant,
-			Default->Automatic,
+			OptionName -> IntermediateDecant,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if the source is in a container that in a container that is pipette-inaccessible and the Instrument set to perform the transfer is a pipette.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the source will need to be decanted into an intermediate container in order for the precise amount requested to be transferred via pipette. Intermediate decants are necessary if the container geometry prevents the Instrument from reaching the liquid level of the sample in the container (plus the delta of volume that is to be transferred). The container geometry is automatically calculated from the inverse of the volume calibration function when the container is parameterized upon receiving. This option will be set to Null if Preparation->Robotic.",
-			Category->"Intermediate Decanting"
+			Description -> "Indicates if the source will need to be decanted into an intermediate container in order for the precise amount requested to be transferred via pipette. Intermediate decants are necessary if the container geometry prevents the Instrument from reaching the liquid level of the sample in the container (plus the delta of volume that is to be transferred). The container geometry is automatically calculated from the inverse of the volume calibration function when the container is parameterized upon receiving. This option will be set to Null if Preparation->Robotic.",
+			Category -> "Intermediate Decanting"
 		},
 		{
-			OptionName->IntermediateContainer,
-			Default->Automatic,
+			OptionName -> IntermediateContainer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the PreferredContainer[...] of the volume that is being transferred if IntermediateDecant->True.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Container],
 					Object[Container]
 				}],
@@ -1571,23 +1581,23 @@ DefineOptionSet[IntermediateDecantOptions :> {
 					}
 				}
 			],
-			Description->"The container that the source will be decanted into in order to make the final transfer via pipette into the final destination.",
-			Category->"Intermediate Decanting"
+			Description -> "The container that the source will be decanted into in order to make the final transfer via pipette into the final destination.",
+			Category -> "Intermediate Decanting"
 		},
 		{
-			OptionName->IntermediateFunnel,
-			Default->Automatic,
+			OptionName -> IntermediateFunnel,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a funnel that can fit inside the IntermediateContainer, if an IntermediateDecant is required.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Part, Funnel],
 					Object[Part, Funnel]
 				}]
 			],
-			Description->"The funnel that is used to guide the source sample into the intermediate container when pouring.",
-			Category->"Instrument Specifications"
+			Description -> "The funnel that is used to guide the source sample into the intermediate container when pouring.",
+			Category -> "Instrument Specifications"
 		}
 	]
 }];
@@ -1601,54 +1611,54 @@ DefineOptionSet[SourceTemperatureOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->SourceTemperature,
-			Default->Automatic,
+			OptionName -> SourceTemperature,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the TransferTemperature or TransportTemperature (whichever is first filled out) of the source sample. Otherwise, is transferred at Ambient temperature.",
-			AllowNull->True,
-			Widget->Alternatives[
-				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, 90 Celsius],Units :> Celsius],
-				Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]]
+			AllowNull -> True,
+			Widget -> Alternatives[
+				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, 90 Celsius], Units :> Celsius],
+				Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
 			],
-			Description->"Indicates the temperature at which the source sample will be at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
-			Category->"Temperature Conditions"
+			Description -> "Indicates the temperature at which the source sample will be at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->SourceEquilibrationTime,
-			Default->Automatic,
+			OptionName -> SourceEquilibrationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 5 Minute if SourceTemperature is not set to Ambient.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units->{1,{Hour,{Second,Minute,Hour}}}
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {1, {Hour, {Second, Minute, Hour}}}
 			],
-			Description->"The duration of time for which the samples will be heated/cooled to the target SourceTemperature.",
-			Category->"Temperature Conditions"
+			Description -> "The duration of time for which the samples will be heated/cooled to the target SourceTemperature.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->MaxSourceEquilibrationTime,
-			Default->Automatic,
+			OptionName -> MaxSourceEquilibrationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 30 Minute if SourceEquilibrationCheck is set.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units->{1,{Hour,{Second,Minute,Hour}}}
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {1, {Hour, {Second, Minute, Hour}}}
 			],
-			Description->"The maximum duration of time for which the samples will be heated/cooled to the target SourceTemperature, if they do not reach the SourceTemperature after SourceEquilibrationTime. MaxSourceEquilibrationTime will only be used if SourceEquilibrationCheck is set, in order to extend the equilibration time past the initial SourceEquilibrationTime if SourceTemperature has not been reached. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
-			Category->"Temperature Conditions"
+			Description -> "The maximum duration of time for which the samples will be heated/cooled to the target SourceTemperature, if they do not reach the SourceTemperature after SourceEquilibrationTime. MaxSourceEquilibrationTime will only be used if SourceEquilibrationCheck is set, in order to extend the equilibration time past the initial SourceEquilibrationTime if SourceTemperature has not been reached. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->SourceEquilibrationCheck,
-			Default->Automatic,
+			OptionName -> SourceEquilibrationCheck,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>EquilibrationCheckP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> EquilibrationCheckP
 			],
-			Description->"The method by which to verify the temperature of the source before the transfer is performed. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
-			Category->"Temperature Conditions"
+			Description -> "The method by which to verify the temperature of the source before the transfer is performed. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
+			Category -> "Temperature Conditions"
 		}
 	]
 }];
@@ -1661,54 +1671,54 @@ DefineOptionSet[DestinationTemperatureOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->DestinationTemperature,
-			Default->Automatic,
+			OptionName -> DestinationTemperature,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to the TransferTemperature or TransportTemperature (whichever is first filled out) of the destination sample. Otherwise, is transferred at Ambient temperature.",
-			AllowNull->True,
-			Widget->Alternatives[
-				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, 90 Celsius],Units :> Celsius],
-				Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]]
+			AllowNull -> True,
+			Widget -> Alternatives[
+				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, 90 Celsius], Units :> Celsius],
+				Widget[Type -> Enumeration, Pattern :> Alternatives[Ambient]]
 			],
-			Description->"Indicates the temperature at which the destination will be at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
-			Category->"Temperature Conditions"
+			Description -> "Indicates the temperature at which the destination will be at during the transfer. When samples are transferred off of the operator cart and into the TransferEnvironment, they are placed in a portable heater/cooler to get the sample to temperature right before the transfer occurs. Note that this is different than the TransportCondition of the sample.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->DestinationEquilibrationTime,
-			Default->Automatic,
+			OptionName -> DestinationEquilibrationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 5 Minute if DestinationTemperature is not set to Ambient.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units->{1,{Hour,{Second,Minute,Hour}}}
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {1, {Hour, {Second, Minute, Hour}}}
 			],
-			Description->"The duration of time for which the samples will be heated/cooled to the target DestinationTemperature.",
-			Category->"Temperature Conditions"
+			Description -> "The duration of time for which the samples will be heated/cooled to the target DestinationTemperature.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->MaxDestinationEquilibrationTime,
-			Default->Automatic,
+			OptionName -> MaxDestinationEquilibrationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 30 Minute if DestinationEquilibrationCheck is set.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units->{1,{Hour,{Second,Minute,Hour}}}
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {1, {Hour, {Second, Minute, Hour}}}
 			],
-			Description->"The maximum duration of time for which the samples will be heated/cooled to the target DestinationTemperature, if they do not reach the DestinationTemperature after DestinationEquilibrationTime. MaxDestinationEquilibrationTime will only be used if DestinationEquilibrationCheck is set, in order to extend the equilibration time past the initial DestinationEquilibrationTime if DestinationTemperature has not been reached. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
-			Category->"Temperature Conditions"
+			Description -> "The maximum duration of time for which the samples will be heated/cooled to the target DestinationTemperature, if they do not reach the DestinationTemperature after DestinationEquilibrationTime. MaxDestinationEquilibrationTime will only be used if DestinationEquilibrationCheck is set, in order to extend the equilibration time past the initial DestinationEquilibrationTime if DestinationTemperature has not been reached. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
+			Category -> "Temperature Conditions"
 		},
 		{
-			OptionName->DestinationEquilibrationCheck,
-			Default->Automatic,
+			OptionName -> DestinationEquilibrationCheck,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>EquilibrationCheckP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> EquilibrationCheckP
 			],
-			Description->"The method by which to verify the temperature of the destination before the transfer is performed. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
-			Category->"Temperature Conditions"
+			Description -> "The method by which to verify the temperature of the destination before the transfer is performed. Performing an equilibration check will require stopping the experiment and verifying the temperature before moving on; this may add experiment time and may result in loss of sample through evaporation, and is only recommended for use in cases where temperature precision or temperature data is required.",
+			Category -> "Temperature Conditions"
 		}
 	]
 }];
@@ -1721,16 +1731,16 @@ DefineOptionSet[SterileTechniqueOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->SterileTechnique,
-			Default->Automatic,
+			OptionName -> SterileTechnique,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if the samples being transferred contain tissue culture or microbial components, or require aseptic techniques.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if sterilized instruments and aseptic transfer environments must be used for the transfer. Aseptic transfer environments include biosafety cabinets as TransferEnvironment, or bioSTAR and microbioSTAR Hamilton enclosures as WorkCell. Please consult the ExperimentTransfer documentation for a full diagram of SterileTechnique that is employed by operators.",
-			Category->"Transfer Technique"
+			Description -> "Indicates if sterilized instruments and aseptic transfer environments must be used for the transfer. Aseptic transfer environments include biosafety cabinets as TransferEnvironment, or bioSTAR and microbioSTAR Hamilton enclosures as WorkCell. Please consult the ExperimentTransfer documentation for a full diagram of SterileTechnique that is employed by operators.",
+			Category -> "Transfer Technique"
 		}
 	]
 }];
@@ -1743,16 +1753,16 @@ DefineOptionSet[RNaseFreeTechniqueOption :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->RNaseFreeTechnique,
-			Default->Automatic,
+			OptionName -> RNaseFreeTechnique,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if the samples being transferred are RNaseFree->True.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates that RNase free technique will be followed when performing the transfer (spraying RNase away on surfaces, using RNaseFree tips, etc.).",
-			Category->"Transfer Technique"
+			Description -> "Indicates that RNase free technique will be followed when performing the transfer (spraying RNase away on surfaces, using RNaseFree tips, etc.).",
+			Category -> "Transfer Technique"
 		}
 	]
 }];
@@ -1765,57 +1775,57 @@ DefineOptionSet[MagnetizationOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Magnetization,
-			Default->Automatic,
+			OptionName -> Magnetization,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to False if transferring a liquid. Otherwise, set to Null.",
-			AllowNull->False,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates if the source container will be put in a magnetized rack to separate out any magnetic components before the transfer is performed.",
-			Category->"Transfer Technique"
+			Description -> "Indicates if the source container will be put in a magnetized rack to separate out any magnetic components before the transfer is performed.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->MagnetizationTime,
-			Default->Automatic,
+			OptionName -> MagnetizationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 15 Second if Magnetization->True. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units -> {Minute,{Minute,Second}}
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {Minute, {Minute, Second}}
 			],
-			Description->"The time that the source sample will be left on the magnetic rack until the magnetic components are settled at the side of the container.",
-			Category->"Transfer Technique"
+			Description -> "The time that the source sample will be left on the magnetic rack until the magnetic components are settled at the side of the container.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->MaxMagnetizationTime,
-			Default->Automatic,
+			OptionName -> MaxMagnetizationTime,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1 Minute if Magnetization->True. Otherwise, set to Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units -> {Minute,{Minute,Second}}
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {Minute, {Minute, Second}}
 			],
-			Description->"The maximum time that the source sample will be left on the magnetic rack until the magnetic components are settled at the side of the container.",
-			Category->"Transfer Technique"
+			Description -> "The maximum time that the source sample will be left on the magnetic rack until the magnetic components are settled at the side of the container.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->MagnetizationRack,
-			Default->Automatic,
+			OptionName -> MagnetizationRack,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to a magnetized rack that can hold the source/intermediate container, if Magnetization->True is specified.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Object,
-				Pattern:>ObjectP[{
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
 					Model[Container, Rack],
 					Object[Container, Rack],
-					Model[Item,MagnetizationRack],
-					Object[Item,MagnetizationRack]
+					Model[Item, MagnetizationRack],
+					Object[Item, MagnetizationRack]
 				}],
-				PreparedContainer->False,
+				PreparedContainer -> False,
 				OpenPaths -> {
 					{
 						Object[Catalog, "Root"],
@@ -1825,25 +1835,25 @@ DefineOptionSet[MagnetizationOptions :> {
 					}
 				}
 			],
-			Description->"The magnetized rack that the source/intermediate container will be placed in before the transfer is performed.",
-			Category->"Transfer Technique"
+			Description -> "The magnetized rack that the source/intermediate container will be placed in before the transfer is performed.",
+			Category -> "Transfer Technique"
 		},
 		{
 			OptionName -> UnresolvedMagnetizationRackFromParentProtocol,
 			Default -> Null,
-			AllowNull->True,
-			Widget->Alternatives[
+			AllowNull -> True,
+			Widget -> Alternatives[
 				Widget[
-					Type->Object,
-					Pattern:>ObjectP[{
-						Model[Item,MagnetizationRack],
-						Object[Item,MagnetizationRack]
+					Type -> Object,
+					Pattern :> ObjectP[{
+						Model[Item, MagnetizationRack],
+						Object[Item, MagnetizationRack]
 					}]
 				],
-				Widget[Type->Enumeration,Pattern:>Alternatives[Automatic]]
+				Widget[Type -> Enumeration, Pattern :> Alternatives[Automatic]]
 			],
-			Description->"The user input of the magnetic rack used during magnetization passed from the higher level experiment function.",
-			Category->"Hidden"
+			Description -> "The user input of the magnetic rack used during magnetization passed from the higher level experiment function.",
+			Category -> "Hidden"
 		}
 	]
 }];
@@ -1863,7 +1873,7 @@ DefineOptionSet[CollectionContainerOptions :> {
 				"Existing Container" -> Widget[
 					Type -> Object,
 					Pattern :> ObjectP[{Object[Container, Plate], Model[Container, Plate]}],
-					PreparedContainer->True,
+					PreparedContainer -> True,
 					OpenPaths -> {
 						{
 							Object[Catalog, "Root"],
@@ -1883,7 +1893,7 @@ DefineOptionSet[CollectionContainerOptions :> {
 						}
 					}
 				],
-				"New Container with Index"->{
+				"New Container with Index" -> {
 					"Index" -> Widget[
 						Type -> Number,
 						Pattern :> GreaterEqualP[1, 1]
@@ -1902,8 +1912,8 @@ DefineOptionSet[CollectionContainerOptions :> {
 				}
 			],
 			Description -> "Specifies the container that is stacked on the bottom of the destination container, before the source sample is transferred into the destination container, in order to collect the sample that flows through from the bottom of the destination container and into the CollectionContainer. This option is only available when Preparation->Robotic.",
-			ResolutionDescription->"Automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] if CollectionTime is specified. Otherwise, set to Null.",
-			Category->"Transfer Technique"
+			ResolutionDescription -> "Automatically set to Model[Container, Plate, \"96-well 2mL Deep Well Plate\"] if CollectionTime is specified. Otherwise, set to Null.",
+			Category -> "Transfer Technique"
 		},
 		{
 			OptionName -> CollectionTime,
@@ -1911,12 +1921,12 @@ DefineOptionSet[CollectionContainerOptions :> {
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Quantity,
-				Pattern :> RangeP[0 Minute,$MaxExperimentTime],
-				Units->{1,{Hour,{Second,Minute,Hour}}}
+				Pattern :> RangeP[0 Minute, $MaxExperimentTime],
+				Units -> {1, {Hour, {Second, Minute, Hour}}}
 			],
 			Description -> "The amount of time that the sample that is transferred into the destination container is allowed to flow through the bottom of the destination plate and into the CollectionContainer (that is stacked on the bottom of the destination container). This option is only available when Preparation->Robotic.",
-			ResolutionDescription->"Automatically set to 1 Minute if CollectionContainer is specified, otherwise set to Null.",
-			Category->"Transfer Technique"
+			ResolutionDescription -> "Automatically set to 1 Minute if CollectionContainer is specified, otherwise set to Null.",
+			Category -> "Transfer Technique"
 		}
 	]
 }];
@@ -1928,39 +1938,39 @@ DefineOptionSet[TransferLayerOptions :> {
 	IndexMatching[
 		IndexMatchingInput -> "experiment samples",
 		{
-			OptionName->Supernatant,
-			Default->Automatic,
+			OptionName -> Supernatant,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to True if Magnetization->True. Otherwise, set to False/Null.",
-			AllowNull->True,
-			Widget->Widget[
-				Type->Enumeration,
-				Pattern:>BooleanP
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
 			],
-			Description->"Indicates that only top most layer of the source sample will be aspirated when performing the transfer.",
-			Category->"Transfer Technique"
+			Description -> "Indicates that only top most layer of the source sample will be aspirated when performing the transfer.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->AspirationLayer,
-			Default->Automatic,
+			OptionName -> AspirationLayer,
+			Default -> Automatic,
 			ResolutionDescription -> "Automatically set to 1 if Supernatant->True. Otherwise, is set to Null.",
-			AllowNull->True,
-			Widget->Widget[
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Number,
 				Pattern :> GreaterP[0., 1.]
 			],
-			Description->"The layer (counting from the top) of the source sample that will be aspirated from when performing the transfer.",
-			Category->"Transfer Technique"
+			Description -> "The layer (counting from the top) of the source sample that will be aspirated from when performing the transfer.",
+			Category -> "Transfer Technique"
 		},
 		{
-			OptionName->DestinationLayer,
-			Default->Null,
-			AllowNull->True,
-			Widget->Widget[
+			OptionName -> DestinationLayer,
+			Default -> Null,
+			AllowNull -> True,
+			Widget -> Widget[
 				Type -> Number,
 				Pattern :> GreaterP[0., 1.]
 			],
-			Description->"The layer (counting from the top) of the destination sample that will be dispensed into when performing the transfer.",
-			Category->"Transfer Technique"
+			Description -> "The layer (counting from the top) of the destination sample that will be dispensed into when performing the transfer.",
+			Category -> "Transfer Technique"
 		}
 	]
 }];
@@ -1980,7 +1990,225 @@ DefineOptionSet[CountAsPassageOptions :> {
 				Pattern :> BooleanP
 			],
 			Description -> "Indicates if cell models found in the Composition of the destination Object[Sample] are recorded to have an increase of 1 in passage number in CellPassageLog. CountAsPassage flag should only be set to True when the transfer is used to inoculate a cell sample for initiating a subculture.",
-			Category->"General"
+			Category -> "General"
+		}
+	]
+}];
+
+(* ::Subsection::Closed:: *)
+(* RinseOptions *)
+
+DefineOptionSet[PreRinseLabwareOptions :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> PreRinseLabware,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to True if any of the other PreRinseLabware options are set. Otherwise, is set to False.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP
+			],
+			Description -> "Indicates if labware used with the Source sample is rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			Category -> "PreRinse Labware"
+		},
+		{
+			OptionName -> NumberOfPreRinses,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to 2 if any of the other PreRinseLabware options are set. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Number,
+				Pattern :> GreaterP[0, 1]
+			],
+			Description -> "The number of times labware used with source sample is rinsed with PreRinseSolution before use with the source sample.",
+			Category -> "PreRinse Labware"
+		},
+		{
+			OptionName -> PreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to the calculated total of volume times NumberOfPreRinses required to rinse all relevant labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips) that are used with the Source sample.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The total volume of the PreRinseSolution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, Tips, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "PreRinse Labware"
+		},
+		{
+			OptionName -> PreRinseSolution,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to source sample if PreRinseLabware is True and source State is Liquid. If source sample State is Solid and there is a succeeding FillToVolume of same destination in a ManualSamplePreparation or ManualCellPreparation protocol, use the Solvent in FillToVolume. If source sample State is Solid and there is a succeeding transfer to the same destination in an ManualSamplePreparation or ManualCellPreparation protocol with a liquid Source, use the liquid Source. Otherwise, set to Null",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[Sample],
+					Object[Sample]
+				}],
+				OpenPaths -> {
+					{
+						Object[Catalog, "Root"],
+						"Materials"
+					}
+				}
+			],
+			Description -> "The solution that is used to rinse labware (Destination, IntermediateContainer, Instrument (graduated cylinder, syringe), Funnel, IntermediateFunnel, QuantitativeTransferWashTips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "PreRinse Labware"
+		},
+		{
+			OptionName -> PreRinseIntermediateContainer,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a beaker based on the largest individual prerinse volume if PreRinseLabware is True. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{
+					Model[Container, Vessel],
+					Object[Container, Vessel]
+				}]
+			],
+			Description -> "The container that is used to hold the PreRinseSolution prior to rinsing of labware, NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> PreRinseIntermediateContainerVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the PreRinseIntermediateContainer if PreRinseLabware is True. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse destination container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> DestinationPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the destination container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse destination container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> InstrumentPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the instrument (GraduatedCylinder, Syringe) (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True and Instrument is either a GraduatedCylinder or a Syringe. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse the instrument (graduated cylinder or syringe), per wash amd NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> IntermediateContainerPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MaxVolume of the intermediate container (10 Milliliter per 1 Liter MaxVolume, in increments of 10 Milliliter) if PreRinseLabware is True and IntermediateContainer is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse the intermediate container, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> HandPumpPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to 20 Milliliter (estimated amount dispensed in a single pump) if PreRinseLabware is True and HandPump is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse HandPump, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> FunnelPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PreRinseLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse Funnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> IntermediateFunnelPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set to a volume based on the MouthDiameter of the funnel (10 Milliliter if MouthDiameter is less than 80 Millimeter, 20 Milliliter if MouthDiameter is greater than 80 Millimeter) if PreRinseLabware is True and Funnel is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse IntermediateFunnel, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> TipsPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of Tips, whichever is smaller, if PreRinseLabware is True and Tips is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse tips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> QuantitativeTransferTipsPreRinseVolume,
+			Default -> Automatic,
+			ResolutionDescription -> "Automatically set 10 Milliter or MaxVolume of QuantitativeTransferWashTips, whichever is smaller, if PreRinseLabware is True and QuantitativeTransferWashTips is an object. Otherwise, is set to Null.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> GreaterP[0 Liter],
+				Units -> {1, {Milliliter, {Microliter, Milliliter}}}
+			],
+			Description -> "The volume of the PreRinseSolution that is used to rinse QuantitativeTransferTips, per wash and NumberOfPreRinses times, to minimize contamination and prepare it for use with source sample.",
+			Category -> "Hidden"
+		}
+	]
+}];
+
+
+(* ::Subsection::Closed:: *)
+(* TransferTechniqueOption *)
+
+DefineOptionSet[TransferTechniqueOption :> {
+	IndexMatching[
+		IndexMatchingInput -> "experiment samples",
+		{
+			OptionName -> TransferTechnique,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Widget[Type -> Enumeration, Pattern :> TransferTechniqueP],
+			Description -> "The type of instrument used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
+			ResolutionDescription -> "Automatically set to an instrument type that can move the amount being transferred and the source and destination containers of the transfer. For more information, please refer to the function TransferDevices[].",
+			Category -> "General"
 		}
 	]
 }];

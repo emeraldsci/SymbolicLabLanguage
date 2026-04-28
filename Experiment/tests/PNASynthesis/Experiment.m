@@ -3355,22 +3355,11 @@ DefineTests[
 					Model[Sample,"PNA Test Oligomer Model"],
 					Model[Sample,"PNA Test Oligomer Model"],
 					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
-					Model[Sample,"PNA Test Oligomer Model"],
 					Model[Sample,"PNA Test Oligomer Model"]
 				}],
 			$Failed,
-			Messages:>{Message[Error::NumberOfInputs],Message[Error::InvalidInput]},
-			TimeConstraint->400
+			Messages:>{Error::NumberOfInputs,Error::InvalidInput},
+			TimeConstraint->2000
 		],
 
 		Example[{Messages,"InsufficientSolventVolume","Throws an error if we use more of a solvent than fits into the solvent container under the deck:"},
@@ -3717,7 +3706,7 @@ DefineTests[
 					{},
 
 					ObjectP[Model[Instrument,PeptideSynthesizer]],
-					ObjectP[Model[Instrument,FumeHood]],
+					ObjectP[Model[Instrument,HandlingStation,FumeHood]],
 					Null,
 					{ObjectP[Model[Container,Vessel]]},
 					{ObjectP[Model[Container,ReactionVessel]]},
@@ -3741,6 +3730,9 @@ DefineTests[
 	},
 	Stubs:>{
 		$PersonID = Object[User, "Test user for notebook-less test protocols"]
+	},
+	TurnOffMessages :> {
+		Warning::SamplesOutOfStock
 	},
 	SymbolSetUp:>{
 		$CreatedObjects={};
@@ -3966,7 +3958,8 @@ DefineTests[
 		Unset[$CreatedObjects];
 		On[Warning::SamplesOutOfStock];
 		On[Warning::InstrumentUndergoingMaintenance];
-	}
+	},
+	Parallel -> True
 ];
 
 

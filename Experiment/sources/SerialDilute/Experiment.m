@@ -887,10 +887,28 @@ ExperimentSerialDilute[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(* Build packets with resources *)
 
 	resourcePacketsResult = Check[
-		{{resourcePackets,runTime},updatedSimulation,resourcePacketTests} =
+		{{resourcePackets, runTime}, updatedSimulation, resourcePacketTests} =
 			Which[
-				gatherTests,serialDiluteResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps, ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}],Cache->newCache,Simulation->samplePreparationSimulation],
-				True,{Sequence@@serialDiluteResourcePackets[ToList[mySamplesWithPreparedSamples],expandedSafeOps, ReplaceRule[resolvedOptions, Output -> {Result, Simulation}],Cache->newCache,Simulation->samplePreparationSimulation],Null}
+				MatchQ[resolvedOptionsResult, $Failed],
+					{{$Failed, $Failed}, $Failed, {}},
+				gatherTests,
+					serialDiluteResourcePackets[
+						ToList[mySamplesWithPreparedSamples],
+						expandedSafeOps,
+						ReplaceRule[resolvedOptions, Output -> {Result, Simulation, Tests}],Cache->newCache,
+						Simulation->samplePreparationSimulation
+					],
+				True,
+					{
+						Sequence@@serialDiluteResourcePackets[
+							ToList[mySamplesWithPreparedSamples],
+							expandedSafeOps,
+							ReplaceRule[resolvedOptions, Output -> {Result, Simulation}],
+							Cache->newCache,
+							Simulation->samplePreparationSimulation
+						],
+						Null
+					}
 			],
 			$Failed,
 			{Error::InvalidInput, Error::InvalidOption}
@@ -1315,6 +1333,7 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		resolvedContainerOut,resolvedDestinationWells,
 
 		resolvedSampleLabel,resolvedSampleContainerLabel,resolvedSampleOutLabel,transferTuples,
+		preparationResult, preparationTest, specifiedWorkCell, preResolvedPreparation, specifiedPreparation,
 		resolvedContainerOutLabel,resolvedDiluentLabel,resolvedConcentratedBufferLabel,
 		resolvedBufferDiluentLabel, resolvedPreparation, allowedWorkCells, resolvedWorkCell, resolvedNumberOfMixes, resolvedMixType,
 
@@ -2345,28 +2364,107 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	(*resolving independent options*)
 	(*resolving prep option*)
 	(*make sure we consider both mySamples and diluent if needed*)
-	transferTuples=Transpose[
+	transferTuples = Transpose[
 		MapThread[
-			If[MatchQ[#2,ObjectP[{Object[Container],Object[Sample]}]],
-				{
-					Join[ConstantArray[#1,Length[#3]],ConstantArray[#2,Length[#3]]],
-					Flatten[ConstantArray[DeleteCases[Flatten[#3],_Integer],2]],
-					Join[ConstantArray[#4,Length[#3]],ConstantArray[#5,Length[#3]]],
-					Flatten[ConstantArray[#6,2]]
-				},
-				{
-					ConstantArray[#1,Length[#3]],
-					DeleteCases[Flatten[#3],_Integer],
-					ConstantArray[#4,Length[#3]],
-					Flatten[#6]
-				}
-			]&,
-			{mySamples,resolvedDiluent,resolvedContainerOut,resolvedFinalVolume,resolvedDiluentAmount,resolvedDestinationWells}
+			Function[{sample, diluent, containerOut, finalVolume, diluentAmount, destinationWell},
+				Module[{expandedFinalVolume, expandedDiluentAmount},
+					expandedFinalVolume = If[EqualQ[Length[finalVolume], Length[containerOut]],
+						(* If they are equal in length, it was already expanded *)
+						finalVolume,
+						ConstantArray[finalVolume, Length[containerOut]]
+					];
+					expandedDiluentAmount = Which[
+						(* We have diluent and the length is already expanded *)
+						MatchQ[diluent, ObjectP[{Object[Container], Object[Sample]}]] && EqualQ[Length[finalVolume], Length[containerOut]],
+							diluentAmount,
+						(* We have diluent and we need to expand it *)
+						MatchQ[diluent, ObjectP[{Object[Container], Object[Sample]}]],
+							ConstantArray[diluentAmount, Length[containerOut]],
+						(* No diluent *)
+						True,
+							{}
+					];
+					(* Return tuples, branched based on whether we have diluent *)
+					If[MatchQ[diluent, ObjectP[{Object[Container], Object[Sample]}]],
+						{
+							Join[ConstantArray[sample, Length[containerOut]], ConstantArray[diluent, Length[containerOut]]],
+							Flatten[ConstantArray[DeleteCases[Flatten[containerOut], _Integer], 2]],
+							Join[expandedFinalVolume, expandedDiluentAmount],
+							Flatten[ConstantArray[destinationWell, 2]]
+						},
+						{
+							ConstantArray[sample, Length[containerOut]],
+							DeleteCases[Flatten[containerOut], _Integer],
+							expandedFinalVolume,
+							Flatten[destinationWell]
+						}
+					]
+				]
+			],
+			{mySamples, resolvedDiluent, resolvedContainerOut, resolvedFinalVolume, resolvedDiluentAmount, resolvedDestinationWells}
 		]
 	];
+	{specifiedWorkCell, specifiedPreparation, resolvedIncubate} = Lookup[serialDiluteOptionsAssociation, {WorkCell, Preparation, Incubate}];
 
-	methods = resolveTransferMethod[Flatten[transferTuples[[1]]], Flatten[transferTuples[[2]]], Flatten[transferTuples[[3]]],
-		DestinationWell -> Flatten[transferTuples[[4]]],Simulation->simulation,Cache->cache];
+	(*Determine if any of the resolvedContainerOut are plates, if so, then put True, if not, then False*)
+	listOfJustContainers = Map[Function[{subList}, Map[#[[2]] &, subList]], resolvedContainerOut];
+	(*Reduce is such that it's an And for each sublist, i.e. {True,False,True}->{False}*)
+	(*If there is a False, then that means at least one resolvedContainerOut in that serial dilution of that samples
+	must be a non-plate*)
+	incompatibleIncubateOptionErrPre =Map[
+		Function[containerSubList,
+			Not[MemberQ[containerSubList,Except[ObjectP[{Object[Container,Plate],Model[Container,Plate]}]]]]
+		],
+		listOfJustContainers
+	];
+
+	(* The method resolver below only considers transfer. But SerialDilute also needs to consider Incubate, which narrows down the preparation because we cannot incubate non-plate containers on hamiltons. *)
+	preResolvedPreparation = Which[
+		MatchQ[specifiedPreparation, Except[Automatic]],
+			(* User specified *)
+			specifiedPreparation,
+		(* Incubate is happening and the container has non-plate vessels. This mirrors error checking logic of Error::IncompatibleIncubateDevice, since we don't want to resolve into errors *)
+		MemberQ[Transpose[{resolvedIncubate, incompatibleIncubateOptionErrPre}], {True, False}],
+			Manual,
+		True,
+			Automatic
+	];
+
+	(* Resolve our preparation option. *)
+	preparationResult = Check[
+		{methods, preparationTest} = If[MatchQ[gatherTests, False],
+			{
+				resolveTransferMethod[
+					Sequence @@ splitTransfersBy970[
+						Flatten[transferTuples[[1]]],
+						Flatten[transferTuples[[2]]],
+						Flatten[transferTuples[[3]]],
+						DestinationWell -> Flatten[transferTuples[[4]]],
+						WorkCell -> specifiedWorkCell,
+						Preparation -> preResolvedPreparation,
+						Output -> Result,
+						Simulation -> simulation,
+						Cache -> cache
+					]
+				],
+				{}
+			},
+			resolveTransferMethod[
+				Sequence @@ splitTransfersBy970[
+					Flatten[transferTuples[[1]]],
+					Flatten[transferTuples[[2]]],
+					Flatten[transferTuples[[3]]],
+					DestinationWell -> Flatten[transferTuples[[4]]],
+					WorkCell -> specifiedWorkCell,
+					Preparation -> preResolvedPreparation,
+					Output -> {Result, Tests},
+					Simulation -> simulation,
+					Cache -> cache
+				]
+			]
+		],
+		$Failed
+	];
 
 	couldBeMicroQ = MemberQ[methods, Robotic];
 
@@ -2378,27 +2476,21 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 	(* Resolve the work cell that we're going to operator on. *)
-	allowedWorkCells = resolveSerialDiluteWorkCell[Flatten[mySamples], {Preparation -> resolvedPreparation, Simulation -> simulation, Cache -> cache, Output -> Result}];
+	allowedWorkCells = resolveSerialDiluteWorkCell[
+		Flatten[mySamples],
+		{
+			Preparation -> resolvedPreparation,
+			WorkCell -> specifiedWorkCell,
+			Simulation -> simulation,
+			Cache -> cache,
+			Output -> Result
+		}
+	];
 
 	resolvedWorkCell = FirstOrDefault[allowedWorkCells];
 
-	(*Resolve doing right preparation on resolved containers*)
-	resolvedIncubate = Lookup[serialDiluteOptionsAssociation,Incubate];
-
-	(*Determine if any of the resolvedContainerOut are plates, if so, then put True, if not, then False*)
-	listOfJustContainers = Map[Function[{subList}, Map[#[[2]] &, subList]], resolvedContainerOut];
-
-	(*Reduce is such that it's an And for each sublist, i.e. {True,False,True}->{False}*)
-	(*If there is a False, then that means at least one resolvedContainerOut in that serial dilution of that samples
-	must be a non-plate*)
-	incompatibleIncubateOptionErrPre =Map[
-		Function[containerSubList,
-			Not[MemberQ[containerSubList,Except[ObjectP[{Object[Container,Plate],Model[Container,Plate]}]]]]
-		],
-		listOfJustContainers
-	];
-
 	(*Double check with Incubate and resolvedPrep*)
+	(*Note that the logic here is mirrored by the evaluation of preResolvedPreparation, so that we do not resolve into errors. If anything changes here, please make sure preResolvedPreparation gets updated too as needed *)
 	(*If resolvedPrep=Robotic and resolvedIncubate=True and incompatibleIncubateOptionErrPre = False,
 	make the error true*)
 	incompatibleIncubateOptionErr = MapThread[
@@ -3164,13 +3256,23 @@ resolveExperimentSerialDiluteOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 
 	(* Check ou  r invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
-	invalidInputs=DeleteDuplicates[Flatten[{discardedInvalidInputs}]]; (*invalid objects*)
-	invalidOptions=DeleteDuplicates[Flatten[{serialDiluteNumberInvalidOptions,
-		bufferDilutionStrategyInvalidOptions,concentratedBufferAmountInvalidOptions,
-		incompatibleIncubateInvalidOptions,conflictingIncubateInvalidOptions,
-		unevenNumberFinalVolumeInvalidOptions,unevenNumberTransferAmountsInvalidOptions,
-		unevenNumberDiluentAmountInvalidOptions,unevenNumberBufferDiluentAmountInvalidOptions,
-		unevenNumberConcentratedBufferAmountInvalidOptions}]];
+	invalidInputs = DeleteDuplicates[Flatten[{discardedInvalidInputs}]]; (*invalid objects*)
+	invalidOptions = DeleteDuplicates[Flatten[{
+		serialDiluteNumberInvalidOptions,
+		bufferDilutionStrategyInvalidOptions,
+		concentratedBufferAmountInvalidOptions,
+		incompatibleIncubateInvalidOptions,
+		conflictingIncubateInvalidOptions,
+		unevenNumberFinalVolumeInvalidOptions,
+		unevenNumberTransferAmountsInvalidOptions,
+		unevenNumberDiluentAmountInvalidOptions,
+		unevenNumberBufferDiluentAmountInvalidOptions,
+		unevenNumberConcentratedBufferAmountInvalidOptions,
+		If[MatchQ[preparationResult, $Failed],
+			{Preparation},
+			{}
+		]
+	}]];
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 
 

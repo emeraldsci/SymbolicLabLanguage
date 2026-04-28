@@ -484,7 +484,7 @@ DefineTests[getFargateLogURL,
 					|>,
 					<|
 						HardwareConfiguration->Standard,
-						MathematicaVersion->"13.3.1",
+						MathematicaVersion->"14.2.0",
 						Object->Object[Notebook,Job,"id:-2"],
 						ID->"id:-2",
 						Type->Object[Notebook,Job]
@@ -501,7 +501,7 @@ DefineTests[getFargateLogURL,
 				|>,
 				<|
 					HardwareConfiguration -> Standard,
-					MathematicaVersion -> "13.3.1",
+					MathematicaVersion -> "14.2.0",
 					Object -> Object[Notebook, Job, "id:-2"],
 					ID -> "id:-2",
 					Type -> Object[Notebook, Job]

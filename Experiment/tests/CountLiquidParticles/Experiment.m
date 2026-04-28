@@ -524,37 +524,33 @@ DefineTests[
 			{True, Shake, ObjectP[Model[Instrument, Shaker]]},
 			Variables :> {options}
 		],
-		If[$CountLiquidParticlesAllowHandSwirl,
-			Sequence @@ {Example[{Options, NumberOfMixes, "Specify indicate the number of times the sample container will be swirled if the AcquisitionMixType is swirl."},
-				options = ExperimentCountLiquidParticles[
-					{
-						Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-						Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-						Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-					},
-					NumberOfMixes-> {13, 14, 15},
-					Output -> Options
-				];
-				Lookup[options, NumberOfMixes],
-				{13, 14, 15},
-				Variables :> {options}
-			], 
-				Example[{Options, WaitTimeBeforeReading, "Specify the length of time the container will be placed standstill before the reading its particle sizes."},
-					options = ExperimentCountLiquidParticles[
-						{
-							Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-						},
-						WaitTimeBeforeReading -> {1 Minute, 2 Minute, 3 Minute},
-						Output -> Options
-					];
-					Lookup[options, WaitTimeBeforeReading],
-					{1 Minute, 2 Minute, 3 Minute},
-					Variables :> {options}
-				]
-			},
-			Nothing
+		Example[{Options, NumberOfMixes, "Specify indicate the number of times the sample container will be swirled if the AcquisitionMixType is swirl."},
+			options = ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				NumberOfMixes-> {13, 14, 15},
+				Output -> Options
+			];
+			Lookup[options, NumberOfMixes],
+			{13, 14, 15},
+			Variables :> {options}
+		],
+		Example[{Options, WaitTimeBeforeReading, "Specify the length of time the container will be placed standstill before the reading its particle sizes."},
+			options = ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				WaitTimeBeforeReading -> {1 Minute, 2 Minute, 3 Minute},
+				Output -> Options
+			];
+			Lookup[options, WaitTimeBeforeReading],
+			{1 Minute, 2 Minute, 3 Minute},
+			Variables :> {options}
 		],
 		Example[{Options, StirBar, "Indicates whether the stir bar should be used to agitate the sample during acquisition:"},
 			protocol = ExperimentCountLiquidParticles[
@@ -597,6 +593,7 @@ DefineTests[
 					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
 					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
 				},
+				AcquisitionMix -> True,
 				AdjustMixRate -> False,
 				Output -> Options
 			];
@@ -794,6 +791,19 @@ DefineTests[
 			Lookup[options, AliquotAmount],
 			15 Milliliter,
 			Variables :> {options},
+			EquivalenceFunction -> Equal
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentCountLiquidParticles[
+				{Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]},
+				AcquisitionMix -> True,
+				AliquotAmount -> 35.01 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			35 Milliliter,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
 			EquivalenceFunction -> Equal
 		],
 		Example[{Options, DiscardFirstRun, "Specify if the first run of the experiment will be discarded during the data collection:"},
@@ -1200,6 +1210,21 @@ DefineTests[
 			Lookup[options, CentrifugeIntensity],
 			1000 RPM,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentCountLiquidParticles[
@@ -1881,7 +1906,7 @@ DefineTests[
 				Output -> Options
 			],
 			{_Rule..},
-			Messages :> {Error::ConflictingUnitOperationMethodRequirements}
+			Messages :> {Error::ConflictingUnitOperationMethodRequirements, Error::InvalidOption}
 		],
 		Example[{Messages, "CountLiquidParticleInvalidDilutionCurveVolumes", "Specified dilution cannot finished experiment:"},
 			ExperimentCountLiquidParticles[
@@ -1948,54 +1973,61 @@ DefineTests[
 				AcquisitionMixRate -> Null
 			],
 			$Failed,
-			Messages :> {Error::MixTypeOptionsMismatch,Error::MixTypeIncorrectOptions, Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
+			Messages :> {Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
 		],
-		If[
-			$CountLiquidParticlesAllowHandSwirl,
-			Sequence @@ {
-				Example[
-					{Messages, "CountLiquidParticleRequiredAcquisitionMixOptions", "If AcquisitionMix if True and MixType is Stir, related options need to be specified:"},
-					ExperimentCountLiquidParticles[
-						{
-							Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-						},
-						AcquisitionMix -> True,
-						AcquisitionMixType -> Swirl,
-						NumberOfMixes -> Null
-					],
-					$Failed,
-					Messages :> {Error::MixTypeOptionsMismatch, Error::MixTypeIncorrectOptions, Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
-				],
-				Example[{Messages, "CountLiquidParticleConflictingMixOptions", "If the AcquisitionMixType is Swirl, options for Stir cannot be specified:"},
-					ExperimentCountLiquidParticles[
-						{
-							Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-						},
-						AcquisitionMixType -> Swirl,
-						AcquisitionMixRate -> 250 RPM
-					],
-					$Failed,
-					Messages :> {Error::CountLiquidParticleConflictingMixOptions, Error::InvalidOption}
-				],
-				Example[{Messages, "CountLiquidParticleConflictingMixOptions", "If the AcquisitionMixType is Stir, options for Swirl cannot be specified:"},
-					ExperimentCountLiquidParticles[
-						{
-							Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
-							Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
-						},
-						AcquisitionMixType -> Stir,
-						NumberOfMixes -> 10
-					],
-					$Failed,
-					Messages :> {Error::CountLiquidParticleConflictingMixOptions, Error::InvalidOption}
-				]
-			},
-			Nothing
+		Example[
+			{Messages, "CountLiquidParticleRequiredAcquisitionMixOptions", "If AcquisitionMix if True and MixType is Stir, related options need to be specified:"},
+			ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				AcquisitionMix -> True,
+				AcquisitionMixType -> Swirl,
+				NumberOfMixes -> Null
+			],
+			$Failed,
+			Messages :> {Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
+		],
+		Example[{Messages, "CountLiquidParticleConflictingMixOptions", "If the AcquisitionMixType is Swirl, options for Stir cannot be specified:"},
+			ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				AcquisitionMixType -> Swirl,
+				AcquisitionMixRate -> 250 RPM
+			],
+			$Failed,
+			Messages :> {Error::CountLiquidParticleConflictingMixOptions, Error::InvalidOption}
+		],
+		Example[{Messages, "CountLiquidParticleConflictingMixOptions", "If the AcquisitionMixType is Stir, options for Swirl cannot be specified:"},
+			ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				AcquisitionMixType -> Stir,
+				NumberOfMixes -> 10
+			],
+			$Failed,
+			Messages :> {Error::CountLiquidParticleConflictingMixOptions, Error::InvalidOption}
+		],
+		Example[{Messages, "NutateNoInstrument", "Use Incubate resolver to check on invalid Mix-related options:"},
+			ExperimentCountLiquidParticles[
+				{
+					Object[Sample, "Test water sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 5 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID],
+					Object[Sample, "Test 15 micro meter particle sample 1 for ExperimentCountLiquidParticles" <> $SessionUUID]
+				},
+				AcquisitionMixType -> Nutate,
+				AcquisitionMixRate -> 3000 RPM
+			],
+			$Failed,
+			Messages :> {Error::NutateNoInstrument, Error::InvalidOption}
 		],
 		Example[{Messages, "CountLiquidParticleRequiredAcquisitionMixOptions", "If AcquisitionMix if True and MixType is Stir, related options need to be specified:"},
 			ExperimentCountLiquidParticles[
@@ -2009,7 +2041,7 @@ DefineTests[
 				AcquisitionMixRate -> Null
 			],
 			$Failed,
-			Messages :> {Error::MixTypeOptionsMismatch, Error::MixTypeIncorrectOptions,Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
+			Messages :> {Error::CountLiquidParticleRequiredAcquisitionMixOptions, Error::InvalidOption}
 		],
 		Example[{Messages, "CountLiquidParticleDilutionContainerLengthMismatch", "Dilution options need to be consistent in length:"},
 			ExperimentCountLiquidParticles[

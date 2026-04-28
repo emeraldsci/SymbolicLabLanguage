@@ -197,6 +197,13 @@ DefineObjectType[Object[Package], {
 			Category -> "Receiving Information",
 			Headers ->{"Date","Change Type","Container","Position","Responsible Party"}
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this package was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
 		Position -> {
 			Format -> Single,
 			Class -> String,
@@ -332,6 +339,24 @@ DefineObjectType[Object[Package], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if a new sticker with a hashphrase has been printed for this object and therefore the hashphrase should be shown in engine when scanning the object.",
 			Category -> "Migration Support",
+			Developer -> True
+		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this package.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
+			Category -> "Organizational Information",
 			Developer -> True
 		}
 	}

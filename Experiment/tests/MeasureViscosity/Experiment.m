@@ -645,6 +645,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureViscosity[Object[Sample, "Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -680,13 +688,13 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FiltrationType, "The type of filtration method that should be used to perform the filtration:"},
-			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FiltrationType -> Syringe, FilterContainerOut -> Model[Container, Plate, "96-well PCR Plate"], Output -> Options];
+			options = ExperimentMeasureViscosity[Object[Sample, "Test 1mL MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FiltrationType -> Syringe, FilterContainerOut->Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"], Output -> Options];
 			Lookup[options, FiltrationType],
 			Syringe,
 			Variables :> {options}
 		],
 		Example[{Options, FilterInstrument, "The instrument that should be used to perform the filtration:"},
-			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"],Output -> Options];
+			options = ExperimentMeasureViscosity[Object[Sample, "Test 1mL MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FilterInstrument -> Model[Instrument, SyringePump, "NE-1010 Syringe Pump"], FilterContainerOut->Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"],Output -> Options];
 			Lookup[options, FilterInstrument],
 			ObjectP[Model[Instrument, SyringePump, "NE-1010 Syringe Pump"]],
 			Variables :> {options}
@@ -725,7 +733,7 @@ DefineTests[
 			Messages :> {Warning::AliquotRequired}
 		],
 		Example[{Options, FilterSyringe, "The syringe used to force that sample through a filter:"},
-			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"], Output -> Options];
+			options = ExperimentMeasureViscosity[Object[Sample, "Test 1mL MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], FilterContainerOut->Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"], FiltrationType -> Syringe, FilterSyringe -> Model[Container, Syringe, "id:AEqRl9Kz1VD1"], Output -> Options];
 			Lookup[options, FilterSyringe],
 			ObjectP[Model[Container, Syringe, "id:AEqRl9Kz1VD1"]],
 			Variables :> {options}
@@ -813,6 +821,14 @@ DefineTests[
 			95*Microliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureViscosity[Object[Sample, "Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], AliquotAmount -> 95.01 Microliter, AliquotContainer -> Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"], Output -> Options];
+			Lookup[options, AliquotAmount],
+			95 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentMeasureViscosity[Object[Sample,"Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID], AssayVolume -> 95*Microliter, Output -> Options];
@@ -960,6 +976,7 @@ DefineTests[
 				Object[Container, Plate, "Test container 11 for 30 uL of MilliQ water for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Container, Vessel, "Test container 12 for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Container, Vessel, "Test container 13 for ExperimentMeasureViscosity"<>$SessionUUID],
+				Object[Container, Vessel, "Test container 14 for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test discarded sample for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test water sample in a plate 1 for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test water sample in a plate 2 for ExperimentMeasureViscosity"<>$SessionUUID],
@@ -970,6 +987,7 @@ DefineTests[
 				Object[Sample, "Test incompatible sample for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test water sample with Volume=Null for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],
+				Object[Sample, "Test 1mL MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test MilliQ water sample for sample without a model for ExperimentMeasureViscosity"<>$SessionUUID],
 				Object[Sample, "Test MilliQ water sample 30 uL for aliquot testing"<>$SessionUUID],
 				Object[Sample, "Test Sample for ExperimentMeasureViscosity with concentration"<>$SessionUUID],
@@ -993,7 +1011,8 @@ DefineTests[
 		Module[
 			{modelIncompat,instModel, emptyPlate1,emptyPlate2,emptyPlate3,emptyPlate4,emptyContainer5,emptyContainer6,
 			emptyPlate7,emptyPlate8,emptyPlate9,emptyPlate10,emptyPlate11,discardedChemical,waterSamplePlate,waterSamplePlate2,volTooLow,waterSample4,autoSamp,
-			incompatContainer,incompatSample,volNull,milliQWater,waterNoModel,waterForAliquot,container12,redDye,container13,solidSample},
+			incompatContainer,incompatSample,volNull,milliQWater,waterNoModel,waterForAliquot,container12,redDye,container13,solidSample,
+			container14, water1mLSample},
 
 			(*Create some chemicals incompatible with the instrument as well as the instrument model*)
 			{modelIncompat, instModel} = Upload[{
@@ -1031,7 +1050,7 @@ DefineTests[
 
 		(* Create some empty containers *)
 		{emptyPlate1,emptyPlate2,emptyPlate3,emptyPlate4,emptyContainer5,emptyContainer6,
-			emptyPlate7,emptyPlate8,emptyPlate9,emptyPlate10,emptyPlate11,container12,container13}=Upload[{
+			emptyPlate7,emptyPlate8,emptyPlate9,emptyPlate10,emptyPlate11,container12,container13, container14}=Upload[{
 			<|
 				Type->Object[Container,Plate],
 				Model->Link[Model[Container, Plate, "96-well PCR Plate"],Objects],
@@ -1122,6 +1141,13 @@ DefineTests[
 				Name->"Test container 13 for ExperimentMeasureViscosity"<>$SessionUUID,
 				DeveloperObject->True,
 				Site->Link[$Site]
+			|>,
+			<|
+				Type->Object[Container, Vessel],
+				Model->Link[Model[Container, Vessel, "2mL Tube"],Objects],
+				Name->"Test container 14 for ExperimentMeasureViscosity"<>$SessionUUID,
+				DeveloperObject->True,
+				Site->Link[$Site]
 			|>
 		}];
 
@@ -1141,7 +1167,8 @@ DefineTests[
 				(*11*)waterNoModel,
 				(*12*)waterForAliquot,
 				(*13*)redDye,
-				(*14*)solidSample
+				(*14*)solidSample,
+				(*15*)water1mLSample
 		}=ECL`InternalUpload`UploadSample[
 			{
 				(*1*)Model[Sample,"Milli-Q water"],
@@ -1157,7 +1184,8 @@ DefineTests[
 				(*11*)Model[Sample,"Milli-Q water"],
 				(*12*)Model[Sample,"Milli-Q water"],
 				(*13*)Model[Sample, StockSolution, "Red Food Dye Test Solution"],
-				(*14*)Model[Sample, "Dibasic Sodium Phosphate"]
+				(*14*)Model[Sample, "Dibasic Sodium Phosphate"],
+				(*15*)Model[Sample,"Milli-Q water"]
 			},
 			{
 				(*1*){"A1",emptyPlate1},
@@ -1173,7 +1201,8 @@ DefineTests[
 				(*11*){"A1",emptyPlate10},
 				(*12*){"A1",emptyPlate11},
 				(*13*){"A1",container12},
-				(*14*){"A1",container13}
+				(*14*){"A1",container13},
+				(*15*){"A1",container14}
 			},
 			InitialAmount->{
 				(*1*)80 Milliliter,
@@ -1182,14 +1211,15 @@ DefineTests[
 				(*4*)10 Microliter,
 				(*5*)0.1 Microliter,
 				(*6*)200 Microliter,
-				(*7*) 10 Milliliter,
+				(*7*) 50 Milliliter,
 				(*8*) 80 Microliter,
 				(*9*) Null,
 				(*10*)100 Microliter,
 				(*11*)50 Microliter,
 				(*12*)30 Microliter,
 				(*13*)100 Microliter,
-				(*14*)100 Milligram
+				(*14*)100 Milligram,
+				(*15*) 1Milliliter
 			},
 			Name->{
 				(*1*)"Test discarded sample for ExperimentMeasureViscosity"<>$SessionUUID,
@@ -1205,7 +1235,8 @@ DefineTests[
 				(*11*)"Test MilliQ water sample for sample without a model for ExperimentMeasureViscosity"<>$SessionUUID,
 				(*12*)"Test MilliQ water sample 30 uL for aliquot testing"<>$SessionUUID,
 				(*13*)"Test Sample for ExperimentMeasureViscosity with concentration"<>$SessionUUID,
-				(*14*)"Test Solid Sample for ExperimentMeasureViscosity"<>$SessionUUID
+				(*14*)"Test Solid Sample for ExperimentMeasureViscosity"<>$SessionUUID,
+				(*15*)"Test 1mL MilliQ water sample for ExperimentMeasureViscosity"<>$SessionUUID
 			}
 		];
 
@@ -1225,7 +1256,8 @@ DefineTests[
 			<|Object->waterNoModel,Status->Available,Model -> Null, DeveloperObject->True|>,
 			<|Object->waterForAliquot,Status->Available, DeveloperObject->True|>,
 			<|Object->redDye,	Replace[Composition] -> {{100 VolumePercent, Link[Model[Molecule, "Water"]], Now}, {10 Micromolar, Link[Model[Molecule, "Uracil"]], Now}}, Status->Available, DeveloperObject->True|>,
-			<|Object->solidSample,Status->Available, DeveloperObject->True|>
+			<|Object->solidSample,Status->Available, DeveloperObject->True|>,
+			<|Object->water1mLSample, Status->Available, DeveloperObject->True|>
 		}];
 
 			(*Create a protocol that we'll use for template testing*)

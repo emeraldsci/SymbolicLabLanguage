@@ -1710,15 +1710,6 @@ DefineTests[ExperimentStreakCells,
           testFrozenGlycerolCell1
         } = UploadSampleModel[
           {
-            "Test Sample Model 1 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 2 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 3 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID,
-            "Test Incompatible Sample Model for ExperimentStreakCells " <> $SessionUUID,
-            "Test freeze dried cells sample Model for ExperimentStreakCells" <> $SessionUUID,
-            "Test freeze dried cells sample Model 2 for ExperimentStreakCells" <> $SessionUUID,
-            "Test cells in 50% frozen glycerol sample Model for ExperimentStreakCells" <> $SessionUUID
-          },
-          Composition -> {
             {
               {5000 EmeraldCell/Milliliter, testCell1},
               {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
@@ -1753,6 +1744,15 @@ DefineTests[ExperimentStreakCells,
               {50 VolumePercent, Model[Molecule, "Glycerol"]},
               {(1000 EmeraldCell)/Milliliter, testCell1}
             }
+          },
+          Name -> {
+            "Test Sample Model 1 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 2 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 3 for ExperimentStreakCells (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID,
+            "Test Incompatible Sample Model for ExperimentStreakCells " <> $SessionUUID,
+            "Test freeze dried cells sample Model for ExperimentStreakCells" <> $SessionUUID,
+            "Test freeze dried cells sample Model 2 for ExperimentStreakCells" <> $SessionUUID,
+            "Test cells in 50% frozen glycerol sample Model for ExperimentStreakCells" <> $SessionUUID
           },
           IncompatibleMaterials -> {
             {None},
@@ -2288,11 +2288,6 @@ DefineTests[ExperimentStreakCellsOptions,
           testCell1InTB
         } = UploadSampleModel[
           {
-            "Test Sample Model 1 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 2 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 3 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
-          },
-          Composition -> {
             {
               {5000 Cell/Milliliter, testCell1},
               {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
@@ -2313,6 +2308,11 @@ DefineTests[ExperimentStreakCellsOptions,
               {0.4 VolumePercent, Model[Molecule, "Glycerol"]},
               {0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
             }
+          },
+          Name -> {
+            "Test Sample Model 1 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 2 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 3 for ExperimentStreakCellsOptions (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
           },
           IncompatibleMaterials -> {None},
           Expires -> False,
@@ -2772,11 +2772,6 @@ DefineTests[ValidExperimentStreakCellsQ,
           testCell1InTB
         } = UploadSampleModel[
           {
-            "Test Sample Model 1 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 2 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 3 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
-          },
-          Composition -> {
             {
               {5000 Cell/Milliliter, testCell1},
               {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
@@ -2797,6 +2792,11 @@ DefineTests[ValidExperimentStreakCellsQ,
               {0.4 VolumePercent, Model[Molecule, "Glycerol"]},
               {0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
             }
+          },
+          Name -> {
+            "Test Sample Model 1 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 2 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
+            "Test Sample Model 3 for ValidExperimentStreakCellsQ (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
           },
           IncompatibleMaterials -> {None},
           Expires -> False,
@@ -3245,11 +3245,6 @@ DefineTests[
           testCell1InTB
         } = UploadSampleModel[
           {
-            "Test Sample Model 1 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 2 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
-            "Test Sample Model 3 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
-          },
-          Composition -> {
             {
               {5000 Cell/Milliliter, testCell1},
               {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
@@ -3270,6 +3265,11 @@ DefineTests[
               {0.4 VolumePercent, Model[Molecule, "Glycerol"]},
               {0.024 Gram/Milliliter, Model[Molecule, "Yeast Extract"]}
             }
+          },
+          Name -> {
+              "Test Sample Model 1 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
+              "Test Sample Model 2 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 2 in LB Broth)" <> $SessionUUID,
+              "Test Sample Model 3 for ExperimentStreakCellsPreview (5000 Cell/Milliliter Test Cell 1 in TB Broth)" <> $SessionUUID
           },
           IncompatibleMaterials -> {None},
           Expires -> False,
@@ -3661,15 +3661,13 @@ DefineTests[StreakCells,
 
         (* Sample Model *)
         UploadSampleModel[
-          "Test Sample Model 1 for StreakCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
-          Composition -> {
-            {
-              {5000 Cell/Milliliter, Model[Cell, Bacteria, "Test Cell 1 for StreakCells unit tests " <> $SessionUUID]},
-              {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
-              {Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
-              {Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
-            }
+          {
+            {5000 Cell/Milliliter, Model[Cell, Bacteria, "Test Cell 1 for StreakCells unit tests " <> $SessionUUID]},
+            {Quantity[95, IndependentUnit["VolumePercent"]], Model[Molecule, "Water"]},
+            {Quantity[171.116, "Millimolar"], Model[Molecule, "Sodium Chloride"]},
+            {Quantity[0.005, ("Grams")/("Milliliters")], Model[Molecule, "Yeast Extract"]}
           },
+          Name -> "Test Sample Model 1 for StreakCells (5000 Cell/Milliliter Test Cell 1 in LB Broth)" <> $SessionUUID,
           IncompatibleMaterials -> {None},
           Expires -> True,
           ShelfLife -> 2 Week,

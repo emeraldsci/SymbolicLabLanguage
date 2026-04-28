@@ -36,6 +36,17 @@ DefineObjectType[Object[Maintenance, CalibrateDNASynthesizer], {
 			Description -> "The balance used during the calibration.",
 			Category -> "General"
 		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which calibration happens.",
+			Category -> "General"
+		},
 	(*---Sensor Data---*)
 		CalibrationWeightData -> {
 			Format -> Multiple,

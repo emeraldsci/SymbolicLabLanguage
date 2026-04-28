@@ -47,6 +47,37 @@ DefineObjectType[Object[Instrument, Dishwasher], {
 			Pattern :> {GreaterP[0*Meter],GreaterP[0*Meter],GreaterP[0*Meter]},
 			Description -> "The size of space inside the dishwasher in the form of: {X Direction (Width),Y Direction (Depth),Z Direction (Height)}.",
 			Category -> "Dimensions & Positions"
+		},
+		ContainerPlacements -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the movement of racks and labware into this dishwasher is regulated by explicitly compiled placements. When set to False, movements into the dishwasher are only validated by the usual footprint system.",
+			Category -> "General",
+			Developer -> True
+		},
+		NumberOfCycles -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0,1],
+			Description -> "The number of times this labware washer has been run.",
+			Category -> "Usage Information"
+		},
+		CycleLog -> {
+			Format -> Multiple,
+			Class -> {Integer, Link, Link, String},
+			Pattern :> {GreaterP[0, 1], _Link, _Link, _String},
+			Relation -> {None, Object[EmeraldCloudFile], Object[Maintenance, Dishwash], None},
+			Description -> "A historical record of cycles that have been run on this labware washer.",
+			Headers -> {"Cycle Number", "Log File", "Responsible Party", "Reason"},
+			Category -> "Usage Information"
+		},
+		LogFilePath -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "File path on network where Log files are stored.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];

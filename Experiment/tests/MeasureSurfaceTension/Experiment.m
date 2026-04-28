@@ -1970,6 +1970,19 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			Variables:>{options}
 		],
 		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options=ExperimentMeasureSurfaceTension[
+				{Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID], Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 2"<> $SessionUUID], Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 3"<> $SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[
 			{Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentMeasureSurfaceTension[
 				{Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 1"<> $SessionUUID], Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 2"<> $SessionUUID],Object[Sample, "ExperimentMeasureSurfaceTension Test Sample 3"<> $SessionUUID]},
@@ -2249,8 +2262,7 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			True,
 			Variables:>{options}
 		],
-		Example[
-			{Options,AliquotAmount,"Specify the amount of a sample that should be transferred from the input samples into aliquots:"},
+		Example[{Options,AliquotAmount,"Specify the amount of a sample that should be transferred from the input samples into aliquots:"},
 			options=ExperimentMeasureSurfaceTension[
 				Object[Sample, "ExperimentMeasureSurfaceTension Big Test Sample"<> $SessionUUID],
 				AliquotAmount->0.8 Milliliter,
@@ -2260,6 +2272,18 @@ DefineTests[ExperimentMeasureSurfaceTension,
 			0.8 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureSurfaceTension[
+				Object[Sample, "ExperimentMeasureSurfaceTension Big Test Sample"<> $SessionUUID],
+				AliquotAmount -> 0.8001 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			0.8 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel,"Specify a label for the aliquoted sample:"},
 			options=ExperimentMeasureSurfaceTension[

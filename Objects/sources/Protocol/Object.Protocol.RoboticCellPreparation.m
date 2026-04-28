@@ -41,6 +41,14 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Description -> "The unit operations, after they have been executed in the lab. These unit operations contain additional data about their execution (such as pressure traces, environmental data, etc.) as well as the specific samples, containers, and items that were used in the laboratory.",
 			Category -> "General"
 		},
+		ProtocolKey -> {
+			Format -> Single,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "A string derived from the ProtocolID, formatted in all lowercase with no spaces, and compatible with use in unique file paths.",
+			Category -> "General",
+			Developer -> True
+		},
 		LiquidHandler -> {
 			Format -> Single,
 			Class -> Link,
@@ -58,8 +66,8 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[
-				Object[Instrument,ColonyHandler],
-				Model[Instrument,ColonyHandler]
+				Object[Instrument, ColonyHandler],
+				Model[Instrument, ColonyHandler]
 			],
 			Description -> "The colony handler work cell used to perform the protocol.",
 			Category -> "General",
@@ -96,6 +104,15 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Class -> String,
 			Pattern :> FilePathP,
 			Description -> "The file path of the instrumentation trace file that monitored and recorded the pressure curves during aspiration and dispense of this robotic liquid handling.",
+			Category -> "General",
+			Developer -> True
+		},
+		PlateWasherPressure -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, Pressure],
+			Description -> "The pressure data that monitored and recorded the pressure curves during aspiration and dispense of the integrated plate washer if used during the entire run.",
 			Category -> "General",
 			Developer -> True
 		},
@@ -251,7 +268,14 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Description -> "The estimated time for completion of the liquid handling portion of the protocol.",
 			Category -> "General"
 		},
-
+		PlateWasherMaintenance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, Clean, PlateWasher],
+			Description -> "The cleaning maintenance protocol that is enqueued in the protocol and is to run immediately after the protocol is completed in order to ensure proper cleaning of plate washer manifold tubes for the next sample run.",
+			Category -> "General"
+		},
 		(* -- DEVELOPER FIELDS FOR ENGINE DECK PLACEMENTS -- *)
 		(* Fields to unbag sterile required objects in the biosafety cabinet *)
 		BiosafetyCabinetPlacements -> {
@@ -328,6 +352,19 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Relation -> {Model[Container]|Object[Container]|Object[Sample]|Object[Item], Null},
 			Description -> "A list of deck placements used to set-up the robotic liquid handler deck.",
 			Headers ->  {"Object to Place", "Placement Tree"},
+			Category -> "Placements",
+			Developer -> True
+		},
+		FilterPlatePlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Object[Container] | Model[Container],
+				Object[Container] | Model[Container]
+			},
+			Description -> "A list of placements for filter plates that must be placed on top of a holder plate on the deck, to prevent contamination from filter plate nozzles touching bare deck surfaces. Each entry is {filterPlate, holderPlate}. During protocol execution, the holder plate is uncovered before placing the filter plate on top.",
+			Headers -> {"Filter Plate", "Holder Plate"},
 			Category -> "Placements",
 			Developer -> True
 		},
@@ -1205,14 +1242,62 @@ DefineObjectType[Object[Protocol, RoboticCellPreparation], {
 			Category -> "Injector Cleaning",
 			Developer -> True
 		},
-		ProtocolKey -> {
-			Format -> Single,
-			Class -> String,
-			Pattern :> _String,
-			Description -> "The protocol key.",
-			Category -> "General",
-			Developer -> True
+		(* -- Plate Washer Fields -- *)
+		(* NOTE: These fields are ONLY filled out if the integrated plate washer is used. Otherwise, we don't fill out these fields. *)
+		PlateWasherBufferPlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link, String},
+			Pattern :> {_Link, _Link, LocationPositionP},
+			Relation -> {Model[Container]| Object[Container] | Object[Sample] | Model[Sample], Model[Container] | Object[Container] | Model[Instrument] | Object[Instrument], Null},
+			Description -> "A list of placements used to move the buffers containers into position on the BufferDeck of PlateWasher.",
+			Headers -> {"Object to Place", "Destination Object", "Destination Position"},
+			Category -> "Washing"
 		},
+		PlateWasherBufferA -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The wash solution delivered via buffer line A of the plate washer.",
+			Category -> "Washing"
+		},
+		PlateWasherBufferB -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The wash solution delivered via buffer line B of the plate washer.",
+			Category -> "Washing"
+		},
+		PlateWasherBufferC -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The wash solution delivered via buffer line C of the plate washer.",
+			Category -> "Washing"
+		},
+		PlateWasherBufferD -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The wash solution delivered via buffer line D of the plate washer.",
+			Category -> "Washing"
+		},
+		(* -- Sample Post-Processing Fields -- *)
 		CellContainers->{
 			Format -> Multiple,
 			Class -> Link,

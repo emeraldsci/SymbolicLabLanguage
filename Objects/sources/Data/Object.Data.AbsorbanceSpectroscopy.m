@@ -37,6 +37,14 @@ DefineObjectType[Object[Data, AbsorbanceSpectroscopy], {
 			Category -> "General",
 			Abstract -> True
 		},
+		MicrofluidicChipWorkingSample ->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "For the Microfluidic plate readers, the sample on the microfluidic chip that was directly measured to generate the data.",
+			Category -> "General"
+		},
 		SpectralBandwidth ->{
 			Format->Single,
 			Class->Real,
@@ -293,6 +301,14 @@ DefineObjectType[Object[Data, AbsorbanceSpectroscopy], {
 				Object[Data, AbsorbanceSpectroscopy][AnalyteSpectra]
 			],
 			Description -> "A blank absorbance spectra which includes absorbance from the buffer and container but without any analyte present.",
+			Category -> "Experimental Results"
+		},
+		StandardData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data, AbsorbanceSpectroscopy],
+			Description -> "The absorbance data collected from the wells with the standard samples on the same microfluidic chip.",
 			Category -> "Experimental Results"
 		},
 		AnalyteSpectrum -> {

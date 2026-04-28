@@ -84,6 +84,14 @@ DefineObjectType[Object[Instrument, Autoclave], {
 			Pattern :> {GreaterP[0*Milli*Meter], GreaterP[0*Milli*Meter], GreaterP[0*Milli*Meter]},
 			Description -> "The measurements of the internal chamber of the autoclave in the  {X (left-to-right), Y (back-to-front), Z (bottom-to-top)} directions.",
 			Category -> "Dimensions & Positions"
+		},
+		Gloves ->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Item, Glove]],
+			Description->"Heat-resistant gloves used to protect hands when handling hot items from the autoclave.",
+			Category->"Instrument Specifications"
 		}
 	}
 }];

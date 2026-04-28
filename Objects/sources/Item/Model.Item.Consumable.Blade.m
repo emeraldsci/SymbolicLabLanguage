@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Model[Item, Consumable, Blade], {
-	Description->"A model for a consumable razer blade.",
+	Description->"A model for a consumable cutting blade used with various cutting tools and equipment.",
 	CreatePrivileges->None,
 	Cache->Session,
 	Fields -> {

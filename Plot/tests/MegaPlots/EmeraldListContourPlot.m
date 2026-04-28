@@ -216,11 +216,11 @@ DefineTests[EmeraldListContourPlot,{
 		],
 
 		Example[{Options,Prolog,"Render any graphics object behind the contour plot using Prolog:"},
-			EmeraldListContourPlot[Table[i^2-j^3,{i,-1.5,1.5,0.1},{j,-1.5,1.5,0.1}],ImageSize->400,ContourShading->{Opacity[0.2]},Prolog->Inset[Import["ExampleData/spikey.tiff"]]],
+			EmeraldListContourPlot[Table[i^2-j^3,{i,-1.5,1.5,0.1},{j,-1.5,1.5,0.1}],ImageSize->400,ContourShading->{Opacity[0.2]},Prolog->Inset[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]]],
 			ValidGraphicsP[]
 		],
 		Example[{Options,Epilog,"Render any graphics object on top of the contour plot using Epilog:"},
-			EmeraldListContourPlot[Table[i^2-j^3,{i,-1.5,1.5,0.1},{j,-1.5,1.5,0.1}],ImageSize->400,Epilog->Inset[Framed@Import["ExampleData/spikey.tiff"]]],
+			EmeraldListContourPlot[Table[i^2-j^3,{i,-1.5,1.5,0.1},{j,-1.5,1.5,0.1}],ImageSize->400,Epilog->Inset[Framed@ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]]],
 			ValidGraphicsP[]
 		],
 

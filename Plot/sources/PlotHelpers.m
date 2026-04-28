@@ -33,10 +33,11 @@ joinPatch[args___]:=Join@@DeleteCases[{args},{}|Null,{1}];
  In MM11.0: MinMax[{}] returns {-Infinity,Infinity}
  In MM11.1: MinMax[{}] returns {Infinity,-Infinity}
  not sure if this is a bug or intentional, so preserve old behavior for the time being
+ In MM14.2: Min/Max[MultipleSameDateObjects] throws an error
 *)
 minMaxPatch[{}]:={-Infinity,Infinity};
+minMaxPatch[in:{_?DateObjectQ..}]:={MinDate[in],MaxDate[in]};
 minMaxPatch[in_]:=MinMax[in];
-
 
 (* ::Subsection::Closed:: *)
 (* Messages *)
@@ -460,7 +461,7 @@ DefineUsage[rawToPacket,{
 		},
 	MoreInformation->{
 		"This converts rawData into an option for the parent plot function and creates an appropriate number of null packets based on the rawData specified.",
-		"In order to allow the user maximum flexibility when specifying their data, the function will pad the input as necessary, however this relies on proper specification of the PrimaryData option.",
+		"In order to allow the user maximum flexibility when specifying their data, the function will pad the input as necessary; however, this relies on proper specification of the PrimaryData option.",
 		"The data can also be arbitrarily nested as long as there are core lists of coordinates containing the expected set of primary data traces.",
 		"If the data cannot be sensibly padded, a message will be thrown and execution will cease."
 	},
@@ -1518,9 +1519,16 @@ reflectAllPrimaryData[primaryData_,{{xmin_,xmax_},{ymin_,ymax_}}]:=Module[{refle
 minAndMaxFromPrimaryData[primaryData_]:=Module[{flatPrimary},
 	flatPrimary = Join@@Join@@primaryData;
 	{
-		{Min[flatPrimary[[;;,1]]],Max[flatPrimary[[;;,1]]]},
-		{Min[flatPrimary[[;;,2]]],Max[flatPrimary[[;;,2]]]}
+		If[MatchQ[flatPrimary[[;;,1]],{_?DateObjectQ..}],
+			{MinDate[flatPrimary[[;;,1]]],MaxDate[flatPrimary[[;;,1]]]},
+			{Min[flatPrimary[[;;,1]]],Max[flatPrimary[[;;,1]]]}
+		],
+		If[MatchQ[flatPrimary[[;;,2]],{_?DateObjectQ..}],
+			{MinDate[flatPrimary[[;;,2]]],MaxDate[flatPrimary[[;;,2]]]},
+			{Min[flatPrimary[[;;,2]]],Max[flatPrimary[[;;,2]]]}
+		]
 	}
+
 ];
 
 
@@ -1592,9 +1600,9 @@ quietCheckConvert[f_,qa_,newUnits_,label_String,dateFlag_]:=
 				Message[f::IncompatibleUnits,label,Units[qa],newUnits];
 				Throw[$Failed,"IncompatibleUnits"]
 			),
-			{Quantity::compat,UnitConvert::unkunit}
+			{Quantity::compat, UnitConvert::unkunit}
 		],
-		{Quantity::compat,UnitConvert::unkunit}
+		{Quantity::compat, UnitConvert::unkunit}
 	];
 
 
@@ -1673,9 +1681,9 @@ quietCheckConvert1D[f_,in_,newUnit_,label_String]:=
 				Message[f::IncompatibleUnits,label,Units[in],newUnit];
 				Throw[$Failed,"IncompatibleUnits"]
 			),
-			{Quantity::compat,UnitConvert::unkunit}
+			{Quantity::compat, UnitConvert::unkunit}
 		],
-		{Quantity::compat,UnitConvert::unkunit}
+		{Quantity::compat, UnitConvert::unkunit}
 	];
 
 
@@ -2012,7 +2020,7 @@ makePeakEpilogs[rawUnresolvedPeaks_,rawPrimaryData_,secondaryDataUnscaledNumeric
 						Message[EmeraldListLinePlot::IncompatibleUnits,"Peaks option"];
 						Throw[$Failed,"IncompatibleUnits"]
 					),
-					Quantity::compat
+					{Quantity::compat}
 				],
 				{Quantity::compat}
 			]
@@ -2097,6 +2105,8 @@ convertBaselineFunctionUnits[QuantityFunction[blf_Function,{xU_},yU_],{xUNew_,yU
 	{xScale=Convert[1,xUNew,xU],yScale=Convert[1,yUNew,yU]},
 	Function[x,(1/yScale)*blf[x*xScale]]
 ];
+
+convertBaselineFunctionUnits[QuantityFunction[Null, ___], ___] := Null;
 
 scaleUnitlessPeaksY[peakData_,scaleVal_]:=Module[{},
 	Association[ReplaceRule[Normal[peakData],{

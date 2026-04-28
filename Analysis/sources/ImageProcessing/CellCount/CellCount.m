@@ -349,7 +349,7 @@ microscopeImagePrimitive=DefinePrimitive[MicroscopeImage,
 	ExperimentFunction->Analysis`Private`resolveMicroscopeImagePrimitive,
 	Icon->Import[FileNameJoin[{PackageDirectory["Analysis`"],"resources","images","MicroscopeImage.png"}]],
 	Category->"Image Selection",
-	Description->"Specifies the images from the data object with specific features that are requested by the user. By default, this field is auto-populated based on the ImageSelection, however, the user can use this field and set the ImageSelection to Null."
+	Description->"Specifies the images from the data object with specific features that are requested by the user. By default, this field is auto-populated based on the ImageSelection; however, the user can use this field and set the ImageSelection to Null."
 ];
 
 (* Imaging Primitive Pattern *)

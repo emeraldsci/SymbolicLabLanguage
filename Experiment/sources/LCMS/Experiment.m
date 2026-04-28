@@ -9171,7 +9171,7 @@ Error::InstrumentationLimitation = "The specified options are unable to be fulfi
 
 ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPattern[]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTestsQ, cache, validSamplePreparationResult,
-		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,modelMoleculeObjects,
+		mySamplesWithPreparedSamples,myOptionsWithPreparedSamples,modelMoleculeObjects, lcVialModels,
 		safeOps,safeOpsTests,validLengths,validLengthTests,templatedOptions,templateTests,download,
 		inheritedOptions, expandedSafeOps, hplcInstrumentFields, msInstrumentFields, modelHPLCInstrumentFields,
 		modelMSInstrumentFields, columnFields, modelColumnFields,cartridgeFields, modelCartridgeFields, gradientFields,
@@ -9498,6 +9498,8 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 
 	availableMSInstruments={Model[Instrument, MassSpectrometer, "id:aXRlGn6KaWdO"] (*"Xevo G2-XS QTOF"*),Model[Instrument, MassSpectrometer, "id:N80DNj1aROOD"] (*"QTRAP 6500"*)};
 
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -9509,7 +9511,7 @@ ExperimentLCMS[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsPat
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards *)
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 					(* These are only used in prep HPLC but we would like to pass in the cache when calling ExperimentHPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],

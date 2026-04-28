@@ -422,6 +422,79 @@ DefineObjectType[Object[Container, Site], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		PriorityLabware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Part],
+				Model[Item],
+				Model[Plumbing],
+				Model[Wiring],
+				Model[Container]
+			],
+			Description -> "A list of models which should be washed to satisfy anticipated resource requests. The prioritization of models is determined by PriorityLabwareDelta, PriorityLabwareStocked, and PriorityLabwareRatio.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PriorityLabwareDelta -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "The difference between the number of outstanding resource requests and number of stocked instances for a reusable labware model, below which the model may be added to PriorityLabware.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PriorityLabwareStocked -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "The number of instances of a reusable labware model that is stocked or being cleaned, below which the model may be added to PriorityLabware.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PriorityLabwareRatio -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0],
+			Description -> "The ratio of the number of stocked instances of a reusable labware model to its upcoming resource requests (as a percent), below which the model may be added to PriorityLabware.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+
+		MaxTicketTriageTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> TimeP,
+			Description -> "The maximum amount of time for which the Status of an Operations SupportTicket can be ShiftManagerSupport without triggering an alarm on the Support Tickets dashboard.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		MaxTicketResolutionTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> TimeP,
+			Description -> "The maximum amount of time for which the Status of an Operations SupportTicket can be SciOpsSupport without triggering an alarm on the Support Tickets dashboard.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		MaxReportResponseTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> TimeP,
+			Description -> "The maximum amount of time for which an UserCommunication SupportTicket can go without recording a response to a user comment or initial filing without triggering an alarm on the Support Tickets dashboard.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		MaxTicketBlockedTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> TimeP,
+			Description -> "The maximum amount of time for which the Status of an Operations SupportTicket, can be Blocked without triggering an alarm on the Support Tickets dashboard.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+
 		AvailableExperiments->{
 			Format->Multiple,
 			Class -> Expression,

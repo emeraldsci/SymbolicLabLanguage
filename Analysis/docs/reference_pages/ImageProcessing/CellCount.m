@@ -393,7 +393,7 @@ DefineUsage[MicroscopeImage,
 		Sync -> Automatic,
 		MoreInformation->{
 			"Please look at the MicroscopeImageSelect function for a comprehensive list of options and their interpretation.",
-			"ImageSelect is suitable for selecting based on some specific criteria for instance ImagingSite->1;;2, however, MicroscopeImage requires all of the keys to be specified."
+			"ImageSelect is suitable for selecting based on some specific criteria for instance ImagingSite->1;;2; however, MicroscopeImage requires all of the keys to be specified."
 		},
 		SeeAlso -> {
 			"AnalyzeCellCount",

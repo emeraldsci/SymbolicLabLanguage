@@ -157,29 +157,6 @@ DefineObjectType[Object[Inventory], {
 			Headers -> {"Date", "Amount"},
 			Category -> "Inventory"
 		},
-		Expires -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if samples kept in stock by this inventory expire after a given amount of time.",
-			Category -> "Storage Information"
-		},
-		ShelfLife -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0 * Day],
-			Units -> Day,
-			Description -> "The length of time after arrival that samples kept in stock by this inventory are recommended for use before they should be discarded.",
-			Category -> "Storage Information"
-		},
-		UnsealedShelfLife -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0 * Day],
-			Units -> Day,
-			Description -> "The length of time after opening that samples kept in stock by this inventory are recommended for use before they should be discarded.",
-			Category -> "Storage Information"
-		},
 		ExpiredAmountLog -> {
 			Format -> Multiple,
 			Class -> {Date, VariableUnit},
@@ -195,21 +172,6 @@ DefineObjectType[Object[Inventory], {
 			Description -> "A record of the number and total amount of the sample resources fulfilled at some point in the logged day.",
 			Headers -> {"Date", "Count", "Amount"},
 			Category -> "Inventory"
-		},
-		MaxNumberOfUses -> {
-			Format -> Single,
-			Class -> Integer,
-			Pattern :> GreaterEqualP[0, 1],
-			Description -> "The number of times the items kept in stock by this inventory can be used before needing to be discarded and/or replaced.",
-			Category -> "Operating Limits"
-		},
-		MaxNumberOfHours -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0*Hour],
-			Units -> Hour,
-			Description -> "The length of time for which the items kept in stock by this inventory can be actively used before needing to be discarded and/or replaced.",
-			Category -> "Operating Limits"
 		}
 	}
 }];

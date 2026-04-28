@@ -2923,8 +2923,8 @@ DefineTests[ExperimentQuantifyColoniesPreview,
 
 				(* Create some sample models *)
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model for ExperimentQuantifyColoniesPreview" <> $SessionUUID,
-					Composition -> {{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model for ExperimentQuantifyColoniesPreview" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -3032,8 +3032,8 @@ DefineTests[ExperimentQuantifyColoniesOptions,
 
 				(* Create some sample models *)
 				solidMediaBacteriaModel = UploadSampleModel[
-					"Solid Media Bacterial cells Model for ExperimentQuantifyColoniesOptions" <> $SessionUUID,
-					Composition -> {{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					{{95 MassPercent, Model[Molecule, "Agarose"]}, {5 MassPercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+					Name -> "Solid Media Bacterial cells Model for ExperimentQuantifyColoniesOptions" <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,

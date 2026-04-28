@@ -21,7 +21,15 @@ DefineObjectType[Model[Item,WeighBoat], {
 			Class -> Real,
 			Pattern :> GreaterP[0 Milliliter],
 			Units -> Milliliter,
-			Description -> "The maximum volume that this weigh boat can hold.",
+			Description -> "The maximum volume of solid that this weigh boat can hold.",
+			Category -> "Physical Properties"
+		},
+		MaxLiquidVolume->{
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "The maximum volume of liquid that this weigh boat can hold.",
 			Category -> "Physical Properties"
 		},
 		TareWeight -> {

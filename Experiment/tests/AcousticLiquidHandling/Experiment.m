@@ -814,6 +814,18 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options=ExperimentAcousticLiquidHandling[
+				Object[Sample, "AcousticLiquidHandling Test 80% DMSO Sample" <> $SessionUUID], {"A1", {1, Model[Container, Plate, "96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
+				CentrifugeIntensity->1001RPM,
+				Output->Options
+			];
+			Lookup[options,CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction->Equal,
+			Variables:>{options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment or any aliquoting:"},
 			options=ExperimentAcousticLiquidHandling[
@@ -981,18 +993,6 @@ DefineTests[
 			];
 			Lookup[options,FilterSyringe],
 			ObjectP[Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]],
-			Variables:>{options},
-			Messages:>{Warning::AliquotRequired}
-		],
-		Example[{Options,FilterHousing,"The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options=ExperimentAcousticLiquidHandling[
-				Object[Sample,"AcousticLiquidHandling Test Large Water Sample"<>$SessionUUID], {"A1", {1,Model[Container,Plate,"96-well Polypropylene Flat-Bottom Plate, Black"]}}, 100 Nanoliter,
-				FiltrationType->PeristalticPump,
-				FilterHousing->Model[Instrument,FilterHousing,"Filter Membrane Housing, 142 mm"],
-				Output->Options
-			];
-			Lookup[options,FilterHousing],
-			ObjectP[Model[Instrument,FilterHousing,"Filter Membrane Housing, 142 mm"]],
 			Variables:>{options},
 			Messages:>{Warning::AliquotRequired}
 		],
@@ -1437,10 +1437,10 @@ DefineTests[
 
 			(* create models here *)
 			deprecatedModel=UploadSampleModel[
-				"AcousticLiquidHandling Test Deprecated Sample Model"<>$SessionUUID,
-				Composition->{
+				{
 					{100 VolumePercent,Model[Molecule,"Water"]}
 				},
+				Name -> "AcousticLiquidHandling Test Deprecated Sample Model"<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"id:N80DNj1r04jW"],
@@ -1451,11 +1451,11 @@ DefineTests[
 
 			(* make a 30% Glycerol model for our input samples *)
 			UploadSampleModel[
-				"AcousticLiquidHandling Test 30% Glycerol Model"<>$SessionUUID,
-				Composition->{
+				{
 					{70 VolumePercent,Model[Molecule,"Water"]},
 					{30 VolumePercent,Model[Molecule,"Glycerol"]}
 				},
+				Name -> "AcousticLiquidHandling Test 30% Glycerol Model"<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],
@@ -1466,11 +1466,11 @@ DefineTests[
 
 			(* make a 80% DMSO model for our input samples *)
 			UploadSampleModel[
-				"AcousticLiquidHandling Test 80% DMSO Model"<>$SessionUUID,
-				Composition->{
+				{
 					{20 VolumePercent,Model[Molecule,"Water"]},
 					{80 VolumePercent,Model[Molecule,"Dimethyl sulfoxide"]}
 				},
+				Name -> "AcousticLiquidHandling Test 80% DMSO Model"<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition, "id:vXl9j57YrPlN"], (* Model[StorageCondition, "Ambient Storage, Flammable"] *)
@@ -1481,11 +1481,11 @@ DefineTests[
 
 			(* make 0.5mg/mL BSA model for our input samples *)
 			UploadSampleModel[
-				"AcousticLiquidHandling Test 0.5mg/mL BSA Model"<>$SessionUUID,
-				Composition->{
+				{
 					{100 VolumePercent,Model[Molecule,"Water"]},
 					{0.5 Gram/Liter,Model[Molecule,Protein,"Bovine Serum Albumin"]}
 				},
+				Name -> "AcousticLiquidHandling Test 0.5mg/mL BSA Model"<>$SessionUUID,
 				IncompatibleMaterials->{None},
 				Expires->False,
 				DefaultStorageCondition->Model[StorageCondition,"Refrigerator"],

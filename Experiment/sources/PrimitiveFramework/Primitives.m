@@ -416,10 +416,11 @@ waitPrimitive=DefinePrimitive[Wait,
 
 (* ::Code::Initialization:: *)
 coverPrimitive = Module[{coverSharedOptions, coverNonIndexMatchingSharedOptions, coverIndexMatchingSharedOptions},
-  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
+    (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
+    (* Exception: Also remove the Force option, going to redefine below *)
   coverSharedOptions=UnsortedComplement[
-    Options[ExperimentCover][[All, 1]],
-    Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
+      Options[ExperimentCover][[All, 1]],
+      Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions, "Force"}]
   ];
 
   coverNonIndexMatchingSharedOptions=UnsortedComplement[
@@ -449,7 +450,19 @@ coverPrimitive = Module[{coverSharedOptions, coverNonIndexMatchingSharedOptions,
           Required -> True
         },
         IndexMatchingParent->Sample
-      ]
+      ],
+        (* Redefine the Force option below, make it Default to True instead of False. We expect that if user explicitly added a cover UO, we want that to always happen *)
+        {
+            OptionName -> Force,
+            Default -> True,
+            Description -> "Indicate if already covered SampleLink will first be uncovered then re-covered.",
+            AllowNull -> False,
+            Category -> "General",
+            Widget -> Widget[
+                Type -> Enumeration,
+                Pattern :> BooleanP
+            ]
+        }
     },
     (* Shared Options *)
     With[{insertMe = {
@@ -912,7 +925,7 @@ transferPrimitive = Module[{transferSharedOptions, transferNonIndexMatchingShare
           Widget -> Alternatives[
             "Volume" -> Widget[
               Type -> Quantity,
-              Pattern :> RangeP[0.1 Microliter, 20 Liter],
+              Pattern :> RangeP[0.5 Microliter, 20 Liter],
               Units -> {1, {Microliter, {Microliter, Milliliter, Liter}}}
             ],
             "Mass" -> Widget[
@@ -922,7 +935,7 @@ transferPrimitive = Module[{transferSharedOptions, transferNonIndexMatchingShare
             ],
             "Count" -> Widget[
               Type -> Number,
-              Pattern :> GreaterP[0., 1.]
+              Pattern :> RangeP[1., 15., 1.]
             ],
             "All" -> Widget[
               Type -> Enumeration,
@@ -1820,6 +1833,97 @@ flashChromatographyPrimitive = Module[{flashChromatographySharedOptions, flashCh
     Category -> "Sample Preparation",
     Description -> "Separate a sample via flash chromatography by flowing it through a column to which compounds in the sample will differentially adsorb.",
     Author -> {"dirk.schild"}
+  ]
+];
+
+(* ::Subsection::Closed:: *)
+(*KarlFischerTitration Primitive*)
+
+
+(* ::Code::Initialization:: *)
+karlFischerTitrationPrimitive = Module[{karlFischerTitrationSharedOptions, karlFischerTitrationNonIndexMatchingSharedOptions, karlFischerTitrationIndexMatchingSharedOptions},
+  (* Copy over all of the options from ExperimentKarlFischerTitration -- except for the funtopia shared options (Cache, Upload, etc.) *)
+  karlFischerTitrationSharedOptions = UnsortedComplement[
+    Options[ExperimentKarlFischerTitration][[All, 1]],
+    Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
+  ];
+
+  karlFischerTitrationNonIndexMatchingSharedOptions = UnsortedComplement[
+    karlFischerTitrationSharedOptions,
+    Cases[OptionDefinition[ExperimentKarlFischerTitration], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
+  ];
+
+  karlFischerTitrationIndexMatchingSharedOptions = UnsortedComplement[
+    karlFischerTitrationSharedOptions,
+    karlFischerTitrationNonIndexMatchingSharedOptions
+  ];
+
+  DefinePrimitive[KarlFischerTitration,
+    (* Input Options *)
+    Options :> {
+      IndexMatching[
+        {
+          OptionName -> Sample,
+          Default -> Null,
+          Description -> "The samples whose water content is measured.",
+          AllowNull -> False,
+          Category -> "General",
+          Widget -> Alternatives[
+            "Sample or Container" -> Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+              Dereference -> {Object[Container] -> Field[Contents[[All, 2]]]}
+            ],
+            "Container with Well Position" -> {
+              "Well Position" -> Widget[
+                Type -> Enumeration,
+                Pattern :> Alternatives @@ Flatten[AllWells[NumberOfWells -> $MaxNumberOfWells]],
+                PatternTooltip -> "Enumeration must be any well from A1 to " <> $MaxWellPosition <> "."
+              ],
+              "Container" -> Widget[
+                Type -> Object,
+                Pattern :> ObjectP[{Object[Container]}]
+              ]
+            }
+          ],
+          Required -> True
+        },
+        IndexMatchingParent -> Sample
+      ]
+    },
+    (* Shared Options *)
+    With[{insertMe = {
+      IndexMatching[
+        Sequence @@ ({ExperimentKarlFischerTitration, Symbol[#]}&) /@ karlFischerTitrationIndexMatchingSharedOptions,
+        IndexMatchingParent -> Sample
+      ],
+      If[Length[karlFischerTitrationNonIndexMatchingSharedOptions] == 0,
+        Nothing,
+        Sequence @@ ({ExperimentKarlFischerTitration, Symbol[#]}&) /@ karlFischerTitrationNonIndexMatchingSharedOptions
+      ]
+    }
+    },
+      SharedOptions :> insertMe
+    ],
+
+    Methods -> {ManualSamplePreparation},
+
+    ExperimentFunction -> ExperimentKarlFischerTitration,
+    MethodResolverFunction -> resolveKarlFischerTitrationMethod,
+    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseKarlFischerTitrationOutputUnitOperation,
+    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "KarlFischerIcon.png"}]],
+    LabeledOptions -> {
+      Sample -> SampleLabel,
+      Null -> SampleContainerLabel
+    },
+    InputOptions -> {Sample},
+    Generative -> False,
+    (* NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped *)
+    (* if the primitive is fed back into the ExperimentBLAH function. *)
+    CompletedOptions -> {Temperatures},
+    Category -> "Sample Analysis",
+    Description -> "Determine the water content of a given sample by measuring the consumption of iodine in the Karl Fischer reaction.",
+    Author -> {"steven"}
   ]
 ];
 
@@ -2954,6 +3058,90 @@ visualInspectionPrimitive = Module[{visualInspectionSharedOptions, visualInspect
     Category -> "Property Measurement",
     Description -> "Records a video of a sample container as it is agitated on a shaker/vortex.",
     Author -> {"dima"}
+  ]
+];
+
+
+(* ::Subsection::*)
+(*ExperimentOvenDry Primitive*)
+ovenDryPrimitive = Module[{ovenDrySharedOptions, ovenDryNonIndexMatchingOptions, ovenDryIndexMatchingSharedOptions},
+  (*Copy over all of the options from ExperimentOvenDry-- except for the funtopia shared options (Cache,Upload,etc.)*)
+  ovenDrySharedOptions = UnsortedComplement[
+    Options[ExperimentOvenDry][[All, 1]],
+    Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
+  ];
+
+  ovenDryNonIndexMatchingOptions = UnsortedComplement[
+    ovenDrySharedOptions,
+    Cases[OptionDefinition[ExperimentOvenDry], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
+  ];
+
+  ovenDryIndexMatchingSharedOptions = UnsortedComplement[
+    ovenDrySharedOptions,
+    ovenDryNonIndexMatchingOptions
+  ];
+
+  DefinePrimitive[OvenDry,
+    (*Input Options*)
+
+    Options :> {
+      IndexMatching[
+        {
+          OptionName -> Sample,
+          Default -> Null,
+          Description -> "The samples that are dried in an oven in order to remove water or pyrogens, and then cooled in a desiccator.",
+          AllowNull -> False,
+          Category -> "General",
+          Widget -> Alternatives[
+            "Sample or Container" -> Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Object[Sample], Object[Container]}],
+              ObjectTypes -> {Object[Sample], Object[Container]}
+            ],
+            "Model Sample" -> Widget[
+              Type -> Object,
+              Pattern :> ObjectP[{Model[Sample], Model[Container]}],
+              ObjectTypes -> {Model[Sample], Model[Container]}
+            ]
+          ],
+          Required -> True
+        },
+        IndexMatchingParent -> Sample
+      ]
+    },
+    (*Shared Options*)
+    With[{insertMe = {
+      IndexMatching[
+        Sequence @@ ({ExperimentOvenDry, Symbol[#]} &) /@ ovenDryIndexMatchingSharedOptions,
+        IndexMatchingParent -> Sample
+      ],
+      If[Length[ovenDryNonIndexMatchingOptions] == 0,
+        Nothing,
+        Sequence @@ ({ExperimentOvenDry, Symbol[#]} &) /@ ovenDryNonIndexMatchingOptions
+      ]
+    }
+    },
+      SharedOptions :> insertMe
+    ],
+
+    Methods -> {ManualSamplePreparation},
+    ExperimentFunction -> ExperimentOvenDry,
+    OutputUnitOperationParserFunction -> InternalExperiment`Private`parseOvenDryOutputUnitOperation,
+
+    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "OvenDry.png"}]],
+    LabeledOptions -> {
+      Sample -> SampleLabel,
+      Null -> SampleOutLabel,
+      Null -> ContainerOutLabel
+    },
+    InputOptions -> {Sample},
+    (*NOTE: These are the options that will be added to the CompletedPrimitives field in the parse and should be stripped
+      if the primitive is fed back into the ExperimentBLAH function.*)
+    Generative -> True,
+    GenerativeLabelOption -> SampleOutLabel,
+    Category -> "Property Measurement",
+    Description -> "Dries samples or glassware in an oven in order to remove water or pyrogens, and then cools them in a desiccator.",
+    Author -> {"daniel.shlian"}
   ]
 ];
 
@@ -5975,6 +6163,83 @@ crossflowFiltrationPrimitive = Module[
 
 
 
+(* ::Subsection::Closed:: *)
+(*WashPlate Primitive*)
+
+
+(* ::Code::Initialization:: *)
+washPlatePrimitive = Module[{washPlateSharedOptions, washPlateNonIndexMatchingSharedOptions, washPlateIndexMatchingSharedOptions},
+  (* Copy over all of the options from ExperimentIncubate -- except for the funtopia shared options (Cache, Upload, etc.) *)
+  washPlateSharedOptions = UnsortedComplement[
+    Options[ExperimentWashPlate][[All, 1]],
+    Flatten[{Options[ProtocolOptions][[All, 1]], $NonUnitOperationSharedOptions}]
+  ];
+
+  washPlateNonIndexMatchingSharedOptions = UnsortedComplement[
+    washPlateSharedOptions,
+    Cases[OptionDefinition[ExperimentWashPlate], KeyValuePattern["IndexMatching" -> Except["None"]]][[All, "OptionName"]]
+  ];
+
+  washPlateIndexMatchingSharedOptions = UnsortedComplement[
+    washPlateSharedOptions,
+    washPlateNonIndexMatchingSharedOptions
+  ];
+
+  DefinePrimitive[WashPlate,
+    (* Input Options *)
+    Options :> {
+      IndexMatching[
+        {
+          OptionName -> Sample,
+          Default -> Null,
+          Description -> "The samples or containers that should be washed.",
+          AllowNull -> False,
+          Category -> "General",
+          Widget -> Widget[
+            Type -> Object,
+            Pattern :> ObjectP[{Object[Sample], Object[Container]}]
+          ],
+          Required -> True
+        },
+        IndexMatchingParent -> Sample
+      ]
+    },
+    (* Shared Options *)
+    With[{insertMe = {
+      IndexMatching[
+        Sequence @@ ({ExperimentWashPlate, Symbol[#]}&) /@ washPlateIndexMatchingSharedOptions,
+        IndexMatchingParent -> Sample
+      ],
+      If[Length[washPlateNonIndexMatchingSharedOptions] == 0,
+        Nothing,
+        Sequence @@ ({ExperimentWashPlate, Symbol[#]}&) /@ washPlateNonIndexMatchingSharedOptions
+      ]
+    }
+    },
+      SharedOptions :> insertMe
+    ],
+    Methods -> {RoboticSamplePreparation},
+    WorkCells -> {STAR},
+    MethodResolverFunction -> Experiment`Private`resolveWashPlateMethod,
+    WorkCellResolverFunction -> Experiment`Private`resolveWashPlateWorkCell,
+    ExperimentFunction -> ExperimentWashPlate,
+    RoboticExporterFunction -> InternalExperiment`Private`exportWashPlateRoboticPrimitive,
+    RoboticParserFunction -> InternalExperiment`Private`parseWashPlateRoboticPrimitive,
+    OutputUnitOperationParserFunction -> None,
+    Icon -> Import[FileNameJoin[{PackageDirectory["Experiment`"], "resources", "images", "ELISAWashPlate.png"}]],
+    LabeledOptions -> {
+      Sample -> SampleLabel,
+      Null -> SampleContainerLabel
+    },
+    InputOptions -> {Sample},
+    Generative -> False,
+    Category -> "Sample Preparation",
+    Description -> "Aspirate from and then dispense buffer to input sample containers to wash their liquid contents.",
+    Author -> {"lige.tonggu", "dima"}
+  ]
+];
+
+
 (* ::Subsection:: *)
 (*PickColonies Primitive*)
 pickColoniesPrimitive=Module[
@@ -6753,6 +7018,7 @@ DefinePrimitiveSet[
     spePrimitive,
     pelletPrimitive,
     fillToVolumePrimitive,
+    karlFischerTitrationPrimitive,
     adjustpHPrimitive,
     coverPrimitive,
     uncoverPrimitive,
@@ -6773,6 +7039,8 @@ DefinePrimitiveSet[
     grindPrimitive,
     measureMeltingPointPrimitive,
     crossflowFiltrationPrimitive,
+    ovenDryPrimitive,
+    washPlatePrimitive,
 
     (* Cell Related Unit Operations *)
     thawCellsPrimitive,
@@ -6845,6 +7113,7 @@ DefinePrimitiveSet[
     spePrimitive,
     pelletPrimitive,
     fillToVolumePrimitive,
+    karlFischerTitrationPrimitive,
     adjustpHPrimitive,
     coverPrimitive,
     uncoverPrimitive,
@@ -6868,6 +7137,8 @@ DefinePrimitiveSet[
     microwaveDigestionPrimitive,
     measureContactAnglePrimitive,
     dynamicLightScatteringPrimitive,
+    ovenDryPrimitive,
+    washPlatePrimitive,
 
     (* Synthesis *)
     pcrPrimitive,
@@ -6919,6 +7190,7 @@ DefinePrimitiveSet[
     spePrimitive,
     pelletPrimitive,
     fillToVolumePrimitive,
+    karlFischerTitrationPrimitive,
     adjustpHPrimitive,
     coverPrimitive,
     uncoverPrimitive,
@@ -6940,6 +7212,7 @@ DefinePrimitiveSet[
     microwaveDigestionPrimitive,
     measureContactAnglePrimitive,
     dynamicLightScatteringPrimitive,
+    ovenDryPrimitive,
 
     (* Synthesis *)
     pcrPrimitive,
@@ -6991,7 +7264,8 @@ DefinePrimitiveSet[
     dilutePrimitive,
     magneticBeadSeparationPrimitive,
     liquidLiquidExtractionPrimitive,
-    precipitatePrimitive
+    precipitatePrimitive,
+    washPlatePrimitive
   },
   MethodOptions:>{
     RoboticSamplePreparation:>{
@@ -7044,6 +7318,7 @@ DefinePrimitiveSet[
     extractPlasmidDNAPrimitive,
     extractRNAPrimitive,
     extractProteinPrimitive,
+    ovenDryPrimitive,
 
     (* Cell Prep *)
     thawCellsPrimitive,
@@ -7113,6 +7388,7 @@ DefinePrimitiveSet[
     dilutePrimitive,
     magneticBeadSeparationPrimitive,
     coulterCountPrimitive,
+    ovenDryPrimitive,
 
     (* Cell Prep *)
     thawCellsPrimitive,

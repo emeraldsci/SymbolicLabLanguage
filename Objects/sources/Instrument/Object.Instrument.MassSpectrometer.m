@@ -519,16 +519,16 @@ DefineObjectType[Object[Instrument, MassSpectrometer], {
 			Description -> "Maximum flow rate of argon gas to deliver and aerosolize liquid input sample.",
 			Category -> "Operating Limits"
 		},
-		MinAuxillaryGasFlowRate -> {
+		MinAuxiliaryGasFlowRate -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MinAuxillaryGasFlowRate]],
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MinAuxiliaryGasFlowRate]],
 			Pattern :> GreaterP[0 Liter/Minute],
 			Description -> "Minimum flow rate of argon gas to generate plasma.",
 			Category -> "Operating Limits"
 		},
-		MaxAuxillaryGasFlowRate -> {
+		MaxAuxiliaryGasFlowRate -> {
 			Format -> Computable,
-			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MaxAuxillaryGasFlowRate]],
+			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model], MaxAuxiliaryGasFlowRate]],
 			Pattern :> GreaterP[0 Liter/Minute],
 			Description -> "Maximum flow rate of argon gas to generate plasma.",
 			Category -> "Operating Limits"

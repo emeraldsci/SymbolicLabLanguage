@@ -85,6 +85,24 @@ DefineObjectType[Object[Sensor], {
 			Headers->{"Date", "Restricted", "Responsible Party"},
 			Category->"Organizational Information"
 		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this sensor.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not easily detach.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		DateStocked -> {
 			Format -> Single,
 			Class -> Date,
@@ -179,11 +197,11 @@ DefineObjectType[Object[Sensor], {
 		},
 		RestrictedLog -> {
 			Format -> Multiple,
-			Class -> {Date, Boolean, Link},
-			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class -> {Date, Boolean, Link, String},
+			Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description -> "A log of changes made to this sensor's restricted status.",
-			Headers -> {"Date", "Restricted", "Responsible Party"},
+			Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
 			Category -> "Organizational Information"
 		},
 		ImageFile -> {
@@ -252,6 +270,7 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, DNASynthesizer][CapAndActivatorPressureSensor],
 				Object[Instrument, DNASynthesizer][DeblockAndOxidizerPressureSensor],
 				Object[Instrument, DissolutionApparatus][HeliumDeliveryPressureSensor],
+				Object[Instrument, DissolutionApparatus][VolumetricFlowRateSensor],
 				Object[Instrument, LiquidHandler][WashSolutionScale],
 				Object[Instrument, LiquidHandler][PurgePressureSensor],
 				Object[Instrument, LiquidHandler][OrganicWashSolutionScale],
@@ -283,6 +302,7 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, SampleInspector][LightSensor],
 				Object[Instrument, SampleInspector][LightSensor],
 				Object[Instrument, GloveBox][AntechamberSensors, 2],
+				Object[Instrument, GloveBox][VolumetricFlowRateSensor],
 				Object[Instrument, HandlingStation, GloveBox][AntechamberSensors, 2],
 				Object[Instrument, GasChromatograph][HeliumTankPressureSensor],
 				Object[Instrument, GasChromatograph][HeliumDeliveryPressureSensor],
@@ -299,9 +319,9 @@ DefineObjectType[Object[Sensor], {
 				Object[Instrument, MassSpectrometer][CollisionCellGasDeliveryPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasTankPressureSensor],
 				Object[Instrument, Spectrophotometer][PurgeGasDeliveryPressureSensor],
-				Object[Instrument, PortableCooler][TemperatureSensor],
 				Object[Instrument, KarlFischerTitrator][KarlFischerReagentWeightSensor],
 				Object[Instrument, KarlFischerTitrator][MediumWeightSensor],
+				Object[Instrument, PlateWasher][VacuumSensor],
 				Object[Instrument, PortableCooler][TemperatureSensor],
 				Object[Instrument, Oven][TemperatureSensor]
 			],
@@ -533,6 +553,14 @@ DefineObjectType[Object[Sensor], {
 			Description -> "The MaintenanceReceiveInventory in which this sensor was received.",
 			Category -> "Inventory"
 		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this sensor is affixed.",
+			Category -> "Inventory"
+		},
 		Maintenance -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -758,6 +786,13 @@ DefineObjectType[Object[Sensor], {
 			Description -> "The location history of the part. Lines recording a movement to container and position of Null, Null respectively indicate the item being discarded.",
 			Category -> "Storage Information",
 			Headers ->  {"Date","In or Out","Container moved into or out of","Position moved into or out Of", "Person who moved the part"}
+		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this sensor was moved to a different container or instrument.",
+			Category->"Storage Information"
 		},
 		(* --- Resources --- *)
 		RequestedResources -> {

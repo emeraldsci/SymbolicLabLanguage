@@ -276,7 +276,70 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Category -> "Prime System",
 			Developer -> True
 		},
-
+		InitialSystemPrimeLineACheck -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> QualificationResultP,
+			Description -> "Indicates whether line A was successfully primed during the first attempt.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		InitialSystemPrimeLineBCheck -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> QualificationResultP,
+			Description -> "Indicates whether line B was successfully primed during the first attempt.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		InitialSystemPrimeLineCCheck -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> QualificationResultP,
+			Description -> "Indicates whether line C was successfully primed during the first attempt.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		InitialSystemPrimeLineDCheck -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> QualificationResultP,
+			Description -> "Indicates whether line D was successfully primed during the first attempt.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		RetrySystemPrimeLineACount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "Logs the number of retry attempts for priming line A.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		RetrySystemPrimeLineBCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "Logs the number of retry attempts for priming line B.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		RetrySystemPrimeLineCCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "Logs the number of retry attempts for priming line C.",
+			Category -> "Prime System",
+			Developer -> True
+		},
+		RetrySystemPrimeLineDCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> _Integer,
+			Description -> "Logs the number of retry attempts for priming line D.",
+			Category -> "Prime System",
+			Developer -> True
+		},
 		SystemPrimeGradient -> {
 			Format -> Single,
 			Class -> Link,
@@ -3877,6 +3940,49 @@ DefineObjectType[Object[Protocol, HPLC], {
 			Pattern :> FilePathP,
 			Description -> "The file path to the script which copies the instrument log files.",
 			Category -> "Experimental Results",
+			Developer -> True
+		},
+		ContainersToUncover -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Containers whose covers are incompatible with the autosampler (i.e. not pierceable) and must be removed prior to loading the autosampler.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		ContainersToCover -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Containers for which a cover that is compatible with autosampler (i.e. pierceable) exists and can be covered prior to loading the autosampler.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		Covers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Item, Cap], Object[Item, Cap]],
+			Description -> "For each member of ContainersToCover, the cover to use.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		RestartMassLynxCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "Records the number of times operators have attempted to restart MassLynx.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
+		RestartMassLynxSuccessfulQ -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the most recent attempt to restart MassLynx was successful.",
+			Category -> "Operations Information",
 			Developer -> True
 		}
 	}

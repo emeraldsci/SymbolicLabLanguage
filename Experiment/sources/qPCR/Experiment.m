@@ -11,8 +11,28 @@
 (* ::Subsection::Closed:: *)
 (*ExperimentqPCR*)
 
+(* Set a variable to define when we will split the master mix into multiple wells for parallel transfer. If number of samples is below this threshold, we will not transfer the master mix into a prep plate and we will just transfer directly from the source container. *)
+(* This is an arbitrary number with the following things considered: (1) extra volume needed for additional prep plate aliquot; (2) transfer time needed to do initial aliquot and follow-up parallel multi-channel transfer *)
+Experiment`Private`qPCRPrepPlateSampleNumberThreshold = 48;
 
-(* Set a variable private to Experiment` to define the per-well dead volume for qPCR assay plate preparation *)
+(* Set a variable to define large volume prep plate *)
+(* Model[Container, Plate, "96-well 2mL Deep Well Plate"] *)
+Experiment`Private`qPCRStandardPrepPlate = Model[Container, Plate, "id:L8kPEjkmLbvW"];
+
+(* Set a variable to define the per-well dead volume for qPCR assay plate preparation in Experiment`Private`standardPrepPlate *)
+(* This value is currently defined as MinVolume of Experiment`Private`qPCRStandardPrepPlate  *)
+Experiment`Private`qPCRStandardPrepPlateDeadVolume = 20 Microliter;
+
+(* Set a variable to define small volume prep plate *)
+(* Model[Container, Plate, "96-well PCR Plate"] *)
+(* qPCR plate is known for a smaller dead volume and better well bottom shape. This specific model is also used in robotic preparation of PCR experiment (not qPCR) *)
+Experiment`Private`qPCRSmallPrepPlate = Model[Container, Plate, "id:01G6nvkKrrYm"];
+
+(* Set a variable to define the per-well dead volume for qPCR assay plate preparation in Experiment`Private`qPCRSmallPrepPlate *)
+(* MinVolume of Experiment`Private`qPCRSmallPrepPlate is 5 uL but we are giving it a safe value here *)
+Experiment`Private`qPCRSmallPrepPlateDeadVolume = 10 Microliter;
+
+(* Set a variable to define the per-resource dead volume for qPCR assay plate preparation *)
 Experiment`Private`qPCRPrepDeadVolume = 10 Microliter;
 
 
@@ -1031,7 +1051,7 @@ ExperimentqPCR[
 	instrumentOption = Lookup[expandedSafeOps, Instrument];
 
 	(*Get all the liquid handler-compatible containers, with the low-volume containers prepended*)
-	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
+	liquidHandlerContainers=DeleteDuplicates[Flatten[{hamiltonAliquotContainers["Memoization"], Experiment`Private`qPCRStandardPrepPlate, Experiment`Private`qPCRSmallPrepPlate}]];
 
 	assayPlateModel = Model[Container, Plate, "384-well qPCR Optical Reaction Plate"];
 
@@ -1047,6 +1067,7 @@ ExperimentqPCR[
 					qPCRCompatibleFluorophores,
 					potentialFluorophoreContainingObjects,
 					potentialFluorophoreContainingObjects,
+					potentialFluorophoreContainingObjects,
 					possiblyNamedOptions,
 					Cases[{instrumentOption}, ObjectP[]],
 					liquidHandlerContainers,
@@ -1059,7 +1080,8 @@ ExperimentqPCR[
 					{Packet[Name, Fluorescent, FluorescenceExcitationMaximums, FluorescenceEmissionMaximums, FluorescenceLabelingTarget]},
 					{Packet[Name, Model, Composition]},
 					{Packet[Composition[[All,2]][{Name, Fluorescent, FluorescenceExcitationMaximums, FluorescenceEmissionMaximums, FluorescenceLabelingTarget}]]},
-					{Packet[Name]},
+					{Packet[Name, Container]},
+					{Packet[Container[Model][modelContainerFields]]},
 					{Packet[Name, WettedMaterials, Positions, EnvironmentalControls, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions, Model, MaxTemperatureRamp,MinTemperatureRamp]},
 					{Evaluate[Packet@@modelContainerFields]},
 					{Packet[Name, MinVolume, MaxVolume, NumberOfWells, AspectRatio]}
@@ -1478,7 +1500,7 @@ ExperimentqPCR[
 	instrumentOption=Lookup[expandedSafeOps,Instrument];
 
 	(*Get all the liquid handler-compatible containers, with the low-volume containers prepended*)
-	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
+	liquidHandlerContainers=DeleteDuplicates[Flatten[{hamiltonAliquotContainers["Memoization"], Experiment`Private`qPCRStandardPrepPlate, Experiment`Private`qPCRSmallPrepPlate}]];
 
 	(*Determine which fields we need to download*)
 	sampleFields=SamplePreparationCacheFields[Object[Sample],Format->Packet];
@@ -1500,6 +1522,7 @@ ExperimentqPCR[
 					qPCRCompatibleFluorophores,
 					potentialFluorophoreContainingObjects,
 					potentialFluorophoreContainingObjects,
+					potentialFluorophoreContainingObjects,
 					Cases[{instrumentOption}, ObjectP[]],
 					liquidHandlerContainers
 				},
@@ -1512,8 +1535,9 @@ ExperimentqPCR[
 					{Packet[Model[ReversePrimers[{Name}]]]},
 					{Packet[Model[Probes[{Name,DetectionLabels,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums}]]]},
 					{Packet[Name,DetectionLabels,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums]},
-					{Packet[Name,Model,Composition]},
+					{sampleFields},
 					{Packet[Composition[[All,2]][{Name,DetectionLabels,Fluorescent,FluorescenceExcitationMaximums,FluorescenceEmissionMaximums}]]},
+					{Packet[Container[Model][modelContainerFields]]},
 					{Packet[Name, WettedMaterials, Positions, EnvironmentalControls, MaxRotationRate, MinRotationRate, MinTemperature, MaxTemperature, InternalDimensions, Model, MaxTemperatureRamp,MinTemperatureRamp]},
 					{Evaluate[Packet@@modelContainerFields]}
 				},
@@ -2774,7 +2798,7 @@ resolveExperimentqPCROptions[
 	(* a helper that helps resolve automatic options that are gated upon another (T/F) option or takes in user provided value *)
 	resolveAutomatic[assoc_,option_,gateBool_,trueValue_,falseValue_]:=With[
 		{value=Lookup[assoc,option]},
-		(* if value is automatic, further resolve based on gateBool, else take the provied value*)
+		(* if value is automatic, further resolve based on gateBool, else take the provided value*)
 		If[MatchQ[value,Automatic],
 			If[gateBool,trueValue,falseValue],
 			value
@@ -6372,7 +6396,7 @@ qPCRResourcePackets[
 	myCollapsedResolvedOptions:{___Rule},
 	myOptions:OptionsPattern[]
 ]:=Module[{
-	outputSpecification,output,gatherTests,messages,packet,allResources,cache,allSamples,basicSamplePackets,cacheBall,
+	outputSpecification,output,gatherTests,messages,packet,allResources,cache,allSamples,basicSamplePackets,basicSampleContainerPackets,basicSampleContainerModelPackets,cacheBall,
 	samplesInResources,containersIn,containersInResources,assayPlateResource,plateSealResource, estimatedRunTime,instrumentResource,previewRule,optionsRule,testsRule,resultRule,
 	fulfillable,frqTests,
 	reverseTranscriptionQ, reverseTranscriptionTemp, reverseTranscriptionTime, reverseTranscriptionRampRate, activationQ, activationTemp, activationTime, activationRampRate,
@@ -6386,13 +6410,15 @@ qPCRResourcePackets[
 	expandedStandardProbes, expandedStandardProbeVolumes, expandedStandardDilutions, expandedStandardProbeExcitations, expandedStandardProbeEmissions, expandedStandardProbeFluorophores,
 	standardPrimerVolumeRules, standardProbeVolumeRules, allPrimerProbeVolumeRules,
 	groupedPrimersProbesAndVolumes, primersProbesTotalVolumes, primerProbeResourceLookup, bufferResource, totalNumberOfAssayWells, masterMixNumberOfSourceWells,
-	masterMixVolumeRequired, masterMixResource,
+	masterMixVolumeRequired, masterMixResourceContainer, masterMixResource,
 
-	liquidHandlerContainers, listedSampleContainers, liquidHandlerContainerDownload, sampleContainersIn, liquidHandlerContainerMaxVolumes, intNumberOfReplicates,
+	liquidHandlerContainers, modelContainerFields, listedSampleContainers, liquidHandlerContainerDownload, sampleContainersIn, liquidHandlerContainerMaxVolumes, liquidHandlerContainerMaxVolumeLookup, intNumberOfReplicates,
 	primersWithReplicates, samplesWithReplicates, optionsWithReplicates, expandedSampleOrAliquotVolumes, uniqueSampleResources, uniqueSampleResourceLookup,
-	uniquePrimerProbeVolumeAssoc, probes, standardProbes, endogenousProbes, rawSamplesWithReplicates, standardSamples, masterMixContainer,masterMixSourceVesselDeadVolume,
+	uniquePrimerProbeVolumeAssoc, probes, standardProbes, endogenousProbes, rawSamplesWithReplicates, standardSamples,
+	masterMix, masterMixContainer, masterMixContainerModel, masterMixContainerModelPacket, masterMixContainerLiquidHandlerCompatibleQ,
+	masterMixPrepPlateQ, masterMixStandardPrepPlateMaxVolume, masterMixSmallPrepPlateMaxVolume, masterMixSourceVesselDeadVolume,
 	expandedForwardPrimerStorageConditions, expandedReversePrimerStorageConditions, expandedProbeStorageConditions, resolvedBuffer,
-	resolvedBufferVolume, resolvedMoatBuffer, resolvedMoatSize, moatBufferResource, simulation
+	resolvedBufferVolume, resolvedMoatBuffer, resolvedMoatVolume, resolvedMoatSize, moatBufferResource, simulation
 },
 
 	(* Local helpers for taking [[All,All,1]] or [[All,1]] of primer options, allowing for top-level Nulls *)
@@ -6415,7 +6441,10 @@ qPCRResourcePackets[
 	(* === Get information to help decide which container should be used for each resource === *)
 
 	(*In case we need to prepare the resource, use one from the prepended list of liquid handler-compatible containers (Engine uses the first requested container if it has to make a transfer or stock solution)*)
-	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
+	liquidHandlerContainers=DeleteDuplicates[Flatten[{hamiltonAliquotContainers["Memoization"], Experiment`Private`qPCRStandardPrepPlate, Experiment`Private`qPCRSmallPrepPlate}]];
+
+	(* Fields to download for container models *)
+	modelContainerFields = SamplePreparationCacheFields[Model[Container]];
 
 	(* Build a list of all samples for which resources will be generated, and download basic packets to allow for Name->Object interconversion *)
 	allSamples = DeleteCases[
@@ -6433,17 +6462,21 @@ qPCRResourcePackets[
 	];
 
 	(* Make a Download call to get the containers of the input samples *)
-	{listedSampleContainers, liquidHandlerContainerDownload, basicSamplePackets}=Quiet[
+	{listedSampleContainers, liquidHandlerContainerDownload, basicSamplePackets, basicSampleContainerPackets, basicSampleContainerModelPackets}=Quiet[
 		Download[
 			{
 				myPackagerSampleInputs,
 				liquidHandlerContainers,
+				allSamples,
+				allSamples,
 				allSamples
 			},
 			{
 				{Container[Object]},
 				{MaxVolume},
-				{Packet[Object, Name]}
+				{Packet[Object, Name, Container]},
+				{Packet[Container[Model]]},
+				{Packet[Container[Model][modelContainerFields]]}
 			},
 			Cache->cache,
 			Simulation->simulation
@@ -6452,14 +6485,14 @@ qPCRResourcePackets[
 	];
 
 	(* Update the cache with the barebones sample packets we downloaded above *)
-	cacheBall = FlattenCachePackets[{cache, basicSamplePackets}];
+	cacheBall = FlattenCachePackets[{cache, basicSamplePackets, basicSampleContainerPackets, basicSampleContainerModelPackets}];
 
 	(* Find the list of input sample containers *)
 	sampleContainersIn=DeleteDuplicates[Flatten[listedSampleContainers]];
 
 	(* Find the MaxVolume of all of the liquid handler compatible containers *)
 	liquidHandlerContainerMaxVolumes=Flatten[liquidHandlerContainerDownload,1];
-
+	liquidHandlerContainerMaxVolumeLookup=Thread[liquidHandlerContainers->liquidHandlerContainerMaxVolumes];
 
 	(* === Expand inputs and index-matched options to take into account the NumberOfReplicates option === *)
 
@@ -6691,31 +6724,101 @@ qPCRResourcePackets[
 
 
 	(* --- Master mix resource - request enough to account for usage of up to 8 source wells, dead volume of 50 uL --- *)
+
+	(* Get the master mix *)
+	masterMix = Download[Lookup[optionsWithReplicates, MasterMix], Object];
+
+	(* If we have a master mix Object, let's check if its container is already liquid handler compatible *)
+	masterMixContainer = If[MatchQ[masterMix,ObjectP[Object[Sample]]],
+		Download[Lookup[fetchPacketFromCache[masterMix, cacheBall], Container], Object],
+		Null
+	];
+
+	masterMixContainerModel = If[!NullQ[masterMixContainer],
+		Download[Lookup[fetchPacketFromCache[masterMixContainer, cacheBall], Model, Null], Object],
+		Null
+	];
+
+	(* Get the model packet of master mix container *)
+	masterMixContainerModelPacket = fetchPacketFromCache[masterMixContainerModel, cacheBall];
+
+	(* Check if our container is liquid handler compatible *)
+	masterMixContainerLiquidHandlerCompatibleQ = If[!NullQ[masterMixContainerModelPacket],
+		Or[
+			(* In a plate with LiquidHandlerPrefix *)
+			!NullQ[Lookup[masterMixContainerModelPacket, LiquidHandlerPrefix, Null]/.{$Failed->Null}],
+			(* Not in a plate, and matches the footprint requirement - i.e., liquid handler compatible tubes *)
+			And[
+				MatchQ[Lookup[masterMixContainerModelPacket, Footprint], Except[Plate]],
+				MatchQ[Lookup[masterMixContainerModelPacket, Footprint], LiquidHandlerCompatibleFootprintP]
+			]
+		],
+		(* If we do not have a container (for Model[Sample]), we will always aliquot into a compatible container *)
+		False
+	];
+
 	(* Figure out how many destination wells we'll have *)
 	totalNumberOfAssayWells = (Length[samplesWithReplicates] + Length[Flatten[expandedStandards]]);
 
-	(* Figure out how many source wells we'll use, with a max of 8
+	(* Figure out if we are going to aliquot the master mix into a column of wells in prep plate, or we will just directly transfer from the source tube *)
+	masterMixPrepPlateQ = Greater[totalNumberOfAssayWells, Experiment`Private`qPCRPrepPlateSampleNumberThreshold];
+
+	(* Also prepare the basic information for the prep plates *)
+	masterMixStandardPrepPlateMaxVolume = Experiment`Private`qPCRStandardPrepPlate/.liquidHandlerContainerMaxVolumeLookup;
+	masterMixSmallPrepPlateMaxVolume = Experiment`Private`qPCRSmallPrepPlate/.liquidHandlerContainerMaxVolumeLookup;
+
+	(* Figure out how many source wells we'll use if we have the sample in a column of prep plate, with a max of 8
 		Can reach into every other well in a given column simultaneously and want to maximize pipetting parallelism *)
-	masterMixNumberOfSourceWells = Min[Ceiling[totalNumberOfAssayWells / 2], 8];
+	masterMixNumberOfSourceWells = If[masterMixPrepPlateQ,
+		Min[Ceiling[totalNumberOfAssayWells / 2], 8],
+		Null
+	];
 
 	(* Figure out how much volume that equates to, taking the following into account:
-	 	- Per-prep-plate-well dead volume (included in prep plate aliquots)
-		- Per-prep-plate-well 10% overage (included in prep plate aliquots)
+	 	- Per-prep-plate-well dead volume
+		- 10% overage
 	 *)
-	masterMixVolumeRequired = masterMixNumberOfSourceWells * (Experiment`Private`qPCRPrepDeadVolume + Ceiling[totalNumberOfAssayWells / masterMixNumberOfSourceWells] * Lookup[optionsWithReplicates, MasterMixVolume] * 1.1);
+	masterMixVolumeRequired = If[masterMixPrepPlateQ,
+		(* If we have master mix in prep plate, first determine what type of prep plate we will use *)
+		Module[
+			{masterMixWellVolume, masterMixPrepDeadVolume},
+			(* Volume we have in each well of the prep plate with 10% overage *)
+			masterMixWellVolume = Ceiling[totalNumberOfAssayWells / masterMixNumberOfSourceWells] * Lookup[optionsWithReplicates, MasterMixVolume] * 1.1;
+			(* Check to see if our volume is going to fix in Experiment`Private`qPCRSmallPrepPlate and use corresponding dead volume *)
+			masterMixPrepDeadVolume = If[(masterMixWellVolume+Experiment`Private`qPCRSmallPrepPlateDeadVolume)<=masterMixSmallPrepPlateMaxVolume,
+				Experiment`Private`qPCRSmallPrepPlateDeadVolume,
+				Experiment`Private`qPCRStandardPrepPlateDeadVolume
+			];
+			(* Get the final volume with dead volume of the prep plate *)
+			masterMixNumberOfSourceWells * (masterMixPrepDeadVolume + masterMixWellVolume)
+		],
+		(* If there is no prep plate, just get standard 10% overage *)
+		totalNumberOfAssayWells * Lookup[optionsWithReplicates, MasterMixVolume] * 1.1
+	];
 
-	(* Figure out what liquid handler compatible container may be used for the master mix *)
-	masterMixContainer=PreferredContainer[masterMixVolumeRequired,LiquidHandlerCompatible->True];
+	(* Figure out what liquid handler compatible container may be used for the master mix if we have to prepare the resource *)
+	masterMixResourceContainer=PreferredContainer[masterMixVolumeRequired,LiquidHandlerCompatible->True];
 	
-	(* Calculate master mix source vessel dead volume: 2% container volume is added to ensure complete transfer to all prep wells is possible *)
-	masterMixSourceVesselDeadVolume=0.02*(masterMixContainer/.Thread[liquidHandlerContainers->liquidHandlerContainerMaxVolumes]);
+	(* Calculate master mix source vessel dead volume: 2% container volume is added when there is prep plate to ensure complete transfer to all prep wells is possible *)
+	masterMixSourceVesselDeadVolume=Which[
+		!masterMixPrepPlateQ, 0 Milliliter,
+		masterMixContainerLiquidHandlerCompatibleQ, 0.02*(Lookup[masterMixContainerModelPacket,MaxVolume]),
+		True, 0.02*(masterMixResourceContainer/.liquidHandlerContainerMaxVolumeLookup)
+	];
 	
 	(* Make the resource *)
-	masterMixResource = Link[Resource[
-		Sample->Lookup[optionsWithReplicates, MasterMix],
-		Amount->masterMixVolumeRequired+masterMixSourceVesselDeadVolume,
-		Container->masterMixContainer
-	]];
+	masterMixResource = If[masterMixContainerLiquidHandlerCompatibleQ,
+		(* No container requirement if we are already in liquid handler compatible container *)
+		Link[Resource[
+			Sample->masterMix,
+			Amount->masterMixVolumeRequired+masterMixSourceVesselDeadVolume
+		]],
+		Link[Resource[
+			Sample->masterMix,
+			Amount->masterMixVolumeRequired+masterMixSourceVesselDeadVolume,
+			Container->masterMixResourceContainer
+		]]
+	];
 
 	(* === Generate resources for consumables that need to be referenced in procedure === *)
 
@@ -7068,7 +7171,7 @@ qPCRResourcePackets[
 	(*---Generate all the resources for the experiment---*)
 
 	(*--Download container information--*)
-	liquidHandlerContainers=hamiltonAliquotContainers["Memoization"];
+	liquidHandlerContainers=DeleteDuplicates[Flatten[{hamiltonAliquotContainers["Memoization"], Experiment`Private`qPCRStandardPrepPlate, Experiment`Private`qPCRSmallPrepPlate}]];
 	{nestedContainersIn,nestedLiquidHandlerContainerMaxVolumes}=Quiet[
 		Download[
 			{

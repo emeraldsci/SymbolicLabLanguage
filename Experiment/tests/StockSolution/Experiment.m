@@ -530,6 +530,34 @@ DefineTests[
 			{{GreaterP[115*4/3*Microliter]}, {GreaterP[115*4/3*Microliter]}},
 			Variables :> {protocol}
 		],
+		Example[{Additional},"If preparing a sterile model with Autoclave -> True, the preparatory container is preferred to be the ContainerOut if it is autoclaveable, not necessarily sterile:",
+			protocol = ExperimentStockSolution[
+				Model[Sample, Media, "LB Broth, Miller"],
+				ContainerOut -> Model[Container, Vessel, "id:J8AY5jwzPPR7"], (*"250mL Glass Bottle"*)
+				Volume -> 115 * Milliliter,
+				Autoclave -> True
+			];
+			Download[protocol, {PreparatoryContainers, PreparatoryContainers[Sterile]}],
+			{
+				{ObjectP[Model[Container, Vessel, "id:J8AY5jwzPPR7"]]},
+				{False}
+			},
+			Variables :> {protocol}
+		],
+		Example[{Additional},"If preparing a liquid form model of a solid media, resolve to skip autoclave cooling:",
+			model = Download[
+				Model[Sample, Media, "id:N80DNjvrZqBA"],(*Model[Sample, Media, "LB Agar Preparable"]*)
+				LiquidMedia[[1]][Object]
+			];
+			protocol = ExperimentStockSolution[
+				model,
+				Volume -> 120 * Milliliter,
+				Autoclave -> True
+			];
+			Download[protocol, AutoclaveSkipCoolings],
+			{True},
+			Variables :> {model, protocol}
+		],
 		Example[{Additional, "Can specify a specific sample in the formula overload and populate SamplesIn:"},
 			(
 				ExperimentStockSolution[{{ 100*Microliter,Object[Sample, "Example water for ExperimentStockSolution unit tests"]}, { 50*Milliliter,Model[Sample,"Acetonitrile, Biosynthesis Grade"]}}, Name -> "Example StockSolution Protocol with one Sample "<>$SessionUUID];
@@ -973,6 +1001,7 @@ DefineTests[
 					Model[Sample, "Milli-Q water"],
 					10 Milliliter,
 					FillToVolumeMethod -> Volumetric,
+					MixType -> Invert,
 					Name -> "ExperimentStockSolution test stock solution with tablet formula and volumetric fill-to-volume "<>$SessionUUID
 				]
 			),
@@ -2093,7 +2122,9 @@ DefineTests[
 						MembraneMaterial->FilterMembraneMaterialP,
 						PoreSize->GreaterP[0 Micron],
 						Syringe->Null,
-						FilterHousing->ObjectP[Model[Instrument,FilterHousing]]
+						FilterHousing->ObjectP[Model[Instrument,FilterHousing]],
+						OvenDryGlassware->False,
+						DepyrogenateGlassware->False
 					|>
 				}
 			},
@@ -2265,7 +2296,7 @@ DefineTests[
 				FilterSyringe->Model[Container,Syringe,"20mL All-Plastic Disposable Luer-Lock Syringe"]
 			],
 			$Failed,
-			Messages:>{Error::InvalidOption,Error::VolumeTooLargeForSyringe,Error::NoFilterAvailable,Error::FilterMaxVolume},
+			Messages:>{Error::InvalidOption,Error::VolumeTooLargeForSyringe,Error::InvalidFiltrationTypeForVolume,Error::FilterMaxVolume},
 			TimeConstraint -> 80
 		],
 		Example[{Options,FilterHousing,"Specify a filter housing that should be used to hold the filter membrane through which the stock solution is filtered following component combination, filling to volume with solvent, mixing, and/or pH titration:"},
@@ -2285,6 +2316,64 @@ DefineTests[
 			TimeConstraint -> 600
 		],
 
+		(* Pre-Rinse options *)
+		Example[{Options,PreRinseLabware,"Indicates that labware used for transfers are rinsed prior to use:"},
+			Download[
+				ExperimentStockSolution[
+					Model[Sample,StockSolution,"1M NaCl (example)"],
+					PreRinseLabware -> True
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolutions}
+			],
+			{{True}, {2}, {ObjectP[Model[Sample, "Milli-Q water"]]}}
+		],
+		Example[{Options,NumberOfPreRinses,"Specifies the number of times labware used for transfers are rinsed with PreRinseSolution before use with PreRinseSolution:"},
+			Download[
+				ExperimentStockSolution[
+					{
+						{15 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					NumberOfPreRinses -> 5
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolutions}
+			],
+			{{True}, {5}, {ObjectP[Model[Sample, "Milli-Q water"]]}}
+		],
+		Example[{Options,PreRinseSolution,"Specifies the solution (FillToVolume Solvent) or liquid formula that is used to rinse labware used for transfers."},
+			Download[
+				ExperimentStockSolution[
+					{Model[Sample,StockSolution,"1M NaCl (example)"],Model[Sample,StockSolution,"50% v/v Methanol/water (example)"]},
+					PreRinseSolution->{Model[Sample, "Milli-Q water"],Model[Sample, "Methanol"]}
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolutions}
+			],
+			{{True, True}, {2, 2}, {ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, "Methanol"]]}}
+		],
+		Example[{Options,PreRinseLabware,"Respect the PreRinse options from the provided stock solution model:"},
+			Download[
+				ExperimentStockSolution[
+					Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water with PreRinse for ExperimentStockSolution "<>$SessionUUID]
+				],
+				PreRinseLabware
+			],
+			{True},
+			SetUp:>(
+				UploadStockSolution[
+					{
+						{10 Milliliter,Model[Sample,"Methanol"]},
+						{90 Milliliter,Model[Sample,"Milli-Q water"]}
+					},
+					PreRinseSolution->Model[Sample, "Milli-Q water"],
+					Name -> "Existing Solution of 10% v/v Methanol in Water with PreRinse for ExperimentStockSolution "<>$SessionUUID
+				];
+				Upload[<|Object -> Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water with PreRinse for ExperimentStockSolution "<>$SessionUUID], DeveloperObject -> True|>]
+			),
+			TearDown :> (
+				EraseObject[Model[Sample, StockSolution, "Existing Solution of 10% v/v Methanol in Water with PreRinse for ExperimentStockSolution "<>$SessionUUID], Force -> True]
+			)
+		],
 
 		Example[{Options,StockSolutionName,"Name a new stock solution model when specifying a solution to prepare via the formula overload:"},
 			Download[
@@ -3708,7 +3797,9 @@ DefineTests[
 						MembraneMaterial->PTFE,
 						PoreSize->0.22 Micrometer,
 						Syringe->Null,
-						FilterHousing->ObjectP[Model[Instrument,FilterHousing]]
+						FilterHousing->ObjectP[Model[Instrument,FilterHousing]],
+						OvenDryGlassware->False,
+						DepyrogenateGlassware->False
 					|>
 				}
 			},
@@ -4140,6 +4231,44 @@ DefineTests[
 			],
 			$Failed,
 			Messages :> {Error::SpecifedMixRateNotSafe, Error::InvalidOption}
+		],
+
+		(* Pre-Rinse Messages *)
+		Example[{Messages,"PreRinseOptionConflict","An error will be thrown if PreRinse options are set to a mixture of Null/non-Null:"},
+			ExperimentStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				PreRinseLabware -> True,
+				PreRinseSolution -> Null
+			],
+			$Failed,
+			Messages:>{Error::PreRinseOptionConflict,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidPreRinseSolution","An error will be thrown if PreRinseSolution is not part of the stock solution formula or FillToVolume solvent (1):"},
+			ExperimentStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				PreRinseSolution -> Model[Sample,"Methanol"]
+			],
+			$Failed,
+			Messages:>{Error::InvalidStockSolutionPreRinseSolution,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidPreRinseSolution","An error will be thrown if PreRinseSolution is not part of the stock solution formula or FillToVolume solvent (2):"},
+			ExperimentStockSolution[
+				{
+					{500 Milliliter, Model[Sample,"Milli-Q water"]},
+					{501 Milliliter, Model[Sample,"Methanol"]}
+				},
+				PreRinseSolution -> Model[Sample, "Ethanol, Reagent Grade"]
+			],
+			$Failed,
+			Messages:>{Error::InvalidStockSolutionPreRinseSolution,Error::InvalidOption}
 		],
 
 		Test[{"VolumeTooLowForAutoclave warning is not thrown for formula overload if the specified volume is below 100mL for an Autoclave->True protocol because this volume is not being used:"},

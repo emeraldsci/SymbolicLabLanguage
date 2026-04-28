@@ -21,6 +21,15 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Category -> "Inventory",
 			Abstract -> True
 		},
+		PiggybackPrintDialogClickCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			Description -> "The number of times the operator must click through the print dialog when printing piggyback stickers, given that stickers print in groups of 3.",
+			Category -> "Inventory",
+			Developer -> True
+		},
 		ExpirationDate -> {
 			Format -> Multiple,
 			Class -> Integer,
@@ -361,6 +370,15 @@ DefineObjectType[Object[Program, ReceiveInventory], {
 			Relation -> Alternatives[Object[Container], Object[Instrument]],
 			Description -> "Indicate where the incoming items, together with their CollectionBin will be temporarily segregated for SLL object sticker labeling and/or for qualifications.",
 			Category -> "Inventory",
+			Developer -> True
+		},
+		CryogenicSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Sample], Model[Sample], Object[Container], Model[Container]],
+			Description -> "The samples to be stored in cryogenic storage at the end of this program.",
+			Category -> "Sample Storage",
 			Developer -> True
 		}
 	}

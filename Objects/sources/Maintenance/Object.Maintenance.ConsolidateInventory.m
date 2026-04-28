@@ -41,6 +41,14 @@ DefineObjectType[Object[Maintenance, ConsolidateInventory], {
 			Category -> "Storage & Handling",
 			IndexMatching -> RacksToEmpty
 		},
+		SourceRackMissing -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of RacksToEmpty, indicate if this rack is missing and cannot be found.",
+			IndexMatching -> RacksToEmpty,
+			Category -> "Batching"
+		},
 		ModelsToConsolidate -> {
 			Format -> Multiple,
 			Class -> Link,
@@ -92,7 +100,7 @@ DefineObjectType[Object[Maintenance, ConsolidateInventory], {
 		BatchedItems -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {(ObjectReferenceP[]|Null)..},
+			Pattern :> {(ObjectReferenceP[]|Null)...},
 			Description -> "For each member of RacksToEmpty, indicate all items that need to be moved out.",
 			Category -> "Batching",
 			Developer -> True,
@@ -132,7 +140,7 @@ DefineObjectType[Object[Maintenance, ConsolidateInventory], {
 		BatchedMovements -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> {Rule[(ObjectReferenceP[]| Null), ({LocationPositionP, ObjectReferenceP[]} | Null)]..},
+			Pattern :> {Rule[(ObjectReferenceP[]| Null), ({LocationPositionP, ObjectReferenceP[]} | Null)]...},
 			Description -> "For each member of RacksToEmpty, indicate the movements requested to consolidate items.",
 			Category -> "Batching",
 			Developer -> True,
@@ -232,6 +240,33 @@ DefineObjectType[Object[Maintenance, ConsolidateInventory], {
 			Category -> "General",
 			Developer->True,
 			IndexMatching -> RacksToEmpty
+		},
+		DestinationRackFull -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of DestinationRacks, indicate if the destination is full and can't accept any further items.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
+		},
+		ExpectedDestinationItemCounts -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of DestinationRacks, indicate the number of items of model ModelsToConsolidate in the rack before the consolidation movement.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
+		},
+		ExpectedDestinationAvailableCapacity -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "For each member of DestinationRacks, indicate the number of items of model ModelsToConsolidate it can fit before the consolidation movement.",
+			Category -> "General",
+			Developer->True,
+			IndexMatching -> DestinationRacks
 		}
 
 	}

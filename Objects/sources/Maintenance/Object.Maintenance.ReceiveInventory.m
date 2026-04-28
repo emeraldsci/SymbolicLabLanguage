@@ -656,6 +656,15 @@ DefineObjectType[Object[Maintenance, ReceiveInventory], {
 			Relation -> Object[Maintenance, BarcodeInventory][Receiving],
 			Description -> "The BarcodeInventory maintenances associated with this receiving.",
 			Category -> "Organizational Information"
+		},
+		CryogenicGloves -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Item, Glove], Object[Item, Glove]],
+			Description -> "The gloves used to safely handle samples temporarily in the receiving freezer and eventually store samples in CryogenicStorage during this protocol.",
+			Category -> "Sample Storage",
+			Developer -> True
 		}
 	}
 }];

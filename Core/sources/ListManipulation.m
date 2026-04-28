@@ -425,21 +425,30 @@ ParseLog[myLog:Alternatives[{{__}..},{<|__|>..}],myDateColumn:_Integer,myStatusC
 
 		(* If the log is single status, select all of the log entries prior to our end date and extend the final status to the end *)
 		{_,True},
-		With[{entriesBeforeEnd=Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&]},
+		With[{entriesBeforeEnd=Select[subLog,LessEqualQ[#[[myDateColumn]],resolvedEndDate]&]},
 			Append[
 				entriesBeforeEnd,
+				(* The very last entry might be at exactly the end date but that's fine. This happens if start date is the same as end date *)
 				ReplacePart[entriesBeforeEnd[[-1]],myDateColumn->resolvedEndDate]
 			]
 		],
 
 		(* If the log is not single status, do the same as above, but only extend an active status, otherwise fill in with Null *)
 		{_,False},
-		Append[
-			Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&],
-			If[!MatchQ[Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&][[-1,myStatusColumn]],Alternatives@@listedInactiveStatusesWithOverlap],
-				ReplacePart[Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&][[-1]],myDateColumn->resolvedEndDate],
-				ReplacePart[ConstantArray[Null,numberOfFields],{myDateColumn->resolvedEndDate,myStatusColumn->Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&][[-1,myStatusColumn]]}]
-			]]
+		Module[
+			{selectedSubLog},
+			(* The very last entry of selectedLog might be at exactly the end date *)
+			selectedSubLog=Select[subLog,LessEqualQ[#[[myDateColumn]],resolvedEndDate]&];
+			Append[
+				(* Here we append to a list of logs WITHOUT the possible last entry of the same time as the end date, as we will append it back regardless *)
+				Select[subLog,LessQ[#[[myDateColumn]],resolvedEndDate]&],
+				If[
+					!MatchQ[selectedSubLog[[-1,myStatusColumn]],Alternatives@@listedInactiveStatusesWithOverlap],
+					ReplacePart[selectedSubLog[[-1]],myDateColumn->resolvedEndDate],
+					ReplacePart[ConstantArray[Null,numberOfFields],{myDateColumn->resolvedEndDate,myStatusColumn->selectedSubLog[[-1,myStatusColumn]]}]
+				]
+			]
+		]
 	]]/@startDateCorrectedLogs;
 
 
@@ -609,7 +618,7 @@ ParseLog[myObjects:{ObjectP[]..},myField:_Symbol,myOptions:OptionsPattern[ParseL
 	];
 
 	(* Download the data *)
-	fieldData=Quiet[Download[listedObjects,{myField,Status,Deprecated,DateRetired,DateDiscarded,DateCompleted},Cache->cache],{Download::FieldDoesntExist,Download::MissingCacheField}];
+	fieldData=Quiet[Download[listedObjects,{myField,Status,Deprecated,DateRetired,DateDiscarded,DateCompleted},Cache->cache],{Download::MissingField, Download::FieldDoesntExist,Download::MissingCacheField}];
 
 	(* Check if the object is dead *)
 	deadQ=Switch[#,
@@ -665,6 +674,9 @@ ParseLog[myObjects:{ObjectP[]..},myField:_Symbol,myOptions:OptionsPattern[ParseL
 
 		{_,ProtocolLog},
 		{1,2,3,3,False,False,{Exit},False},
+
+		{_,ActiveSciOpsLog},
+		{1,2,2,2,True,False,{False},Null},
 
 		(* Otherwise, let's just guess *)
 		{_,_},

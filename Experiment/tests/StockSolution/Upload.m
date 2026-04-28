@@ -1280,6 +1280,31 @@ DefineTests[UploadStockSolution,
 				Unset[$CreatedObjects]
 			)
 		],
+		Example[{Messages, "ConflictingUnitOperationsOptions", "An error is thrown when unit operations input is supplied with unsupported sample preparation options:"},
+			UploadStockSolution[
+				{
+					LabelContainer[
+						Label->"test tube",
+						Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL tube*)
+					],
+					Transfer[
+						Source->Model[Sample, StockSolution,"id:xRO9n3ExxAPx"],(*"2 mg/mL Ampicillin in Water, Filtered"*)
+						Destination->"test tube",
+						Amount-> 1 Milliliter,
+						MeasureVolume -> False, ImageSample -> False, MeasureWeight -> False
+					],
+					Transfer[
+						Source->Model[Sample, Media, "id:jLq9jXqbAn9E"](*"LB (Liquid)"*),
+						Destination->"test tube",
+						Amount->39 Milliliter,
+						MeasureVolume -> False, ImageSample -> False, MeasureWeight -> False
+					]
+				},
+				PreRinseLabware->True
+			],
+			$Failed,
+			Messages:>{Error::PreRinseOptionConflictUSS, Error::ConflictingUnitOperationsOptions,Error::InvalidOption}
+		],
 		Example[{Messages,"InvalidLabelContainerUnitOperationInput","An error will be thrown if a the unit operations input does not start with a LabelContainer unit operation:"},
 			UploadStockSolution[
 				{
@@ -1386,6 +1411,44 @@ DefineTests[UploadStockSolution,
 			Messages:>{Warning::SpecifedMixRateNotSafe, Warning::NewModelCreation},
 			Variables:>{protocol}
 		],
+		(* Pre-Rinse Messages *)
+		Example[{Messages,"PreRinseOptionConflictUSS","An error will be thrown if PreRinse options are set to a mixture of Null/non-Null:"},
+			UploadStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				PreRinseLabware -> True,
+				PreRinseSolution -> Null
+			],
+			$Failed,
+			Messages:>{Error::PreRinseOptionConflictUSS,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidPreRinseSolutionUSS","An error will be thrown if PreRinseSolution is not part of the stock solution formula or FillToVolume solvent (1):"},
+			UploadStockSolution[
+				{
+					{15 Gram,Model[Sample,"Sodium Chloride"]}
+				},
+				Model[Sample,"Milli-Q water"],
+				1 Liter,
+				PreRinseSolution -> Model[Sample,"Methanol"]
+			],
+			$Failed,
+			Messages:>{Error::InvalidPreRinseSolutionUSS,Error::InvalidOption}
+		],
+		Example[{Messages,"InvalidPreRinseSolutionUSS","An error will be thrown if PreRinseSolution is not part of the stock solution formula or FillToVolume solvent (2):"},
+			UploadStockSolution[
+				{
+					{500 Milliliter, Model[Sample,"Milli-Q water"]},
+					{501 Milliliter, Model[Sample,"Methanol"]}
+				},
+				PreRinseSolution -> Model[Sample, "Ethanol, Reagent Grade"]
+			],
+			$Failed,
+			Messages:>{Error::InvalidPreRinseSolutionUSS,Error::InvalidOption}
+		],
+
 		(* --- Options --- *)
 		Example[{Options,Type,"Specify the SLL type of the new stock solution model being created:"},
 			Lookup[
@@ -2610,20 +2673,64 @@ DefineTests[UploadStockSolution,
 			],
 			0.22 Micron
 		],
-		Example[{Options,LightSensitive,"Indicate if a solution is sensitive to light exposure and should be stored in light-blocking containers when possible:"},
+
+		(* Pre-Rinse options *)
+		Example[{Options,PreRinseLabware,"Indicates that labware used for transfers are rinsed prior to use:"},
 			Download[
 				UploadStockSolution[
 					{
-						{200 Gram,Model[Sample,"Sodium Chloride"]}
+						{15 Gram,Model[Sample,"Sodium Chloride"]}
 					},
 					Model[Sample,"Milli-Q water"],
-					500 Milliliter,
-					LightSensitive->True
+					1 Liter,
+					PreRinseLabware -> True
 				],
-				LightSensitive
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolution}
 			],
-			True
+			{True, 2, ObjectP[Model[Sample,"Milli-Q water"]]}
 		],
+		Example[{Options,NumberOfPreRinses,"Specifies the number of times labware used for transfers are rinsed with PreRinseSolution before use with PreRinseSolution:"},
+			Download[
+				UploadStockSolution[
+					{
+						{15 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					NumberOfPreRinses -> 5
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolution}
+			],
+			{True, 5, ObjectP[Model[Sample,"Milli-Q water"]]}
+		],
+		Example[{Options,PreRinseSolution,"Specifies the solution (FillToVolume Solvent) that is used to rinse labware used for transfers:"},
+			Download[
+				UploadStockSolution[
+					{
+						{15 Gram,Model[Sample,"Sodium Chloride"]}
+					},
+					Model[Sample,"Milli-Q water"],
+					1 Liter,
+					PreRinseSolution -> Model[Sample,"Milli-Q water"]
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolution}
+			],
+			{True, 2, ObjectP[Model[Sample,"Milli-Q water"]]}
+		],
+		Example[{Options,PreRinseSolution,"Specifies the solution (one of the liquid formula) that is used to rinse labware used for transfers:"},
+			Download[
+				UploadStockSolution[
+					{
+						{500 Milliliter, Model[Sample,"Milli-Q water"]},
+						{501 Milliliter, Model[Sample,"Methanol"]}
+					},
+					PreRinseSolution -> Model[Sample,"Methanol"]
+				],
+				{PreRinseLabware, NumberOfPreRinses, PreRinseSolution}
+			],
+			{True, 2, ObjectP[Model[Sample,"Methanol"]]}
+		],
+
 		Example[{Options,LightSensitive,"This option automatically resolves to True if any components in the provided formula are themselves marked as LightSensitive:"},
 			Download[
 				UploadStockSolution[

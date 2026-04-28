@@ -5991,7 +5991,7 @@ resolveExperimentPickColoniesOptions[mySamples: {ObjectP[Object[Sample]]...}, my
 
   (*-- UNRESOLVABLE OPTION CHECKS --*)
 
-  (* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption if necessary. *)
+  (* Check our invalid input and invalid option variables and throw Error::InvalidInput or Error::InvalidOption when necessary. *)
   invalidInputs = DeleteDuplicates[Flatten[
     {
       compatibleMaterialsTests,

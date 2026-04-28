@@ -886,6 +886,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentTotalProteinDetection[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentTotalProteinDetection[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID], CentrifugeTime -> 5 * Minute, Output -> Options];
@@ -940,25 +948,25 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterMaterial, "The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FilterMaterial -> PES, FilterContainerOut -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FilterMaterial -> PES, FilterContainerOut -> Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, FilterMaterial],
 			PES,
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], PrefilterMaterial -> GxF, Output -> Options];
+			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], PrefilterMaterial -> GxF, Output -> Options];
 			Lookup[options, PrefilterMaterial],
 			GxF,
 			Variables :> {options}
 		],
 		Example[{Options, FilterPoreSize, "The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FilterPoreSize -> 0.22 * Micrometer, Output -> Options];
+			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FilterPoreSize -> 0.22 * Micrometer, Output -> Options];
 			Lookup[options, FilterPoreSize],
 			0.22 * Micrometer,
 			Variables :> {options}
 		],
 		Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, Output -> Options];
+			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], PrefilterPoreSize -> 1. * Micrometer, FilterMaterial -> PTFE, Output -> Options];
 			Lookup[options, PrefilterPoreSize],
 			1. * Micrometer,
 			Variables :> {options}
@@ -970,7 +978,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
+			options = ExperimentTotalProteinDetection[Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
 			Variables :> {options}
@@ -1038,6 +1046,14 @@ DefineTests[
 			0.5 * Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentTotalProteinDetection[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection"<>$SessionUUID], AliquotAmount -> 0.5001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.5 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentTotalProteinDetection[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID], AssayVolume -> 0.5 * Milliliter, Output -> Options];
@@ -1266,7 +1282,7 @@ DefineTests[
 				Model[Sample, "10 kDa test protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "10 kDa test protein sample for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test 1 mL lysate sample, 5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
-				Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID],
+				Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test 1 mL lysate sample, 0.5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Protocol, TotalProteinDetection, "Test TotalProteinDetection option template protocol" <> $SessionUUID]
@@ -1406,7 +1422,7 @@ DefineTests[
 					"Test 1 mL lysate sample, TotalProteinConcentration not informed for ExperimentTotalProteinDetection" <> $SessionUUID,
 					"10 kDa test protein sample for ExperimentTotalProteinDetection" <> $SessionUUID,
 					"Test 1 mL lysate sample, 5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID,
-					"Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID,
+					"Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID,
 					"Test 1 mL lysate sample, 0.5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID,
 					"Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID
 				}
@@ -1432,7 +1448,7 @@ DefineTests[
 				<|Object -> availableLysateSampleNoTotal, Status -> Available, DeveloperObject -> True, Volume -> 1 * Milliliter|>,
 				<|Object -> proteinSample10kDa, Status -> Available, DeveloperObject -> True, Volume -> 1 * Milliliter, Concentration -> 11 * Micromolar|>,
 				<|Object -> tooConcLysate, Status -> Available, DeveloperObject -> True, Volume -> 1 * Milliliter, TotalProteinConcentration -> 5 * Milligram / Milliliter|>,
-				<|Object -> waterSample, Status -> Available, DeveloperObject -> True, Volume -> 25 * Milliliter|>,
+				<|Object -> waterSample, Status -> Available, DeveloperObject -> True, Volume -> 50 * Milliliter|>,
 				<|Object -> lysateSample2, Status -> Available, DeveloperObject -> True, Volume -> 1 * Milliliter, TotalProteinConcentration -> 0.5 * Milligram / Milliliter|>,
 				<|Object -> modellessSample, Status -> Available, Model -> Null, DeveloperObject -> True, Volume -> 1 * Milliliter, TotalProteinConcentration -> 0.25 * Milligram / Milliliter|>
 			}];
@@ -1465,7 +1481,7 @@ DefineTests[
 				Model[Sample, "10 kDa test protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "10 kDa test protein sample for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test 1 mL lysate sample, 5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
-				Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID],
+				Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test 1 mL lysate sample, 0.5 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Sample, "Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentTotalProteinDetection" <> $SessionUUID],
 				Object[Protocol, TotalProteinDetection, "Test TotalProteinDetection option template protocol" <> $SessionUUID]

@@ -181,6 +181,15 @@ DefineObjectType[Model[Qualification, qPCR], {
 			Pattern :> GreaterP[0],
 			Description -> "The allowable difference between the measured ratio and the ExpectedRatio in order to confirm qualification.",
 			Category -> "General"
+		},
+		(* ViiA7 Specific fields*)
+		VerificationPlate->{
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Container, Plate],
+			Description -> "The standardized plate model used to qualify the instrument.",
+			Category -> "General"
 		}
 	}
 }];

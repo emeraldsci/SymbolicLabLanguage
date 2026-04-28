@@ -160,6 +160,14 @@ DefineObjectType[Object[Instrument, pHMeter], {
 			Description -> "The calibration buffer sets that have been defined on the seven excellence pH meter.",
 			Category -> "Instrument Specifications",
 			Headers -> {Calibration->"Calibration Buffer Set Name", Method -> "Method Name", LowCalibrationBufferpH->"Low Calibration Buffer pH", MediumCalibrationBufferpH -> "Medium Calibration Buffer pH", HighCalibrationBufferpH -> "High Calibration Buffer pH", pHCalibration -> "pH Calibration Method"}
+		},
+		TemperatureControlInstrument -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, HeatBlock][pHMeter],
+			Description -> "The heat block associated with this instrument that control temperature of sample, verification or calibration buffer during pH measurement.",
+			Category -> "Instrument Specifications"
 		}
 	}
 }];
