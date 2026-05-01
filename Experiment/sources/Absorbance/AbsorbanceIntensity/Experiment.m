@@ -27,7 +27,8 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> AbsorbanceMethodP
-			]
+			],
+			Category->"General"
 		},
 		{
 			OptionName -> Instrument,
@@ -38,14 +39,27 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Model[Instrument, PlateReader], Object[Instrument, PlateReader], Object[Instrument,Spectrophotometer], Model[Instrument,Spectrophotometer]}]
+			],
+			Category->"General"
+		},
+		{
+			OptionName->MaxLoadingRetries,
+			Default->Automatic,
+			Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to 2. Otherwise set to Null.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,10]
 			]
 		},
 		{
 			OptionName->MicrofluidicChipLoading,
 			Default->Automatic,
 			AllowNull->True,
-			Description->"When using Lunatic, indicates if Lunatic Microfluidic Chips are loaded by a robotic liquid handler or manually.",
-			ResolutionDescription -> "When using the Lunatic plate readers, automatically set to Robotic. When using the BMG plate reader, automatically set to Null.",
+			Description->"When using the Microfluidic plate readers, indicates if the Microfluidic Chips are loaded by a robotic liquid handler or manually.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic. Otherwise set to Null.",
 			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[Robotic, Manual]],
 			Category->"Sample Handling"
 		},
@@ -208,7 +222,90 @@ DefineOptions[ExperimentAbsorbanceIntensity,
 			IndexMatchingInput -> "experiment samples"
 		],
 		AbsorbanceSharedOptions,
-		SamplesOutStorageOptions
+		(* Currently Standards is only supported on Lunatic instrument *)
+		(* All options except StandardWavelength are the same as ExperimentAbsorbanceSpectroscopy. We have to put all options together because of the IndexMatching Parent *)
+		IndexMatching[
+			IndexMatchingParent -> Standards,
+			{
+				OptionName -> Standards,
+				(* Default no standard *)
+				Default -> Null,
+				Description -> "The reference samples with known absorbance to run in parallel with the unknown samples, often used to check internal measurement consistency.",
+				AllowNull -> True,
+				Category -> "Standards",
+				Widget -> Widget[Type -> Object, Pattern:>ObjectP[{Model[Sample], Object[Sample]}]]
+			},
+			(* For Lunatic, this volume must be 2.1 Microliter *)
+			{
+				OptionName -> StandardVolumes,
+				Default -> Automatic,
+				Description -> "The amount of liquid of the Standards that should be transferred out and used to perform standard measurements.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the value of AssayVolume if that was specified, or maximum volume of the container otherwise.",
+				AllowNull -> True,
+				Category -> "Standards",
+				Widget -> Widget[Type->Quantity, Pattern:>RangeP[1 Microliter, 4000*Microliter],Units:>{1, {Microliter, {Microliter, Milliliter}}}]
+			},
+			{
+				OptionName -> StandardLabel,
+				Default -> Automatic,
+				AllowNull->True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+				Description->"A user defined word or phrase used to identify the Standards samples, for use in downstream unit operations.",
+				Category->"General",
+				UnitOperation->True
+			},
+			{
+				OptionName -> StandardBlanks,
+				Default -> Automatic,
+				AllowNull -> True,
+				Description -> "The object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards to take account for any artifacts.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the first sample in Blanks.",
+				Category -> "Standards",
+				Widget -> Widget[Type -> Object, Pattern:>ObjectP[{Model[Sample], Object[Sample]}]]
+			},
+			(* For Lunatic, this volume must be 2.1 Microliter *)
+			{
+				OptionName -> StandardBlankVolumes,
+				Default -> Automatic,
+				AllowNull -> True,
+				Description->"The amount of liquid of the StandardBlanks that should be transferred out and used to blank measurements.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the first value of BlankVolumes if that was specified, or maximum volume of the container otherwise.",
+				Category -> "Standards",
+				Widget -> Widget[Type->Quantity, Pattern:>RangeP[1 Microliter, 4000*Microliter],Units:>{1, {Microliter, {Microliter, Milliliter}}}]
+			},
+			{
+				OptionName -> StandardBlankLabel,
+				Default -> Automatic,
+				AllowNull->True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+				Description->"A user defined word or phrase used to identify the StandardBlanks samples, for use in downstream unit operations.",
+				Category -> "Standards",
+				UnitOperation -> True
+			},
+			{
+				OptionName -> StandardWavelength,
+				Default -> Automatic,
+				Description -> "The specific wavelength(s) which should be used to measure absorbance in the standards.",
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[200 Nanometer, 1000 Nanometer],
+					Units -> Alternatives[Nanometer]
+				],
+				ResolutionDescription -> "Automatically resolves to the first value in Wavelength option for the samples.",
+				Category -> "Standards"
+			}
+		],
+		SamplesOutStorageOptions,
+		{
+			OptionName->ImageMicrofluidicPlate,
+			Default->Automatic,
+			AllowNull->True,
+			Description->"When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to PostRead. Otherwise set to Null.",
+			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[PreRead, PostRead, All]],
+			Category->"Post Processing"
+		}
 	}
 ];
 
@@ -223,7 +320,7 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
 		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resolvedOptions, resolutionTests, returnEarlyQBecauseFailure, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, protocolObject,
+		resolvedOptions, resolutionTests, returnEarlyQBecauseFailure, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, specifiedBlankAnsStandardObjects, specifiedBlankAnsStandardModels, protocolObject,
 		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
 		samplePreparationSimulation, downloadFields, mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed, optionsResolverOnly, returnEarlyQBecauseOptionsResolverOnly
 	},
@@ -322,12 +419,39 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 	(* get all specified instruments *)
 	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
 
+	(* get all objects from blank and standard options *)
+	specifiedBlankAnsStandardObjects = DeleteDuplicates[
+		Download[
+			Cases[
+				Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+				ObjectP[Object]
+			],
+			Object
+		]
+	];
+
+	specifiedBlankAnsStandardModels = DeleteDuplicates[
+		Join[
+			Download[
+				Cases[
+					Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+					ObjectP[Model]
+				],
+				Object
+			],
+			(* Default blank - Milli-Q water *)
+			{Model[Sample, "id:8qZ1VWNmdLBD"]}
+		]
+	];
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
+			Packet[Field[Container[Contents][[All,2]][{State,Volume,Container,CellType}]]],
+			Packet[Solvent[{State}]]
 		},
 		{
 			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
@@ -335,7 +459,15 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			Packet[IntegratedLiquidHandler[Model]],
 			Packet[IntegratedLiquidHandler[Model][Object]],
 			Packet[IntegratedLiquidHandlers[Object]]
-		}
+		},
+		(* Blank and Standard Object *)
+		{
+			Packet[Container, State, Volume],
+			Packet[Container[{Model}]],
+			Packet[Container[Model][{MaxVolume,RecommendedFillVolume}]]
+		},
+		(* Blank and Standard Model *)
+		{Packet[State]}
 	};
 
 	(* make the up front Download call *)
@@ -344,7 +476,9 @@ ExperimentAbsorbanceIntensity[mySamples : ListableP[ObjectP[Object[Sample]]], my
 			Download[
 				{
 					mySamplesWithPreparedSamples,
-					specifiedInstruments
+					specifiedInstruments,
+					specifiedBlankAnsStandardObjects,
+					specifiedBlankAnsStandardModels
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,

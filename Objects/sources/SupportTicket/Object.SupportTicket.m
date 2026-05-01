@@ -307,6 +307,16 @@ DefineObjectType[Object[SupportTicket], {
 			Developer -> True,
 			Headers -> {"Date","Person Deciding","Keywords"}
 		},
+		SupportNotebook -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Notebook, Page],
+			Description -> "The record of investigation and/or manual interventions performed during the resolution of this ticket.",
+			Category -> "Organizational Information",
+			Developer -> True,
+			AdminViewOnly -> True
+		},
 
 		(* --- Data Integrations --- *)
 		Sync -> {

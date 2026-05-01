@@ -169,6 +169,83 @@ DefineObjectType[Object[Instrument, Thermocycler], {
 			Relation -> Object[Instrument, LiquidHandler][IntegratedThermocyclers],
 			Description -> "The liquid handler that is connected to this thermocycler.",
 			Category -> "Integrations"
+		},
+		BackgroundCalibrationLog -> {
+			Format -> Multiple,
+			Class -> {Expression, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Object[Calibration, Thermocycler][InstrumentCalibrated]},
+			Headers -> {"Date", "Calibration"},
+			Description -> "All Background calibrations run on this instrument overtime.",
+			Category -> "Calibration"
+		},
+		RegionOfInterestCalibrationLog -> {
+			Format -> Multiple,
+			Class -> {Expression, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Object[Calibration, Thermocycler][InstrumentCalibrated]},
+			Headers -> {"Date", "Calibration"},
+			Description -> "All ROI calibrations run on this instrument overtime.",
+			Category -> "Calibration"
+		},
+		UniformityCalibrationLog -> {
+			Format -> Multiple,
+			Class -> {Expression, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Object[Calibration, Thermocycler][InstrumentCalibrated]},
+			Headers -> {"Date", "Calibration"},
+			Description -> "All Uniformity calibrations run on this instrument overtime.",
+			Category -> "Calibration"
+		},
+		DyeCalibrationLogs -> {
+			Format -> Multiple,
+			Class -> {
+				PlateModel -> Link,
+				CalibrationDate -> Expression,
+				CalibrationReport -> Link
+			},
+			Pattern :> {
+				PlateModel -> _Link,
+				CalibrationDate -> _?DateObjectQ,
+				CalibrationReport -> _Link
+			},
+			Relation -> {
+				PlateModel -> Model[Object, Container, Plate],
+				CalibrationDate -> Null,
+				CalibrationReport -> Object[Calibration, Thermocycler][InstrumentCalibrated]
+			},
+			Headers ->{
+				PlateModel->"Plate Model",
+				CalibrationDate->"Date",
+				CalibrationReport->"Report"
+			},
+			Description -> "All Dye calibrations run on this instrument overtime.",
+			Category -> "Calibration"
+		},
+		NormalizationCalibrationLogs -> {
+			Format -> Multiple,
+			Class -> {
+				PlateModel -> Link,
+				CalibrationDate -> Expression,
+				CalibrationReport -> Link
+			},
+			Pattern :> {
+				PlateModel -> _Link,
+				CalibrationDate -> _?DateObjectQ,
+				CalibrationReport -> _Link
+			},
+			Relation -> {
+				PlateModel -> Model[Object, Container, Plate],
+				CalibrationDate -> Null,
+				CalibrationReport -> Object[Calibration, Thermocycler][InstrumentCalibrated]
+			},
+			Headers ->{
+				PlateModel->"Plate Model",
+				CalibrationDate->"Date",
+				CalibrationReport->"Report"
+			},
+			Description -> "All Normalization calibrations run on this instrument over time.",
+			Category -> "Calibration"
 		}
 	}
 }];

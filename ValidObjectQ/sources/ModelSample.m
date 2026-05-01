@@ -31,7 +31,7 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 		storageConditionPackets,
 		compositionNotebookPackets,
 		solventPackets
-	} = Download[
+	} = Quiet@Download[
 		packet,
 		{
 			Packet[Products[{Deprecated, NotForSale, Stocked, Notebook}]],
@@ -368,6 +368,36 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			True
 		],
 
+		Test["If Tablet is True, the SampleHandling must be Itemized:",
+			If[TrueQ[Lookup[packet, Tablet]],
+				SameQ[Lookup[packet, SampleHandling], Itemized],
+				True
+			],
+			True
+		],
+
+		Test["If Tablet is True, the SolidUnitWeight must be populated:",
+			If[TrueQ[Lookup[packet, Tablet]],
+				MatchQ[Lookup[packet, SolidUnitWeight], MassP],
+				True
+			],
+			True,
+			Message -> {Hold[Error::SampleTypeOptionMismatch],
+				identifier, Tablet,
+				"the SolidUnitWeight has to be populated but is set to " <> ToString[Lookup[packet, SolidUnitWeight]]}
+		],
+
+		Test["If Capsule is True, the SolidUnitWeight must be populated:",
+			If[TrueQ[Lookup[packet, Capsule]],
+				MatchQ[Lookup[packet, SolidUnitWeight], MassP],
+				True
+			],
+			True,
+			Message -> {Hold[Error::SampleTypeOptionMismatch],
+				identifier, Capsule,
+				"the SolidUnitWeight has to be populated but is set to " <> ToString[Lookup[packet, SolidUnitWeight]]}
+		],
+
 		Test["If Sachet is True, the State must be Solid:",
 			If[TrueQ[Lookup[packet, Sachet]],
 				SameQ[Lookup[packet, State], Solid],
@@ -401,15 +431,15 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 		}
 		],
 
-		Test["If SolidUnitWeight or SolidUnitWeightDistribution is populated, the sample must be Sachet or Tablet:",
+		Test["If SolidUnitWeight or SolidUnitWeightDistribution is populated, the sample must be Sachet or Tablet or Capsule:",
 			If[!NullQ[Lookup[packet, SolidUnitWeight]] || !NullQ[Lookup[packet, SolidUnitWeightDistribution]],
-				TrueQ[Lookup[packet, Sachet]] || TrueQ[Lookup[packet, Tablet]],
+				TrueQ[Lookup[packet, Sachet]] || TrueQ[Lookup[packet, Tablet]] || TrueQ[Lookup[packet, Capsule]],
 				True
 			],
 			True,
 			Message -> {Hold[Error::SampleTypeOptionMismatch], 
 				identifier,
-				"neither Tablet nor Sachet",
+				"not Tablet or Capsule or Sachet ",
 				"the SolidUnitWeight and SolidUnitWeightDistribution have to be Null but are set to " <> ToString[Lookup[packet, {SolidUnitWeight, SolidUnitWeightDistribution}]]
 			}
 		],
@@ -432,8 +462,8 @@ validModelSampleQTests[packet : PacketP[Model[Sample]]] := Module[
 			True
 		],
 
-		Test["Fiber, Sachet, and Tablet must not be True at the same time:",
-			If[Length[Cases[Lookup[packet, {Fiber, Tablet, Sachet}],True]] > 1,
+		Test["Fiber, Sachet, Capsule and Tablet must not be True at the same time:",
+			If[Length[Cases[Lookup[packet, {Fiber, Tablet, Capsule, Sachet}],True]] > 1,
 				False,
 				True
 			],

@@ -110,6 +110,15 @@ DefineObjectType[Object[Protocol,PlateMedia],{
 			Description->"The plates into which the prepared media will be transferred.",
 			Category->"Experimental Results"
 		},
+		PlatesOutAppearances -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			IndexMatching -> PlatesOut,
+			Description -> "For each member of PlatesOut, the image captured after solidification by the camera rig inside the biosafety cabinet.",
+			Category -> "Experimental Results"
+		},
 		PlatesOutGrouped->{
 			Format->Multiple,
 			Class->Expression,

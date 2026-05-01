@@ -67,6 +67,30 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			Category -> "Fill to Volume",
 			Developer -> True
 		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates whether any glassware introduced in this protocol (including, if relevant, any funnels or intermediate containers) are oven dried before use.",
+			Category -> "Fill to Volume"
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, indicates whether any glassware introduced in this protocol (including, if relevant, any solvent preparatory containers, funnels, or intermediate containers) are oven dried before use.",
+			Category -> "Fill to Volume"
+		},
+		OvenDryUnitOperations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[UnitOperation, OvenDry],
+			Description -> "The OvenDry unit operations, if any, that contain the instructions for oven drying or depyrogenating specified glassware prior to any other manipulations.",
+			Category -> "Fill to Volume"
+		},
 		SolventStorage -> {
 			Format -> Multiple,
 			Class -> Expression,
@@ -128,6 +152,41 @@ DefineObjectType[Object[Protocol, FillToVolume], {
 			IndexMatching -> SamplesIn,
 			Description -> "For each member of SamplesIn, the cloud file that stores the images of the filled volumetric flasks, if the sample is not fulfilled by Volumetric FillToVolume method, the corresponding value will be Null.",
 			Category -> "Sample Post-Processing"
+		},
+		PreRinseLabware->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if labware used to transfer the Solvent sample is rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			Category->"PreRinse Labware"
+		},
+		NumberOfPreRinses->{
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Units -> None,
+			Description -> "The number of times labware used to transfer the Solvent sample is rinsed with PreRinseSolution before FillToVolume transfer occurs.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseVolumes->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The total volume of the PreRinseSolution that is used to rinse labware (IntermediateContainer, Instrument (graduated cylinder, beaker), Funnel, Tips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseSolutions->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The solution that is used to rinse labware (IntermediateContainer, Instrument (graduated cylinder, beaker), Funnel, Tips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "General",
+			Migration->SplitField
 		},
 		WasteContainer->{
 			Format->Single,

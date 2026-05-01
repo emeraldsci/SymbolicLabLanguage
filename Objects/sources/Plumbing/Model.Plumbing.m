@@ -240,14 +240,6 @@ DefineObjectType[Model[Plumbing], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
-		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,
 			Class -> Expression,
@@ -390,6 +382,20 @@ DefineObjectType[Model[Plumbing], {
 			Description -> "A list of instruments for which this model is replacement part or an accompanying accessory.",
 			Category -> "Qualifications & Maintenance"
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any portions of the exterior surfaces of this plumbing component are sensitive and prone to contamination.",
+			Category -> "Compatibility"
+		},
+        ExposedInterior -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicates if any sensitive portions of the interior surfaces of this plumbing component are open to the external environment and prone to contamination.",
+            Category -> "Compatibility"
+        },
 
 		(* --- Resources --- *)
 		RequestedResources -> {

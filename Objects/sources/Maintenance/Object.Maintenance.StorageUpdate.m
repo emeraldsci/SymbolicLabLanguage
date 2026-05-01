@@ -47,7 +47,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		BatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of moved items, so that only a certain number of items were gathered or stored at a time.",
 			Category -> "Batching",
 			Developer -> True
@@ -93,7 +93,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		WasteHoldingBatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of MovedWasteHoldingSamples, so that only a certain number of items were gathered or stored at a time.",
 			Category -> "Batching",
 			Developer -> True
@@ -123,7 +123,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		SolidDisposalBatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of MovedSolidDisposalSamples, so that only a certain number of items were gathered or stored at a time.",
 			Category -> "Batching",
 			Developer -> True
@@ -134,7 +134,8 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Container],
-				Object[Sample]
+				Object[Sample],
+				Object[Item]
 			],
 			Description -> "Biological samples or containers that were marked to be moved and further categorized based on whether they can be disposed of in biohazard waste holding directly or if they contain LiquidBiohazardWaste or UnsealedBiohazardWaste and require bleaching or taping respectively.",
 			Category -> "General"
@@ -145,7 +146,8 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Container],
-				Object[Sample]
+				Object[Sample],
+				Object[Item]
 			],
 			Description -> "Biological samples or containers that were successfully scanned but not yet moved and categorized based on if they can be disposed of in biohazard waste holding directly or if they contain LiquidBiohazardWaste and UnsealedBiohazardWaste and require bleaching or taping.",
 			Developer -> True,
@@ -154,10 +156,61 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		BiohazardDisposalBatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of MovedBiohazardDisposalSamples, so that only a certain number of items are gathered or stored at a time.",
 			Category -> "Batching",
 			Developer -> True
+		},
+		MovedOEB45DisposalSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample],
+				Object[Item]
+			],
+			Description -> "OEB4/5 hazard disposal samples or containers that were marked to be moved and further categorized based on whether they can be disposed of in SolidOEB45 waste directly or if they contained LiquidOEB45 waste and require treatment.",
+			Category -> "General"
+		},
+		FoundOEB45DisposalSamples -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container],
+				Object[Sample],
+				Object[Item]
+			],
+			Description -> "OEB4/5 samples or containers that were successfully scanned but not yet moved and categorized based on if they can be disposed of in SolidOEB45 waste directly or if they contain LiquidOEB45Waste and require treatment.",
+			Developer -> True,
+			Category -> "General"
+		},
+		OEB45DisposalBatchLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0., 1.],
+			Description -> "The lengths of each grouping of MovedOEB45DisposalSamples, so that only a certain number of items are gathered or stored at a time.",
+			Category -> "Batching",
+			Developer -> True
+		},
+		OEB45SolidDisposals -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the MovedOEB45DisposalSamples are for solid disposal, so that scanning of the waste bin is prompted. For liquid disposal, the scanning of the solid waste bin is conditionally prompted.",
+			Category -> "Batching"
+		},
+		UsedSolidOEB45WasteBins -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, WasteBin]
+			],
+			Description -> "The SolidOEB45 waste bins that this StorageUpdate maintenance has disposed into, if any.",
+			Developer -> True,
+			Category -> "General"
 		},
 		MovedLargeVolumeSamples -> {
 			Format -> Multiple,
@@ -184,7 +237,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		LargeVolumeBatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of MovedLargeVolumeSamples, so that only a certain number of items were gathered or stored at a time.",
 			Category -> "Batching",
 			Developer -> True
@@ -244,7 +297,7 @@ DefineObjectType[Object[Maintenance, StorageUpdate], {
 		CrystallizationInstrumentBatchLengths -> {
 			Format -> Multiple,
 			Class -> Integer,
-			Pattern :> GreaterP[0],
+			Pattern :> GreaterP[0., 1.],
 			Description -> "The lengths of each grouping of CrystallizationTestingItems, so that crystallization plates from same crystal incubator are gathered at a time.",
 			Category -> "Batching",
 			Developer -> True

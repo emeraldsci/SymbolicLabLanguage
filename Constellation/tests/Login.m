@@ -188,6 +188,7 @@ DefineTests[
 	),
 
 	Stubs :> {
+		DVA`RegisterConstellationSession[___]:=Null,
 		idToTypeStringCache=<||>,
 		idToTypeCache=<||>,
 		typeToIdCache=<||>,

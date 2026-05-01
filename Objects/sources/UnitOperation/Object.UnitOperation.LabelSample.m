@@ -3,12 +3,12 @@
 (* ::Text:: *)
 (*\[Copyright] 2011-2023 Emerald Cloud Lab, Inc.*)
 
-DefineObjectType[Object[UnitOperation,LabelSample],
+DefineObjectType[Object[UnitOperation, LabelSample],
 	{
-		Description->"A detailed set of parameters that labels a sample for later use in a SamplePreparation/CellPreparation experiment.",
-		CreatePrivileges->None,
-		Cache->Session,
-		Fields->{
+		Description -> "A detailed set of parameters that labels a sample for later use in a SamplePreparation/CellPreparation experiment.",
+		CreatePrivileges -> None,
+		Cache -> Session,
+		Fields -> {
 			Label -> {
 				Format -> Multiple,
 				Class -> String,
@@ -26,7 +26,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				],
 				Description -> "The sample that should be labeled by this primitive.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			SampleString -> {
 				Format -> Multiple,
@@ -35,7 +35,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Relation -> Null,
 				Description -> "The sample that should be labeled by this primitive.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			SampleExpression -> {
 				Format -> Multiple,
@@ -44,9 +44,8 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Relation -> Null,
 				Description -> "The sample that should be labeled by this primitive.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
-
 			SampleModel -> {
 				Format -> Multiple,
 				Class -> Link,
@@ -57,7 +56,6 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The model that this labeled sample should point to.",
 				Category -> "General"
 			},
-
 			(* NOTE: Since our unit operation can take multiple samples, Composition needs to be a N-Multiple field. *)
 			Composition -> {
 				Format -> Multiple,
@@ -67,7 +65,6 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "Specifies the molecular composition of this sample.",
 				Category -> "General"
 			},
-
 			ContainerLink -> {
 				Format -> Multiple,
 				Class -> Link,
@@ -78,7 +75,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				],
 				Description -> "The container object of the sample that is to be labeled.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			ContainerString -> {
 				Format -> Multiple,
@@ -86,7 +83,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Pattern :> _String,
 				Description -> "The container object of the sample that is to be labeled.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			ContainerLabel -> {
 				Format -> Multiple,
@@ -95,7 +92,6 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The label of the container that will use used to refer to it in other unit operations.",
 				Category -> "General"
 			},
-
 			Well -> {
 				Format -> Multiple,
 				Class -> String,
@@ -103,14 +99,13 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The well of the container that the sample is already in.",
 				Category -> "General"
 			},
-
 			AmountVariableUnit -> {
 				Format -> Multiple,
 				Class -> VariableUnit,
 				Pattern :> GreaterEqualP[0*Milliliter] | GreaterEqualP[0*Milligram],
 				Description -> "The amount of that sample that will be transferred from the Source to the corresponding Destination.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			AmountInteger -> {
 				Format -> Multiple,
@@ -118,9 +113,8 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Pattern :> GreaterP[0, 1],
 				Description -> "The amount of that sample that will be transferred from the Source to the corresponding Destination.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
-
 			ExactAmount -> {
 				Format -> Multiple,
 				Class -> Boolean,
@@ -134,7 +128,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Pattern :> GreaterEqualP[0*Milliliter] | GreaterEqualP[0*Milligram],
 				Description -> "The allowed tolerance when preparing the specified Amount of sample. This option can only be set if ExactAmount is set to True.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			ToleranceInteger -> {
 				Format -> Multiple,
@@ -142,9 +136,8 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Pattern :> GreaterEqualP[0, 1],
 				Description -> "The allowed tolerance when preparing the specified Amount of sample. This option can only be set if ExactAmount is set to True.",
 				Category -> "General",
-				Migration->SplitField
+				Migration -> SplitField
 			},
-
 			(* NOTE: These are all resource picked at once so that we can avoid having multiple resource picking tasks. *)
 			RequiredObjects -> {
 				Format -> Multiple,
@@ -185,7 +178,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "The primary types of cells that are contained within this sample.",
 				Category -> "Physical Properties"
 			},
-			CultureAdhesion->{
+			CultureAdhesion -> {
 				Format -> Multiple,
 				Class -> Expression,
 				Pattern :> CultureAdhesionP,
@@ -285,12 +278,12 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Description -> "Indicates if aseptic techniques are followed for this sample. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage.",
 				Category -> "Health & Safety"
 			},
-			AutoclaveUnsafe->{
-				Format->Multiple,
-				Class->Boolean,
-				Pattern:>BooleanP,
-				Description->"Indicates if this sample cannot be safely autoclaved.",
-				Category->"Health & Safety"
+			AutoclaveUnsafe -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if this sample cannot be safely autoclaved.",
+				Category -> "Health & Safety"
 			},
 			GloveBoxIncompatible -> {
 				Format -> Multiple,
@@ -434,7 +427,13 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Category -> "Health & Safety",
 				Developer -> True
 			},
-
+			OccupationalExposureBanding -> {
+				Format -> Single,
+				Class -> Integer,
+				Pattern :> GreaterP[0, 1],
+				Description -> "Indicates the Occupational Exposure Band for this sample, which requires specific environmental health and safety handling considerations. Ranging from least stringent at OEB1 to most stringent at OEB5.",
+				Category -> "Health & Safety"
+			},
 			StorageConditionLink -> {
 				Format -> Multiple,
 				Class -> Link,
@@ -444,7 +443,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				],
 				Description -> "The conditions under which this sample should be kept when not in use by an experiment.",
 				Category -> "Health & Safety",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			StorageConditionExpression -> {
 				Format -> Multiple,
@@ -453,7 +452,7 @@ DefineObjectType[Object[UnitOperation,LabelSample],
 				Relation -> Null,
 				Description -> "The conditions under which this sample should be kept when not in use by an experiment.",
 				Category -> "Health & Safety",
-				Migration->SplitField
+				Migration -> SplitField
 			},
 			Expires -> {
 				Format -> Multiple,

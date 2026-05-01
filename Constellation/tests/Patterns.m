@@ -204,11 +204,6 @@ DefineTests[
 			False
 		],
 
-		Example[{Basic, "Returns False if given input is not of the Object/Model form:"},
-			ObjectReferenceQ[123.4],
-			False
-		],
-
 		Example[{Additional, "Returns True for an Object with only an ID:"},
 			ObjectReferenceQ[Object["id-string"]],
 			True
@@ -226,6 +221,85 @@ DefineTests[
 
 		Example[{Additional, "Does not match a packet:"},
 			ObjectReferenceQ[<|Type -> Object[Example, Person, Emerald]|>],
+			False
+		]
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*NamedObjectReferenceQ*)
+
+
+DefineTests[
+	NamedObjectReferenceQ,
+	{
+		Example[{Basic, "Returns True if input is an object of a defined type in named form:"},
+			NamedObjectReferenceQ[Object[Example, Person, Emerald, "Object name"]],
+			True
+		],
+
+		Example[{Basic, "Returns False if input is an object of a defined type in ID form:"},
+			NamedObjectReferenceQ[Object[Example, Person, Emerald, "id:xyz"]],
+			False
+		],
+
+		Example[{Basic, "Returns True if input is an object of a defined Model type in named form:"},
+			NamedObjectReferenceQ[Model[Example, "Object name"]],
+			True
+		],
+
+		Example[{Basic, "Returns False if input is an object of a type which is not defined:"},
+			NamedObjectReferenceQ[Object[Does, Not, Exist, "Object name"]],
+			False
+		],
+
+		Example[{Basic, "Returns False if given input is not of the Object/Model form:"},
+			NamedObjectReferenceQ[123.4],
+			False
+		],
+
+		Example[{Additional, "Does not match a packet:"},
+			NamedObjectReferenceQ[<|Type -> Object[Example, Person, Emerald]|>],
+			False
+		]
+	}
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*IDObjectReferenceQ*)
+
+
+DefineTests[
+	IDObjectReferenceQ,
+	{
+		Example[{Basic, "Returns True if input is an object of a defined type in ID form:"},
+			IDObjectReferenceQ[Object[Example, Person, Emerald, "id:xyz"]],
+			True
+		],
+
+		Example[{Basic, "Returns False if input is an object of a defined type in Named form:"},
+			IDObjectReferenceQ[Object[Example, Person, Emerald, "Object name"]],
+			False
+		],
+
+		Example[{Basic, "Returns True if input is an object of a defined Model type in ID form:"},
+			IDObjectReferenceQ[Model[Example, "id:xyz"]],
+			True
+		],
+
+		Example[{Basic, "Returns False if input is an object of a type which is not defined:"},
+			IDObjectReferenceQ[Object[Does, Not, Exist, "id:xyz"]],
+			False
+		],
+
+		Example[{Basic, "Returns False if given input is not of the Object/Model form:"},
+			IDObjectReferenceQ[123.4],
+			False
+		],
+
+		Example[{Additional, "Does not match a packet:"},
+			IDObjectReferenceQ[<|Type -> Object[Example, Person, Emerald]|>],
 			False
 		]
 	}
@@ -335,6 +409,234 @@ DefineTests[
 
 		Example[{Additional, "Does not match a packet:"},
 			MatchQ[<|Type -> Object[Example, Person, Emerald]|>, ObjectReferenceP[]],
+			False
+		]
+	}
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*NamedObjectReferenceP*)
+
+
+DefineTests[
+	NamedObjectReferenceP,
+	{
+		Example[{Basic, "Returns a pattern which matches an Object/Model of any defined type in named form:"},
+			MatchQ[Object[Example, Person, Emerald, "Object name"], NamedObjectReferenceP[]],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern which does not match an Object/Model of any defined type in ID form:"},
+			MatchQ[Object[Example, Person, Emerald, "id:xyz"], NamedObjectReferenceP[]],
+			False
+		],
+
+		Example[{Basic, "Returns a pattern that matches an Object of any sub-types of the defined Model type in named form:"},
+			MatchQ[Model[Example, Data, "Object name"], NamedObjectReferenceP[Model[Example]]],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern that matches any Object of any sub-types of the list of defined types in named form:"},
+			MatchQ[
+				{
+					Model[Example, Data, "Object name"],
+					Object[Example, Analysis, "Object name 2"]
+				},
+				{NamedObjectReferenceP[{Model[Example], Object[Example, Analysis]}]..}
+			],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern that does not match a type that is not defined:"},
+			MatchQ[Object[Does, Not, Exist, "Object name"], NamedObjectReferenceP[Object[Does, Not, Exist]]],
+			False
+		],
+
+		Example[{Basic, "Does not evaluate if not given an expression in the form of an Object/Model type:"},
+			NamedObjectReferenceP[123.4],
+			HoldPattern[NamedObjectReferenceP[123.4]]
+		],
+
+		Example[{Additional, "Returns a pattern that matches a Model of any Model sub-types:"},
+			MatchQ[Model[Example, Data, "Object name"], NamedObjectReferenceP[Model]],
+			True
+		],
+
+		Example[{Additional, "Returns a pattern that does not match an Object of any Object sub-types:"},
+			MatchQ[Object[Example, Data, "Object name"], NamedObjectReferenceP[Model]],
+			False
+		],
+
+		Example[{Additional, "Returns a pattern that matches an Object of any Object sub-types:"},
+			MatchQ[Object[Example, Data, "Object name"], NamedObjectReferenceP[Object]],
+			True
+		],
+
+		Example[{Applications, "Returns a pattern that matches only the named form of a specific Object:"},
+			Module[{object, name},
+
+				name=CreateUUID[];
+				object=Upload[<|Type -> Object[Example, Data], Name -> name|>];
+
+				Map[
+					MatchQ[#, NamedObjectReferenceP[object]]&,
+					{
+						object,
+						Object[object[[-1]]],
+						Object[Example, Data, name]
+					}
+				]
+			],
+			{False, False, True}
+		],
+
+		Example[{Additional, "Returns a pattern that does not match a Model of any Model sub-types:"},
+			MatchQ[Model[Example, Data, "Object name"], NamedObjectReferenceP[Object]],
+			False
+		],
+
+		Example[{Additional, "Returns a pattern that matches an Object with no type information:"},
+			MatchQ[Object["Object name"], NamedObjectReferenceP[Object]],
+			True
+		],
+
+		Example[{Additional, "Returns a pattern that matches a Model with no type information:"},
+			MatchQ[Model["Object name"], NamedObjectReferenceP[Model]],
+			True
+		],
+
+		Test["Returns a pattern which matches a Model object of the type at the given level:",
+			MatchQ[Model[Example, "Object name"], NamedObjectReferenceP[Model[Example]]],
+			True
+		],
+
+		Test["Returns a pattern which matches an Object of the type at the given level:",
+			MatchQ[Object[Example, "Object name"], NamedObjectReferenceP[Object[Example]]],
+			True
+		],
+
+		Example[{Additional, "Does not match a link:"},
+			MatchQ[Link[Object[Example, Data, "my-object"]], NamedObjectReferenceP[]],
+			False
+		],
+
+		Example[{Additional, "Does not match a packet:"},
+			MatchQ[<|Type -> Object[Example, Person, Emerald]|>, NamedObjectReferenceP[]],
+			False
+		]
+	}
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*IDObjectReferenceP*)
+
+
+DefineTests[
+	IDObjectReferenceP,
+	{
+		Example[{Basic, "Returns a pattern which matches an Object/Model of any defined type in ID form:"},
+			MatchQ[Object[Example, Person, Emerald, "id:xyz"], IDObjectReferenceP[]],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern which does not match an Object/Model of any defined type in named form:"},
+			MatchQ[Object[Example, Person, Emerald, "Object name"], IDObjectReferenceP[]],
+			False
+		],
+
+		Example[{Basic, "Returns a pattern that matches an Object of any sub-types of the defined Model type in ID form:"},
+			MatchQ[Model[Example, Data, "id:xyz"], IDObjectReferenceP[Model[Example]]],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern that matches any Object of any sub-types of the list of defined types in ID form:"},
+			MatchQ[
+				{
+					Model[Example, Data, "id:xyz"],
+					Object[Example, Analysis, "id:xyz2"]
+				},
+				{IDObjectReferenceP[{Model[Example], Object[Example, Analysis]}]..}
+			],
+			True
+		],
+
+		Example[{Basic, "Returns a pattern that does not match a type that is not defined:"},
+			MatchQ[Object[Does, Not, Exist, "id:xyz"], IDObjectReferenceP[Object[Does, Not, Exist]]],
+			False
+		],
+
+		Example[{Basic, "Does not evaluate if not given an expression in the form of an Object/Model type:"},
+			IDObjectReferenceP[123.4],
+			HoldPattern[IDObjectReferenceP[123.4]]
+		],
+
+		Example[{Additional, "Returns a pattern that matches a Model of any Model sub-types:"},
+			MatchQ[Model[Example, Data, "id:xyz"], IDObjectReferenceP[Model]],
+			True
+		],
+
+		Example[{Additional, "Returns a pattern that does not match an Object of any Object sub-types:"},
+			MatchQ[Object[Example, Data, "id:xyz"], IDObjectReferenceP[Model]],
+			False
+		],
+
+		Example[{Additional, "Returns a pattern that matches an Object of any Object sub-types:"},
+			MatchQ[Object[Example, Data, "id:xyz"], IDObjectReferenceP[Object]],
+			True
+		],
+
+		Example[{Applications, "Returns a pattern that matches only the ID form of a specific Object:"},
+			Module[{object, name},
+
+				name=CreateUUID[];
+				object=Upload[<|Type -> Object[Example, Data], Name -> name|>];
+
+				Map[
+					MatchQ[#, IDObjectReferenceP[object]]&,
+					{
+						object,
+						Object[object[[-1]]],
+						Object[Example, Data, name]
+					}
+				]
+			],
+			{True, True, False}
+		],
+
+		Example[{Additional, "Returns a pattern that does not match a Model of any Model sub-types:"},
+			MatchQ[Model[Example, Data, "id:xyz"], IDObjectReferenceP[Object]],
+			False
+		],
+
+		Example[{Additional, "Returns a pattern that matches an Object with no type information:"},
+			MatchQ[Object["id:54n6evLeqPd9"], IDObjectReferenceP[Object]],
+			True
+		],
+
+		Example[{Additional, "Returns a pattern that matches a Model with no type information:"},
+			MatchQ[Model["id:xyz"], IDObjectReferenceP[Model]],
+			True
+		],
+
+		Test["Returns a pattern which matches a Model object of the type at the given level:",
+			MatchQ[Model[Example, "id:xyz"], IDObjectReferenceP[Model[Example]]],
+			True
+		],
+
+		Test["Returns a pattern which matches an Object of the type at the given level:",
+			MatchQ[Object[Example, "id:xyz"], IDObjectReferenceP[Object[Example]]],
+			True
+		],
+
+		Example[{Additional, "Does not match a link:"},
+			MatchQ[Link[Object[Example, Data, "my-object"]], IDObjectReferenceP[]],
+			False
+		],
+
+		Example[{Additional, "Does not match a packet:"},
+			MatchQ[<|Type -> Object[Example, Person, Emerald]|>, IDObjectReferenceP[]],
 			False
 		]
 	}

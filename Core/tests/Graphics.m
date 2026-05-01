@@ -392,7 +392,7 @@ DefineTests[resolvePlotLegends, {
 		_?Core`Private`ValidLegendedQ
 	],
 	Example[{Basic, "Use an image as the legend label:"},
-		ListLinePlot[Table[{x, x^2}, {x, 1, 10}], PlotLegends -> resolvePlotLegends[{Import["ExampleData/ocelot.jpg"]}]],
+		ListLinePlot[Table[{x, x^2}, {x, 1, 10}], PlotLegends -> resolvePlotLegends[{ImportCloudFile[Object[EmeraldCloudFile, "example-ocelot-jpg"]]}]],
 		_?Core`Private`ValidLegendedQ
 	],
 	Example[{Basic, "Use a graphic as the legend label:"},

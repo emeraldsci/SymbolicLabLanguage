@@ -40,6 +40,23 @@ DefineObjectType[Model[TrainingModule], {
 			Category->"General",
 			Required->True
 		},
+		PracticeDrills->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Model[Maintenance,Training][TrainingModules],
+			Description->"Maintenance run in the lab that allow an operator to practice this skill.",
+			Category->"General"
+		},
+		NumberOfDrills -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0, 1],
+			Units -> None,
+			IndexMatching -> PracticeDrills,
+			Description -> "For each member of PracticeDrills, the default number of times to include practicing of the trained skill in instances of this maintenance.",
+			Category -> "General"
+		},
 		Practical->{
 			Format->Single,
 			Class->Link,

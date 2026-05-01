@@ -62,7 +62,7 @@ objectsInNotebook[nb : ObjectP[Object[LaboratoryNotebook]]] :=
 (*peakUnits*)
 
 
-peakUnits[dataRef_, refField_, sliceDims_]:=Module[{xUnit, yUnit, units},
+peakUnits[dataRef_, refField_, sliceDims_, piMarkers_]:=Module[{xUnit, yUnit, units},
 
 
 	{xUnit, yUnit}=If[MatchQ[Download[LastOrDefault[dataRef], Object], ObjectP[Object[Data]]] && (refField /. (LegacySLL`Private`typeUnits[Download[Download[Last[dataRef], Object], Type]])) =!= refField,
@@ -75,6 +75,8 @@ peakUnits[dataRef_, refField_, sliceDims_]:=Module[{xUnit, yUnit, units},
 				(* Data is three dimensional but slicing options were not used *)
 				Length[refUnits] == 3,
 				refUnits[[{1, 3}]],
+				Not[SameQ[piMarkers, {}]],
+				{None, refUnits[[2]]},
 				(* Default - just use units as is *)
 				True,
 				refUnits
@@ -88,13 +90,13 @@ peakUnits[dataRef_, refField_, sliceDims_]:=Module[{xUnit, yUnit, units},
 		(Position -> xUnit),
 		(Height -> yUnit),
 		(Width -> xUnit),
-		(Area -> Replace[yUnit * xUnit, None^2 -> None, {0}]),
+		(Area -> Replace[yUnit * xUnit, {None^2 -> None, Times[val_, None] :> val}, {0}]),
 		(PeakRangeStart -> xUnit),
 		(PeakRangeEnd -> xUnit),
 		(WidthRangeStart -> xUnit),
 		(WidthRangeEnd -> xUnit),
 		(BaselineIntercept -> yUnit),
-		(BaselineSlope -> Replace[yUnit / xUnit, 1 -> None, {0}])
+		(BaselineSlope -> Replace[yUnit / xUnit, {1 -> None, val_/None :> val}, {0}])
 	}];
 
 	units
@@ -705,7 +707,8 @@ getMicroscopeObjectives[ contents:NullP | {{LocationPositionP, ObjectP[{Object[S
 
 partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Null, ObjectP[{Object[Sample], Object[Container], Object[Instrument], Object[Part], Object[Item], Object[Plumbing], Object[Wiring], Object[Sensor]}] | Null, _String | Null, ObjectP[{Object[User], Object[Qualification], Object[Maintenance], Object[Protocol]}] | Null}...}, contents:{{LocationPositionP | Null, LinkP[] | Null}...}]:=Module[
 	{
-		currentParts, partsContentsLog, partInstalledPairs, numberOfHours, partTriples
+		currentParts, partsContentsLog, partInstalledPairs, numberOfHours, partTriples,
+		validPartQs, validPartInstalledPairs, validPartsNumberOfHours
 	},
 
 	If[
@@ -727,6 +730,11 @@ partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Nul
 
 			numberOfHours=Download[currentParts,NumberOfHours];
 
+			(* Filter out the invalid tuples in partInstalledPairs and numberOfHours, so that the MapThread below does not freak out when a part is in the Contents, but not the ContentsLog. Instead of breaking the computable field, it will cause VoQ failure. *)
+			validPartQs = MatchQ[#, {ObjectReferenceP[Object[Part]], _?DateObjectQ}]& /@ partInstalledPairs;
+			validPartInstalledPairs = PickList[partInstalledPairs, validPartQs, True];
+			validPartsNumberOfHours = PickList[numberOfHours, validPartQs, True];
+
 			(* get the part triples, {part, install time, how long it's been installed}
 			  If the part has NumberOfHours uploaded (e.g. for lamps), the install time will be the usage time *)
 			partTriples = MapThread[
@@ -741,7 +749,7 @@ partsCurrentComputable[contentsLog:Null | {{_?DateObjectQ | Null, In | Out | Nul
 						#1
 					}
 				] &,
-				{numberOfHours, partInstalledPairs}
+				{validPartsNumberOfHours, validPartInstalledPairs}
 			];
 
 			(* return Null if empty *)

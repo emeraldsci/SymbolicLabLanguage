@@ -271,7 +271,7 @@ DefineObjectType[Object[Program, Transfer], {
 				Model[Part,Funnel],
 				Object[Part,Funnel]
 			],
-			Description -> "A funnel used to guide liquid or solid chemicals into the container when transfering into a volumetric flask.",
+			Description -> "A funnel used to guide liquid or solid chemicals into the container when transferring into a container.",
 			Category -> "General"
 		},
 		SelfStandingContainer -> {

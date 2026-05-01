@@ -40,6 +40,7 @@ Warning::GradientNotReequilibrated="The gradients occurring before the sample in
 Error::InvalidGradientComposition="The specified gradient buffer compositions for analyte(s) at index `1` do not sum to 100% at all timepoints.";
 (* This message is thrown in ExperimentHPLC for ExperimentLCMS only. Currently, no binary HPLC instruments are supported in stand-alone HPLC protocol *)
 Error::NonBinaryHPLC="The selected instrument can only have nonbinary gradients. The following gradient options have nonbinary profiles (e.g. both A and C percents are non-zero, or B and D): `1`. Please modify the gradient options such that only one buffer is non-zero at any time point.";
+Error::InjectionTableInvalidSampleIndex = "The sample index (i.e. second index) of the InjectionTable should reference an object or model sample for injections whose type (i.e. first index) is Sample or Standard. The sample index should be Null for ColumnPrime or ColumnFlush. NoInjection may only be specified for an injection of type Blank.";
 
 (* ::Subsubsection::Closed:: *)
 (*Source Code*)
@@ -209,9 +210,9 @@ resolveChromatographyStandardsAndBlanks[
         MapThread[Function[{standard,injectionTableStandard},
           Switch[{standard,injectionTableStandard},
             (*if blank is specified, take it*)
-            {ObjectP[],_},standard,
+            {Except[Automatic], _},standard,
             (*otherwise, if the injection table one is, then take that*)
-            {_,ObjectP[]},injectionTableStandard,
+            {_, Except[Automatic]},injectionTableStandard,
             (*if both are automatic, take the default*)
             _,defaultStandard
           ]
@@ -233,7 +234,7 @@ resolveChromatographyStandardsAndBlanks[
     {
       standardFrequencyLookup,
       (*grab from the injection table in this case*)
-      If[standardExistsQ,Cases[injectionTableLookup,{Standard, ___}][[All,2]],{Null}],
+      If[standardExistsQ, Cases[injectionTableLookup,{Standard, ___}][[All,2]],{Null}],
       (*unless it's a template, we throw an error*)
       !templateSpecifiedQ,
       False
@@ -260,10 +261,10 @@ resolveChromatographyStandardsAndBlanks[
         (*map through and fill any automatics; return our resolved standards*)
         MapThread[Function[{standard,injectionTableStandard},
           Switch[{standard,injectionTableStandard},
-            (*if blank is specified, take it*)
-            {ObjectP[],_},standard,
+            (*if standard is specified, take it*)
+            {Except[Automatic], _},standard,
             (*otherwise, if the injection table one is, then take that*)
-            {_,ObjectP[]},injectionTableStandard,
+            {_, Except[Automatic]},injectionTableStandard,
             (*if both are automatic, take the default*)
             _,defaultStandard
           ]
@@ -313,7 +314,7 @@ resolveChromatographyStandardsAndBlanks[
       False,
       False
     }
-  ];
+  ] /. {NoInjection -> defaultStandard};
 
   (*now we must resolve the blank frequency and blank together*)
   {resolvedBlankFrequency,resolvedBlank,blankFrequencyConflictQ,blankTableConflictQ}=Switch[
@@ -341,11 +342,11 @@ resolveChromatographyStandardsAndBlanks[
         MapThread[Function[{blank,injectionTableBlank},
           Switch[{blank,injectionTableBlank},
             (*if blank is specified, take it*)
-            {ObjectP[],_},blank,
+            {Except[Automatic], _}, blank,
             (*otherwise, if the injection table one is, then take that*)
-            {_,ObjectP[]},injectionTableBlank,
+            {_, Except[Automatic]}, injectionTableBlank,
             (*if both are automatic, take the default*)
-            _,defaultBlank
+            _, defaultBlank
           ]
         ],{specifiedBlank,injectionTableBlanksCongruentLength}]
       ],
@@ -392,9 +393,9 @@ resolveChromatographyStandardsAndBlanks[
         MapThread[Function[{blank,injectionTableBlank},
           Switch[{blank,injectionTableBlank},
             (*if blank is specified, take it*)
-            {ObjectP[],_},blank,
+            {Except[Automatic],_},blank,
             (*otherwise, if the injection table one is, then take that*)
-            {_,ObjectP[]},injectionTableBlank,
+            {_,Except[Automatic]},injectionTableBlank,
             (*if both are automatic, take the default*)
             _,defaultBlank
           ]
@@ -422,7 +423,7 @@ resolveChromatographyStandardsAndBlanks[
         injectionTableBlanks=Cases[injectionTableLookup,{Blank, ___}][[All,2]];
 
         (*get the first sensible one otherwise we default to the blank default*)
-        blankToUse=FirstOrDefault[Cases[injectionTableBlanks,ObjectP[]],defaultBlank];
+        blankToUse=FirstOrDefault[Cases[injectionTableBlanks, Except[Automatic]],defaultBlank];
 
         (*map through and resolve any automatics*)
         Map[If[MatchQ[#,Automatic],blankToUse,#]&,injectionTableBlanks]
@@ -613,7 +614,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
     overwriteGradients, overwriteStandardGradients, overwriteBlankGradients, overwriteColumnPrimeGradients, overwriteColumnFlushGradients,
     overwritingQ, overwriteColumnPrimeGradientInitial, overwriteColumnFlushGradientInitial, resolvedInjectionType, resolvedStandardInjectionType,
     resolvedBlankInjectionType, injectionTypeQ, experimentHPLCQ, resolvedColumnTemperatures, resolvedStandardColumnTemperatures, resolvedBlankColumnTemperatures,
-    resolvedPrimeColumnTemperatures, resolvedFlushColumnTemperatures
+    resolvedPrimeColumnTemperatures, resolvedFlushColumnTemperatures, injectionTableInvalidSampleQ, invalidInjectionTableSampleTests, invalidInjectionTableSampleOption
   },
 
   (* get the safe options *)
@@ -822,22 +823,22 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
 
   (*we need to make sure that if the injection table is specified that the samples/standards/blanks and the input/options are compatible*)
   injectionTableSampleConflictQ = If[injectionTableSpecifiedQ,
-    !MatchQ[Download[Cases[roundedInjectionTableWithInjectionType, {Sample, ___}] /. {Sample, x_, ___} :> x, Object], Download[mySamples, Object]],
+    !MatchQ[Cases[roundedInjectionTableWithInjectionType, {Sample, sample:Except[Automatic], ___} :> If[MatchQ[sample, ObjectP[]], Download[sample, Object], sample]], Download[mySamples, Object]],
     False
   ];
 
   standardTableConflictQ = If[injectionTableSpecifiedQ && standardExistsQ,
     !And[
-      Length[Complement[Download[Cases[roundedInjectionTableWithInjectionType, {Standard, Except[Automatic], ___}] /. {Standard, x_, ___} :> x, Object], Download[ToList[resolvedStandard], Object]]] == 0,
-      Length[Complement[Download[ToList[resolvedStandard], Object], Download[Cases[roundedInjectionTableWithInjectionType, {Standard, Except[Automatic], ___}] /. {Standard, x_, ___} :> x, Object]]] == 0
+      Length[Complement[Cases[roundedInjectionTableWithInjectionType, {Standard, standard:Except[Automatic], ___} :> If[MatchQ[standard, ObjectP[]], Download[standard, Object], standard]], Download[ToList[resolvedStandard], Object]]] == 0,
+      Length[Complement[Download[ToList[resolvedStandard], Object], Cases[roundedInjectionTableWithInjectionType, {Standard, standard:Except[Automatic], ___} :> If[MatchQ[standard, ObjectP[]], Download[standard, Object], standard]]]] == 0
     ],
     False
   ];
 
   blankTableConflictQ = If[injectionTableSpecifiedQ && blankExistsQ,
     !And[
-      Length[Complement[Download[Cases[roundedInjectionTableWithInjectionType, {Blank, Except[Automatic], ___}] /. {Blank, x_, ___} :> x, Object], Download[ToList[resolvedBlank], Object]]] == 0,
-      Length[Complement[Download[ToList[resolvedBlank], Object], Download[Cases[roundedInjectionTableWithInjectionType, {Blank, Except[Automatic], ___}] /. {Blank, x_, ___} :> x, Object]]] == 0
+      Length[Complement[Cases[roundedInjectionTableWithInjectionType, {Blank, blank:Except[Automatic], ___} :> If[MatchQ[blank, ObjectP[]], Download[blank, Object], blank]], If[MatchQ[#, ObjectP[]], Download[#, Object], #]& /@ ToList[resolvedBlank]]] == 0,
+      Length[Complement[If[MatchQ[#, ObjectP[]], Download[#, Object], #]& /@ ToList[resolvedBlank], Cases[roundedInjectionTableWithInjectionType, {Blank, blank:Except[Automatic], ___} :> If[MatchQ[blank, ObjectP[]], Download[blank, Object], blank]]]] == 0
     ],
     False
   ];
@@ -1506,7 +1507,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
     False
   ];
   sampleInjectionVolumeConflictQ = If[injectionTableSpecifiedQ && !injectionTableSampleConflictQ,
-    Not[And @@ MapThread[#1 == #2&, {
+    Not[And @@ MapThread[MatchQ[#1, Alternatives[EqualP[#2], #2]]&, {
       resolvedInjectionVolumes,
       (*we readjust the length to not train wreck*)
       PadRight[Cases[resolvedInjectionTableWithInjectionType, {Sample, ___}][[All, 4]], Length[resolvedInjectionVolumes], resolvedInjectionVolumes]
@@ -1521,7 +1522,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
     False
   ];
   standardInjectionVolumeConflictQ = If[injectionTableSpecifiedQ && standardExistsQ && !standardTableConflictQ,
-    Not[And @@ MapThread[#1 == #2&, {
+    Not[And @@ MapThread[MatchQ[#1, Alternatives[EqualP[#2], #2]]&, {
       resolvedStandardInjectionVolumes,
       PadRight[Cases[resolvedInjectionTableWithInjectionType, {Standard, ___}][[All, 4]], Length[resolvedStandardInjectionVolumes], resolvedStandardInjectionVolumes]
     }]],
@@ -1535,7 +1536,7 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
     False
   ];
   blankInjectionVolumeConflictQ = If[injectionTableSpecifiedQ && blankExistsQ && !blankTableConflictQ,
-    Not[And @@ MapThread[#1 == #2&, {
+    Not[And @@ MapThread[MatchQ[#1, Alternatives[EqualP[#2], #2]]&, {
       resolvedBlankInjectionVolumes,
       PadRight[Cases[resolvedInjectionTableWithInjectionType, {Blank, ___}][[All, 4]], Length[resolvedBlankInjectionVolumes], resolvedBlankInjectionVolumes]
     }]],
@@ -1570,8 +1571,25 @@ resolveInjectionTable[mySamples_,partiallyResolvedOptions:_Association,experimen
     Nothing
   ];
 
-  invalidOptions = Flatten[{injectionVolumeConflictOptions, injectionTypeConflictOptions}];
-  invalidTests = Flatten[{injectionVolumeConflictTest}];
+  injectionTableInvalidSampleQ = Or[
+    MemberQ[resolvedInjectionTableWithInjectionType, {Alternatives[Sample, Standard], Except[ObjectP[]], ___}],
+    MemberQ[resolvedInjectionTableWithInjectionType, {Blank, Except[Alternatives[ObjectP[], GCBlankTypeP]], ___}],
+    MemberQ[resolvedInjectionTableWithInjectionType, {Alternatives[ColumnPrime, ColumnFlush], Except[Null], ___}]
+  ];
+
+  invalidInjectionTableSampleTests = If[injectionTableInvalidSampleQ,
+    Test["The sample index of the injection table is an object or model sample for a Sample, Standard injection; is Null for ColumnPrime and ColumnFlush injections; and is a sample or NoInjection(/NoInjectionVolume) for Blank injections:", False, True],
+    Test["The sample index of the injection table is an object or model sample for a Sample, Standard injection; is Null for ColumnPrime and ColumnFlush injections; and is a sample or NoInjection(/NoInjectionVolume) for Blank injections:", True, True]
+  ];
+
+  invalidInjectionTableSampleOption = If[injectionTableInvalidSampleQ,
+    If[messagesQ, Message[Error::InjectionTableInvalidSampleIndex]];
+    {InjectionTable},
+    {}
+  ];
+
+  invalidOptions = Flatten[{invalidInjectionTableSampleOption, injectionVolumeConflictOptions, injectionTypeConflictOptions}];
+  invalidTests = Flatten[{invalidInjectionTableSampleTests, injectionVolumeConflictTest}];
 
   (* remove the InjectionType column of the injection table if we didn't have it to start with *)
   resolvedInjectionTable = Which[

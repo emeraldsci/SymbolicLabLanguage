@@ -861,16 +861,32 @@ DefineTests[
 		Example[{Options,AliquotAmount,"Specify the aliquot volume that should be used from each input sample:"},
 			Lookup[
 				ExperimentUVMelting[{
-					{Object[Sample, "DNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample, "DNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]},
-					{Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample, "PNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]}
+					{Object[Sample, "DNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID], Object[Sample, "DNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]},
+					{Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID], Object[Sample, "PNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]}
 				},
-					AliquotAmount->{{0.5 Milliliter,0.5 Milliliter},{0.3 Milliliter,0.3 Milliliter}},
-					Output->Options
+					AliquotAmount -> {{0.5 Milliliter, 0.5 Milliliter}, {0.3 Milliliter, 0.3 Milliliter}},
+					Output -> Options
 				],
 				AliquotAmount
 			],
-			{0.5 Milliliter,0.3 Milliliter},
-			EquivalenceFunction->Equal
+			{0.5 Milliliter, 0.3 Milliliter},
+			EquivalenceFunction -> Equal
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			Lookup[
+				ExperimentUVMelting[
+					{
+						{Object[Sample, "DNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID], Object[Sample, "DNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]},
+						{Object[Sample, "PNA sample 1 for ExperimentUVMelting testing" <> $SessionUUID], Object[Sample, "PNA sample 2 for ExperimentUVMelting testing" <> $SessionUUID]}
+					},
+					AliquotAmount -> {{0.5001 Milliliter, 0.4 Milliliter}, {0.3001 Milliliter, 0.2 Milliliter}},
+					Output -> Options
+				],
+				AliquotAmount
+			],
+			{{0.5 Milliliter, 0.4 Milliliter}, {0.3 Milliliter, 0.2 Milliliter}},
+			EquivalenceFunction -> Equal,
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,Wavelength,"Specify the wavelength of light that should be passed through the samples:"},
 			Lookup[
@@ -1360,6 +1376,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentUVMelting[{{Object[Sample, "PNA sample 3 for ExperimentUVMelting testing" <> $SessionUUID], Object[Sample, "PNA sample 4 for ExperimentUVMelting testing" <> $SessionUUID]}}, CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentUVMelting[{{Object[Sample,"PNA sample 3 for ExperimentUVMelting testing" <> $SessionUUID],Object[Sample,"PNA sample 4 for ExperimentUVMelting testing" <> $SessionUUID]}}, CentrifugeTime -> 5*Minute,CentrifugeInstrument->Model[Instrument, Centrifuge, "Avanti J-15R"], Output -> Options];
 			Lookup[options, CentrifugeTime],
@@ -1805,11 +1829,11 @@ DefineTests[
 				PolymerType -> PNA
 			];
 
-			UploadSampleModel["Test DNA oligomer for UVMelting" <> $SessionUUID,
-				Composition -> {
+			UploadSampleModel[{
 					{10 MassPercent, Model[Molecule, Oligomer, "Test DNA for UVMelting" <> $SessionUUID]},
 					{90 MassPercent, Model[Molecule, "Water"]}
 				},
+				Name -> "Test DNA oligomer for UVMelting" <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -1820,11 +1844,11 @@ DefineTests[
 				IncompatibleMaterials -> {None},
 				Expires -> False, State -> Liquid, BiosafetyLevel -> "BSL-1"];
 
-			UploadSampleModel["Test PNA oligomer for UVMelting" <> $SessionUUID,
-				Composition -> {
+			UploadSampleModel[{
 					{10 MassPercent, Model[Molecule, Oligomer, "Test PNA for UVMelting" <> $SessionUUID]},
 					{90 MassPercent, Model[Molecule, "Water"]}
 				},
+				Name -> "Test PNA oligomer for UVMelting" <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2218,9 +2242,9 @@ DefineTests[ExperimentUVMeltingOptions,
 						"Moles")],
 				PolymerType -> PNA];
 
-			UploadSampleModel["Test DNA oligomer for UVMeltingOptions testing" <> $SessionUUID,
-				Composition -> {{100 MassPercent,
+			UploadSampleModel[{{100 MassPercent,
 					Model[Molecule, Oligomer, "Test DNA for UVMeltingOptions testing" <> $SessionUUID]}},
+				Name -> "Test DNA oligomer for UVMeltingOptions testing" <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2231,9 +2255,9 @@ DefineTests[ExperimentUVMeltingOptions,
 				IncompatibleMaterials -> {None},
 				Expires -> False, State -> Liquid, BiosafetyLevel -> "BSL-1"];
 
-			UploadSampleModel["Test PNA oligomer for UVMeltingOptions testing" <> $SessionUUID,
-				Composition -> {{100 MassPercent,
+			UploadSampleModel[{{100 MassPercent,
 					Model[Molecule, Oligomer, "Test PNA for UVMeltingOptions testing" <> $SessionUUID]}},
+				Name -> "Test PNA oligomer for UVMeltingOptions testing" <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2531,8 +2555,8 @@ DefineTests[ExperimentUVMeltingPreview,
 				PolymerType -> PNA
 			];
 
-			UploadSampleModel["Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
-				Composition -> {{100 MassPercent,Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"<>$SessionUUID]}},
+			UploadSampleModel[{{100 MassPercent,Model[Molecule, Oligomer, "Test DNA for UVMeltingPreview testing"<>$SessionUUID]}},
+				Name -> "Test DNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2547,8 +2571,8 @@ DefineTests[ExperimentUVMeltingPreview,
 				BiosafetyLevel -> "BSL-1"
 			];
 
-			UploadSampleModel["Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
-				Composition -> {{100 MassPercent,Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"<>$SessionUUID]}},
+			UploadSampleModel[{{100 MassPercent,Model[Molecule, Oligomer, "Test PNA for UVMeltingPreview testing"<>$SessionUUID]}},
+				Name -> "Test PNA oligomer for UVMeltingPreview testing"<>$SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2949,9 +2973,9 @@ DefineTests[ValidExperimentUVMeltingQ,
 						"Moles")],
 				PolymerType -> PNA];
 
-			UploadSampleModel["Test DNA oligomer for ValidExperimentUVMeltingQ testing",
-				Composition -> {{100 MassPercent,
+			UploadSampleModel[{{100 MassPercent,
 					Model[Molecule, Oligomer, "Test DNA for ValidExperimentUVMeltingQ testing"]}},
+				Name -> "Test DNA oligomer for ValidExperimentUVMeltingQ testing",
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,
@@ -2963,9 +2987,9 @@ DefineTests[ValidExperimentUVMeltingQ,
 				Expires -> False, State -> Liquid, BiosafetyLevel -> "BSL-1"
 			];
 
-			UploadSampleModel["Test PNA oligomer for ValidExperimentUVMeltingQ testing",
-				Composition -> {{100 MassPercent,
+			UploadSampleModel[{{100 MassPercent,
 					Model[Molecule, Oligomer, "Test PNA for ValidExperimentUVMeltingQ testing"]}},
+				Name -> "Test PNA oligomer for ValidExperimentUVMeltingQ testing",
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,

@@ -696,11 +696,11 @@ DefineTests[PriceStorage,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStorage testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStorage testing"<>$SessionUUID], Time -> EstimatedTime],
 				{PriceData::MissingBill}
 			];
 			syncBillingResult2=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team 2 object (dual site) for PriceStorage testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team 2 object (dual site) for PriceStorage testing"<>$SessionUUID], Time -> EstimatedTime],
 				{PriceData::MissingBill}
 			];
 
@@ -735,11 +735,11 @@ DefineTests[PriceStorage,
 			Upload[secondUploadList];
 
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStorage testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStorage testing"<>$SessionUUID], Time -> EstimatedTime],
 				{PriceData::MissingBill}
 			];
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team 2 object (dual site) for PriceStorage testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team 2 object (dual site) for PriceStorage testing"<>$SessionUUID], Time -> EstimatedTime],
 				{PriceData::MissingBill}
 			];
 
@@ -1738,7 +1738,7 @@ DefineTests[
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceWaste testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceWaste testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -1884,7 +1884,7 @@ DefineTests[
 
 			Upload[secondSet];
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceWaste testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceWaste testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -1909,7 +1909,7 @@ DefineTests[
 						Object[Protocol, ManualSamplePreparation, "Test Protocol MSP 2 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, Centrifuge, "Test Instrument Centrifuge 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, Centrifuge, "Test Instrument Centrifuge 2 for Old PriceWaste unit tests " <> $SessionUUID],
-						Object[Instrument, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
+						Object[Instrument, HandlingStation, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, HPLC, "Test Instrument HPLC 1 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Instrument, HPLC, "Test Instrument HPLC 2 for Old PriceWaste unit tests " <> $SessionUUID],
 						Object[Container, Plate, "Test Container Plate 1 for Old PriceWaste unit tests " <> $SessionUUID],
@@ -2120,7 +2120,7 @@ DefineTests[
 						Object[Instrument, Centrifuge],
 						Object[Instrument, Centrifuge],
 						Object[Instrument, Centrifuge],
-						Object[Instrument, FumeHood],
+						Object[Instrument, HandlingStation, FumeHood],
 						Object[Instrument, HPLC],
 						Object[Instrument, HPLC],
 						Object[Instrument, HPLC],
@@ -2352,9 +2352,9 @@ DefineTests[
 					|>,
 					<|
 						Object -> instrumentFumeHood1,
-						Type -> Object[Instrument, FumeHood],
+						Type -> Object[Instrument, HandlingStation, FumeHood],
 						Name -> "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID,
-						Model -> Link[Model[Instrument, FumeHood, "id:R8e1PjprvYOK"], Objects],
+						Model -> Link[First[Experiment`Private`commonFumeHoodHandlingStationModels["Memoization"]], Objects],
 						Site -> Link[containerSite1],
 						DeveloperObject -> True
 					|>,
@@ -3018,7 +3018,7 @@ DefineTests[
 					Object[Protocol, ManualSamplePreparation, "Test Protocol MSP 2 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, Centrifuge, "Test Instrument Centrifuge 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, Centrifuge, "Test Instrument Centrifuge 2 for Old PriceWaste unit tests " <> $SessionUUID],
-					Object[Instrument, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
+					Object[Instrument, HandlingStation, FumeHood, "Test Instrument FumeHood 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, HPLC, "Test Instrument HPLC 1 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Instrument, HPLC, "Test Instrument HPLC 2 for Old PriceWaste unit tests " <> $SessionUUID],
 					Object[Container, Plate, "Test Container Plate 1 for Old PriceWaste unit tests " <> $SessionUUID],
@@ -3475,7 +3475,7 @@ DefineTests[PriceInstrumentTime,
 			existingObjs=PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		Module[{firstSet, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
+		Module[{firstSet, firstSetObjects, protocols, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
 			newBillObject, fplcProtocolID, fplcModelID},
 
 			modelPricingID1=CreateID[Model[Pricing]];
@@ -3585,7 +3585,13 @@ DefineTests[PriceInstrumentTime,
 					DateCompleted -> Now,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -3594,7 +3600,13 @@ DefineTests[PriceInstrumentTime,
 					Status -> Completed,
 					(*we don't give a notebook, so that majority of tests will pass. will give the notebook for the relevant UTs*)
 					Transfer[Notebook] -> Null,
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -3603,7 +3615,13 @@ DefineTests[PriceInstrumentTime,
 					Status -> Completed,
 					(*we don't give a notebook, so that majority of tests will pass. will give the notebook for the relevant UTs*)
 					Transfer[Notebook] -> Link[objectNotebookID2, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -3611,7 +3629,13 @@ DefineTests[PriceInstrumentTime,
 					DateCompleted -> Now - 1 Week,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -3620,7 +3644,13 @@ DefineTests[PriceInstrumentTime,
 					Status -> Completed,
 					ParentProtocol -> Link[fplcProtocolID, Subprotocols],
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -3628,7 +3658,13 @@ DefineTests[PriceInstrumentTime,
 					DateCompleted -> Now,
 					Status -> Processing,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				<|
 					Site -> Link[$Site],
@@ -3665,11 +3701,20 @@ DefineTests[PriceInstrumentTime,
 			];
 
 			(*upload the first set of stuff*)
-			Upload[firstSet];
+			firstSetObjects = Upload[firstSet];
+
+			protocols = Cases[firstSetObjects, ObjectP[Object[Protocol]]];
+
+			Upload[
+				Map[
+					<|Object->#, RootProtocol->Link[#]|>&,
+					protocols
+				]
+			];
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceInstrumentTime testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceInstrumentTime testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -3692,6 +3737,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3712,6 +3759,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3732,6 +3781,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3752,6 +3803,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3772,6 +3825,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3792,6 +3847,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for PriceInstrumentTime unit tests"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3812,6 +3869,8 @@ DefineTests[PriceInstrumentTime,
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceInstrumentTime test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -3834,7 +3893,7 @@ DefineTests[PriceInstrumentTime,
 
 			Upload[secondUploadList];
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceInstrumentTime testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceInstrumentTime testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -3921,26 +3980,27 @@ DefineTests[PriceOperatorTime,
 
 
 		Example[{Basic, "Displays the pricing information for each operator used in a given protocol as a table:"},
-			PriceOperatorTime[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]],
+			PriceOperatorTime[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID], Time -> EstimatedTime],
 			_Grid
 		],
 		Example[{Basic, "Displays the pricing information for a list of protocols as one large table:"},
-			PriceOperatorTime[{Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]}],
+			PriceOperatorTime[{Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]}, Time -> EstimatedTime],
 			_Grid
 		],
 		Example[{Basic, "Displays the pricing information for all protocols tied to a given notebook:"},
-			PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID]],
+			PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], Time -> EstimatedTime],
 			_Grid
 		],
 		Example[{Basic, "Displays the pricing information for all protocols tied to a given financing team:"},
-			PriceOperatorTime[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID]],
+			PriceOperatorTime[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID], Time -> EstimatedTime],
 			_Grid
 		],
 		Example[{Basic, "Specifying a date span excludes protocols that fall outside that range:"},
 			outputAssociation=PriceOperatorTime[
 				Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID],
 				Span[Now - 1.5 Week, Now],
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			];
 			Lookup[outputAssociation, Protocol],
 			List[
@@ -3963,7 +4023,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			];
 			DeleteDuplicates[Lookup[outputAssociation, Protocol]],
 			List[
@@ -3979,10 +4040,14 @@ DefineTests[PriceOperatorTime,
 			outputAssociation=PriceOperatorTime[
 				Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID],
 				Span[Now, Now - 2.5 Week],
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			];
 			DeleteDuplicates[Lookup[outputAssociation, Protocol]],
 			{
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceOperatorTime test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceOperatorTime test (different notebook; same team)"<>$SessionUUID]],
@@ -3996,12 +4061,12 @@ DefineTests[PriceOperatorTime,
 		(* -------------- *)
 
 		Example[{Messages, "ParentProtocolRequired", "Throws an error if PriceOperatorTime is called on a subprotocol:"},
-			PriceOperatorTime[Object[Protocol, Incubate, "Test Incubate Protocol 2 in PriceOperatorTime test (subprotocol)"<>$SessionUUID]],
+			PriceOperatorTime[Object[Protocol, Incubate, "Test Incubate Protocol 2 in PriceOperatorTime test (subprotocol)"<>$SessionUUID], Time -> EstimatedTime],
 			$Failed,
 			Messages :> {PriceOperatorTime::ParentProtocolRequired}
 		],
 		Example[{Messages, "ProtocolNotCompleted", "Throws an error if PriceOperatorTime is called on a protocol that is not Completed:"},
-			PriceOperatorTime[Object[Protocol, Incubate, "Test Incubate Protocol 3 in PriceOperatorTime test (incomplete)"<>$SessionUUID]],
+			PriceOperatorTime[Object[Protocol, Incubate, "Test Incubate Protocol 3 in PriceOperatorTime test (incomplete)"<>$SessionUUID], Time -> EstimatedTime],
 			$Failed,
 			Messages :> {PriceOperatorTime::ProtocolNotCompleted}
 		],
@@ -4010,30 +4075,61 @@ DefineTests[PriceOperatorTime,
 		(* -- Tests -- *)
 
 		Test["If no operator time has accumulated and OutputFormat -> Table, return an empty list:",
-			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> Table],
+			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> Table, Time -> EstimatedTime],
 			{}
 		],
 		Test["If no operator time has accumulated and OutputFormat -> Association, return an empty list:",
-			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> Association],
+			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> Association, Time -> EstimatedTime],
 			{}
 		],
 		Test["If no operator time has accumulated and OutputFormat -> TotalPrice, return $0.00:",
-			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> TotalPrice],
+			PriceOperatorTime[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID], OutputFormat -> TotalPrice, Time -> EstimatedTime],
 			0 * USD,
 			EquivalenceFunction -> Equal
 		],
-		Test["Using the hidden Time option, specify whether to use the estimated or actual amount of time an instrument was used:",
+		Test["Using the hidden Time option, specify whether to use the estimated time to calculate:",
 			PriceOperatorTime[
 				{
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
 				OutputFormat -> TotalPrice,
-				Time -> Time
+				Time -> EstimatedTime
 			],
 			UnitsP[USD]
 		],
-
+		Test["Using the hidden Time option, specify whether to use estimated amount of time to calculate:",
+			PriceOperatorTime[
+				Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID],
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
+			],
+			EqualP[60 USD]
+		],
+		Test["Using the hidden Time option, specify whether to use actual amount of time to calculate:",
+			PriceOperatorTime[
+				Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID],
+				OutputFormat -> TotalPrice,
+				Time -> Time
+			],
+			EqualP[40 USD]
+		],
+		Test["If asked to report real time, but the task time is much longer than history tasks, use the average time to replace the outlier:",
+			PriceOperatorTime[
+				Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID],
+				OutputFormat -> TotalPrice,
+				Time -> Time
+			],
+			LessP[1200 USD]
+		],
+		Test["If asked to report real time, but the NumberOfItems is missing for the task, assume only 1 item:",
+			PriceOperatorTime[
+				Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID],
+				OutputFormat -> TotalPrice,
+				Time -> Time
+			],
+			EqualP[60 USD]
+		],
 		(* -- Options -- *)
 
 		Example[{Options, OutputFormat, "If OutputFormat -> Association, returns a list of associations matching OperatorPriceTableP:"},
@@ -4042,7 +4138,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			],
 			{OperatorPriceTableP..}
 		],
@@ -4052,7 +4149,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
 			],
 			UnitsP[USD]
 		],
@@ -4063,7 +4161,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceOperatorTime test (different notebook; same team)"<>$SessionUUID]
 				},
-				Consolidation -> Notebook
+				Consolidation -> Notebook,
+				Time -> EstimatedTime
 			],
 			_Grid
 		],
@@ -4073,7 +4172,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				Consolidation -> Protocol
+				Consolidation -> Protocol,
+				Time -> EstimatedTime
 			],
 			_Grid
 		],
@@ -4083,7 +4183,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				Consolidation -> Operator
+				Consolidation -> Operator,
+				Time -> EstimatedTime
 			],
 			_Grid
 		],
@@ -4094,7 +4195,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
 				Consolidation -> Operator,
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
 			],
 			UnitsP[USD]
 		],
@@ -4105,7 +4207,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
 				Consolidation -> Operator,
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			],
 			{OperatorPriceTableP..}
 		],
@@ -4113,15 +4216,15 @@ DefineTests[PriceOperatorTime,
 		(* -- Tests -- *)
 
 		Test["If given an empty list, returns an empty list for OutputFormat -> Table:",
-			PriceOperatorTime[{}, OutputFormat -> Table],
+			PriceOperatorTime[{}, OutputFormat -> Table, Time -> EstimatedTime],
 			{}
 		],
 		Test["If given an empty list, returns an empty list for OutputFormat -> Association:",
-			PriceOperatorTime[{}, OutputFormat -> Association],
+			PriceOperatorTime[{}, OutputFormat -> Association, Time -> EstimatedTime],
 			{}
 		],
 		Test["If given an empty list, returns $0.00 if OutputFormat -> TotalPrice:",
-			PriceOperatorTime[{}, OutputFormat -> TotalPrice],
+			PriceOperatorTime[{}, OutputFormat -> TotalPrice, Time -> EstimatedTime],
 			0 * USD,
 			EquivalenceFunction -> Equal
 		],
@@ -4131,7 +4234,8 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceOperatorTime test (refunded)"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
 			],
 			Quantity[320.00, "USDollars"]
 		],
@@ -4166,16 +4270,20 @@ DefineTests[PriceOperatorTime,
 			PriceOperatorTime[
 				Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID],
 				Span[Now - 1.5Week, Now],
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
 			],
 			Quantity[320.00, "USDollars"]
 		],
 		Test["If a date range is not specified, then get all the protocols within the last month:",
 			DeleteDuplicates[Lookup[
-				PriceOperatorTime[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID], OutputFormat -> Association],
+				PriceOperatorTime[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol
 			]],
 			{
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceOperatorTime test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceOperatorTime test (different notebook; same team)"<>$SessionUUID]],
@@ -4184,7 +4292,7 @@ DefineTests[PriceOperatorTime,
 		],
 		Test["If a date range is specified for a Notebook and no protocol falls in its range, then return {}:",
 			DeleteDuplicates[Lookup[
-				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], Span[Now - 1 * Day, Now], OutputFormat -> Association],
+				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], Span[Now - 1 * Day, Now], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol,
 				{}
 			]],
@@ -4192,21 +4300,27 @@ DefineTests[PriceOperatorTime,
 		],
 		Test["If a date range is specified for a Notebook and get all the protocols that fall in that range:",
 			DeleteDuplicates[Lookup[
-				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], Span[Now - 1 * Week, Now - 4 * Week], OutputFormat -> Association],
+				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], Span[Now - 1 * Week, Now - 4 * Week], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol,
 				{}
 			]],
 			{
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]]
 			}
 		],
 		Test["If a date range is not specified for a Notebook, then get all the protocols within the last month:",
 			DeleteDuplicates[Lookup[
-				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], OutputFormat -> Association],
+				PriceOperatorTime[Object[LaboratoryNotebook, "Test lab notebook for PriceOperatorTime tests"<>$SessionUUID], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol
 			]],
 			{
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID]],
+				ObjectP[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceOperatorTime test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceOperatorTime test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceOperatorTime test"<>$SessionUUID]]
@@ -4278,6 +4392,9 @@ DefineTests[PriceOperatorTime,
 					Object[Protocol, Incubate, "Test Incubate Protocol 2 in PriceOperatorTime test (subprotocol)"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol 3 in PriceOperatorTime test (incomplete)"<>$SessionUUID],
 					Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID],
 					Object[Instrument, FPLC, "Test FPLC instrument for PriceOperatorTime test"<>$SessionUUID],
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for PriceOperatorTime unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for PriceOperatorTime test"<>$SessionUUID],
@@ -4293,8 +4410,16 @@ DefineTests[PriceOperatorTime,
 					Object[Resource, Operator, "Test Operator Resource 5 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 7 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 6 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 8 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 9 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 10 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Bill, "A test bill object for PriceOperatorTime testing"<>$SessionUUID],
-					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for PriceOperatorTime"<>$SessionUUID]
+					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for PriceOperatorTime"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 1 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 2 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 3 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 4 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Program, ProcedureEvent, "Test ProcedureEvent " <>ToString[#]<>" in PriceOperatorTime test "<>$SessionUUID]&/@Range[14]
 				}],
 				ObjectP[]
 			]];
@@ -4302,7 +4427,7 @@ DefineTests[PriceOperatorTime,
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
 		Module[{firstSet, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
-			newBillObject, fplcProtocolID, fplcModelID, operatorModelID, operatorModelID2},
+			newBillObject, fplcProtocolID, fplcModelID, operatorModelID, operatorModelID2, coverProtocolIDs, procedureEventIDs, procedureEventList, coverHistoryProtocolIDs, procedureEventHistoryProtocols, procedureEventLongTimeTasks, procedureEventNoItemTasks},
 
 			modelPricingID1=CreateID[Model[Pricing]];
 			financingTeamID=CreateID[Object[Team, Financing]];
@@ -4312,6 +4437,36 @@ DefineTests[PriceOperatorTime,
 			fplcModelID=CreateID[Model[Instrument, FPLC]];
 			operatorModelID=CreateID[Model[User, Emerald, Operator]];
 			operatorModelID2=CreateID[Model[User, Emerald, Operator]];
+
+			(* Create a protocol to test real time price calculation*)
+			coverProtocolIDs = CreateID[ConstantArray[Object[Protocol, Cover], 3]];
+			procedureEventIDs = CreateID[ConstantArray[Object[Program, ProcedureEvent], 14]];
+			coverHistoryProtocolIDs = CreateID[ConstantArray[Object[Protocol, Cover], 4]];
+
+			(* operators *)
+			Upload[{
+
+				Association[
+					Object -> operatorModelID,
+					QualificationLevel -> 2,
+					Name -> "Test Operator Model for PriceOperatorTime test"<>$SessionUUID
+				],
+				Association[
+					Object -> operatorModelID2,
+					QualificationLevel -> 3,
+					Name -> "Test Operator Model 2 for PriceOperatorTime test"<>$SessionUUID
+				],
+				Association[
+					Type -> Object[User, Emerald, Operator],
+					Model -> Link[operatorModelID, Objects],
+					Position -> "Laboratory Operator",
+					Name -> "Test Operator for PriceOperatorTime test"<>$SessionUUID
+				],
+				Association[
+					Type -> Object[User, Emerald, Operator],
+					Model -> Link[operatorModelID2, Objects],
+					Name -> "Test Operator 2 for PriceOperatorTime test"<>$SessionUUID
+				]}];
 
 			firstSet=List[
 
@@ -4472,29 +4627,58 @@ DefineTests[PriceOperatorTime,
 					Name -> "Test MSP Protocol for PriceOperatorTime test (no operator used)"<>$SessionUUID,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects]
 				],
+				Association[
+					Object -> coverProtocolIDs[[1]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol in PriceOperatorTime test with normal task time"<>$SessionUUID,
+					DateCompleted -> Now - 2 Week,
+					Status -> Completed,
+					Transfer[Notebook] -> Link[objectNotebookID, Objects],
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[1]], Protocol], Link[procedureEventIDs[[2]], Protocol]},
+					Replace[StatusLog] -> {
+						{Now - 3 Week, OperatorStart,
+						Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 3 Week, OperatorProcessing,
+						Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 2 Week, Completed,
+						Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]}}
+				],
+				Association[
+					Object -> coverProtocolIDs[[2]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID,
+					DateCompleted -> Now - 2 Week,
+					Status -> Completed,
+					Transfer[Notebook] -> Link[objectNotebookID, Objects],
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[11]], Protocol], Link[procedureEventIDs[[12]], Protocol]},
+					Replace[StatusLog] -> {
+						{Now - 3 Week, OperatorStart,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 3 Week, OperatorProcessing,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 2 Week, Completed,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]}}
+				],
+				Association[
+					Object -> coverProtocolIDs[[3]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID,
+					DateCompleted -> Now - 2 Week,
+					Status -> Completed,
+					Transfer[Notebook] -> Link[objectNotebookID, Objects],
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[13]], Protocol], Link[procedureEventIDs[[14]], Protocol]},
+					Replace[StatusLog] -> {
+						{Now - 3 Week, OperatorStart,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 3 Week, OperatorProcessing,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]},
+						{Now - 2 Week, Completed,
+							Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]]}}
+				],
 
-				(* operators *)
-
-				Association[
-					Object -> operatorModelID,
-					QualificationLevel -> 2,
-					Name -> "Test Operator Model for PriceOperatorTime test"<>$SessionUUID
-				],
-				Association[
-					Object -> operatorModelID2,
-					QualificationLevel -> 3,
-					Name -> "Test Operator Model 2 for PriceOperatorTime test"<>$SessionUUID
-				],
-				Association[
-					Type -> Object[User, Emerald, Operator],
-					Model -> Link[operatorModelID, Objects],
-					Name -> "Test Operator for PriceOperatorTime test"<>$SessionUUID
-				],
-				Association[
-					Type -> Object[User, Emerald, Operator],
-					Model -> Link[operatorModelID2, Objects],
-					Name -> "Test Operator 2 for PriceOperatorTime test"<>$SessionUUID
-				],
 
 				(* instruments *)
 				<|
@@ -4524,8 +4708,85 @@ DefineTests[PriceOperatorTime,
 				|>
 			];
 
+			(* create normal procedure events *)
+			(* procedure event 1-2 : for normal cover protocol *)
+			(* procedure event 3-10 : for history cover protocol *)
+			procedureEventList = <|
+				Object -> procedureEventIDs[[#]],
+				TaskID -> "1234567",
+				Type -> Object[Program, ProcedureEvent],
+				TaskType -> "ResourcePicking",
+				Name -> "Test ProcedureEvent " <>ToString[#]<>" in PriceOperatorTime test "<>$SessionUUID,
+				EventType -> If[EvenQ[#], TaskEnd, TaskStart],
+				NumberOfItems -> If[EvenQ[#], #, Null],
+				CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test" <> $SessionUUID]],
+				DateCreated -> Now - 3 Week + # * Hour
+			|>& /@Range[10];
+
+			(* procedure event 11-12 : for very long time task *)
+			procedureEventLongTimeTasks = {
+				<|
+					Object -> procedureEventIDs[[11]],
+					TaskID -> "1234567",
+					Type -> Object[Program, ProcedureEvent],
+					TaskType -> "ResourcePicking",
+					Name -> "Test ProcedureEvent 11 in PriceOperatorTime test "<>$SessionUUID,
+					EventType -> TaskStart,
+					NumberOfItems -> Null,
+					CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test" <> $SessionUUID]],
+					DateCreated -> Now - 3 Week + 11 Hour
+				|>,
+				<|
+					Object -> procedureEventIDs[[12]],
+					TaskID -> "1234567",
+					Type -> Object[Program, ProcedureEvent],
+					TaskType -> "ResourcePicking",
+					Name -> "Test ProcedureEvent 12 in PriceOperatorTime test "<>$SessionUUID,
+					EventType -> TaskEnd,
+					NumberOfItems -> 3,
+					CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test" <> $SessionUUID]],
+					DateCreated -> Now - 3 Week + 40 Hour
+				|>
+			};
+
+			(* procedure event 13-14 : for none item counts task *)
+			procedureEventNoItemTasks = {
+				<|
+					Object -> procedureEventIDs[[13]],
+					TaskID -> "1234567",
+					Type -> Object[Program, ProcedureEvent],
+					TaskType -> "ResourcePicking",
+					Name -> "Test ProcedureEvent 13 in PriceOperatorTime test "<>$SessionUUID,
+					EventType -> TaskStart,
+					NumberOfItems -> Null,
+					CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test" <> $SessionUUID]],
+					DateCreated -> Now - 3 Week + 8 Hour
+				|>,
+				<|
+					Object -> procedureEventIDs[[14]],
+					TaskID -> "1234567",
+					Type -> Object[Program, ProcedureEvent],
+					TaskType -> "ResourcePicking",
+					Name -> "Test ProcedureEvent 14 in PriceOperatorTime test "<>$SessionUUID,
+					EventType -> TaskEnd,
+					NumberOfItems -> Null,
+					CreatedBy -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test" <> $SessionUUID]],
+					DateCreated -> Now - 3 Week + 9.5 Hour
+				|>
+			};
+
+			procedureEventHistoryProtocols = <|
+				Object -> coverHistoryProtocolIDs[[#]],
+				Type -> Object[Protocol, Cover],
+				Name -> "Test Cover Protocol "<>ToString[#]<>" in PriceOperatorTime test for history events "<>$SessionUUID,
+				DateCompleted -> Now - 3.5 Week,
+				Status -> Completed,
+				Site -> Link[$Site],
+				Replace[ProcedureLog] -> {Link[procedureEventIDs[[2*# + 1]], Protocol], Link[procedureEventIDs[[2*# + 2]], Protocol]}
+			|>& /@Range[4];
+
 			(*upload the first set of stuff*)
-			Upload[firstSet];
+			Upload[Join[firstSet, procedureEventList, procedureEventHistoryProtocols, procedureEventLongTimeTasks, procedureEventNoItemTasks]];
 
 			Upload[<|
 				Object->modelPricingID1,
@@ -4534,13 +4795,11 @@ DefineTests[PriceOperatorTime,
 					{Link[Model[User, Emerald, Operator, "Test Operator Model for PriceOperatorTime test"<>$SessionUUID]],40 USD/Hour}
 				}
 			|>];
-
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
-
 			(*get the newly created Bill*)
 			newBillObject=FirstCase[syncBillingResult, ObjectP[Object[Bill]]];
 
@@ -4674,12 +4933,60 @@ DefineTests[PriceOperatorTime,
 					Type -> Object[Resource, Operator],
 					DeveloperObject -> False,
 					Name -> "Test Operator Resource 2 for PriceOperatorTime tests"<>$SessionUUID
+				|>,
+				<|
+					Time -> Quantity[1, "Hours"],
+					EstimatedTime -> Quantity[1.5, "Hours"],
+					Operator -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]],
+					Replace[RequestedOperators] -> {
+						Link[Model[User, Emerald, Operator, "Test Operator Model for PriceOperatorTime test"<>$SessionUUID]]
+					},
+					Replace[Requestor] -> {
+						Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time"<>$SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time"<>$SessionUUID], SubprotocolRequiredResources],
+					Status -> Fulfilled,
+					Type -> Object[Resource, Operator],
+					DeveloperObject -> False,
+					Name -> "Test Operator Resource 8 for PriceOperatorTime tests"<>$SessionUUID
+				|>,
+				<|
+					Time -> Quantity[1, "Hours"],
+					EstimatedTime -> Quantity[1.5, "Hours"],
+					Operator -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]],
+					Replace[RequestedOperators] -> {
+						Link[Model[User, Emerald, Operator, "Test Operator Model for PriceOperatorTime test"<>$SessionUUID]]
+					},
+					Replace[Requestor] -> {
+						Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID], SubprotocolRequiredResources],
+					Status -> Fulfilled,
+					Type -> Object[Resource, Operator],
+					DeveloperObject -> False,
+					Name -> "Test Operator Resource 9 for PriceOperatorTime tests"<>$SessionUUID
+				|>,
+				<|
+					Time -> Quantity[1, "Hours"],
+					EstimatedTime -> Quantity[1.5, "Hours"],
+					Operator -> Link[Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID]],
+					Replace[RequestedOperators] -> {
+						Link[Model[User, Emerald, Operator, "Test Operator Model for PriceOperatorTime test"<>$SessionUUID]]
+					},
+					Replace[Requestor] -> {
+						Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID], SubprotocolRequiredResources],
+					Status -> Fulfilled,
+					Type -> Object[Resource, Operator],
+					DeveloperObject -> False,
+					Name -> "Test Operator Resource 10 for PriceOperatorTime tests"<>$SessionUUID
 				|>
 			];
 
 			Upload[secondUploadList];
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceOperatorTime testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -4704,6 +5011,9 @@ DefineTests[PriceOperatorTime,
 					Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for PriceOperatorTime unit tests"<>$SessionUUID],
 					Object[Instrument, Sonicator, "Test Sonicator instrument for PriceOperatorTime test"<>$SessionUUID],
 					Model[Instrument, FPLC, "Fake Model FPLC with no PricingLevel for PriceOperatorTime unit tests"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with normal task time" <> $SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with very long task time" <> $SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol in PriceOperatorTime test with none number of items" <> $SessionUUID],
 					Object[User, Emerald, Operator, "Test Operator 2 for PriceOperatorTime test"<>$SessionUUID],
 					Object[User, Emerald, Operator, "Test Operator for PriceOperatorTime test"<>$SessionUUID],
 					Model[User, Emerald, Operator, "Test Operator Model 2 for PriceOperatorTime test"<>$SessionUUID],
@@ -4715,8 +5025,16 @@ DefineTests[PriceOperatorTime,
 					Object[Resource, Operator, "Test Operator Resource 5 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 6 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Resource, Operator, "Test Operator Resource 7 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 8 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 9 for PriceOperatorTime tests"<>$SessionUUID],
+					Object[Resource, Operator, "Test Operator Resource 10 for PriceOperatorTime tests"<>$SessionUUID],
 					Object[Bill, "A test bill object for PriceOperatorTime testing"<>$SessionUUID],
-					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for PriceOperatorTime"<>$SessionUUID]
+					Object[SupportTicket, UserCommunication, "Test Troubleshooting Report with Refund for PriceOperatorTime"<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 1 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 2 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 3 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 4 in PriceOperatorTime test for history events "<>$SessionUUID],
+					Object[Program, ProcedureEvent, "Test ProcedureEvent " <>ToString[#]<>" in PriceOperatorTime test "<>$SessionUUID]&/@Range[14]
 				}],
 				ObjectP[]
 			]];
@@ -4728,6 +5046,227 @@ DefineTests[PriceOperatorTime,
 
 
 
+
+
+(* ::Subsection::Closed:: *)
+(*averageTaskTime*)
+
+DefineTests[averageTaskTime,
+	{
+		(* ----------- *)
+		(* -- Basic -- *)
+		(* ----------- *)
+
+		Example[{Basic, "Returns the average time and standard deviation in seconds for a given task ID with sufficient event history:"},
+			averageTaskTime["testTaskIDNormal_"<>$SessionUUID],
+			{_?NumericQ, _?NumericQ}
+		],
+
+		(* ---------------- *)
+		(* -- Additional -- *)
+		(* ---------------- *)
+
+		Example[{Additional, "Returns {Null, Null} when fewer than 2 completed task time samples are available:"},
+			averageTaskTime["testTaskIDShort_"<>$SessionUUID],
+			{Null, Null},
+			Stubs:>{
+				$PersonID = Object[User, "Test user for notebook-less test protocols"]
+			}
+		],
+
+		(* -- Tests -- *)
+
+		Test["Correctly computes the mean task time per item when NumberOfItems is provided:",
+			averageTaskTime["testTaskIDNormal_"<>$SessionUUID][[1]],
+			EqualP[3600.]
+		],
+		Test["Standard deviation is 0 when all task times are equal:",
+			averageTaskTime["testTaskIDNormal_"<>$SessionUUID][[2]],
+			EqualP[0.]
+		],
+		Test["Uses raw task duration without dividing by item count when NumberOfItems is Null:",
+			averageTaskTime["testTaskIDNullItems_"<>$SessionUUID][[1]],
+			EqualP[3600.]
+		],
+		Test["Objects for the test exist in the database:",
+			Download[
+				Flatten[{
+					Object[Protocol, Cover, "Test Cover Protocol 1 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 2 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 3 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 4 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 5 for averageTaskTime test "<>$SessionUUID],
+					Object[Program, ProcedureEvent, "Test ProcedureEvent "<>ToString[#]<>" for averageTaskTime test "<>$SessionUUID]&/@Range[26]
+				}],
+				Object
+			],
+			ListableP[ObjectReferenceP[]]
+		]
+	},
+
+	(* ------------ *)
+	(* -- Set Up -- *)
+	(* ------------ *)
+
+	SymbolSetUp :> {
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[
+				Flatten[{
+					Object[Protocol, Cover, "Test Cover Protocol 1 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 2 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 3 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 4 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 5 for averageTaskTime test "<>$SessionUUID],
+					Object[Program, ProcedureEvent, "Test ProcedureEvent "<>ToString[#]<>" for averageTaskTime test "<>$SessionUUID]&/@Range[26]
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		];
+		Module[{normalTaskID, shortTaskID, nullItemsTaskID, protocolIDs, procedureEventIDs,
+			normalEventList, shortEventList, nullItemsEventList, protocolList},
+
+			normalTaskID = "testTaskIDNormal_"<>$SessionUUID;
+			shortTaskID = "testTaskIDShort_"<>$SessionUUID;
+			nullItemsTaskID = "testTaskIDNullItems_"<>$SessionUUID;
+
+			protocolIDs = CreateID[ConstantArray[Object[Protocol, Cover], 5]];
+			procedureEventIDs = CreateID[ConstantArray[Object[Program, ProcedureEvent], 26]];
+
+			(* Normal task events: 12 events forming 6 TaskStart/TaskEnd pairs across 2 protocols.
+			   Each pair spans 1 Hour with NumberOfItems = 1, giving 3600 sec per item.
+			   Protocol 1 holds events 1-6 (3 pairs); Protocol 2 holds events 7-12 (3 pairs).
+			   6 time entries of 3600 sec each -> Mean = 3600., SD = 0. *)
+			normalEventList = Table[
+				<|
+					Object -> procedureEventIDs[[n]],
+					Type -> Object[Program, ProcedureEvent],
+					Name -> "Test ProcedureEvent "<>ToString[n]<>" for averageTaskTime test "<>$SessionUUID,
+					TaskID -> normalTaskID,
+					TaskType -> "ResourcePicking",
+					EventType -> If[OddQ[n], TaskStart, TaskEnd],
+					NumberOfItems -> If[EvenQ[n], 1, Null],
+					DateCreated -> Now - 1 Week + n * Hour
+				|>,
+				{n, 1, 12}
+			];
+
+			(* Short task events: 1 TaskStart/TaskEnd pair -> 1 time entry -> {Null, Null} *)
+			shortEventList = {
+				<|
+					Object -> procedureEventIDs[[13]],
+					Type -> Object[Program, ProcedureEvent],
+					Name -> "Test ProcedureEvent 13 for averageTaskTime test "<>$SessionUUID,
+					TaskID -> shortTaskID,
+					TaskType -> "ResourcePicking",
+					EventType -> TaskStart,
+					NumberOfItems -> Null,
+					DateCreated -> Now - 1 Week + 1 Hour
+				|>,
+				<|
+					Object -> procedureEventIDs[[14]],
+					Type -> Object[Program, ProcedureEvent],
+					Name -> "Test ProcedureEvent 14 for averageTaskTime test "<>$SessionUUID,
+					TaskID -> shortTaskID,
+					TaskType -> "ResourcePicking",
+					EventType -> TaskEnd,
+					NumberOfItems -> 1,
+					DateCreated -> Now - 1 Week + 2 Hour
+				|>
+			};
+
+			(* Null items task events: 12 events forming 6 pairs across 2 protocols.
+			   Each pair spans 1 Hour with NumberOfItems = Null, so raw time (3600 sec) is used without division.
+			   Protocol 4 holds events 15-20 (3 pairs); Protocol 5 holds events 21-26 (3 pairs). *)
+			nullItemsEventList = Table[
+				<|
+					Object -> procedureEventIDs[[n + 14]],
+					Type -> Object[Program, ProcedureEvent],
+					Name -> "Test ProcedureEvent "<>ToString[n + 14]<>" for averageTaskTime test "<>$SessionUUID,
+					TaskID -> nullItemsTaskID,
+					TaskType -> "ResourcePicking",
+					EventType -> If[OddQ[n], TaskStart, TaskEnd],
+					NumberOfItems -> Null,
+					DateCreated -> Now - 1 Week + n * Hour
+				|>,
+				{n, 1, 12}
+			];
+
+			protocolList = {
+				<|
+					Object -> protocolIDs[[1]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol 1 for averageTaskTime test "<>$SessionUUID,
+					DateCompleted -> Now - 1 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> (Link[procedureEventIDs[[#]], Protocol]&/@Range[1, 6])
+				|>,
+				<|
+					Object -> protocolIDs[[2]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol 2 for averageTaskTime test "<>$SessionUUID,
+					DateCompleted -> Now - 1 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> (Link[procedureEventIDs[[#]], Protocol]&/@Range[7, 12])
+				|>,
+				<|
+					Object -> protocolIDs[[3]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol 3 for averageTaskTime test "<>$SessionUUID,
+					DateCompleted -> Now - 1 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> {Link[procedureEventIDs[[13]], Protocol], Link[procedureEventIDs[[14]], Protocol]}
+				|>,
+				<|
+					Object -> protocolIDs[[4]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol 4 for averageTaskTime test "<>$SessionUUID,
+					DateCompleted -> Now - 1 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> (Link[procedureEventIDs[[#]], Protocol]&/@Range[15, 20])
+				|>,
+				<|
+					Object -> protocolIDs[[5]],
+					Type -> Object[Protocol, Cover],
+					Name -> "Test Cover Protocol 5 for averageTaskTime test "<>$SessionUUID,
+					DateCompleted -> Now - 1 Week,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Replace[ProcedureLog] -> (Link[procedureEventIDs[[#]], Protocol]&/@Range[21, 26])
+				|>
+			};
+
+			Upload[Flatten[{normalEventList, shortEventList, nullItemsEventList, protocolList}]]
+		]
+	},
+
+	(* --------------- *)
+	(* -- Tear Down -- *)
+	(* --------------- *)
+
+	SymbolTearDown :> (
+		Module[{objs, existingObjs},
+			objs = Quiet[Cases[
+				Flatten[{
+					Object[Protocol, Cover, "Test Cover Protocol 1 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 2 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 3 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 4 for averageTaskTime test "<>$SessionUUID],
+					Object[Protocol, Cover, "Test Cover Protocol 5 for averageTaskTime test "<>$SessionUUID],
+					Object[Program, ProcedureEvent, "Test ProcedureEvent "<>ToString[#]<>" for averageTaskTime test "<>$SessionUUID]&/@Range[26]
+				}],
+				ObjectP[]
+			]];
+			existingObjs = PickList[objs, DatabaseMemberQ[objs]];
+			EraseObject[existingObjs, Force -> True, Verbose -> False]
+		]
+	)
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -4870,6 +5409,17 @@ DefineTests[
 			}],
 			_Grid
 		],
+		Example[{Additional, "PriceMaterials can handle resources with same sample object:"},
+			Lookup[PriceMaterials[
+				{
+					Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test" <> $SessionUUID]
+				},
+				OutputFormat -> Association
+			], {MaterialName, Amount, ValueRate, Value}],
+			{
+				{"Sodium Acetate, LCMS grade", RangeP[5.9 Gram, 6.1 Gram], RangeP[10.08 USD/Gram, 10.09 USD/Gram], RangeP[60.40*USD, 60.60*USD]}
+			}
+		],
 		Test["For stock solutions, pull the price out of the StockSolution Price field:",
 			assoc=PriceMaterials[Object[Protocol, PAGE, "id:9RdZXv1WbO56"], OutputFormat -> Association];
 			Lookup[SelectFirst[assoc, MatchQ[Lookup[#, MaterialName], "10X SYBRx Gold in 1X TBE"]&], ValueRate],
@@ -4877,15 +5427,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {assoc}
 		],
-
-		Example[{Additional, "If the protocol includes items that stem from a kit, charge the entire kit:"},
-			Lookup[PriceMaterials[Object[Protocol, AbsorbanceSpectroscopy, "id:9RdZXv19qlYJ"], OutputFormat -> Association], {MaterialName, Amount, ValueRate, Value}],
+		
+		Example[{Additional, "If the protocol includes items that stem from a kit, charge the kit based on Limiting Component amount and split kit into Consumed and Leftover:"},
+			Lookup[PriceMaterials[Object[Protocol, AbsorbanceSpectroscopy, "id:9RdZXv19qlYJ"], OutputFormat -> Association], {MaterialName ,Amount, ValueRate, Value}],
 			{
-				{"Test Organic Compound Kit Product for SyncInventory unit tests", 1, 1000.` * USD, 1000.` * USD},
-				{"Fake kit product with plates", 1, 1234.` * USD, 1234.` * USD},
-				{"Milli-Q water", 500.` * Microliter, 0.661` * USD / Liter, 0.0003305` * USD},
-				(* This should come from Object[Resource, Sample, "Fake resource 6 (sample with no product) for PriceMaterials kit testing"]*)
-				{"Sodium Acetate, LCMS grade", 100. Nanogram, 5.021 USD/Gram, 5.021*^-7 * USD}
+				{"Fake kit product with plates", 0.3, Quantity[1234., "USDollars"], Quantity[411.3333333333333, "USDollars"]},
+				{"Fake kit product with plates", 0.7000000000000001`, Quantity[1234., "USDollars"], Quantity[822.6666666666667, "USDollars"]},
+				{"Milli-Q water", Quantity[1., "Milliliters"], Quantity[0.661, ("USDollars")/("Liters")], Quantity[0.000661, "USDollars"]},
+				{"Sodium Acetate, LCMS grade", Quantity[100., "Nanograms"], Quantity[5.021, ("USDollars")/("Grams")], Quantity[5.021*^-7, "USDollars"]}
 			},
 			SetUp:>Module[{kitProtocol,kitSample1,kitSample2,kitProduct,kitResource1,kitResource2,kitModel1,kitModel2,testPackets},
 
@@ -4991,11 +5540,13 @@ DefineTests[
 			$Failed,
 			Messages :> {PriceMaterials::ProtocolNotCompleted}
 		],
+		(* This message no longer applies *)
+		(*
 		Example[{Messages, "MissingProductInformation", "Throws a soft message if the field Product is not populated for one or more samples used by the input protocols:"},
 			PriceMaterials[Object[Protocol, ManualSamplePreparation, "Test MSP sample no product for PriceMaterials unit test "<>$SessionUUID]],
 			_Grid,
 			Messages :> {PriceMaterials::MissingProductInformation}
-		],
+		],*)
 		Example[{Messages, "SiteNotFound", "Throws an error if PriceMaterials is called on a protocol that is missing Site information:"},
 			PriceMaterials[{Object[Protocol, HPLC, "HPLC protocol 1 missing site"<>$SessionUUID], Object[Protocol, MassSpectrometry, "id:54n6evLENj6N"]}],
 			$Failed,
@@ -5047,6 +5598,25 @@ DefineTests[
 		Example[{Options, OutputFormat, "If OutputFormat -> Association is specified, this overrides the Consolidation option and returns a list of associations matching MaterialsPriceTableP:"},
 			PriceMaterials[{Object[Protocol, MassSpectrometry, "id:54n6evLENj6N"]}, Consolidation -> Material, OutputFormat -> Association],
 			{MaterialsPriceTableP..}
+		],
+		Example[{Options, OutputFormat, "If OutputFormat -> SummaryAssociation and Split is not True, returns a single association with PurchaseType -> All summarizing the combined totals:"},
+			PriceMaterials[
+				Object[Protocol, HPLC, "Price material test HPLC protocol 1 for notebook 1" <> $SessionUUID],
+				OutputFormat -> SummaryAssociation,
+				Split -> False
+			],
+			{KeyValuePattern[{PurchaseType -> All, Value -> UnitsP[USD], Charge -> UnitsP[USD], Tax -> UnitsP[USD]}]}
+		],
+		Example[{Options, OutputFormat, "If OutputFormat -> SummaryAssociation and Split -> True, returns separate associations for Consumed (non-reusable) and LeftoverInventory (reusable) materials:"},
+			PriceMaterials[
+				Object[Protocol, HPLC, "Price material test HPLC protocol 1 for notebook 1" <> $SessionUUID],
+				OutputFormat -> SummaryAssociation,
+				Split -> True
+			],
+			{
+				KeyValuePattern[{PurchaseType -> Consumed, Value -> UnitsP[USD], Charge -> UnitsP[USD], Tax -> UnitsP[USD]}],
+				KeyValuePattern[{PurchaseType -> LeftoverInventory, Value -> UnitsP[USD], Charge -> UnitsP[USD], Tax -> UnitsP[USD]}]
+			}
 		],
 		Test["If given an empty list, returns an empty list for OutputFormat -> Table:",
 			PriceMaterials[{}, OutputFormat -> Table],
@@ -5317,6 +5887,19 @@ DefineTests[
 			PriceMaterials[Object[Protocol,HPLC,"Price material test HPLC protocol 1 for notebook 8"<>$SessionUUID],OutputFormat -> TotalPrice],
 			0 USD,
 			Messages:>{PriceMaterials::AmountConflict}
+		],
+		Test["PriceMaterials correctly splits a purchased column resource into Consumed and LeftoverInventory entries and prices a notebook-owned resource using the same column with zero charge:",
+			Module[{result},
+				result = PriceMaterials[
+					{
+						Object[Protocol, HPLC, "Test HPLC Protocol 1 for shared column PriceMaterials test "<>$SessionUUID],
+						Object[Protocol, HPLC, "Test HPLC Protocol 2 for shared column PriceMaterials test "<>$SessionUUID]
+					},
+					OutputFormat -> Association
+				];
+				SortBy[Lookup[result, {Amount, Charge}], {First, (Unitless[Last[#]] &)}]
+			],
+			{{10., 10000. * USD}, {15., 0. * USD}, {90., 90000. * USD}}
 		]
 	},
 	Stubs :> {$AllowPublicObjects = True},
@@ -5349,7 +5932,20 @@ DefineTests[
 					Object[Protocol, AbsorbanceSpectroscopy, "PriceMaterials Kit Test "<>$SessionUUID],
 					Object[Product,"PriceMaterials Kit Product 1 "<>$SessionUUID],
 					Object[Product,"PriceMaterials Kit Product 2 "<>$SessionUUID],
-					Object[Protocol, ManualSamplePreparation, "Test MSP sample no product for PriceMaterials unit test "<>$SessionUUID]
+					Object[Protocol, ManualSamplePreparation, "Test MSP sample no product for PriceMaterials unit test "<>$SessionUUID],
+					Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test" <> $SessionUUID],
+					Object[Container, Vessel, "Test Container 5 for FPLC in PriceMaterials test"<>$SessionUUID],
+					Object[Sample, "Test Sample 5 for FPLC in PriceMaterials test" <> $SessionUUID],
+					Object[Resource, Sample, "Fake sample resource 1 for duplicated sample test for Price Materials FPLC unit test" <> $SessionUUID],
+					Object[Resource, Sample, "Fake sample resource 2 for duplicated sample test for Price Materials FPLC unit test" <> $SessionUUID],
+					Model[Item, Column, "Test column model for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Product, "Test column product for shared column PriceMaterials test "<>$SessionUUID],
+					Object[LaboratoryNotebook, "Test notebook for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Item, Column, "Test column item for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Protocol, HPLC, "Test HPLC Protocol 1 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Protocol, HPLC, "Test HPLC Protocol 2 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Resource, Sample, "Test column resource 1 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Resource, Sample, "Test column resource 2 for shared column PriceMaterials test "<>$SessionUUID]
 				}],
 				ObjectP[]
 			]];
@@ -5614,6 +6210,11 @@ DefineTests[
 					Name -> "Test Container 4 for FPLC in PriceMaterials test"<>$SessionUUID
 				],
 				Association[
+					Type -> Object[Container, Vessel],
+					Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+					Name -> "Test Container 5 for FPLC in PriceMaterials test"<>$SessionUUID
+				],
+				Association[
 					Type -> Object[Item, Consumable],
 					Model -> Link[Model[Item, Consumable, "Seal replacement kit for Avants"], Objects],
 					Name -> "PriceMaterials test seal kit 1 to be excluded"<>$SessionUUID
@@ -5624,6 +6225,13 @@ DefineTests[
 					Status -> Completed,
 					Site -> Link[$Site],
 					Notebook->Link[maintenanceNotebook,Objects]
+				],
+				Association[
+					Type -> Object[Protocol, FPLC],
+					Name -> "Test FPLC Protocol for duplicated sample in PriceMaterials test"<>$SessionUUID,
+					Status -> Completed,
+					Site -> Link[$Site],
+					Notebook->Null
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -5685,29 +6293,61 @@ DefineTests[
 					Model[Sample, "Sodium Acetate, LCMS grade"],
 					Model[Sample, "Sodium Acetate, LCMS grade"],
 					Model[Sample, "Sodium Acetate, LCMS grade"],
+					Model[Sample, "Sodium Acetate, LCMS grade"],
 					Model[Sample, "Sodium Acetate, LCMS grade"]
 				},
 				{
 					{"A1", Object[Container, Vessel, "Test Container 1 for FPLC in PriceMaterials test"<>$SessionUUID]},
 					{"A1", Object[Container, Vessel, "Test Container 2 for FPLC in PriceMaterials test"<>$SessionUUID]},
 					{"A1", Object[Container, Vessel, "Test Container 3 for FPLC in PriceMaterials test"<>$SessionUUID]},
-					{"A1", Object[Container, Vessel, "Test Container 4 for FPLC in PriceMaterials test"<>$SessionUUID]}
+					{"A1", Object[Container, Vessel, "Test Container 4 for FPLC in PriceMaterials test"<>$SessionUUID]},
+					{"A1", Object[Container, Vessel, "Test Container 5 for FPLC in PriceMaterials test"<>$SessionUUID]}
 				},
 				ECL`InternalUpload`InitialAmount -> {
 					2.1 Gram,
 					2.1 Gram,
 					2.1 Gram,
-					2.1 Gram
+					2.1 Gram,
+					8 Gram
 				},
 				Name -> {
 					"Test Sample 1 for FPLC in PriceMaterials test"<>$SessionUUID,
 					"Test Sample 2 for FPLC in PriceMaterials test"<>$SessionUUID,
 					"Test Sample 3 for FPLC in PriceMaterials test"<>$SessionUUID,
-					"Test Sample 4 for FPLC in PriceMaterials test"<>$SessionUUID
+					"Test Sample 4 for FPLC in PriceMaterials test"<>$SessionUUID,
+					"Test Sample 5 for FPLC in PriceMaterials test"<>$SessionUUID
 				}
 			];
 
 			Upload@List[
+				<|
+					Amount -> Quantity[2.2, "Grams"],
+					Purchase -> True,
+					Replace[Requestor] -> {
+						Link[Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test"<>$SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test"<>$SessionUUID], SubprotocolRequiredResources],
+					Sample -> Link[Object[Sample, "Test Sample 5 for FPLC in PriceMaterials test"<>$SessionUUID]],
+					Replace[Models] -> {Link[Model[Sample, "Sodium Acetate, LCMS grade"]]},
+					Status -> Fulfilled,
+					Type -> Object[Resource, Sample],
+					DeveloperObject -> False,
+					Name -> "Fake sample resource 1 for duplicated sample test for Price Materials FPLC unit test"<>$SessionUUID
+				|>,
+				<|
+					Amount -> Quantity[3.8, "Grams"],
+					Purchase -> True,
+					Replace[Requestor] -> {
+						Link[Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test"<>$SessionUUID], RequiredResources, 1]
+					},
+					RootProtocol -> Link[Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test"<>$SessionUUID], SubprotocolRequiredResources],
+					Sample -> Link[Object[Sample, "Test Sample 5 for FPLC in PriceMaterials test"<>$SessionUUID]],
+					Replace[Models] -> {Link[Model[Sample, "Sodium Acetate, LCMS grade"]]},
+					Status -> Fulfilled,
+					Type -> Object[Resource, Sample],
+					DeveloperObject -> False,
+					Name -> "Fake sample resource 2 for duplicated sample test for Price Materials FPLC unit test"<>$SessionUUID
+				|>,
 				<|
 					Amount -> Quantity[2.1, "Grams"],
 					Purchase -> True,
@@ -5802,6 +6442,10 @@ DefineTests[
 					Product -> Link[Object[Product, "Test product for PriceMaterials unit tests salt"<>$SessionUUID], Samples]
 				|>,
 				<|
+					Object -> Object[Sample, "Test Sample 5 for FPLC in PriceMaterials test"<>$SessionUUID],
+					Product -> Link[Object[Product, "Test product for PriceMaterials unit tests salt"<>$SessionUUID], Samples]
+				|>,
+				<|
 					Object -> Object[Item, Consumable, "PriceMaterials test seal kit 1 to be excluded"<>$SessionUUID],
 					Product -> Link[Object[Product, "Test product for PriceMaterials unit tests seals"<>$SessionUUID], Samples]
 				|>,
@@ -5858,6 +6502,95 @@ DefineTests[
 
 			Upload[<|Object->resourceToInvalidate,Amount->Null|>]
 		],
+		Module[
+			{columnModel, columnProduct, testNotebook, columnItem, protocol1, protocol2, resource1, resource2, testPackets},
+
+			{columnModel, columnProduct, testNotebook, columnItem, protocol1, protocol2, resource1, resource2} = CreateID[{
+				Model[Item, Column],
+				Object[Product],
+				Object[LaboratoryNotebook],
+				Object[Item, Column],
+				Object[Protocol, HPLC],
+				Object[Protocol, HPLC],
+				Object[Resource, Sample],
+				Object[Resource, Sample]
+			}];
+
+			testPackets = {
+				<|
+					Object -> columnModel,
+					Name -> "Test column model for shared column PriceMaterials test "<>$SessionUUID,
+					MaxNumberOfUses -> 100,
+					Reusable -> True,
+					Replace[Products] -> {Link[columnProduct, ProductModel]},
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> columnProduct,
+					Name -> "Test column product for shared column PriceMaterials test "<>$SessionUUID,
+					Price -> Quantity[1000., "USDollars"],
+					NumberOfItems -> 1,
+					ProductModel -> Link[columnModel, Products],
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> testNotebook,
+					Name -> "Test notebook for shared column PriceMaterials test "<>$SessionUUID,
+					Replace[Authors] -> {Link[Object[User, Emerald, Developer, "id:6V0npvmajN3G"]]},
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> columnItem,
+					Name -> "Test column item for shared column PriceMaterials test "<>$SessionUUID,
+					Model -> Link[columnModel, Objects],
+					Notebook -> Link[testNotebook],
+					NumberOfUses -> 25,
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> protocol1,
+					Name -> "Test HPLC Protocol 1 for shared column PriceMaterials test "<>$SessionUUID,
+					DateCompleted -> (Now - 2 Day),
+					Site -> Link[$Site],
+					Status -> Completed,
+					Replace[SubprotocolRequiredResources] -> {Link[resource1, RootProtocol]},
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> protocol2,
+					Name -> "Test HPLC Protocol 2 for shared column PriceMaterials test "<>$SessionUUID,
+					DateCompleted -> (Now - 2 Day),
+					Site -> Link[$Site],
+					Status -> Completed,
+					Replace[SubprotocolRequiredResources] -> {Link[resource2, RootProtocol]},
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> resource1,
+					Name -> "Test column resource 1 for shared column PriceMaterials test "<>$SessionUUID,
+					Replace[Models] -> {Link[columnModel]},
+					Purchase -> True,
+					NumberOfUses -> 10,
+					RootProtocol -> Link[protocol1, SubprotocolRequiredResources],
+					Sample -> Link[columnItem],
+					Status -> Fulfilled,
+					DeveloperObject -> True
+				|>,
+				<|
+					Object -> resource2,
+					Name -> "Test column resource 2 for shared column PriceMaterials test "<>$SessionUUID,
+					Replace[Models] -> {Link[columnModel]},
+					Purchase -> Null,
+					NumberOfUses -> 15,
+					RootProtocol -> Link[protocol2, SubprotocolRequiredResources],
+					Sample -> Link[columnItem],
+					Status -> Fulfilled,
+					DeveloperObject -> True
+				|>
+			};
+
+			Upload[testPackets]
+		],
 		Test["Returns pricing information for a qualification previously completed in the lab:",
 			PriceMaterials[Object[Qualification, HPLC, "id:7X104v6RmXJJ"]],
 			_Grid
@@ -5892,7 +6625,20 @@ DefineTests[
 					Object[Resource, Sample, "Fake seal kit resource for Price Materials FPLC unit test"<>$SessionUUID],
 					Object[Item, Consumable, "PriceMaterials test seal kit 1 to be excluded"<>$SessionUUID],
 					Object[Sample,"Test sample for PriceMaterials"<>$SessionUUID],
-					Object[Protocol, ManualSamplePreparation, "Test MSP sample no product for PriceMaterials unit test "<>$SessionUUID]
+					Object[Protocol, ManualSamplePreparation, "Test MSP sample no product for PriceMaterials unit test "<>$SessionUUID],
+					Object[Protocol, FPLC, "Test FPLC Protocol for duplicated sample in PriceMaterials test" <> $SessionUUID],
+					Object[Sample, "Test Sample 5 for FPLC in PriceMaterials test" <> $SessionUUID],
+					Object[Container, Vessel, "Test Container 5 for FPLC in PriceMaterials test"<>$SessionUUID],
+					Object[Resource, Sample, "Fake sample resource 1 for duplicated sample test for Price Materials FPLC unit test" <> $SessionUUID],
+					Object[Resource, Sample, "Fake sample resource 2 for duplicated sample test for Price Materials FPLC unit test" <> $SessionUUID],
+					Model[Item, Column, "Test column model for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Product, "Test column product for shared column PriceMaterials test "<>$SessionUUID],
+					Object[LaboratoryNotebook, "Test notebook for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Item, Column, "Test column item for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Protocol, HPLC, "Test HPLC Protocol 1 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Protocol, HPLC, "Test HPLC Protocol 2 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Resource, Sample, "Test column resource 1 for shared column PriceMaterials test "<>$SessionUUID],
+					Object[Resource, Sample, "Test column resource 2 for shared column PriceMaterials test "<>$SessionUUID]
 				}],
 				ObjectP[]
 			]];
@@ -6109,17 +6855,22 @@ DefineTests[PriceTransactions,
 					myContainerResourcePackets:{{(PacketP[Model[Container]] | Null | $Failed)...}...},
 					mySiteModelPackets:{(PacketP[Model[Container, Site]] | Null)...},
 					myOptions:OptionsPattern[]
-				] := {{12.04 USD}, Null, Null},
+				] := {{12.04 USD}, Null, Null, Null, Null},
 				priceInstrumentTimeProtocols[
 					myProtocolPackets:{PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...},
+					myRootProtocolPackets:{PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...},
+					mySubProtocols:{{ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...}...},
 					myTSReportPackets:{{PacketP[Object[SupportTicket, UserCommunication]]...}...},
+					myTSTicketPackets:{{PacketP[Object[SupportTicket, Operations]]...}...},
 					myResourcePackets:{{PacketP[Object[Resource]]...}...},
 					myInstrumentModelPackets:{{(PacketP[Model[Instrument]] | $Failed | Null)...}...},
+					myReplacementInstrumentModelPackets:{{(PacketP[Model[Instrument]] | $Failed | Null)...}...},
 					myObjectBillPackets:{
 						({
 							({PacketP[Object[Bill]]...} | $Failed | Null)...
 						} | Null)...
 					},
+					aveTimeAssoc_Association,
 					myOptions:OptionsPattern[]
 				]:=ConstantArray[{0 USD}, 6],
 				PriceWaste[___]:=0 USD
@@ -6181,7 +6932,7 @@ DefineTests[PriceTransactions,
 				}
 			];
 
-			Upload[
+			mspProtocol = Upload[
 				<|
 					Type -> Object[Protocol, ManualSamplePreparation],
 					Name -> "Test MSP fulfillment for PriceTransactions tests "<>$SessionUUID,
@@ -6191,6 +6942,10 @@ DefineTests[PriceTransactions,
 
 			Upload[
 				{
+					<|
+						Object->mspProtocol,
+						RootProtocol->Link[mspProtocol]
+					|>,
 					<|
 						Object -> transaction,
 						Replace[ReceivedSamples] -> Link[Download[transaction, SamplesIn[Object]]],
@@ -6208,7 +6963,7 @@ DefineTests[PriceTransactions,
 						Type -> Object[Transaction, Order],
 						Name -> "Test order fulfilled by MSP for PriceTransactions tests "<>$SessionUUID,
 						Status -> Received,
-						Replace[Fulfillment] -> Link[Object[Protocol,ManualSamplePreparation,"Test MSP fulfillment for PriceTransactions tests "<>$SessionUUID], OrdersFulfilled],
+						Replace[Fulfillment] -> Link[mspProtocol, OrdersFulfilled],
 						Destination -> Link[$Site],
 						(* Model[Sample, "Isopropanol, LCMS grade"] *)
 						Replace[Models] -> {Link[Model[Sample, "id:WNa4ZjKRABrq"]], Link[Model[Sample, "id:WNa4ZjKRABrq"]]},
@@ -6398,12 +7153,8 @@ DefineTests[
 			{
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]]
 			},
@@ -6420,13 +7171,9 @@ DefineTests[
 			Lookup[outputAssociation, Protocol],
 			{
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceCleaning test (different notebook; same team)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, Incubate, "Test Incubate Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
-				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol in PriceCleaning test"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceCleaning test (refunded)"<>$SessionUUID]],
 				ObjectP[Object[Protocol, FPLC, "Test FPLC Protocol 4 in PriceCleaning test (different notebook; same team)"<>$SessionUUID]],
@@ -6582,7 +7329,7 @@ DefineTests[
 				},
 				OutputFormat -> TotalPrice
 			],
-			Quantity[24.00, "USDollars"]
+			Quantity[8.00, "USDollars"]
 		],
 		Test["Specifying the date range excludes protocols that fall outside that range:",
 			PriceCleaning[
@@ -6958,7 +7705,7 @@ DefineTests[
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceCleaning testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceCleaning testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -7124,7 +7871,7 @@ DefineTests[
 
 			(*Syncbilling to generate cleaning charge*)
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceCleaning testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceCleaning testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -7243,7 +7990,6 @@ DefineTests[PriceStocking,
 				Download[
 					{
 						Object[Protocol, FPLC, "Test FPLC Protocol 2 in PriceStocking test (refunded)"<>$SessionUUID],
-						Object[Protocol, FPLC, "Test FPLC Protocol in PriceStocking test"<>$SessionUUID],
 						Object[Protocol, FPLC, "Test FPLC Protocol in PriceStocking test"<>$SessionUUID],
 						Object[Protocol, Incubate, "Test Incubate Protocol in PriceStocking test"<>$SessionUUID]
 					},
@@ -8023,7 +8769,7 @@ DefineTests[PriceStocking,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStocking testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStocking testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -8188,7 +8934,7 @@ DefineTests[PriceStocking,
 			Upload[secondUploadList];
 			(*Run sync bill to generate StockingCharges*)
 			Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStocking testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceStocking testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -8507,11 +9253,11 @@ DefineTests[PriceData,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceData testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceData testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 			syncBillingResult2=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object 3 (no pricing rate) for PriceData testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object 3 (no pricing rate) for PriceData testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -8803,11 +9549,11 @@ DefineTests[PriceRecurring,
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceRecurring testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceRecurring testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 			syncBillingResult2=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object 3 (no pricing rate) for PriceRecurring testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object 3 (no pricing rate) for PriceRecurring testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -8870,26 +9616,27 @@ DefineTests[
 		(* ----------- *)
 
 		Example[{Basic, "Displays the pricing information for a protocol as a table:"},
-			SummaryPrice[Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID]],
+			SummaryPrice[Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID], Time -> EstimatedTime],
 			_Pane
 		],
 		Example[{Basic, "Displays the pricing information for a list of protocols as one large table:"},
-			SummaryPrice[{Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]}],
+			SummaryPrice[{Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]}, Time -> EstimatedTime],
 			_Pane
 		],
 		Example[{Basic, "Displays the pricing information for all protocols tied to a given notebook:"},
-			SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID]],
+			SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], Time -> EstimatedTime],
 			_Pane
 		],
 		Example[{Basic, "Displays the pricing information for all protocols tied to a given financing team:"},
-			SummaryPrice[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID]],
+			SummaryPrice[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID], Time -> EstimatedTime],
 			_Pane
 		],
 		Example[{Basic, "Specifying a date span excludes protocols that fall outside that range:"},
 			outputAssociation=SummaryPrice[
 				Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID],
 				Span[Now - 1.5 Week, Now],
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			];
 			DeleteDuplicates[Lookup[outputAssociation, Protocol]],
 			{
@@ -8911,7 +9658,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> Association
+				OutputFormat -> Association, Time -> EstimatedTime
 			];
 			DeleteDuplicates[Lookup[outputAssociation, Protocol]],
 			{
@@ -8925,7 +9672,7 @@ DefineTests[
 			outputAssociation=SummaryPrice[
 				Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID],
 				Span[Now, Now - 2.5 Week],
-				OutputFormat -> Association
+				OutputFormat -> Association, Time -> EstimatedTime
 			];
 			DeleteDuplicates[Lookup[outputAssociation, Protocol]],
 			(* we decided not to include PriceProtocol in SummaryPrice *)
@@ -8943,12 +9690,12 @@ DefineTests[
 		(* -------------- *)
 
 		Example[{Messages, "ParentProtocolRequired", "Throws an error if SummaryPrice is called on a subprotocol:"},
-			SummaryPrice[Object[Protocol, Incubate, "Test Incubate Protocol 2 in SummaryPrice test (subprotocol)"<>$SessionUUID]],
+			SummaryPrice[Object[Protocol, Incubate, "Test Incubate Protocol 2 in SummaryPrice test (subprotocol)"<>$SessionUUID], Time -> EstimatedTime],
 			$Failed,
 			Messages :> {SummaryPrice::ParentProtocolRequired}
 		],
 		Example[{Messages, "ProtocolNotCompleted", "Throws an error if SummaryPrice is called on a protocol that is not Completed:"},
-			SummaryPrice[Object[Protocol, Incubate, "Test Incubate Protocol 3 in SummaryPrice test (incomplete)"<>$SessionUUID]],
+			SummaryPrice[Object[Protocol, Incubate, "Test Incubate Protocol 3 in SummaryPrice test (incomplete)"<>$SessionUUID], Time -> EstimatedTime],
 			$Failed,
 			Messages :> {SummaryPrice::ProtocolNotCompleted}
 		],
@@ -8957,7 +9704,7 @@ DefineTests[
 				Object[Protocol, FPLC, "Test FPLC Protocol 3 in SummaryPrice test (with instrument sans PricingLevel)"<>$SessionUUID],
 				Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 				Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
-			}],
+			}, Time -> EstimatedTime],
 			_Pane,
 			Messages :> {Pricing::NoPricingInfo,PriceInstrumentTime::MissingPricingLevel},
 			SetUp :> {
@@ -8984,7 +9731,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> Association
+				OutputFormat -> Association, Time -> EstimatedTime
 			],
 			{ExperimentPriceTableP..}
 		],
@@ -8994,7 +9741,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			],
 			UnitsP[USD]
 		],
@@ -9005,7 +9752,7 @@ DefineTests[
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, FPLC, "Test FPLC Protocol 4 in SummaryPrice test (different notebook; same team)"<>$SessionUUID]
 				},
-				Consolidation -> Notebook
+				Consolidation -> Notebook, Time -> EstimatedTime
 			],
 			_Pane
 		],
@@ -9015,7 +9762,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				Consolidation -> Protocol
+				Consolidation -> Protocol, Time -> EstimatedTime
 			],
 			_Pane
 		],
@@ -9025,7 +9772,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				Consolidation -> PricingCategory
+				Consolidation -> PricingCategory, Time -> EstimatedTime
 			],
 			_Pane
 		],
@@ -9036,7 +9783,8 @@ DefineTests[
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
 				Consolidation -> Protocol,
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice,
+				Time -> EstimatedTime
 			],
 			UnitsP[USD]
 		],
@@ -9047,7 +9795,8 @@ DefineTests[
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
 				Consolidation -> Protocol,
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			],
 			{ExperimentPriceTableP..}
 		],
@@ -9058,7 +9807,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				SummaryTable -> True
+				SummaryTable -> True, Time -> EstimatedTime
 			],
 			_Column
 		],
@@ -9071,7 +9820,8 @@ DefineTests[
 				},
 				SummaryTable -> True,
 				Consolidation -> Protocol,
-				OutputFormat -> Association
+				OutputFormat -> Association,
+				Time -> EstimatedTime
 			],
 			_Column
 		],
@@ -9083,7 +9833,8 @@ DefineTests[
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
 				SummaryTable -> True,
-				TableFormat -> SlideView
+				TableFormat -> SlideView,
+				Time -> EstimatedTime
 			],
 			_SlideView
 		],
@@ -9100,7 +9851,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			],
 			UnitsP[USD],
 			Messages :> {Pricing::NoPricingInfo,PriceInstrumentTime::MissingPricingLevel},
@@ -9118,7 +9869,7 @@ DefineTests[
 			}
 		],
 		Test["If no priceable events have occurred and OutputFormat -> Table, return only the experiment fee information:",
-			SummaryPrice[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SummaryPrice test (no instrument used)"<>$SessionUUID], OutputFormat -> Table],
+			SummaryPrice[Object[Protocol, ManualSamplePreparation, "Test MSP Protocol for SummaryPrice test (no instrument used)"<>$SessionUUID], OutputFormat -> Table, Time -> EstimatedTime],
 			_Pane
 		],
 		Test["If given an empty list, returns an empty list for OutputFormat -> Table:",
@@ -9141,14 +9892,14 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			],
 			SummaryPrice[
 				{
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			]
 		],
 		Test["If the protocol is a priority protocol, then the total price should update appropriately:",
@@ -9158,14 +9909,14 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			],
 			SummaryPrice[
 				{
 					Object[Protocol, FPLC, "Test FPLC Protocol in SummaryPrice test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in SummaryPrice test"<>$SessionUUID]
 				},
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			],
 			SetUp :> {
 				Upload[
@@ -9186,14 +9937,14 @@ DefineTests[
 			Round[SummaryPrice[
 				Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID],
 				Span[Now - 1.5Week, Now],
-				OutputFormat -> TotalPrice
+				OutputFormat -> TotalPrice, Time -> EstimatedTime
 			], 0.1 USD],
 			(* we decided not to include PriceProtocol in SummaryPrice *)
-			RangeP[Quantity[142.30, "USDollars"], Quantity[142.50, "USDollars"]]
+			RangeP[Quantity[42.00, "USDollars"], Quantity[42.20, "USDollars"]]
 		],
 		Test["If a date range is not specified, then get all the protocols within the last month:",
 			DeleteDuplicates[Lookup[
-				SummaryPrice[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID], OutputFormat -> Association],
+				SummaryPrice[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol
 			]],
 			(* we decided not to include PriceProtocol in SummaryPrice *)
@@ -9206,7 +9957,7 @@ DefineTests[
 		],
 		Test["If a date range is specified for a Notebook and no protocol falls in its range, then return {}:",
 			Lookup[
-				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], Span[Now - 2 * Day, Now - 1 Day], OutputFormat -> Association],
+				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], Span[Now - 2 * Day, Now - 1 Day], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol,
 				{}
 			],
@@ -9214,7 +9965,7 @@ DefineTests[
 		],
 		Test["If a date range is specified for a Notebook and get all the protocols that fall in that range:",
 			DeleteDuplicates[Lookup[
-				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], Span[Now - 1 * Week, Now - 4 * Week], OutputFormat -> Association],
+				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], Span[Now - 1 * Week, Now - 4 * Week], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol,
 				{}
 			]],
@@ -9226,7 +9977,7 @@ DefineTests[
 		],
 		Test["If a date range is not specified for a Notebook, then get all the protocols within the last month:",
 			DeleteDuplicates[Lookup[
-				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], OutputFormat -> Association],
+				SummaryPrice[Object[LaboratoryNotebook, "Test lab notebook for SummaryPrice tests"<>$SessionUUID], OutputFormat -> Association, Time -> EstimatedTime],
 				Protocol
 			]],
 			(* we decided not to include PriceProtocol in SummaryPrice *)
@@ -9504,7 +10255,7 @@ DefineTests[
 			existingObjs=PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		Module[{firstSet, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
+		Module[{firstSet, firstSetObjects, protocols, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
 			newBillObject, fplcProtocolID, fplcModelID, operatorModelID, operatorModelID2, containerID, containerID2, containerID3,
 			sampleID1, sampleID2, sampleID3, sampleID4, sampleID5,productID1, productID1a, productID1b, productID2, productID3, productID4,
 			productID5, productID5a, productID5b, productID6, sampleUpload},
@@ -9588,7 +10339,8 @@ DefineTests[
 					},
 					Replace[WastePricing] -> {
 						{Chemical, 7 USD / Kilogram},
-						{Biohazard, 7 USD / Kilogram}
+						{Biohazard, 7 USD / Kilogram},
+						{Sharps, 7 USD / Kilogram}
 					},
 					Replace[StoragePricing] -> {
 						{Link@Model[StorageCondition, "Ambient Storage"], 0.1 USD / (Centimeter)^3 / Month},
@@ -10029,7 +10781,16 @@ DefineTests[
 			];
 
 			(*upload the first set of stuff*)
-			Upload[firstSet];
+			firstSetObjects=Upload[firstSet];
+
+			protocols=Cases[firstSetObjects,ObjectP[Object[Protocol]]];
+
+			Upload[
+				Map[
+					<|Object->#, RootProtocol->Link[#]|>&,
+					protocols
+				]
+			];
 
 			Upload[<|
 				Object->modelPricingID1,
@@ -10070,7 +10831,7 @@ DefineTests[
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for SummaryPrice testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -10112,6 +10873,8 @@ DefineTests[
 
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10132,6 +10895,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10152,6 +10917,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10172,6 +10939,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10192,6 +10961,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10212,6 +10983,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for SummaryPrice unit tests"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10232,6 +11005,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for SummaryPrice test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -10818,34 +11593,33 @@ DefineTests[
 	}
 ];
 
-
 (* ::Subsection::Closed:: *)
 (*PriceExperiment*)
 DefineTests[
 	PriceExperiment,
 	{
 		Example[{Basic, "Displays the pricing tables for a protocol as a column:"},
-			PriceExperiment[Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID]],
+			PriceExperiment[Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID], Time -> EstimatedTime],
 			_Column
 		],
 		Example[{Basic, "Displays the pricing tables for a list of protocols as a column:"},
-			PriceExperiment[{Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in PriceExperiment test"<>$SessionUUID]}],
+			PriceExperiment[{Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID], Object[Protocol, Incubate, "Test Incubate Protocol in PriceExperiment test"<>$SessionUUID]}, Time -> EstimatedTime],
 			_Column
 		],
 		Example[{Basic, "Displays the pricing tables for all protocols tied to a given notebook:"},
-			PriceExperiment[Object[LaboratoryNotebook, "Test lab notebook for PriceExperiment tests"<>$SessionUUID]],
+			PriceExperiment[Object[LaboratoryNotebook, "Test lab notebook for PriceExperiment tests"<>$SessionUUID], Time -> EstimatedTime],
 			_Column
 		],
 		Example[{Basic, "Displays the pricing tables for all protocols tied to a given notebook with a given timespan:"},
-			PriceExperiment[{Object[LaboratoryNotebook, "Test lab notebook for PriceExperiment tests"<>$SessionUUID]}, Span[Now, Now - 2.5 Week]],
+			PriceExperiment[{Object[LaboratoryNotebook, "Test lab notebook for PriceExperiment tests"<>$SessionUUID]}, Span[Now, Now - 2.5 Week], Time -> EstimatedTime],
 			_Column
 		],
 		Example[{Basic, "Displays the pricing tables for all protocols tied to a given financing team:"},
-			PriceExperiment[Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID]],
+			PriceExperiment[Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID], Time -> EstimatedTime],
 			_Column
 		],
 		Example[{Basic, "Displays the pricing tables for all protocols tied to a given financing team with a given time span:"},
-			PriceExperiment[{Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID]}, Span[Now, Now - 2.5 Week]],
+			PriceExperiment[{Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID]}, Span[Now, Now - 2.5 Week], Time -> EstimatedTime],
 			_Column
 		],
 
@@ -10855,7 +11629,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceExperiment test"<>$SessionUUID]
 				},
-				TableFormat -> SlideView
+				TableFormat -> SlideView, Time -> EstimatedTime
 			],
 			_SlideView
 		],
@@ -10865,7 +11639,7 @@ DefineTests[
 					Object[Protocol, FPLC, "Test FPLC Protocol in PriceExperiment test"<>$SessionUUID],
 					Object[Protocol, Incubate, "Test Incubate Protocol in PriceExperiment test"<>$SessionUUID]
 				},
-				TableFormat -> List
+				TableFormat -> List, Time -> EstimatedTime
 			],
 			_List
 		]
@@ -10992,7 +11766,7 @@ DefineTests[
 			existingObjs=PickList[objs, DatabaseMemberQ[objs]];
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
-		Module[{firstSet, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
+		Module[{firstSet, firstSetObjects, protocols, financingTeamID, modelPricingID1, secondUploadList, syncBillingResult, objectNotebookID, objectNotebookID2,
 			newBillObject, fplcProtocolID, fplcModelID, operatorModelID, operatorModelID2, containerID, containerID2, containerID3,
 			sampleID1, sampleID2, sampleID3, sampleID4, sampleID5,productID1, productID1a, productID1b, productID2, productID3, productID4,
 			productID5, productID5a, productID5b, productID6, sampleUpload},
@@ -11116,7 +11890,13 @@ DefineTests[
 					DateCompleted -> Now - 2 Week,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -11124,7 +11904,13 @@ DefineTests[
 					DateCompleted -> Now,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -11133,7 +11919,13 @@ DefineTests[
 					Status -> Completed,
 					(*we don't give a notebook, so that majority of tests will pass. will give the notebook for the relevant UTs*)
 					Transfer[Notebook] -> Null,
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, FPLC],
@@ -11142,7 +11934,13 @@ DefineTests[
 					Status -> Completed,
 					(*we don't give a notebook, so that majority of tests will pass. will give the notebook for the relevant UTs*)
 					Transfer[Notebook] -> Link[objectNotebookID2, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -11150,7 +11948,13 @@ DefineTests[
 					DateCompleted -> Now - 1 Week,
 					Status -> Completed,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -11159,7 +11963,13 @@ DefineTests[
 					Status -> Completed,
 					ParentProtocol -> Link[fplcProtocolID, Subprotocols],
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				Association[
 					Type -> Object[Protocol, Incubate],
@@ -11167,7 +11977,13 @@ DefineTests[
 					DateCompleted -> Now,
 					Status -> Processing,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Site -> Link[$Site]
+					Site -> Link[$Site],
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				],
 				<|
 					Site -> Link[$Site],
@@ -11175,7 +11991,13 @@ DefineTests[
 					Type -> Object[Protocol, ManualSamplePreparation],
 					DateCompleted -> Now - 2 Week,
 					Transfer[Notebook] -> Link[objectNotebookID, Objects],
-					Name -> "Test MSP Protocol for PriceExperiment test (no instrument used)"<>$SessionUUID
+					Name -> "Test MSP Protocol for PriceExperiment test (no instrument used)"<>$SessionUUID,
+					Replace[StatusLog] -> {
+						{DateObject[{2024, 12, 31, 23, 0, 0}], OperatorStart, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 0, 1}], OperatorProcessing, Link[$PersonID]},
+						{DateObject[{2024, 12, 31, 23, 30, 0}], InstrumentProcessing, Link[$PersonID]},
+						{DateObject[{2025, 1, 1, 6, 30, 0}], OperatorProcessing, Link[$PersonID]}
+					}
 				|>,
 				<|
 					Type -> Object[Instrument, FPLC],
@@ -11517,7 +12339,16 @@ DefineTests[
 			];
 
 			(*upload the first set of stuff*)
-			Upload[firstSet];
+			firstSetObjects = Upload[firstSet];
+
+			protocols = Cases[firstSetObjects, ObjectP[Object[Protocol]]];
+
+			Upload[
+				Map[
+					<|Object->#, RootProtocol->Link[#]|>&,
+					protocols
+				]
+			];
 
 			Upload[<|
 				Object->modelPricingID1,
@@ -11558,7 +12389,7 @@ DefineTests[
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceExperiment testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 
@@ -11600,6 +12431,8 @@ DefineTests[
 
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11620,6 +12453,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11640,6 +12475,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11660,6 +12497,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11680,6 +12519,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, Sonicator, "Test Sonicator instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11700,6 +12541,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Fake Object FPLC with no PricingLevel for PriceExperiment unit tests"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -11720,6 +12563,8 @@ DefineTests[
 				|>,
 				<|
 					Time -> Quantity[5, "Hours"],
+					DateInUse -> DateObject[{2025, 1, 1, 0, 0, 0}],
+					DateFulfilled -> DateObject[{2025, 1, 1, 5, 0, 0}],
 					EstimatedTime -> Quantity[3.859166666666667, "Hours"],
 					Instrument -> Link[Object[Instrument, FPLC, "Test FPLC instrument for PriceExperiment test"<>$SessionUUID]],
 					Replace[InstrumentModels] -> {
@@ -12783,7 +13628,7 @@ DefineTests[
 
 			(*run sync billing in order to generate the object[bill]*)
 			syncBillingResult=Quiet[
-				SyncBilling[Object[Team, Financing, "A test financing team object for PriceProtocol testing"<>$SessionUUID]],
+				SyncBilling[Object[Team, Financing, "A test financing team object for PriceProtocol testing"<>$SessionUUID], Time -> EstimatedTime],
 				PriceData::MissingBill
 			];
 

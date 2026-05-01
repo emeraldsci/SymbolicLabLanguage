@@ -142,37 +142,10 @@ DefineObjectType[Object[UnitOperation, KarlFischerTitration], {
 		TemperatureExpression -> {
 			Format -> Multiple,
 			Class -> Expression,
-			Pattern :> Ambient | Auto,
+			Pattern :> Ambient,
 			Description -> "For each member of SampleLink, indicates the temperature to which the sample is heated in order to release its water in headspace gas that is bubbled into the Karl Fischer reagent.",
 			IndexMatching -> SampleLink,
 			Migration -> SplitField,
-			Category -> "Sampling"
-		},
-		MinRampTemperature -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Kelvin],
-			Units -> Celsius,
-			Description -> "For each member of SampleLink, indicates the start temperature when using constant heating to determine the temperature at which the sample's water is released.",
-			IndexMatching -> SampleLink,
-			Category -> "Sampling"
-		},
-		MaxRampTemperature -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Kelvin],
-			Units -> Celsius,
-			Description -> "For each member of SampleLink, indicates the end temperature when using constant heating to determine the temperature at which the sample's water is released.",
-			IndexMatching -> SampleLink,
-			Category -> "Sampling"
-		},
-		TemperatureRampRate -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Celsius / Minute],
-			Units -> Celsius / Minute,
-			Description -> "For each member of SampleLink, indicates the rate at which the samples are heated when determining the temperature at which the sample's water is released.",
-			IndexMatching -> SampleLink,
 			Category -> "Sampling"
 		},
 		Medium -> {
@@ -184,15 +157,6 @@ DefineObjectType[Object[UnitOperation, KarlFischerTitration], {
 				Object[Sample]
 			],
 			Description -> "For each member of SampleLink, indicates the solvent in which the sample is dissolved for the Karl Fischer reaction to occur.",
-			IndexMatching -> SampleLink,
-			Category -> "Sampling"
-		},
-		MediumVolume -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 Milliliter],
-			Units -> Milliliter,
-			Description -> "For each member of SampleLink, the amount of medium that is added to the reaction vessel or headspace vial in addition to the sample.",
 			IndexMatching -> SampleLink,
 			Category -> "Sampling"
 		},
@@ -212,6 +176,14 @@ DefineObjectType[Object[UnitOperation, KarlFischerTitration], {
 			Class -> VariableUnit,
 			Pattern :> GreaterP[0 Gram] | GreaterP[0 Milliliter],
 			Description -> "The amount of standard to use to validate the instrument as a whole by measuring the Karl Fischer reagent's rate of reaction, and water content drift.",
+			Category -> "Standards"
+		},
+		StandardTemperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Kelvin],
+			Units -> Celsius,
+			Description -> "Indicates the temperature to which the standard is heated in order to release its water in headspace gas that is bubbled into the Karl Fischer reagent.",
 			Category -> "Standards"
 		},
 		GasFlowRate -> {

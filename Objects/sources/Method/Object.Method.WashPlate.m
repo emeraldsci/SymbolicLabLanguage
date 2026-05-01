@@ -7,19 +7,27 @@ DefineObjectType[Object[Method, WashPlate], {
 	CreatePrivileges -> None,
 	Cache -> Session,
 	Fields -> {
-		Instruments -> {
-			Format -> Multiple,
+		Instrument -> {
+			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
 			Relation -> Alternatives[Model[Instrument, PlateWasher]],
-			Description -> "The compatible plate washer models with this method.",
+			Description -> "The compatible plate washer model with this method. The MethodFile can be compiled and used on the exact plate washer model.",
+			Category -> "General"
+		},
+		MethodFile -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[EmeraldCloudFile],
+			Description -> "The LHC format method file containing the aspiration and dispensing parameters in the setting. Note the NumberOfWashes, WashVolume, BufferLine might be different from protocol to protocol and needs to be adjusted based on each protocol.",
 			Category -> "General"
 		},
 		AspirateTravelRate -> {
 			Format -> Single,
-			Class -> Expression,
-			Pattern :> RangeP[1, 5, 1]|PlateWasherTravelRateP,
-			Description -> "The rate at which the plate washer manifold travels down into the wells.",
+			Class -> Integer,
+			Pattern :> RangeP[1, 5, 1],
+			Description -> "The instrument scale for speed at which the plate washer manifold travels down into the wells.",
 			Category -> "Aspiration"
 		},
 		AspirateDelay -> {
@@ -30,12 +38,11 @@ DefineObjectType[Object[Method, WashPlate], {
 			Description -> "The time delay between dispensing and aspiration. When AspirationDelay is Null, aspiration and dispensing occurs simultaneously.",
 			Category -> "Aspiration"
 		},
-		AspiratePositionings -> {
-			Format -> Multiple,
-			Class -> {XOffset -> Real, YOffset -> Real, ZOffset -> Real},
-			Pattern :> {XOffset -> GreaterEqualP[0 Meter], YOffset -> GreaterEqualP[0 Meter], ZOffset -> GreaterEqualP[0 Meter]},
-			Units -> {XOffset -> Meter, YOffset -> Meter, ZOffset -> Meter},
-			Description -> "The aspiration coordinates, where the X/Y offsets represent the horizontal distance from the center of the well (with leftward positions as negative values), while the Z offset specifies the vertical distance above the carrier surface.",
+		AspirationPositionOffset -> {
+			Format -> Single,
+			Class -> {XOffset -> Integer, YOffset -> Integer, ZOffset -> Integer},
+			Pattern :> {XOffset -> _Integer, YOffset -> _Integer, ZOffset -> GreaterP[0, 1]},
+			Description -> "The aspiration coordinates relative to the center of the well in the unit of internal motor step of the plate washer. XOffset represents the horizontal distance from the center of the well, with leftward position expressed as negative value. YOffset represents the horizontal distance from the center, with position behind the center expressed as negative value. ZOffset specifies the vertical distance above the carrier surface.",
 			Headers -> {XOffset -> "XOffset", YOffset -> "YOffset", ZOffset -> "ZOffset"},
 			Category -> "Aspiration"
 		},
@@ -46,16 +53,15 @@ DefineObjectType[Object[Method, WashPlate], {
 			Description -> "The boolean indicates if a secondary aspiration in a different location within the well is performed immediately after each aspiration in a wash cycle.",
 			Category -> "Aspiration"
 		},
-		CrosswiseAspiratePositionings -> {
-			Format -> Multiple,
-			Class -> {XOffset -> Real, YOffset -> Real, ZOffset -> Real},
-			Pattern :> {XOffset -> GreaterEqualP[0 Meter], YOffset -> GreaterEqualP[0 Meter], ZOffset -> GreaterEqualP[0 Meter]},
-			Units -> {XOffset -> Meter, YOffset -> Meter, ZOffset -> Meter},
-			Description -> "The secondary aspiration coordinates, where the X/Y offsets represent the horizontal distance from the center of the well (with leftward positions as negative values), while the Z offset specifies the vertical distance above the carrier surface.",
+		CrosswiseAspirationPositionOffset -> {
+			Format -> Single,
+			Class -> {XOffset -> Integer, YOffset -> Integer, ZOffset -> Integer},
+			Pattern :> {XOffset -> _Integer, YOffset -> _Integer, ZOffset -> GreaterP[0, 1]},
+			Description -> "The secondary aspiration coordinates relative to the center of the well in the unit of internal motor step of the plate washer. XOffset represents the horizontal distance from the center of the well, with leftward position expressed as negative value. YOffset represents the horizontal distance from the center, with position behind the center expressed as negative value. ZOffset specifies the vertical distance above the carrier surface.",
 			Headers -> {XOffset -> "XOffset", YOffset -> "YOffset", ZOffset -> "ZOffset"},
 			Category -> "Aspiration"
 		},
-		FinalAspirate -> {
+		FinalAspiration -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
@@ -64,9 +70,9 @@ DefineObjectType[Object[Method, WashPlate], {
 		},
 		FinalAspirateTravelRate -> {
 			Format -> Single,
-			Class -> Expression,
-			Pattern :> RangeP[1, 5, 1]|PlateWasherTravelRateP,
-			Description -> "The rate at which the plate washer manifold travels down into the wells during final aspiration.",
+			Class -> Integer,
+			Pattern :> RangeP[1, 5, 1],
+			Description -> "The instrument scale for speed at which the plate washer manifold travels down into the wells during final aspiration.",
 			Category -> "Aspiration"
 		},
 		FinalAspirateDelay -> {
@@ -77,28 +83,26 @@ DefineObjectType[Object[Method, WashPlate], {
 			Description -> "The time delay between dispensing and the final aspiration. When FinalAspirationDelay is Null or 0 Millisecond, the final aspiration and dispensing occurs simultaneously.",
 			Category -> "Aspiration"
 		},
-		FinalAspiratePositionings -> {
-			Format -> Multiple,
-			Class -> {XOffset -> Real, YOffset -> Real, ZOffset -> Real},
-			Pattern :> {XOffset -> GreaterEqualP[0 Meter], YOffset -> GreaterEqualP[0 Meter], ZOffset -> GreaterEqualP[0 Meter]},
-			Units -> {XOffset -> Meter, YOffset -> Meter, ZOffset -> Meter},
-			Description -> "The final aspiration coordinates, where the X/Y offsets represent the horizontal distance from the center of the well (with leftward positions as negative values), while the Z offset specifies the vertical distance above the carrier surface.",
+		FinalAspirationPositionOffset -> {
+			Format -> Single,
+			Class -> {XOffset -> Integer, YOffset -> Integer, ZOffset -> Integer},
+			Pattern :> {XOffset -> _Integer, YOffset -> _Integer, ZOffset -> GreaterP[0, 1]},
+			Description -> "The final aspiration coordinates relative to the center of the well in the unit of internal motor step of the plate washer. XOffset represents the horizontal distance from the center of the well, with leftward position expressed as negative value. YOffset represents the horizontal distance from the center, with position behind the center expressed as negative value. ZOffset specifies the vertical distance above the carrier surface.",
 			Headers -> {XOffset -> "XOffset", YOffset -> "YOffset", ZOffset -> "ZOffset"},
 			Category -> "Aspiration"
 		},
 		DispenseFlowRate -> {
 			Format -> Single,
-			Class -> Expression,
-			Pattern :> RangeP[3, 11, 1]|PlateWasherFlowRateP,
-			Description -> "The rate at which the fluid is dispensed from the manifold tubes.",
+			Class -> Integer,
+			Pattern :> RangeP[3, 11, 1],
+			Description -> "The instrument scale for speed at which the fluid is dispensed from the manifold tubes.",
 			Category -> "Dispensing"
 		},
-		DispensePositionings -> {
-			Format -> Multiple,
-			Class -> {XOffset -> Real, YOffset -> Real, ZOffset -> Real},
-			Pattern :> {XOffset -> GreaterEqualP[0 Meter], YOffset -> GreaterEqualP[0 Meter], ZOffset -> GreaterEqualP[0 Meter]},
-			Units -> {XOffset -> Meter, YOffset -> Meter, ZOffset -> Meter},
-			Description -> "The dispensing coordinates, where the X/Y offsets represent the horizontal distance from the center of the well (with leftward positions as negative values), while the Z offset specifies the vertical distance above the carrier surface.",
+		DispensePositionOffset -> {
+			Format -> Single,
+			Class -> {XOffset -> Integer, YOffset -> Integer, ZOffset -> Integer},
+			Pattern :> {XOffset -> _Integer, YOffset -> _Integer, ZOffset -> GreaterP[0, 1]},
+			Description -> "The dispensing coordinates relative to the center of the well in the unit of internal motor step of the plate washer. XOffset represents the horizontal distance from the center of the well, with leftward position expressed as negative value. YOffset represents the horizontal distance from the center, with position behind the center expressed as negative value. ZOffset specifies the vertical distance above the carrier surface.",
 			Headers -> {XOffset -> "XOffset", YOffset -> "YOffset", ZOffset -> "ZOffset"},
 			Category -> "Dispensing"
 		},
@@ -114,7 +118,7 @@ DefineObjectType[Object[Method, WashPlate], {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
-			Description -> "The boolean indicates if an initial dispense/aspirate sequence is added before the first wash cycle where fluid is dispensed and aspirated from the bottom of the wells. The purpose is to create cleaning turbulence. Designed for strongly bound molecules in assays that require vigorous washing.",
+			Description -> "The boolean indicates if an initial dispense/aspirate sequence is added before the first wash cycle where fluid is dispensed and aspirated from the bottom of the wells. The purpose is to create cleaning turbulence and is designed for strongly bound molecules in assays that require vigorous washing.",
 			Category -> "Dispensing"
 		}
 	}

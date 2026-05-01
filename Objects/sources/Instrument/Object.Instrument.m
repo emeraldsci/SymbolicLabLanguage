@@ -345,7 +345,7 @@ DefineObjectType[Object[Instrument], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Container, Vessel],
+			Relation -> Alternatives[Object[Container, Vessel], Object[Container, WasteBin], Object[Container, Waste]],
 			Description -> "The container connected to the instrument used to collect any liquid waste produced by the instrument during operation.",
 			Category -> "Instrument Specifications"
 		},
@@ -435,6 +435,13 @@ DefineObjectType[Object[Instrument], {
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
 			Category -> "Container Specifications"
 		},
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this instrument was moved to a different container or instrument.",
+			Category->"Container Information"
+		},
 		Site -> {
 			Format -> Single,
 			Class -> Link,
@@ -511,14 +518,31 @@ DefineObjectType[Object[Instrument], {
 			Description -> "The current configuration of container models in specified positions on this instrument.",
 			Category -> "Dimensions & Positions"
 		},
-		LocalCache -> {
-			Format -> Multiple,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[Container],
-			Description -> "Containers located near this instrument that hold items required for standard operation.",
-			Category -> "Storage Information"
-		},
+        ContentsAuditLog -> {
+            Format -> Multiple,
+            Class -> {Date, Link},
+            Pattern :> {_?DateObjectQ, _Link},
+            Relation -> {Null, Object[Maintenance, AuditInventory]},
+            Description -> "A log of AuditInventory maintenances performed on this container to verify its contents.",
+            Headers -> {"Date", "AuditInventory Maintenance"},
+            Category -> "Organizational Information"
+        },
+        LastContentsAuditDate -> {
+            Format -> Single,
+            Class -> Date,
+            Pattern :> _?DateObjectQ,
+            Description -> "The most recent date of an AuditInventory maintenance completed on this container to verify its contents.",
+            Category -> "Organizational Information"
+        },
+        LocalCaches -> {
+            Format -> Multiple,
+            Class -> {Link,String,Link},
+            Pattern :> {_Link,_String,_Link},
+            Relation -> {Object[Container],Null,Alternatives[Model[Item],Model[Container]]},
+            Description -> "Containers assigned to this instrument to hold items required for standard operation allowing for faster resource picking.",
+            Headers -> {"Container","Specified Storage Position","Stored Model"},
+            Category -> "Storage Information"
+        },
 
 		(* --- Plumbing Information --- *)
 		Connectors -> {
@@ -847,6 +871,14 @@ DefineObjectType[Object[Instrument], {
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
 		},
+		Verified -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this instrument has passed its most recent verification qualification.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
 
 		QualificationResultsLog -> {
 			Format -> Multiple,
@@ -873,6 +905,25 @@ DefineObjectType[Object[Instrument], {
 			Description -> "A record of the qualifications run on this instrument and their results.",
 			Category -> "Qualifications & Maintenance"
 		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this instrument.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not detach when washed.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+
 		(* --- Qualifications & Maintenance --- *)
 		QualificationFrequency -> {
 			Format -> Computable,
@@ -901,6 +952,31 @@ DefineObjectType[Object[Instrument], {
 			Headers -> {"Date","Qualification","Qualification Model"},
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
+		},
+		ActiveVerification -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Qualification],
+			Description -> "The verification qualification currently queued or in execution for this instrument's daily verification.",
+			Category -> "Qualifications & Maintenance"
+		},
+		VerificationLog -> {
+			Format -> Multiple,
+			Class -> {Expression, Link, Link},
+			Pattern :> {_?DateObjectQ, _Link, _Link},
+			Relation -> {Null, Object[Qualification], Model[Qualification]},
+			Description -> "All Verification Qualifications run on this instrument over time.",
+			Headers -> {"Date","Qualification","Qualification Model"},
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		DateLastVerified -> {
+			Format -> Single,
+			Class -> Date,
+			Pattern :> _?DateObjectQ,
+			Description -> "Timestamp of the instrument's most recent successful verification.",
+			Category -> "Qualifications & Maintenance"
 		},
 		NextQualificationDate -> {
 			Format -> Multiple,
@@ -1104,6 +1180,14 @@ DefineObjectType[Object[Instrument], {
 			Description -> "The MaintenanceReceiveInventory in which this instrument was received.",
 			Category -> "Inventory"
 		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this instrument is affixed.",
+			Category -> "Inventory"
+		},
 		Manufacturer -> {
 			Format -> Computable,
 			Expression :> SafeEvaluate[{Field[Model]}, Download[Field[Model],Manufacturer]],
@@ -1179,6 +1263,26 @@ DefineObjectType[Object[Instrument], {
 			Relation -> Object[Part, Camera][ConnectedInstruments],
 			Description -> "The camera that streams the operations at the connected instrument during procedures.",
 			Category -> "Instrument Specifications"
+		},
+
+		(*--- Liner Information ---*)
+		Liners -> {
+			Format -> Multiple,
+			Class -> {String, Link},
+			Pattern :> {_String, _Link},
+			Relation -> {Null, Object[Item, Liner][LinedContainer]},
+			Description -> "The protective insert(s) that is currently positioned within or on top of this instrument. No position indicates that the whole instrument surface is lined.",
+			Category -> "Liner Information",
+			Headers -> {"Position", "Liner in Position"}
+		},
+		LinerLog -> {
+			Format -> Multiple,
+			Class -> {Date, Expression, Link, String, Link},
+			Pattern :> {_?DateObjectQ, In | Out, _Link, _String, _Link},
+			Relation -> {Null, Null, Object[Item, Liner], Null, Object[Protocol] | Object[Maintenance] | Object[Qualification] | Object[User]},
+			Description -> "A historical record of the placement or removal of liners within or on top of this instrument. No position indicates that the whole instrument surface is lined.",
+			Category -> "Liner Information",
+			Headers -> {"Date", "Action", "Liner", "Position", "Responsible Party"}
 		}
 	}
 }];

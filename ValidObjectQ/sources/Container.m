@@ -145,6 +145,14 @@ validContainerQTests[packet:PacketP[Object[Container]]]:=Module[
 			True
 		],
 
+		Test["If Status is UndergoingMaintenance, the container must be capable of undergoing maintenance:",
+			If[MatchQ[Lookup[packet, Status], UndergoingMaintenance],
+				MatchQ[packet, ObjectP[InternalUpload`Private`$UndergoingMaintenanceTypes]],
+				True
+			],
+			True
+		],
+
 		(* Cameras *)
 		Test["Positions monitored by the cameras exist on the Container:",
 			Module[{allowedPosition, monitoredLocations},
@@ -1110,6 +1118,23 @@ validContainerOperatorCartQTests[packet:PacketP[Object[Container,OperatorCart]]]
 
 
 (* ::Subsection::Closed:: *)
+(*validContainerUtilityCartQTests*)
+
+
+validContainerUtilityCartQTests[packet:PacketP[Object[Container,UtilityCart]]]:={
+
+	NullFieldTest[packet,{
+		(* Shared Fields which should be null *)
+		Product,
+		Order,
+		BatchNumber,
+		DateStocked
+	}
+	]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validContainerPlateQTests*)
 
 
@@ -1632,15 +1657,6 @@ validContainerVesselVolumetricFlaskQTests[packet:PacketP[Object[Container,Vessel
 validContainerVesselGasWashingBottleQTests[packet:PacketP[Object[Container,Vessel,GasWashingBottle]]]:={
 };
 
-(* ::Subsection::Closed:: *)
-(* validContainerSinkerQTests *)
-
-validContainerSinkerQTests[packet:PacketP[Object[Container,Sinker]]]:={
-	NotNullFieldTest[packet,{
-		CleanRack,
-		DirtyRack
-	}]
-};
 
 (* ::Subsection::Closed:: *)
 (* validContainerDosageDispensingUnitQTests *)
@@ -1973,6 +1989,29 @@ validContainerDissolutionShaftQTests[packet:PacketP[Object[Container,Dissolution
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validContainerBarrelQTests*)
+
+
+validContainerBarrelQTests[packet:PacketP[Object[Container, Barrel]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validContainerPalletQTests*)
+
+
+validContainerPalletQTests[packet:PacketP[Object[Container, Pallet]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validContainerPalletStorageQTests*)
+
+
+validContainerPalletStorageQTests[packet:PacketP[Object[Container, Pallet, Storage]]]:={
+};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -1983,6 +2022,7 @@ registerValidQTestFunction[Object[Container, Bag],validContainerBagQTests];
 registerValidQTestFunction[Object[Container, Bag, Dishwasher],validContainerBagDishwasherQTests];
 registerValidQTestFunction[Object[Container, Bag, Aseptic],validContainerBagAsepticQTests];
 registerValidQTestFunction[Object[Container, Bag, Autoclave],validContainerBagAutoclaveQTests];
+registerValidQTestFunction[Object[Container, Barrel], validContainerBarrelQTests];
 registerValidQTestFunction[Object[Container, Box],validContainerBoxQTests];
 registerValidQTestFunction[Object[Container, Bench],validContainerBenchQTests];
 registerValidQTestFunction[Object[Container, Bench, Receiving],validContainerBenchReceivingQTests];
@@ -2019,6 +2059,9 @@ registerValidQTestFunction[Object[Container,MicrofluidicChip],validContainerMicr
 registerValidQTestFunction[Object[Container,MicroscopeSlide],validContainerMicroscopeSlideQTests];
 registerValidQTestFunction[Object[Container,NMRSpinner],validContainerNMRSpinnerQTests];
 registerValidQTestFunction[Object[Container,OperatorCart],validContainerOperatorCartQTests];
+registerValidQTestFunction[Object[Container,UtilityCart],validContainerUtilityCartQTests];
+registerValidQTestFunction[Object[Container, Pallet], validContainerPalletQTests];
+registerValidQTestFunction[Object[Container, Pallet, Storage], validContainerPalletStorageQTests];
 registerValidQTestFunction[Object[Container,Plate],validContainerPlateQTests];
 registerValidQTestFunction[Object[Container,Plate,Dialysis],validContainerPlateDialysisQTests];
 registerValidQTestFunction[Object[Container,Plate,DropletCartridge],validContainerPlateDropletCartridgeQTests];
@@ -2043,7 +2086,6 @@ registerValidQTestFunction[Object[Container,Safe],validContainerSafeQTests];
 registerValidQTestFunction[Object[Container,Shelf],validContainerShelfQTests];
 registerValidQTestFunction[Object[Container,ShelvingUnit],validContainerShelvingUnitQTests];
 registerValidQTestFunction[Object[Container,Shipping],validContainerShippingQTests];
-registerValidQTestFunction[Object[Container,Sinker],validContainerSinkerQTests];
 registerValidQTestFunction[Object[Container,DosageDispensingUnit],validContainerDosageDispensingUnitQTests];
 registerValidQTestFunction[Object[Container,Stand],validContainerStandQTests];
 registerValidQTestFunction[Object[Container,Syringe],validContainerSyringeQTests];

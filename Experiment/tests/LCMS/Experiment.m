@@ -8307,6 +8307,16 @@ DefineTests[ExperimentLCMS,
 			Variables :> {options},
 			TimeConstraint -> 240
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentLCMS[
+				{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
+			TimeConstraint -> 240
+		],
 		Example[{Options, CentrifugeTime, "Specify the SamplesIn should be centrifuged for 2 minutes:"},
 			options = ExperimentLCMS[
 				{Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentLCMS tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentLCMS tests" <> $SessionUUID]},
@@ -8491,6 +8501,15 @@ DefineTests[ExperimentLCMS,
 			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision},
+			TimeConstraint -> 500
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID], AssayVolume -> 0.08 Milliliter, Output -> Options];
@@ -8835,7 +8854,7 @@ DefineTests[ExperimentLCMS,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages, "GradientAmbiguity", "If Gradient is a table, then auxillary options lead to ambiguity:"},
+		Example[{Messages, "GradientAmbiguity", "If Gradient is a table, then auxiliary options lead to ambiguity:"},
 			protocol = ExperimentLCMS[Object[Sample, "Test Sample 1 for ExperimentLCMS tests" <> $SessionUUID],
 				Gradient -> {
 					{0. Minute, 100. Percent, 0. Percent, 0. Percent, 0. Percent, 1 Milliliter / Minute},

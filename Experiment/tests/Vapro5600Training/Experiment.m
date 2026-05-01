@@ -431,7 +431,7 @@ DefineTests[
 					|>,
 					<|
 						Object->operatorIDs[[1]],
-						Model->Link[Model[User,Emerald,Operator,"Level 1"],Objects],
+						Model->Link[Model[User,Emerald,Operator,"Baseline"],Objects],
 						Name->"Test operator for ExperimentVapro5600Training"<>$SessionUUID,
 						DeveloperObject->False,
 						Status->Active

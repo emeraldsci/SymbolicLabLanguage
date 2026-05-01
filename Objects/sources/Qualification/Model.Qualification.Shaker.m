@@ -5,6 +5,21 @@ DefineObjectType[Model[Qualification, Shaker], {
 	CreatePrivileges -> None,
 	Cache->Session,
 	Fields -> {
-
+		Temperature -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Kelvin],
+			Units -> Celsius,
+			Description -> "The temperature of the shaker during the qualification.",
+			Category -> "General"
+		},
+		Time -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "The duration for which the instrument will shake during the qualification.",
+			Category -> "General"
+		}
 	}
 }];

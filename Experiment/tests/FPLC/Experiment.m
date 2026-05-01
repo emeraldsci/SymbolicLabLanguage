@@ -2652,11 +2652,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, CentrifugeIntensity, "The rotational speed or the force that will be applied to the samples by centrifugation prior to starting the experiment:"},
-			options = ExperimentFPLC[Object[Container, Plate, "FPLC Test Plate" <> $SessionUUID], CentrifugeIntensity -> 1000 * RPM, Output -> Options];
+			options = ExperimentFPLC[Object[Container, Plate, "FPLC Test Plate" <> $SessionUUID], CentrifugeIntensity -> 1000 RPM, Output -> Options];
 			Lookup[options, CentrifugeIntensity],
-			1000 * RPM,
+			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentFPLC[Object[Container, Plate, "FPLC Test Plate" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentFPLC[Object[Container, Plate, "FPLC Test Plate" <> $SessionUUID], CentrifugeTime -> 40 * Minute, Output -> Options];
@@ -2813,11 +2821,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentFPLC[Object[Sample,  "FPLC Test Oligo" <> $SessionUUID], AliquotAmount -> 0.1 * Milliliter, Output -> Options];
+			options = ExperimentFPLC[Object[Sample, "FPLC Test Oligo" <> $SessionUUID], AliquotAmount -> 0.1 * Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
 			0.1 * Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentFPLC[Object[Sample, "FPLC Test Oligo" <> $SessionUUID], AliquotAmount -> 0.10001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.1 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentFPLC[Object[Sample,  "FPLC Test Oligo" <> $SessionUUID], AssayVolume -> 0.08 * Milliliter, Output -> Options];
@@ -4168,11 +4184,12 @@ DefineTests[
 			dnaIdentityModel = UploadOligomer["Test DNA IM for FPLC" <> $SessionUUID, Molecule -> Strand[DNA["AATTGTTCGGACACT"]], PolymerType -> DNA];
 
 			(*create all of the models*)
-			dnaModelPacket = UploadSampleModel["Test DNA oligomer model for FPLC" <> $SessionUUID,
-				Composition -> {
+			dnaModelPacket = UploadSampleModel[
+				{
 					{0.1 Milli * Molar, Model[Molecule, Oligomer, "Test DNA IM for FPLC" <> $SessionUUID]},
 					{100 VolumePercent, Model[Molecule, "Water"]}
 				},
+				Name -> "Test DNA oligomer model for FPLC" <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				DefaultStorageCondition -> Model[StorageCondition, "id:N80DNj1r04jW"],
 				Flammable -> False,

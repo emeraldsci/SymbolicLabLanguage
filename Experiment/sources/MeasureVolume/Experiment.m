@@ -3001,7 +3001,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 		Function[
 			{containersIn,samplesIn,containerModel,containerHeight,metaContainersX,metaMetaContainersX,metaMetaMetaContainersX},
 			Module[{containerModelObj,partitionedContainersIn,partitionedSamplesIn,sensorArmHeight,
-				roundedSensorArmHeight,plateLayoutFileName,tubeRack,resolvedTubeRack,platePlatform,containerCalibrationPackets,
+				roundedSensorArmHeight,plateLayoutFileName,plateLayoutFilePath,tubeRack,resolvedTubeRack,platePlatform,containerCalibrationPackets,
 				validCalibrations,uniqueLiquidLevelDetectorModels},
 
 				(* Convert packets back into objects *)
@@ -3033,6 +3033,9 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 
 				(* determine if a plate layout file name needs to be set *)
 				plateLayoutFileName = Lookup[layoutFileNameLookup,Lookup[containerModel,Object]];
+
+				(* Attach the file path to the file name *)
+				plateLayoutFilePath = If[NullQ[plateLayoutFileName], Null, StringJoin["Z:\\Instrument Methods\\MeasureVolume\\",	plateLayoutFileName]];
 
 				(* determine if a tube rack needs to be picked *)
 				tubeRack = If[MatchQ[containerModel,ObjectP[Model[Container,Vessel]]],
@@ -3129,6 +3132,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 							ContainersIn -> Link[containersInGroup],
 							SensorArmHeight -> roundedSensorArmHeight,
 							PlateLayoutFileName -> plateLayoutFileName,
+							PlateLayoutFilePath -> plateLayoutFilePath,
 							TubeRack -> resolvedTubeRack,
 							PlatePlatform -> platePlatform,
 							LiquidLevelDetector -> uniqueLiquidLevelDetectorModels
@@ -3467,6 +3471,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 					TubeRack->Lookup[#1,TubeRack],
 					PlatePlatform->Lookup[#1,PlatePlatform],
 					PlateLayoutFileName->Lookup[#1,PlateLayoutFileName],
+					PlateLayoutFilePath->StringJoin["Z:\\Instrument Methods\\MeasureVolume\\", (Lookup[#, PlateLayoutFileName, ""]/.{Null->""})],
 					DataFileName->Lookup[#1,DataFileNames],
 					BatchNumber->Lookup[#1,BatchNumber]
 				|>&,
@@ -3524,7 +3529,7 @@ measureVolumeResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedO
 	expandedAndFilteredRecoupSample = PickList[Lookup[myExpandedOptions,RecoupSample],measureDensity,True];
 	(*numberOfDensityReplicatesOption = PickList[Lookup[myExpandedOptions,NumberOfMeasureDensityReplicates],measureDensity,True];*)
 
-	(* format the optoins for storage in the named field*)
+	(* format the options for storage in the named field*)
 	measureDensityParameters = If[AnyTrue[measureDensity,TrueQ],
 		MapThread[
 			Association[

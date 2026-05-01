@@ -5405,7 +5405,7 @@ Cell[BoxData[
             RowBox[{"Alignment", "\[Rule]", 
               RowBox[{"{", 
                 RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-          "]"}]& )], {"\<\"Inspect object in page\"\>":>If[None === None, 
+          "]"}]& )], {"\<\"Inspect object inline\"\>":>If[None === None, 
        ConstellationViewers`Private`printFullOpacity[
         ECL`Inspect[
          ECL`Link[
@@ -5416,7 +5416,7 @@ Cell[BoxData[
          ECL`Link[
           ECL`Object[ECL`User, ECL`Emerald, ECL`Developer, "id:6V0npvmW4LPa"],
            ECL`SimulationsAuthored], Date -> 
-         None]]], "\<\"Inspect object in new tab\"\>":>
+         None]]], "\<\"Inspect object in new page\"\>":>
       ConstellationViewers`Private`inspectInNewWindow[
        ECL`Object[ECL`User, ECL`Emerald, ECL`Developer, "id:6V0npvmW4LPa"], 
        None], "\<\"Copy object ID\"\>":>CopyToClipboard[
@@ -8481,7 +8481,7 @@ Cell[BoxData[
             RowBox[{"Alignment", "\[Rule]", 
               RowBox[{"{", 
                 RowBox[{"Left", ",", "Bottom"}], "}"}]}]}], 
-          "]"}]& )], {"\<\"Inspect object in page\"\>":>If[None === None, 
+          "]"}]& )], {"\<\"Inspect object inline\"\>":>If[None === None, 
        ConstellationViewers`Private`printFullOpacity[
         ECL`Inspect[
          ECL`Link[
@@ -8492,7 +8492,7 @@ Cell[BoxData[
          ECL`Link[
           ECL`Object[ECL`User, ECL`Emerald, ECL`Developer, "id:6V0npvmW4LPa"],
            ECL`SimulationsAuthored], Date -> 
-         None]]], "\<\"Inspect object in new tab\"\>":>
+         None]]], "\<\"Inspect object in new page\"\>":>
       ConstellationViewers`Private`inspectInNewWindow[
        ECL`Object[ECL`User, ECL`Emerald, ECL`Developer, "id:6V0npvmW4LPa"], 
        None], "\<\"Copy object ID\"\>":>CopyToClipboard[

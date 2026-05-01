@@ -53,6 +53,17 @@ DefineOptions[ExperimentMeasureCount,
 			(* Category->"Protocol",*)
 			Widget->Widget[Type->Number,Pattern:>GreaterEqualP[2,1]]
 		},
+		{
+			OptionName -> Balance,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[{Model[Instrument, Balance], Object[Instrument, Balance]}]
+			],
+			Description -> "The balance used to weigh the unit weight of tablet samples.",
+			Category -> "Hidden"
+		},
 		ProtocolOptions,
 		ImageSampleOption,
 		PreparatoryUnitOperationsOption,
@@ -86,7 +97,7 @@ Warning::NonTabletOrSachetSamples="The sample(s) `1` do(es) not contain tablets 
 Error::IncompatibleContainer="The following sample(s), `1`, need(s) to be total-weight measured but are in container(s) that is/are not compatible with ExperimentMeasureWeight. Consider moving the sample(s) into a container that matches MeasureWeightContainerP or remove them from the input before proceeding.";
 Error::ParameterizationRequired="For sample(s) `1`, ParameterizeSolidUnits is set to False, although the SolidUnitWeight is not known. As a result, the count of the sample(s) cannot be determined. Consider setting ParametererizeSolidUnits to True (or leave it blank) in order to parameterize the tablets or sachets and record a SolidUnitWeight.";
 Error::InvalidParameterizationOptions="For sample(s) `1`, SolidUnitParameterizationReplicates is specified but ParameterizeSolidUnits is set to False. SolidUnitParameterizationReplicates can only be specified when tablets or sachets are being parameterized. Consider setting ParametererizeSolidUnits to True in order to parameterize the tablets or sachets, or leave SolidUnitParameterizationReplicates blank if the SolidUnitWeight is known and you would like to use the currently recorded solid unit weight to calculate the count.";
-Error::ParameterizationReplicatesRequired="For sample(s) `1`, tablets and sachets need to be parameterized (because ParameterizeSolidUnits is True and/or the SolidUnitWeight is not known), however SolidUnitParameterizationReplicates is set to Null. Consider specifying SolidUnitParameterizationReplicates to the number of tablets or sachets you would like to use for paramteterization (or leave it blank), or remove the sample(s) `1` from the input before proceeding.";
+Error::ParameterizationReplicatesRequired="For sample(s) `1`, tablets and sachets need to be parameterized (because ParameterizeSolidUnits is True and/or the SolidUnitWeight is not known); however, SolidUnitParameterizationReplicates is set to Null. Consider specifying SolidUnitParameterizationReplicates to the number of tablets or sachets you would like to use for paramteterization (or leave it blank), or remove the sample(s) `1` from the input before proceeding.";
 Error::TotalWeightRequired="For sample(s) `1`, MeasureTotalWeight is set to False although the Mass of the samples is not known. As a result, the count of the sample(s) cannot be determined.  SolidUnitParameterizationReplicates can only be specified when tablets or sachets are being parameterized. Consider setting MeasureTotalWeight to True (or leave it blank) in order to record the total weight of the sample(s).";
 (* Warnings before the resolution *)
 Warning::MassKnown="For samples `1`, the MeasureTotalWeight is set to True although the Mass of the sample(s) is known. As a result the total weight of the sample(s) will be re-measured and the Mass in Object[Sample] overwritten with the newly recorded value. Consider leaving MeasureTotalWeight blank or set it to False, if you would like to calculate the count using the currently recorded Mass.";
@@ -284,7 +295,7 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	expandedSafeOps=Last[ExpandIndexMatchedInputs[ExperimentMeasureCount,{mySamplesWithPreparedSamples},inheritedOptions]];
 
 	(* Define the fields to download from objects *)
-	objectSampleFields=Union[{SolidUnitWeight,Tablet,Sachet},SamplePreparationCacheFields[Object[Sample]]];
+	objectSampleFields=Union[{SolidUnitWeight,Tablet,Sachet,Capsule},SamplePreparationCacheFields[Object[Sample]]];
 
 	(* Define the fields to download from container of objects *)
 	objectContainerFields=SamplePreparationCacheFields[Object[Container]];
@@ -295,19 +306,19 @@ ExperimentMeasureCount[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Op
 	(*-- DOWNLOAD THE INFORMATION THAT WE NEED FOR OUR OPTION RESOLVER AND RESOURCE PACKET FUNCTION --*)
 	cacheBall=FlattenCachePackets[{
 		cache,
+		transferModelPackets[{}],
 		Quiet[
 			Download[
 				{
-					ToList@mySamplesWithPreparedSamples,
-					ToList[$MeasureCountBalanceModel]
+					ToList@mySamplesWithPreparedSamples
 				},
 				{
 					{
 						Evaluate@Packet[objectSampleFields],
+						Packet[Model[SolidUnitWeight]],
 						Packet[Container[objectContainerFields]],
 						Packet[Container[Model[modelContainerFields]]]
-					},
-					{Packet[AllowedMaxVariation]}
+					}
 				},
 				Cache -> cache,
 				Simulation -> updatedSimulation,
@@ -438,7 +449,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		nonTabletOrSachetSamplePackets, nonTabletOrSachetInvalidInputs, tabletOrSachetsTests, nonTabletOrSachetInvalidInputMessage,
 		replicatesNotRequiredSamples,replicatesNotRequiredWarning,replicatesNotRequiredTests,
 		parameterizationNotRequiredSamples,parameterizationNotRequiredWarning,parameterizationNotRequiredTests,
-		requireParameterizationMismatches,parameterizeSolidUnitsMismatchOption, invalidParameterizeSolidUnitsInputs, invalidParameterizeSolidUnitsOption, parameterizeSolidUnitsOptionInvalidTests,
+		requireParameterizationMismatches,parameterizeSolidUnitsMismatchOption, invalidParameterizeSolidUnitsInputs, invalidParameterizeSolidUnitsOption,
+    parameterizeSolidUnitsOptionInvalidTests,
 		massKnownMismatchSamples, massKnownWarning, massKnownTests, parameterizationOptionsMismatches, parameterizeReplicateMismatchOptions,
 		invalidParameterizeReplicateInput, invalidParameterizeOptions, parameterizeOptionsInvalidTests, replicatesRequiredMismatches,
 		requireReplicatesOptions, invalidRequireReplicatesInput, requireReplicatesInvalidOptions, replicatesRequiredTests,
@@ -446,7 +458,8 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 		mapThreadFriendlyOptions, measureTotalWeightList, parameterizeSolidUnitsList, solidUnitParameterizationReplicatesList, replicates,
 		name, confirm, canaryBranch, template, samplesInStorageCondition, operator, parentProtocol, upload, outputOption, email,
 		imageSample, resolvedEmail, resolvedImageSample, numberOfReplicates, resolvedOptions, allTests, resultRule, testsRule,
-		invalidInputs, invalidOptions, resolvedWeightStabilityDuration, resolvedMaxWeightVariation, fastAssoc
+		invalidInputs, invalidOptions, resolvedWeightStabilityDuration, resolvedMaxWeightVariation, fastAssoc, allSampleModelPackets,
+		resolvedBalance
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -480,21 +493,21 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 	(* Extract the packets that we need from our downloaded cache. *)
-	allSamplePackets = Flatten[
-		Quiet[
-			Download[
-				{
-					ToList[simulatedSamples]
-				},
-				{
-					Packet[Status,Container,Mass,Type,Model,SolidUnitWeight,Tablet,Sachet,State]
-				},
-				Simulation->updatedSimulation,
-				Cache->inheritedCache,
-				Date->Now
-			],
-			Download::FieldDoesntExist
-		]
+	{allSamplePackets, allSampleModelPackets} = Flatten /@ Quiet[
+		Download[
+			{
+				ToList[simulatedSamples],
+				ToList[simulatedSamples]
+			},
+			{
+				{Packet[Status, Container, Mass, Type, Model, SolidUnitWeight, Tablet, Sachet, Capsule, State, Model]},
+				{Packet[Model[SolidUnitWeight]]}
+			},
+			Simulation -> updatedSimulation,
+			Cache -> inheritedCache,
+			Date -> Now
+		],
+		Download::FieldDoesntExist
 	];
 
 	(*-- INPUT VALIDATION CHECKS --*)
@@ -541,13 +554,13 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 
 	(* 2. NON-TABLET OR SACHET SAMPLES *)
 
-	(* Get the sample packets that are no tablets or sachets. *)
+	(* Get the sample packets that are no tablets or sachets (or capsules). *)
 	nonTabletOrSachetBoolean = Map[
 		If[!MemberQ[#,True],
 			True,
 			False
 		]&,
-	Lookup[allSamplePackets, {Tablet,Sachet},{}]
+	Lookup[allSamplePackets, {Tablet,Sachet,Capsule},{}]
 	];
 
 	nonTabletOrSachetSamplePackets = PickList[allSamplePackets, nonTabletOrSachetBoolean, True];
@@ -1138,15 +1151,71 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 	];
 
 	(* Resolve balance options *)
+	(* resolve balance *)
+	resolvedBalance = If[MemberQ[parameterizeSolidUnitsList, True],
+		Module[{unitWeights, minUnitWeight},
+			(* we will try to find a balance to measure based on SolidUnitWeight, if there is no info, just default to $MeasureCountBalanceModel *)
+			unitWeights = MapThread[
+				Function[{samplePacket, sampleModelPacket},
+					Which[
+						MassQ[Lookup[samplePacket, SolidUnitWeight]],
+						Lookup[samplePacket, SolidUnitWeight],
+						(* sample may not have a model, so we will just quiet the lookup message here *)
+						MassQ[Quiet[Lookup[sampleModelPacket, SolidUnitWeight]]],
+						Lookup[sampleModelPacket, SolidUnitWeight],
+						True,
+						Null
+					]
+				],
+				{
+					PickList[allSamplePackets, parameterizeSolidUnitsList],
+					PickList[allSampleModelPackets, parameterizeSolidUnitsList]
+				}
+			];
+
+			(* get the minimum unit weight we are measuring as this would decide what balance model to use *)
+			minUnitWeight = If[MemberQ[unitWeights, MassP],
+				Min[Cases[unitWeights, MassP]],
+				Null
+			];
+
+			(* resolve the balance models, we will be extra tolerant here that any of the balance models here are good to use *)
+			If[MassQ[minUnitWeight],
+				(* sort the balance found from TransferDevices using the same logic as ExperimentTransfer *)
+				First[
+					First[
+						SortBy[
+							(* TransferDevices with a balance now return 5-element tuples, with last element being either "MaxUSPMinWeight" or "MinWeight" to indicate whether this balance is able to measure the weight confidently or not *)
+							TransferDevices[Model[Instrument, Balance], minUnitWeight][[All, {1, 5}]],
+							{
+								(* prefer the balance that can measure the weight with USP confidence, i.e. the second tuple would be {"MaxUSPMinWeight", ...}, indicating that TransferDevices looked at MaxUSPMinWeight and determined the transfer weight is larger than that MaxUSPMinWeight *)
+								(#[[2]] /. {"MaxUSPMinWeight" -> 1, "MinWeight" -> 2})&,
+								(* then, prefer every other balance mode over Micro mode if the weight can be measured with confidence already, this is b/c although we generally want higher precision for our measurements, we do not want to create resource constraints in lab either, we only have 1 Micro in lab but many Analytical balances around, so prefer Analytical over Micro if we can *)
+								(fastAssocLookup[fastAssoc, #[[1]], Mode] /. {Analytical -> 1, Macro -> 2, Bulk -> 3, Micro -> 4, Null -> 5})&,
+								(* then make sure to prefer the balance with better/smaller MaxUSPMinWeight, meaning it can measure weight with usp confidence *)
+								(fastAssocLookup[fastAssoc, #[[1]], MaxUSPMinWeight] /. Null -> Infinity * Gram)&,
+								(* then sort to prefer the balance with better/smaller MinWeight *)
+								(fastAssocLookup[fastAssoc, #[[1]], MinWeight] /. Null -> Infinity * Gram)&
+							}
+						],
+						{$MeasureCountBalanceModel}
+					]
+				],
+				$MeasureCountBalanceModel
+			]
+		],
+		Null
+	];
+
 	(* Resolve WeightStabilityDuration and MaxWeightVariation *)
 	resolvedWeightStabilityDuration = If[MatchQ[Lookup[measureCountOptionsAssociation, WeightStabilityDuration], Except[Automatic]],
 		Lookup[measureCountOptionsAssociation, WeightStabilityDuration],
-		60 Second
+		$DefaultWeightStabilityDuration
 	];
-	(* always use Model[Instrument, Balance, "Ohaus EX225AD"], so resolve to the AllowedMaxVariation of it *)
+	(* resolve to the AllowedMaxVariation of the resolved balance model *)
 	resolvedMaxWeightVariation = If[MatchQ[Lookup[measureCountOptionsAssociation, MaxWeightVariation], Except[Automatic]],
 		Lookup[measureCountOptionsAssociation, MaxWeightVariation],
-		fastAssocLookup[fastAssoc, $MeasureCountBalanceModel, AllowedMaxVariation]/.{$Failed -> 0.1 Milligram}
+		fastAssocLookup[fastAssoc, resolvedBalance, AllowedMaxVariation]/.{$Failed -> 0.1 Milligram}
 	];
 
 	(*-- POST OPTION RESOLUTION ERROR CHECKING --*)
@@ -1203,6 +1272,7 @@ resolveExperimentMeasureCountOptions[mySamples:{ObjectP[Object[Sample]]...},myOp
 				MeasureTotalWeight -> measureTotalWeightList,
 				ParameterizeSolidUnits -> parameterizeSolidUnitsList,
 				SolidUnitParameterizationReplicates -> solidUnitParameterizationReplicatesList,
+				Balance -> resolvedBalance,
 				WeightStabilityDuration -> resolvedWeightStabilityDuration,
 				MaxWeightVariation -> resolvedMaxWeightVariation,
 				NumberOfReplicates -> numberOfReplicates,
@@ -1275,8 +1345,8 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		parameterizeSolidUnitsBool,expandedParameterizeSolidUnitsBool,expandedResourcesNeedingParameterization,solidUnitReplicates,
 		expandedSolidUnitReplicates,estimatedWeighingTime,measureTotalWeightBool,expandedMeasureTotalWeightBool,
 		expandedResourcesNeedingTotalWeight,operator,protocolPacket,sharedFieldPacket,finalizedPacket,allResources,
-		fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balance,weighboats,
-		reservoirs, tweezer
+		fulfillable,frqTests,previewRule,optionsRule,testsRule,resultRule,parameterizationQ,balanceResource,weighboats,
+		reservoirs, tweezer, handlingEnvironmentResource, balance
   },
 
 	(* Determine the requested output format of this function. *)
@@ -1306,7 +1376,7 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	downloadPackets = Download[
 		mySamples,
 		{
-			Packet[Container],
+			Packet[Container, SolidUnitWeight, Model],
 			Packet[Container[Object]]
 		},
 		Cache -> inheritedCache,
@@ -1395,14 +1465,27 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 	(* if ParameterizeSolidUnits is True for at least one sample we're paramterizing *)
 	parameterizationQ = MemberQ[parameterizeSolidUnitsBool,True];
 
+	(* get the resolved balance model *)
+	balance = Lookup[expandedResolvedOptions, Balance];
+
 	(* If we are parameterizing, we need balance, tweezers, and weighboats - otherwise we can leave these empty since ExperimentMeasureWeight will take care of its own resources *)
-	balance = If[parameterizationQ,
-		Resource[
-			(* Model[Instrument, Balance, "Ohaus EX225AD"] *)
-			Instrument -> $MeasureCountBalanceModel,
-			Time -> estimatedWeighingTime
-		],
-		Null
+	{balanceResource, handlingEnvironmentResource} = If[NullQ[balance],
+		{Null, Null},
+		{
+			Resource[
+				Instrument -> balance,
+				Time -> estimatedWeighingTime
+			],
+			Module[{handlingStationModels},
+				(* get the handling station models - we only want non-specialized ambient handling stations *)
+				handlingStationModels = Cases[Lookup[Lookup[Experiment`Private`balanceHandlingStationLookup["Memoization"], balance, {}], "Model", {}], Except[ObjectP[specializedHandlingStationModels["Memoization"]], ObjectP[Model[Instrument, HandlingStation, Ambient]]]];
+
+				If[Length[handlingStationModels] > 0,
+					Resource[Instrument -> handlingStationModels, Time -> estimatedWeighingTime],
+					Null
+				]
+			]
+		}
 	];
 
 	(* If we're parameterizing: 1 weighboat for counting out 10 tablets/sachets to the bench. *)
@@ -1451,7 +1534,8 @@ measureCountResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedO
 		Replace[Reservoirs] -> Link /@ reservoirs,
 		Replace[WeighBoats] -> Link /@ weighboats,
 		Tweezer -> Link[tweezer],
-		Balance-> Link[balance],
+		Balance-> Link[balanceResource],
+		HandlingEnvironment -> Link[handlingEnvironmentResource],
 		WeightStabilityDuration -> If[parameterizationQ,
 			Lookup[myResolvedOptions,WeightStabilityDuration],
 			Null

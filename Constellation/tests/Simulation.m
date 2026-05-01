@@ -696,6 +696,23 @@ DefineTests[
 			],
 			{{_?DateObjectQ, Available, Null}}
 		],
+		Test["Replace[MultipleField] paired with a matching backlink from the linked object does not cause a duplicate entry in the multiple field:",
+			Module[{protocolID, unitOperationID, simulation},
+				protocolID = SimulateCreateID[Object[Protocol, Transfer]];
+				unitOperationID = SimulateCreateID[Object[UnitOperation, Transfer]];
+
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {
+						<|Type -> Object[Protocol, Transfer], Object -> protocolID, Replace[BatchedUnitOperations] -> {Link[unitOperationID, Protocol]}|>,
+						<|Type -> Object[UnitOperation, Transfer], Object -> unitOperationID, Protocol -> Link[protocolID, BatchedUnitOperations]|>
+					}]
+				];
+
+				Length[Download[protocolID, BatchedUnitOperations, Simulation -> simulation]]
+			],
+			1
+		],
 		Test["If doing Append[NamedMultipleField] -> <|...|>, don't throw an error and get confused:",
 			Module[{testID, testSimulation, updatedSimulation},
 				testID = SimulateCreateID[Object[Maintenance,AlignLiquidHandlerDevicePrecision]];
@@ -704,6 +721,222 @@ DefineTests[
 				Download[testID, ChannelAdjustmentsLog, Simulation -> updatedSimulation]
 			],
 			{<|Channel -> 1, TranslationDirection -> Left, TranslationRotation -> 365, TiltDirection -> Null, TiltRotation -> Null|>}
+		],
+		Test["Replace[MultipleField] paired with a matching backlink from the linked object does not cause a duplicate entry in the multiple field:",
+			Module[{protocolID, unitOperationID, simulation},
+				protocolID = SimulateCreateID[Object[Protocol, Transfer]];
+				unitOperationID = SimulateCreateID[Object[UnitOperation, Transfer]];
+
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {
+						<|Type -> Object[Protocol, Transfer], Object -> protocolID, Replace[BatchedUnitOperations] -> {Link[unitOperationID, Protocol]}|>,
+						<|Type -> Object[UnitOperation, Transfer], Object -> unitOperationID, Protocol -> Link[protocolID, BatchedUnitOperations]|>
+					}]
+				];
+
+				Length[Download[protocolID, BatchedUnitOperations, Simulation -> simulation]]
+			],
+			1
+		],
+		Test["Erase[MultipleField] -> rowIndex deletes the entry at that row:",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = Simulation[<|Object -> testID, WorkingSourceWell -> {"A1", "A2", "A3"}|>];
+
+				updatedSimulation = UpdateSimulation[initialSimulation, Simulation[<|Object -> testID, Erase[WorkingSourceWell] -> 2|>]];
+				Download[testID, WorkingSourceWell, Simulation -> updatedSimulation]
+			],
+			{"A1", "A3"}
+		],
+		Test["Erase[MultipleField] -> {{row1}, {row2}} deletes multiple rows at once:",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = Simulation[<|Object -> testID, WorkingSourceWell -> {"A1", "A2", "A3"}|>];
+
+				updatedSimulation = UpdateSimulation[initialSimulation, Simulation[<|Object -> testID, Erase[WorkingSourceWell] -> {{1}, {3}}|>]];
+				Download[testID, WorkingSourceWell, Simulation -> updatedSimulation]
+			],
+			{"A2"}
+		],
+		Test["EraseCases[MultipleField] -> value removes all entries matching the value:",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = Simulation[<|Object -> testID, WorkingSourceWell -> {"A1", "A2", "A1"}|>];
+
+				updatedSimulation = UpdateSimulation[initialSimulation, Simulation[<|Object -> testID, EraseCases[WorkingSourceWell] -> "A1"|>]];
+				Download[testID, WorkingSourceWell, Simulation -> updatedSimulation]
+			],
+			{"A2"}
+		],
+		Test["A change packet with only a Type key (no Object key) gets a SimulateCreateID-based Object assigned automatically:",
+			Module[{simulation},
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {<|Type -> Object[UnitOperation, Transfer]|>}]
+				];
+
+				SimulatedObjectQ[Lookup[First[Lookup[First[simulation], Packets]], Object]]
+			],
+			True
+		],
+		Test["When the same object appears in multiple change packets in newSimulation, the packets are applied in order so the last value wins:",
+			Module[{testID, simulation},
+				testID = SimulateCreateID[Object[Example, Data]];
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {
+						<|Object -> testID, Type -> Object[Example, Data], Number -> 1|>,
+						<|Object -> testID, Number -> 2|>
+					}]
+				];
+
+				Download[testID, Number, Simulation -> simulation]
+			],
+			2
+		],
+		Test["When the same label name exists in both currentSimulation and newSimulation, the newSimulation's object reference wins:",
+			Module[{id1, id2, currentSim, newSim, updatedSim},
+				id1 = SimulateCreateID[Object[Sample]];
+				id2 = SimulateCreateID[Object[Sample]];
+				currentSim = Simulation[Packets -> {}, Labels -> {"my sample" -> id1}, LabelFields -> {}];
+				newSim = Simulation[Packets -> {}, Labels -> {"my sample" -> id2}, LabelFields -> {}];
+
+				updatedSim = UpdateSimulation[currentSim, newSim];
+				Lookup[Lookup[First[updatedSim], Labels], "my sample"] === id2
+			],
+			True
+		],
+		Test["Labels from currentSimulation that do not conflict with newSimulation labels are preserved:",
+			Module[{id1, id2, currentSim, newSim, updatedSim, labels},
+				id1 = SimulateCreateID[Object[Sample]];
+				id2 = SimulateCreateID[Object[Sample]];
+				currentSim = Simulation[Packets -> {}, Labels -> {"sample one" -> id1}, LabelFields -> {}];
+				newSim = Simulation[Packets -> {}, Labels -> {"sample two" -> id2}, LabelFields -> {}];
+
+				updatedSim = UpdateSimulation[currentSim, newSim];
+				labels = Lookup[First[updatedSim], Labels];
+				{Length[labels], MemberQ[labels[[All, 1]], "sample one"], MemberQ[labels[[All, 1]], "sample two"]}
+			],
+			{2, True, True}
+		],
+		Test["LabelFields from currentSimulation and newSimulation are merged, with newSimulation winning on conflict:",
+			Module[{currentSim, newSim, updatedSim, labelFields},
+				(* LabelFields maps label names to field symbols/strings - not object references *)
+				currentSim = Simulation[Packets -> {}, Labels -> {}, LabelFields -> {"lbl" -> Volume, "other" -> Name}];
+				newSim = Simulation[Packets -> {}, Labels -> {}, LabelFields -> {"lbl" -> Mass}];
+
+				updatedSim = UpdateSimulation[currentSim, newSim];
+				labelFields = Lookup[First[updatedSim], LabelFields];
+				(* "lbl" should point to Mass (newSim wins), "other" should be preserved from currentSim *)
+				{
+					Lookup[labelFields, "lbl"] === Mass,
+					MemberQ[labelFields[[All, 1]], "other"]
+				}
+			],
+			{True, True}
+		],
+		Test["Objects created with SimulateCreateID appear in the SimulatedObjects field of the resulting simulation:",
+			Module[{testID, simulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {<|Object -> testID, Type -> Object[UnitOperation, Transfer]|>}]
+				];
+
+				MemberQ[Lookup[First[simulation], SimulatedObjects], testID]
+			],
+			True
+		],
+		Test["When currentSimulation has Updated->False (change packets not yet applied), it is normalized before merging in newSimulation:",
+			Module[{testID, changeSimulation, result},
+				testID = SimulateCreateID[Object[Example, Data]];
+				(* Simulation[] with a change packet has Updated->False *)
+				changeSimulation = Simulation[<|Object -> testID, Type -> Object[Example, Data], Number -> 10|>];
+
+				result = UpdateSimulation[changeSimulation, Simulation[<|Object -> testID, Number -> 20|>]];
+				Download[testID, Number, Simulation -> result]
+			],
+			20
+		],
+		Test["Append[MultipleField] with a single matching element appends it as one entry (not a list-of-list):",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = Simulation[<|Object -> testID, WorkingSourceWell -> {"A1", "A2"}|>];
+
+				updatedSimulation = UpdateSimulation[initialSimulation, Simulation[<|Object -> testID, Append[WorkingSourceWell] -> "A3"|>]];
+				Download[testID, WorkingSourceWell, Simulation -> updatedSimulation]
+			],
+			{"A1", "A2", "A3"}
+		],
+		Test["Append[MultipleField] with a list of elements joins all of them onto the end:",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = Simulation[<|Object -> testID, WorkingSourceWell -> {"A1"}|>];
+
+				updatedSimulation = UpdateSimulation[initialSimulation, Simulation[<|Object -> testID, Append[WorkingSourceWell] -> {"A2", "A3"}|>]];
+				Download[testID, WorkingSourceWell, Simulation -> updatedSimulation]
+			],
+			{"A1", "A2", "A3"}
+		],
+		Test["Append[MultipleField] on a brand-new simulated object (field not yet set) starts from {} and produces a one-element list:",
+			Module[{testID, simulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {<|Object -> testID, Type -> Object[UnitOperation, Transfer], Append[WorkingSourceWell] -> "A1"|>}]
+				];
+
+				Download[testID, WorkingSourceWell, Simulation -> simulation]
+			],
+			{"A1"}
+		],
+		Test["A newly simulated object has all unspecified single fields defaulted to Null and multiple fields to {}:",
+			Module[{testID, simulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {<|Object -> testID, Type -> Object[UnitOperation, Transfer], DisplayedAmount -> "5 mL"|>}]
+				];
+
+				(* DisplayedAmount is set; WorkingSourceWell (Multiple) should default to {} *)
+				Download[testID, {DisplayedAmount, WorkingSourceWell}, Simulation -> simulation]
+			],
+			{"5 mL", {}}
+		],
+		Test["Object references in name form (Object[..., \"name\"]) are resolved to ID form using the current simulation before processing:",
+			Module[{testID, initialSimulation, updatedSimulation},
+				testID = SimulateCreateID[Object[UnitOperation, Transfer]];
+				initialSimulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {<|Object -> testID, Type -> Object[UnitOperation, Transfer], Name -> "my test UO", DisplayedAmount -> "1 mL"|>}]
+				];
+
+				updatedSimulation = UpdateSimulation[
+					initialSimulation,
+					Simulation[Packets -> {<|Object -> Object[UnitOperation, Transfer, "my test UO"], DisplayedAmount -> "2 mL"|>}]
+				];
+				Download[testID, DisplayedAmount, Simulation -> updatedSimulation]
+			],
+			"2 mL"
+		],
+		Test["Replace[MultipleField] paired with a matching backlink and an additional no-op change packet for the same object does not cause a duplicate entry in the multiple field:",
+			Module[{protocolID, unitOpID, simulation},
+				protocolID = SimulateCreateID[Object[Protocol, Transfer]];
+				unitOpID = SimulateCreateID[Object[UnitOperation, Transfer]];
+
+				simulation = UpdateSimulation[
+					Simulation[],
+					Simulation[Packets -> {
+						<|Type -> Object[Protocol, Transfer], Object -> protocolID, Replace[BatchedUnitOperations] -> {Link[unitOpID, Protocol]}|>,
+						<|Type -> Object[UnitOperation, Transfer], Object -> unitOpID, Protocol -> Link[protocolID, BatchedUnitOperations]|>,
+						<|Object -> protocolID|>
+					}]
+				];
+
+				Length[Download[protocolID, BatchedUnitOperations, Simulation -> simulation]]
+			],
+			1
 		],
 		Test["If updating SampleHistory or TransfersIn for a Waste sample, drop the field because it will likely be way too big:",
 			Module[
@@ -941,6 +1174,27 @@ DefineTests[
 			],
 			Null,
 			Messages :> {Error::InvalidSimulation}
+		]
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(* SimulatedObjectQ *)
+
+DefineTests[
+	SimulatedObjectQ,
+	{
+		Example[{Basic, "Returns True if the object is a simulated object:"},
+			SimulatedObjectQ[SimulateCreateID[Object[Sample]]],
+			True
+		],
+		Example[{Basic, "Returns False if the object is not a simulated object:"},
+			SimulatedObjectQ[Model[Sample, "Milli-Q water"]],
+			False
+		],
+		Example[{Basic, "Takes a list of objects as an input:"},
+			SimulatedObjectQ[{Link[Model[Container, Vessel, "2mL Tube"]], <|Object -> SimulateCreateID[Object[User]]|>}],
+			{False, True}
 		]
 	}
 ]

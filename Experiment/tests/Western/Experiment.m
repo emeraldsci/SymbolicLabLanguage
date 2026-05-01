@@ -1750,6 +1750,14 @@ DefineTests[
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentWestern[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID], Object[Sample, "Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], CentrifugeIntensity -> 1001 RPM, Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], CentrifugeTime -> 5*Minute, Output -> Options];
@@ -1804,7 +1812,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterMaterial, "The membrane material of the filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentWestern[Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FilterMaterial -> PES,FilterContainerOut->Model[Container, Vessel, "50mL Tube"], Output -> Options];
+			options = ExperimentWestern[Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FilterMaterial -> PES,FilterContainerOut->Model[Container, Vessel, "50mL Tube"], Output -> Options];
 			Lookup[options, FilterMaterial],
 			PES,
 			Variables :> {options},
@@ -1813,7 +1821,7 @@ DefineTests[
 			}
 		],
 		Example[{Options, PrefilterMaterial, "The membrane material of the prefilter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentWestern[Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID],PrefilterMaterial -> GxF, Output -> Options];
+			options = ExperimentWestern[Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID],PrefilterMaterial -> GxF, Output -> Options];
 			Lookup[options, PrefilterMaterial],
 			GxF,
 			Variables :> {options},
@@ -1822,7 +1830,7 @@ DefineTests[
 			}
 		],
 		Example[{Options, FilterPoreSize, "The pore size of the filter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentWestern[Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FilterPoreSize -> 0.22*Micrometer, Output -> Options];
+			options = ExperimentWestern[Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FilterPoreSize -> 0.22*Micrometer, Output -> Options];
 			Lookup[options, FilterPoreSize],
 			0.22*Micrometer,
 			Variables :> {options},
@@ -1831,7 +1839,7 @@ DefineTests[
 			}
 		],
 		Example[{Options, PrefilterPoreSize, "The pore size of the prefilter that should be used when removing impurities from the SamplesIn prior to starting the experiment:"},
-			options = ExperimentWestern[Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
+			options = ExperimentWestern[Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], PrefilterPoreSize -> 1.*Micrometer, FilterMaterial -> PTFE, Output -> Options];
 			Lookup[options, PrefilterPoreSize],
 			1.*Micrometer,
 			Variables :> {options},
@@ -1846,7 +1854,7 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, FilterHousing, "The filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
-			options = ExperimentWestern[Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
+			options = ExperimentWestern[Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], FiltrationType -> PeristalticPump, FilterHousing -> Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"], Output -> Options];
 			Lookup[options, FilterHousing],
 			ObjectP[Model[Instrument, FilterHousing, "Filter Membrane Housing, 142 mm"]],
 			Variables :> {options},
@@ -1918,11 +1926,19 @@ DefineTests[
 			Variables :> {options}
 		],
 		Example[{Options, AliquotAmount, "The amount of each sample that should be transferred from the SamplesIn into the AliquotSamples which should be used in lieu of the SamplesIn for the experiment:"},
-			options = ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], AliquotAmount -> 0.5*Milliliter, Output -> Options];
+			options = ExperimentWestern[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], AliquotAmount -> 0.5*Milliliter, Output -> Options];
 			Lookup[options, AliquotAmount],
 			0.5*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentWestern[Object[Sample, "Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID], Object[Sample, "Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], AliquotAmount -> 0.5001 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			0.5 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentWestern[Object[Sample,"Test 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],Object[Sample,"Test Rabbit-AntiERK-1 antibody for ExperimentWestern"<>$SessionUUID], AssayVolume -> 0.5*Milliliter, Output -> Options];
@@ -2118,7 +2134,7 @@ DefineTests[
 				Object[Sample,"Test water sample for ExperimentWestern"<>$SessionUUID],
 				Object[Sample,"Test antibody diluent 2 sample for ExperimentWestern"<>$SessionUUID],
 				Object[Sample,"10 kDa test protein sample for ExperimentWestern"<>$SessionUUID],
-				Object[Sample,"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],
+				Object[Sample,"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID],
 				Object[Sample,"Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID],
 
 				Object[Protocol,Western,"Test Western option template protocol"<>$SessionUUID]
@@ -2456,7 +2472,7 @@ DefineTests[
 					"Test antibody diluent 2 sample for ExperimentWestern"<>$SessionUUID,
 					"Test 1 mL lysate sample, 5 mg/mL total protein for ExperimentWestern"<>$SessionUUID,
 					"10 kDa test protein sample for ExperimentWestern"<>$SessionUUID,
-					"Available test 25 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID,
+					"Available test 50 mL water sample in a 50mL tube for ExperimentWestern"<>$SessionUUID,
 					"Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern"<>$SessionUUID
 				}
 			];
@@ -2489,7 +2505,7 @@ DefineTests[
 				<|Object->diluentSample,Status->Available,DeveloperObject->True,Volume->1*Milliliter|>,
 				<|Object->lysateTooConc,Status->Available,DeveloperObject->True,Volume->1*Milliliter,TotalProteinConcentration->5*Milligram/Milliliter|>,
 				<|Object->proteinSample,Status->Available,DeveloperObject->True,Volume->1*Milliliter,Concentration->11*Micromolar|>,
-				<|Object->biggerWaterSample,Status->Available,DeveloperObject->True,Volume->25*Milliliter|>,
+				<|Object->biggerWaterSample,Status->Available,DeveloperObject->True,Volume->50*Milliliter|>,
 				<|Object->modellessSample,Status->Available,Model->Null,DeveloperObject->True,Volume->1*Milliliter,TotalProteinConcentration->0.25*Milligram/Milliliter|>
 			}]
 		];
@@ -2551,7 +2567,7 @@ DefineTests[
 				Object[Sample, "Test water sample for ExperimentWestern" <> $SessionUUID],
 				Object[Sample, "Test antibody diluent 2 sample for ExperimentWestern" <> $SessionUUID],
 				Object[Sample, "10 kDa test protein sample for ExperimentWestern" <> $SessionUUID],
-				Object[Sample, "Available test 25 mL water sample in a 50mL tube for ExperimentWestern" <> $SessionUUID],
+				Object[Sample, "Available test 50 mL water sample in a 50mL tube for ExperimentWestern" <> $SessionUUID],
 				Object[Sample, "Test Modelless 1 mL lysate sample, 0.25 mg/mL total protein for ExperimentWestern" <> $SessionUUID],
 
 				Object[Protocol, Western, "Test Western option template protocol" <> $SessionUUID]

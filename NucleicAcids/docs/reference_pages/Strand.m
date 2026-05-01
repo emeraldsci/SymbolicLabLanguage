@@ -129,7 +129,7 @@ DefineUsage[Dimers,
 		{"Dimers[sequence]", "dimers", "breaks a provided sequence up into a list of its composite overlapping dimers in order of the sequence."}
 	},
 	MoreInformation -> {
-		"Even if the sequence is explicitly typed (e.g. DNA[\"ATGATA\"], the function will strip the explicite type and any motif names when extracting the composite dimers."
+		"Even if the sequence is explicitly typed (e.g. DNA[\"ATGATA\"], the function will strip the explicit type and any motif names when extracting the composite dimers."
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The input sequence to be broken up into its dimer components."}
@@ -313,7 +313,7 @@ DefineUsage[Monomers,
 		{"Monomers[strand]", "monos", "breaks up all of the sequences in a strand and returns a single list of these monomers."}
 	},
 	MoreInformation -> {
-		"Even if the sequence is explicitly typed (e.g. DNA[\"ATGATA\"], the function will strip the explicite type and any motif names when extracting the composite monomers."
+		"Even if the sequence is explicitly typed (e.g. DNA[\"ATGATA\"], the function will strip the explicit type and any motif names when extracting the composite monomers."
 	},
 	Input :> {
 		{"sequence", _?SequenceQ, "The input sequence you wish to break up into its monomer components."},

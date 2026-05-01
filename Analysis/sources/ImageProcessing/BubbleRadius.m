@@ -34,7 +34,7 @@ bubbleGradientColorFunction[x_]:=Module[{smallColor,bigColor},
 	(* Gradient smoothly blends the two colors *)
 	Which[
 		x<0.0,grayBubbleCenterColor,
-		x<=1.0,RGBColor[x*bigColor+(1.0-x)*smallColor],
+		x<=1.0,RGBColor[Sequence@@(x*bigColor+(1.0-x)*smallColor)],
 		x>1.0,grayBubbleCenterColor
 	]
 ];

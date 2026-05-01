@@ -119,6 +119,17 @@ DefineObjectType[Object[Maintenance, CalibrateBalance], {
 			Units -> Milligram,
 			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
 			Category -> "General"
+		},
+		HandlingEnvironment -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Instrument, HandlingStation],
+				Model[Instrument, HandlingStation]
+			],
+			Description -> "The environment in which the balance calibration is performed.",
+			Category -> "General"
 		}
 	}
 }];

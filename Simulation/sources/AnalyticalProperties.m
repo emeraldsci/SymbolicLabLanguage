@@ -535,6 +535,11 @@ safeIsotopeData["Si","AtomicMass"]:={Quantity[22.03453`8.,"AtomicMassUnit"],Quan
 	use applyDataPacletFix wrapped around the IsotopeData call to upgrade paclets,
 	otherwise it will return $Failed on Manifold for MM >= 12.2
 *)
+(* Starting in Wolfram 14.2, need to convert from percent to real for "IsotopeAbundance" *)
+safeIsotopeData[elem:_String,"IsotopeAbundance"] := If[TrueQ[$VersionNumber >= 14.2],
+	(Unitless@First[applyDataPacletFix[{IsotopeData[elem,"IsotopeAbundance"]}]])/100,
+	First[applyDataPacletFix[{IsotopeData[elem,"IsotopeAbundance"]}]]
+];
 safeIsotopeData[elem:_String,prop:_String]:= First[applyDataPacletFix[{IsotopeData[elem,prop]}]];
 
 ExactMass[held_, ops : OptionsPattern[ExactMass]] := Quiet[

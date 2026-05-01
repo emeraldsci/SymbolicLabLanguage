@@ -1196,6 +1196,8 @@ Warning::ItemsContainerless="The DiscardContainer option will be ignored for the
 (* Singleton Input Overload *)
 DiscardSamples[mySample:ObjectP[{Object[Sample],Object[Item], Object[Container], Object[Part]}],myOptions:OptionsPattern[]]:=DiscardSamples[{mySample},myOptions];
 
+(* empty list gets an empty list *)
+DiscardSamples[{}, myOptions:OptionsPattern[]]:={};
 
 (* Core Overload: Listed Input - Pass to UploadStorageCondition for Disposal *)
 DiscardSamples[mySamples:{ObjectP[{Object[Sample],Object[Item], Object[Container],Object[Part]}]..},myOptions:OptionsPattern[]]:=Module[
@@ -4207,7 +4209,7 @@ shipFromECL[mySamples : ListableP[ObjectP[{Object[Sample], Object[Item], Model[S
 	(* If the packed object is a model, we will need to do this in MaintenanceShipping procedure, after the model has been fulfilled *)
 	materialsByTransaction=MapThread[
 		Function[
-			{transactionPacket,samplePackets,containerPackets,sampleModelPackets,containerModelPackets,icePacket,dryIcePacket,peanutPacket,plateSealPacket,maintenancePacket},
+			{transactionPacket,samplePackets,containerPackets,sampleModelPackets,containerModelPackets,aliquotContainerModelPacket,icePacket,dryIcePacket,peanutPacket,plateSealPacket,maintenancePacket},
 			If[MatchQ[samplePackets, {PacketP[Object]..}],
 				calculatePackingMaterials[
 					transactionPacket,
@@ -4215,7 +4217,7 @@ shipFromECL[mySamples : ListableP[ObjectP[{Object[Sample], Object[Item], Model[S
 					containerPackets,
 					sampleModelPackets,
 					containerModelPackets,
-					(aliquotContainerModelPackets/.{Null}->Null),
+					aliquotContainerModelPacket,
 					modelBoxPackets,
 					modelBagPackets,
 					icePacket,
@@ -4229,7 +4231,25 @@ shipFromECL[mySamples : ListableP[ObjectP[{Object[Sample], Object[Item], Model[S
 				ConstantArray[{}, 9]
 			]
 		],
-		Join[{reKeyedTransactionPackets,partitionedSamplePackets,partitionedContainerPackets,partitionedSampleModelPackets,partitionedContainerModelPackets},Transpose[shippingMaterialsPacketsByTransaction]]
+		Join[
+			{
+				reKeyedTransactionPackets,
+				partitionedSamplePackets,
+				partitionedContainerPackets,
+				partitionedSampleModelPackets,
+				partitionedContainerModelPackets,
+				Which[
+					MatchQ[unflatAliquotContainerModelPackets, {Null}], 
+					ConstantArray[Null, Length[partitionedSamplePackets]],
+					
+					!MatchQ[Length[unflatAliquotContainerModelPackets], Length[partitionedSamplePackets]],
+					ConstantArray[First[unflatAliquotContainerModelPackets], Length[partitionedSamplePackets]],
+
+					True,
+					unflatAliquotContainerModelPackets
+				]
+			},
+			Transpose[shippingMaterialsPacketsByTransaction]]
 	];
 
 	(* Organize the packing materials *)
@@ -5307,11 +5327,11 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerL
 		transactionStatuses,sourcePosition, team,sampleSourcePackets, cleanedInputModels, namedSafeOptions,
 		samplesAndShippingInfo,transactionInfoGroupedByShipping,containerTallies,splitContainers,transactionPackets,
 		partitionedSamples, partitionedContainers, partitionedDateExpected, partitionedTrackingNumber, partitionedShipper,
-		partitionedDateShipped,transactionStatusPackets,notebookTest,
+		partitionedDateShipped,transactionStatusPackets,notebookTest, coverPacketsSansContainer, coverPacketsWithContainer,
 		outputSpecification,output,listedOptions,resolvedOptionsForDisplay,gatherTests,safeOptionTests,validLengths,validLengthTests,
 		resolvedOptions,resolvedOptionsTests,resolvedOptionsResult,itemsToMake,itemStorageConditions,newItemPackets,itemObjects,
 		previewRule,optionsRule,testsRule, resultRule,splitContainerTest,messagesBoolean, storageConditionsFields,storageConditions,nameOption,
-		sampleDestinationPackets, modelContainerFields, containerSourcePackets, partitionedContainerOut,
+		sampleDestinationPackets, modelContainerFields, containerSourcePackets, partitionedContainerOut, coverPacketsWithSite,
 		expandedOptions, expandedModelSamples, expandedNames,listedModels, listedNames,specifiedContainerModels,specifiedRackModels, rackModelFields,
 		resolvedContainerModels, containersAndCoverModels,newCapTuples,newLidTuples,newCapsModels,newLidsModels,
 		coverModelIDLookup,updatedCoverModels,newCoverModelPackets,coverModelIDs,sampleCoversTuples,sampleCoversToCreate,coveredContainers,
@@ -5827,11 +5847,25 @@ ShipToECL[myModels:ListableP[ObjectP[{Model[Item],Model[Sample]}]], myContainerL
 	];
 
 	(* remove any packets that deal with location, as these caps are going straight on to the container *)
-	cleanedCoverPackets = DeleteCases[newCoverUploadPackets, (KeyValuePattern[Append[Contents]->_]|KeyValuePattern[Container -> _])];
+	coverPacketsSansContainer = DeleteCases[newCoverUploadPackets, (KeyValuePattern[Append[Contents]->_]|KeyValuePattern[Container -> _])];
 
 	(* First N packets gives us our new cover object packets  *)
-	newCoverPackets = Take[cleanedCoverPackets, Length[allNewCoverModels]];
+	newCoverPackets = Take[coverPacketsSansContainer, Length[allNewCoverModels]];
 
+	(* cleanedCoverPackets does not contain Site and SiteLog info. add that back *)
+	coverPacketsWithContainer = Cases[newCoverUploadPackets, KeyValuePattern[Container -> _]];
+
+	(* create a packets with site info for each new created cover *)
+	coverPacketsWithSite = Association[
+		Object -> Lookup[#, Object],
+		Site -> Lookup[#, Site, Null],
+		Append[SiteLog] -> Lookup[#, Append[SiteLog], Null]
+	]& /@ coverPacketsWithContainer;
+
+	(* final packets of new created cover objects without container data (as they are going straight on to the container), with Site info *)
+	cleanedCoverPackets = Join[coverPacketsSansContainer, coverPacketsWithSite];
+
+	(* separate covers for container with samples vs empty containers *)
 	{newSampleCoverPackets,newEmptyContainerCoverPackets} = TakeDrop[newCoverPackets, Length[sampleCoversToCreate]];
 
 	(* get the object to make this a bit easier *)
@@ -12949,6 +12983,17 @@ DefineOptions[RestrictSamples,
 				Pattern :> ObjectP[{Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]}]
 			]
 		},
+		{
+			OptionName -> Reason,
+			Default -> Null,
+			Description -> "The reason for restricting these samples. This will be stored in the RestrictedLog field.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			]
+		},
 		OutputOption,
 		UploadOption
 	}
@@ -12961,7 +13006,7 @@ RestrictSamples[mySample:ObjectP[{Object[Sample], Object[Container],Object[Item]
 RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]...}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
 		optionsRule, previewRule, testsRule, resultRule,safeOptionsMinusHiddenOptions, updatedBy,
-		resolvedUpdatedBy, resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
+		resolvedUpdatedBy, reason, resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
 
 	(* make sure we're working with a list of options *)
 	listedOptions = ToList[ops];
@@ -13010,6 +13055,9 @@ RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Ite
 		updatedBy
 	], Object];
 
+	(* pull out the Reason option *)
+	reason = Lookup[safeOptionsMinusHiddenOptions, Reason, Null];
+
 	(* get the resolved options *)
 	resolvedOptionsNoHidden = ReplaceRule[safeOptionsMinusHiddenOptions, {UpdatedBy -> resolvedUpdatedBy}];
 
@@ -13035,7 +13083,7 @@ RestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container],Object[Ite
 		<|
 			Object->#,
 			Restricted->True,
-			Append[RestrictedLog] -> {{Now, True, Link[resolvedUpdatedBy]}},
+			Append[RestrictedLog] -> {{Now, True, Link[resolvedUpdatedBy], reason}},
 
 			If[MatchQ[#,ObjectP[Object[Sample]]],
 				Append[SampleHistory]->{
@@ -13221,6 +13269,17 @@ DefineOptions[UnrestrictSamples,
 				Pattern :> ObjectP[{Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]}]
 			]
 		},
+		{
+			OptionName -> Reason,
+			Default -> Null,
+			Description -> "The reason for unrestricting these samples. This will be stored in the RestrictedLog field.",
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line
+			]
+		},
 		OutputOption,
 		UploadOption
 	}
@@ -13232,7 +13291,7 @@ UnrestrictSamples[mySample:ObjectP[{Object[Sample], Object[Container], Object[It
 (* Core Overload: Listed Input - Populate Restricted *)
 UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[Item], Object[Part], Object[Sensor], Object[Plumbing], Object[Wiring]}]...}, ops:OptionsPattern[]]:=Module[
 	{listedOptions, outputSpecification, output, gatherTests, safeOptions, safeOptionTests,
-		optionsRule, previewRule, testsRule, resultRule, safeOptionsMinusHiddenOptions, updatedBy, resolvedUpdatedBy,
+		optionsRule, previewRule, testsRule, resultRule, safeOptionsMinusHiddenOptions, updatedBy, resolvedUpdatedBy, reason,
 		resolvedOptionsNoHidden, upload, changePackets, fluidContainers, fluidContents},
 
 	(* make sure we're working with a list of options *)
@@ -13282,6 +13341,9 @@ UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[
 		updatedBy
 	];
 
+	(* pull out the Reason option *)
+	reason = Lookup[safeOptionsMinusHiddenOptions, Reason, Null];
+
 	(* get the resolved options *)
 	resolvedOptionsNoHidden = ReplaceRule[safeOptionsMinusHiddenOptions, {UpdatedBy -> resolvedUpdatedBy}];
 
@@ -13307,7 +13369,7 @@ UnrestrictSamples[mySamples:{ObjectP[{Object[Sample], Object[Container], Object[
 		<|
 			Object -> #,
 			Restricted -> False,
-			Append[RestrictedLog] -> {{Now, False, Link[resolvedUpdatedBy]}},
+			Append[RestrictedLog] -> {{Now, False, Link[resolvedUpdatedBy], reason}},
 
 			If[MatchQ[#,ObjectP[Object[Sample]]],
 				Append[SampleHistory]->{

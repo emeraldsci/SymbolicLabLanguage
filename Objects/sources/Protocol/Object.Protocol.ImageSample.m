@@ -219,6 +219,14 @@ DefineObjectType[Object[Protocol, ImageSample],{
 			Category -> "Batching",
 			Developer -> True
 		},
+		TubeRackPlacementBatchLengths -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The list of batch sizes corresponding to number tubes getting placed into the tube rack for each batch.  This field is different from BatchLengths specifically in the color comparison case where only one sample is being imaged but the other comparison samples must be in frame as well.",
+			Category -> "Batching",
+			Developer -> True
+		},
 		BatchedContainerIndexes -> {
 			Format -> Multiple,
 			Class -> Integer,
@@ -338,6 +346,16 @@ DefineObjectType[Object[Protocol, ImageSample],{
 			Category -> "General",
 			Developer->True
 		},
+		(* ideally would be added to BatchedImageParameters, but that one is already huge and unwieldy and adding to it is more trouble than it's worth (especially because 99+% of the time this won't have anything in it) *)
+		BatchedColorReferences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ColorReferencesP,
+			IndexMatching -> BatchedImagingParameters,
+			Description -> "For each member of BatchedImagingParameters, the set of color standards used to compare color intensity with the samples in that batch.",
+			Category -> "General",
+			Developer -> True
+		},
 		(* Since this is now weirdly batch-indexed, removing and having it link only to the Object[Data, Appearance] objects *)
 		RulerImageData->{
 			Format->Multiple,
@@ -393,6 +411,44 @@ DefineObjectType[Object[Protocol, ImageSample],{
 			Description -> "Indicates if the images for the current iteration have been successfully exported.",
 			Category -> "General",
 			Developer->True
+		},
+		ColorReferences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ColorReferencesP,
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the set of color standards used to compare color intensity with the sample.",
+			Category -> "Imaging Specifications"
+		},
+		ColorReferenceSamples -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {ObjectP[{Model[Sample], Object[Sample]}]..},
+			IndexMatching -> SamplesIn,
+			Description -> "For each member of SamplesIn, the samples imaged alongside it to compare color intensity with it.",
+			Category -> "Imaging Specifications"
+		},
+		(* this field must be the same length as the flattened ColorReferenceSamples; we need this field in order to resource pick the samples; we can't currently do that on a multiple-multiple field, which ColorReferenceSamples is *)
+		ColorReferenceSampleResources -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The flat list of samples imaged alongside the input sample to compare color intensity with it.",
+			Category -> "Imaging Specifications",
+			Developer -> True
+		},
+		MoreIntenseColorReferences -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {ObjectP[Object[Container, Vessel]]...},
+			IndexMatching -> BatchLengths,
+			Description -> "For each member of BatchLengths, the containers of the color references that the operator has determined are equally or more intensely colored than the sample.",
+			Category -> "Experimental Results",
+			Developer -> True
 		}
 	}
 }];

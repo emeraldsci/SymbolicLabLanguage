@@ -2104,12 +2104,12 @@ experimentMeasureContactAngleResourcePackets[
 		Instrument->Link[instrumentResource],
 		Tweezer->Link[tweezerResource],(* We only use the "Bernstein 5-052 Stainless Steel SMD tweezer" provided by Kruss in the toolbox *)
 		Replace[Checkpoints]->{
-			{"Picking Resources",20 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->20 Minute]]},
-			{"Checking Instrument Connection",10 Minute,"Instrument required to execute this protocol are connected correctly.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->10 Minute]]},
-			{"Preparing Samples",10 Minute,"Preprocessing, such as mounting fiber sample and transferring liquid, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->10 Minute]]},
-			{"Measuring Contact Angle",instrumentTime,"The contact angle of fiber samples are measured with specified wetting liquid.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->instrumentTime]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->1 Hour]]},
-			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 1"],Time->20 Minute]]}
+			{"Picking Resources",20 Minute,"Samples required to execute this protocol are gathered from storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->20 Minute]]},
+			{"Checking Instrument Connection",10 Minute,"Instrument required to execute this protocol are connected correctly.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]},
+			{"Preparing Samples",10 Minute,"Preprocessing, such as mounting fiber sample and transferring liquid, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]},
+			{"Measuring Contact Angle",instrumentTime,"The contact angle of fiber samples are measured with specified wetting liquid.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->instrumentTime]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->1 Hour]]},
+			{"Returning Materials",20 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->20 Minute]]}
 		},
 		Replace[WettedLengthMeasurement]->expandedWettedLengthMeasurement,
 		Replace[NumberOfCycles]->expandedNumberOfCycles,

@@ -512,56 +512,50 @@ DefineTests[UploadCountLiquidParticlesMethod,
 			{Stir, Stir, Stir, Stir},
 			Variables :> {methods}
 		],
-		If[
-			$CountLiquidParticlesAllowHandSwirl,
-			Sequence@@{
-				Example[
-					{Options, AcquisitionMixType, "Specify the mix type:"},
-					methods = UploadCountLiquidParticlesMethod[{
-						Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
-					},
-						AcquisitionMixType -> {Swirl, Stir, Stir, Swirl}
-					];
-					Download[methods, AcquisitionMixType],
-					{Swirl, Stir, Stir, Swirl},
-					Variables :> {methods}
-				],
-				Example[
-					{Options, NumberOfMixes, "Specify the number of mixes if the AcquisitionMixType is Swirl:"},
-					methods = UploadCountLiquidParticlesMethod[{
-						Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
-					},
-						AcquisitionMixType -> Swirl,
-						NumberOfMixes -> {1, 2, 3, 4}
-					];
-					Download[methods, NumberOfMixes],
-					{1, 2, 3, 4},
-					Variables :> {methods}
-				],
-				Example[
-					{Options, WaitTimeBeforeReading, "Specify how long the sample will be placed without any stirring before the data collection starts:"},
-					methods = UploadCountLiquidParticlesMethod[{
-						Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
-						Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
-					},
-						AcquisitionMixType -> Swirl,
-						WaitTimeBeforeReading -> {1Minute, 2Minute, 3Minute, 4Minute}
-					];
-					Download[methods, WaitTimeBeforeReading],
-					{1Minute, 2Minute, 3Minute, 4Minute},
-					Variables :> {methods},
-					EquivalenceFunction -> Equal
-				]
+		Example[
+			{Options, AcquisitionMixType, "Specify the mix type:"},
+			methods = UploadCountLiquidParticlesMethod[{
+				Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
 			},
-			Nothing
+				AcquisitionMixType -> {Swirl, Stir, Stir, Swirl}
+			];
+			Download[methods, AcquisitionMixType],
+			{Swirl, Stir, Stir, Swirl},
+			Variables :> {methods}
+		],
+		Example[
+			{Options, NumberOfMixes, "Specify the number of mixes if the AcquisitionMixType is Swirl:"},
+			methods = UploadCountLiquidParticlesMethod[{
+				Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
+			},
+				AcquisitionMixType -> Swirl,
+				NumberOfMixes -> {1, 2, 3, 4}
+			];
+			Download[methods, NumberOfMixes],
+			{1, 2, 3, 4},
+			Variables :> {methods}
+		],
+		Example[
+			{Options, WaitTimeBeforeReading, "Specify how long the sample will be placed without any stirring before the data collection starts:"},
+			methods = UploadCountLiquidParticlesMethod[{
+				Object[Sample, "Test 5 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 10 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 15 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID],
+				Object[Sample, "Test 20 micro meter particle sample 1 for UploadCountLiquidParticlesMethod" <> $SessionUUID]
+			},
+				AcquisitionMixType -> Swirl,
+				WaitTimeBeforeReading -> {1Minute, 2Minute, 3Minute, 4Minute}
+			];
+			Download[methods, WaitTimeBeforeReading],
+			{1Minute, 2Minute, 3Minute, 4Minute},
+			Variables :> {methods},
+			EquivalenceFunction -> Equal
 		],
 		Example[
 			{Options,StirBar,"Specify indicates the stir bar used to agitate the sample during acquisition:"},

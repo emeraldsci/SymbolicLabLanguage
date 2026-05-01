@@ -32,31 +32,10 @@ DefineTests[
 			],
 			ObjectP[Model[Sample]]
 		],
-		Example[{Basic, "Upload a new fulfillment model of 50/50 Water Methanol:"},
-			UploadSampleModel[
-				"50/50 Water Methanol for UploadSampleModel unit tests 2 " <> $SessionUUID,
-				Composition -> {
-					{50 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
-					{50 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}
-				},
-				Expires -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Flammable -> True,
-				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None}
-			],
-			ObjectP[Model[Sample]]
-		],
 		Example[{Basic, "Upload a new fulfillment model of methanol from a molecule identifier, such as its PubChem identifier:"},
 			UploadSampleModel[
 				887,
-				Name -> "99% Methanol for UploadSampleModel unit tests " <> $SessionUUID,
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
-					{1 VolumePercent, Null}
-				},
+				Name -> "Methanol for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
 				State -> Liquid,
@@ -64,7 +43,11 @@ DefineTests[
 				Flammable -> True,
 				IncompatibleMaterials -> {None}
 			],
-			ObjectP[Model[Sample]]
+			ObjectP[Model[Sample]],
+			Stubs :> {
+				(* Turn on duplicate checking to make sure UploadMolecule finds existing methanol *)
+				$installDefaultUploadFunctionDuplicateChecking = True
+			}
 		],
 		Example[{Basic, "Update an already existing sample fulfillment model:"},
 			UploadSampleModel[
@@ -76,11 +59,11 @@ DefineTests[
 		(* ==Additional== *)
 		Example[{Additional, "Upload a new fulfillment model for 99% Pure HPLC Grade Methanol. The {1 VolumePercent, Null} entry in the Composition field indicates that 1 VolumePercent of the sample is an unknown impurity:"},
 			UploadSampleModel[
-				"99% HPLC Grade Methanol for UploadSampleModel unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
 					{1 VolumePercent, Null}
 				},
+				Name -> "Methanol for UploadSampleModel unit tests 2 " <> $SessionUUID,
 				UsedAsSolvent -> True,
 				Grade -> HPLC,
 				Expires -> True,
@@ -99,11 +82,11 @@ DefineTests[
 			myOligomerAnalyte = UploadOligomer["My Oligomer Analyte for UploadSampleModel unit tests " <> $SessionUUID, Molecule -> Strand[DNA["AATTGTTCGGACACT"]], PolymerType -> DNA];
 
 			UploadSampleModel[
-				"My Oligomer Analyte in Water for UploadSampleModel unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, Oligomer, "My Oligomer Analyte for UploadSampleModel unit tests " <> $SessionUUID]},
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]}
 				},
+				Name -> "My Oligomer Analyte in Water for UploadSampleModel unit tests " <> $SessionUUID,
 				Solvent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
@@ -158,11 +141,12 @@ DefineTests[
 			ObjectP[Model[Sample]]
 		],
 		Example[{Additional, "Upload a new Model containing Model[Cell] and automatically determine the CellType from Composition:"},
-			newModel = UploadSampleModel["Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]},
 					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE"]}
 				},
+				Name -> "Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
 				Living -> True,
 				UsedAsSolvent -> False,
 				Expires -> True,
@@ -180,11 +164,12 @@ DefineTests[
 			Variables :> {newModel}
 		],
 		Example[{Additional, "Upload a new Model containing Model[Cell, Bacterial] and automatically set Sterile and AsepticHandling:"},
-			newModel = UploadSampleModel["Test living bacterial cells for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{5 VolumePercent, Link[Model[Cell, Bacteria, "id:54n6evLm7m0L" (* E.coli MG1655 *)]]},
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]}
 				},
+				Name -> "Test living bacterial cells for UploadSampleModel tests " <> $SessionUUID,
 				Living -> True,
 				UsedAsSolvent -> False,
 				Expires -> True,
@@ -203,8 +188,12 @@ DefineTests[
 		],
 		(* ==OPTIONS== *)
 		Example[{Options, "OpticalComposition", "Upload a new (1R)-(-)-10-camphorsulfonic acid sample model with its OpticalComposition field populated."},
-			newModel = UploadSampleModel["(1R)-(-)-10-camphorsulfonic in methanol for UploadSampleModel unit tests 1 " <> $SessionUUID,
-				Composition -> {{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}, {1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
+			newModel = UploadSampleModel[
+				{
+					{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+					{1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}
+				},
+				Name -> "(1R)-(-)-10-camphorsulfonic in methanol for UploadSampleModel unit tests 1 " <> $SessionUUID,
 				OpticalComposition -> {{100 Percent, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
 				UsedAsSolvent -> False,
 				Grade -> ACS,
@@ -223,11 +212,12 @@ DefineTests[
 			Variables :> {newModel}
 		],
 		Example[{Options, Living, "Upload a new Model containing Model[Cell] and specify if the cells are alive or dead."},
-			newModel = UploadSampleModel["Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]},
 					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE"]}
 				},
+				Name -> "Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
 				Living -> True,
 				UsedAsSolvent -> False,
 				Expires -> True,
@@ -246,11 +236,12 @@ DefineTests[
 			Variables :> {newModel}
 		],
 		Example[{Options, CellType, "Upload a new Model containing Model[Cell] and specify that it is a specific type of cell:"},
-			newModel = UploadSampleModel["Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]},
 					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE"]}
 				},
+				Name -> "Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
 				Living -> True,
 				UsedAsSolvent -> False,
 				Expires -> True,
@@ -269,11 +260,12 @@ DefineTests[
 			Variables :> {newModel}
 		],
 		Example[{Options, AsepticHandling, "Upload a new Model and specify AsepticHandling:"},
-			newModel = UploadSampleModel["Test aseptic handling model for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{5 VolumePercent, Model[Molecule, Protein, "id:Z1lqpMzR4E3W" (* Lysozyme from chicken egg white *)]}
 				},
+				Name -> "Test aseptic handling model for UploadSampleModel tests " <> $SessionUUID,
 				AsepticHandling -> True,
 				BiosafetyLevel -> "BSL-1",
 				UsedAsSolvent -> False,
@@ -291,11 +283,12 @@ DefineTests[
 			Variables :> {newModel}
 		],
 		Example[{Options, Sterile, "Upload a new Model and specify Sterile:"},
-			newModel = UploadSampleModel["Test sterile model for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{5 VolumePercent, Model[Molecule, Protein, "id:Z1lqpMzR4E3W" (* Lysozyme from chicken egg white *)]}
 				},
+				Name -> "Test sterile model for UploadSampleModel tests " <> $SessionUUID,
 				Sterile -> True,
 				BiosafetyLevel -> "BSL-1",
 				UsedAsSolvent -> False,
@@ -314,10 +307,10 @@ DefineTests[
 		],
 		Example[{Options, FixedAmounts, "Upload a new fulfillment model of an analyte that has fixed amounts:"},
 			UploadSampleModel[
-				"My Analyte with Fixed Amounts for UploadSampleModel unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
 				},
+				Name -> "My Analyte with Fixed Amounts for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
@@ -333,11 +326,12 @@ DefineTests[
 			ObjectP[Model[Sample]]
 		],
 		Example[{Options, AsepticTransportContainerType, "Upload a new Model whose samples are contained in an aseptic barrier with information about whether they will need to be unbagged before use in a protocol, maintenance, or qualification:"},
-			newModel = UploadSampleModel["Test inexplicably aseptic glucose solution for UploadSampleModel tests "<>$SessionUUID,
-				Composition -> {
+			newModel = UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]},(* water *)
 					{5 VolumePercent, Model[Molecule, "id:dORYzZJ3l38e"]} (* glucose *)
 				},
+				Name -> "Test inexplicably aseptic glucose solution for UploadSampleModel tests "<>$SessionUUID,
 				AsepticTransportContainerType -> Individual,
 				UsedAsSolvent -> False,
 				Expires -> True,
@@ -356,11 +350,12 @@ DefineTests[
 		],
 		(* ==Messages== *)
 		Example[{Messages, "MissingLivingOption", "If uploading a composition that contains Model[Cell](s), and the Living option is not provided, an error will be thrown and $Failed will be returned."},
-			UploadSampleModel["Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
-				Composition -> {
+			UploadSampleModel[
+				{
 					{95 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D"]},
 					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE"]}
 				},
+				Name -> "Test living mammalian cells for UploadSampleModel tests " <> $SessionUUID,
 				UsedAsSolvent -> False,
 				Expires -> True,
 				ShelfLife -> 1 Week,
@@ -379,13 +374,14 @@ DefineTests[
 			}
 		],
 		Example[{Messages, "SampleTypeOptionMismatch", "If uploading a Sachet, the composition has to include a Model[Material] of pouch:"},
-			UploadSampleModel["Test sachet 1 for UploadSampleModel tests " <> $SessionUUID,
+			UploadSampleModel[
+				{
+					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]}
+				},
+				Name -> "Test sachet 1 for UploadSampleModel tests " <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]}
-				},
 				Sachet -> True,
 				SolidUnitWeight -> 0.5 Gram,
 				DefaultSachetPouch -> Model[Material, "Test sachet pouch model for UploadSampleModel tests "<> $SessionUUID],
@@ -402,14 +398,15 @@ DefineTests[
 			}
 		],
 		Example[{Messages, "SampleTypeOptionMismatch", "If uploading a Sachet, the SolidUnitWeight and DefaultSachetPouch has to be populated:"},
-			UploadSampleModel["Test sachet 2 for UploadSampleModel tests " <> $SessionUUID,
-				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None},
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+			UploadSampleModel[
+				{
 					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]},
 					{Null, Model[Material, "Test sachet pouch model for UploadSampleModel tests "<> $SessionUUID]}
 				},
+				Name -> "Test sachet 2 for UploadSampleModel tests " <> $SessionUUID,
+				MSDSFile -> NotApplicable,
+				IncompatibleMaterials -> {None},
+				BiosafetyLevel -> "BSL-1",
 				Sachet -> True,
 				SolidUnitWeight -> Null,
 				DefaultSachetPouch -> Null,
@@ -426,14 +423,15 @@ DefineTests[
 			}
 		],
 		Example[{Messages, "SampleTypeOptionMismatch", "If uploading a Sachet, State must be Solid:"},
-			UploadSampleModel["Test sachet 3 for UploadSampleModel tests " <> $SessionUUID,
-				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None},
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+			UploadSampleModel[
+				{
 					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]},
 					{Null, Model[Material, "Test sachet pouch model for UploadSampleModel tests "<> $SessionUUID]}
 				},
+				Name -> "Test sachet 3 for UploadSampleModel tests " <> $SessionUUID,
+				MSDSFile -> NotApplicable,
+				IncompatibleMaterials -> {None},
+				BiosafetyLevel -> "BSL-1",
 				Sachet -> True,
 				SolidUnitWeight -> 0.5 Gram,
 				DefaultSachetPouch -> Model[Material, "Test sachet pouch model for UploadSampleModel tests "<> $SessionUUID],
@@ -450,13 +448,14 @@ DefineTests[
 			}
 		],
 		Example[{Messages, "SampleTypeOptionMismatch", "If SolidUnitWeight is populated in the upload, the sample must have either Sachet or Tablet set to True:"},
-			UploadSampleModel["Test sachet 4 for UploadSampleModel tests " <> $SessionUUID,
+			UploadSampleModel[
+				{
+					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]}
+				},
+				Name -> "Test sachet 4 for UploadSampleModel tests " <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 MassPercent, Model[Molecule, "Test sachet filler model for UploadSampleModel tests "<> $SessionUUID]}
-				},
 				Sachet -> False, Tablet -> False,
 				SolidUnitWeight -> 0.5 Gram,
 				Expires -> True,
@@ -473,12 +472,11 @@ DefineTests[
 		],
 		Example[{Options, Name, "Specify the common or proprietary name of the sample, used to identify it in Constellation:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Name -> "Test name"
@@ -489,33 +487,33 @@ DefineTests[
 		],
 		Example[{Options, Synonyms, "Specify a list of alternative names for this substance:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Synonyms -> {"Alternative name 1", "Alternative name 2"}
 			];
 			Download[sampleModel, Synonyms],
-			{"Alternative name 1", "Alternative name 2", "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID},
+			{"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID, "Alternative name 1", "Alternative name 2"},
 			Variables :> {sampleModel}
 		],
 		Example[{Options, Composition, "Specify the various components that constitute this sample model, along with their respective concentrations. Specifying 'Null' for amount indicates a component of unknown concentration, and specifying 'Null' for the component indicates an unknown or proprietary component:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{99 MassPercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
+					{1 MassPercent, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None},
-				Composition -> {
-					{99 MassPercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
-					{1 MassPercent, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
-				}
+				IncompatibleMaterials -> {None}
 			];
 			Download[sampleModel, Composition],
 			{
@@ -526,14 +524,14 @@ DefineTests[
 		],
 		Example[{Options, Composition, "Indicate that a sample is composed of an unknown concentration of an unknown substance:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None},
-				Composition -> {{Null, Null}}
+				IncompatibleMaterials -> {None}
 			];
 			Download[sampleModel, Composition],
 			{{Null, Null}},
@@ -541,15 +539,15 @@ DefineTests[
 		],
 		Example[{Options, Media, "Specify the base cell growth solution of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{95 VolumePercent, Model[Molecule, "id:zGj91a70m0lv" (* Agar *)]},
+					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE" (* HeLa *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{95 VolumePercent, Model[Molecule, "id:zGj91a70m0lv" (* Agar *)]},
-					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE" (* HeLa *)]}
-				},
 				Living -> False,
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
@@ -561,12 +559,12 @@ DefineTests[
 		],
 		Example[{Options, UsedAsMedia, "Specify if samples of this model are typically used as a cell growth medium:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				UsedAsMedia -> True
@@ -577,12 +575,12 @@ DefineTests[
 		],
 		Example[{Options, Living, "Specify if there is living material in samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Living -> True
@@ -593,15 +591,15 @@ DefineTests[
 		],
 		Example[{Options, CellType, "Specify the taxon of the organism or cell line from which the cell sample originates:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{95 VolumePercent, Model[Molecule, "id:zGj91a70m0lv" (* Agar *)]},
+					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE" (* HeLa *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{95 VolumePercent, Model[Molecule, "id:zGj91a70m0lv" (* Agar *)]},
-					{5 VolumePercent, Model[Cell, Mammalian, "id:Vrbp1jK4Z4JE" (* HeLa *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Living -> True,
@@ -613,15 +611,15 @@ DefineTests[
 		],
 		Example[{Options, Solvent, "Specify the base component of this sample model that contains, dissolves and disperses the other components:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{1 MassPercent, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]},
+					{99 MassPercent, Model[Molecule, "id:xRO9n3BPmP3q" (* Acetone *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{1 MassPercent, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]},
-					{99 MassPercent, Model[Molecule, "id:xRO9n3BPmP3q" (* Acetone *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Solvent -> Model[Sample, "id:Vrbp1jG80zno" (* Acetone, Reagent Grade *)]
@@ -632,12 +630,12 @@ DefineTests[
 		],
 		Example[{Options, UsedAsSolvent, "Specify if samples of this model are typically used to dissolve other substances:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				UsedAsSolvent -> True
@@ -648,17 +646,18 @@ DefineTests[
 		],
 		Example[{Options, ConcentratedBufferDiluent, "Specify the solvent required to dilute this sample model to form BaselineStock. The model is diluted by ConcentratedBufferDilutionFactor:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
-				Expires -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+				{
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{17.6 Millimolar, Model[Molecule, "id:qdkmxzqaba91" (* Potassium Phosphate (Dibasic) *)]},
 					{81 Millimolar, Model[Molecule, "id:XnlV5jKXeX3b" (* Dibasic Sodium Phosphate *)]},
 					{27 Millimolar, Model[Molecule, "id:dORYzZJ3l3ap" (* Potassium Chloride *)]},
-					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}},
+					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ConcentratedBufferDiluent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
@@ -671,17 +670,18 @@ DefineTests[
 		],
 		Example[{Options, ConcentratedBufferDilutionFactor, "Specify the amount by which the sample must be diluted with its ConcentratedBufferDiluent in order to form standard ratio of Models for 1X buffer, the BaselineStock:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
-				Expires -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+				{
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{17.6 Millimolar, Model[Molecule, "id:qdkmxzqaba91" (* Potassium Phosphate (Dibasic) *)]},
 					{81 Millimolar, Model[Molecule, "id:XnlV5jKXeX3b" (* Dibasic Sodium Phosphate *)]},
 					{27 Millimolar, Model[Molecule, "id:dORYzZJ3l3ap" (* Potassium Chloride *)]},
-					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}},
+					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ConcentratedBufferDiluent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
@@ -694,17 +694,18 @@ DefineTests[
 		],
 		Example[{Options, BaselineStock, "Specify the 1X version of buffer that this sample model forms when diluted with ConcentratedBufferDiluent by a factor of ConcentrationBufferDilutionFactor:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
-				Expires -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+				{
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{17.6 Millimolar, Model[Molecule, "id:qdkmxzqaba91" (* Potassium Phosphate (Dibasic) *)]},
 					{81 Millimolar, Model[Molecule, "id:XnlV5jKXeX3b" (* Dibasic Sodium Phosphate *)]},
 					{27 Millimolar, Model[Molecule, "id:dORYzZJ3l3ap" (* Potassium Chloride *)]},
-					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}},
+					{13.7 Millimolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ConcentratedBufferDiluent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
@@ -717,12 +718,12 @@ DefineTests[
 		],
 		Example[{Options, AlternativeForms, "Specify other sample models representing variations of the same substance with different grades, hydration states, monobasic/dibasic forms, etc:"},
 			sampleModel = UploadSampleModel[
-				"Special grade acetone for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Special grade acetone for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				AlternativeForms -> {Model[Sample, "id:Vrbp1jG80zno" (* Acetone, Reagent Grade *)]}
@@ -733,12 +734,12 @@ DefineTests[
 		],
 		Example[{Options, Grade, "Specify the purity standard of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Grade -> Anhydrous
@@ -749,14 +750,14 @@ DefineTests[
 		],
 		Example[{Options, ProductDocumentationFiles, "Specify PDFs of any product documentation provided by the supplier of this model using an existing emerald cloud file:"},
 			sampleModel = UploadSampleModel[
-				"Test sodium azide for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{100 MassPercent, Model[Molecule, "id:Y0lXejMq5qAa" (* "Sodium Azide" *)]}
+				},
+				Name -> "Test sodium azide for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 MassPercent, Model[Molecule, "id:Y0lXejMq5qAa" (* "Sodium Azide" *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ProductDocumentationFiles -> {
@@ -769,14 +770,14 @@ DefineTests[
 		],
 		Test["Specify PDFs of any product documentation provided by the supplier of this model using an existing emerald cloud file:",
 			sampleModel = UploadSampleModel[
-				"Test sodium azide for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{100 MassPercent, Model[Molecule, "id:Y0lXejMq5qAa" (* "Sodium Azide" *)]}
+				},
+				Name -> "Test sodium azide for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 MassPercent, Model[Molecule, "id:Y0lXejMq5qAa" (* "Sodium Azide" *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ProductDocumentationFiles -> {
@@ -792,12 +793,12 @@ DefineTests[
 		],
 		Example[{Options, Density, "Specify the density for samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Density -> 1.5 Gram / Milliliter
@@ -808,12 +809,12 @@ DefineTests[
 		],
 		Example[{Options, ExtinctionCoefficients, "Specify how strongly samples of this model absorb light at a particular wavelength:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ExtinctionCoefficients -> {
@@ -828,12 +829,12 @@ DefineTests[
 		],
 		Example[{Options, MeltingPoint, "Specify the melting temperature for samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				MeltingPoint -> 99 Celsius
@@ -844,12 +845,12 @@ DefineTests[
 		],
 		Example[{Options, BoilingPoint, "Specify the boiling temperature for samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				BoilingPoint -> 199 Celsius
@@ -860,12 +861,12 @@ DefineTests[
 		],
 		Example[{Options, VaporPressure, "Specify the vapor pressure of samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				VaporPressure -> 6 Kilopascal
@@ -876,12 +877,12 @@ DefineTests[
 		],
 		Example[{Options, Viscosity, "Specify the dynamic viscosity of samples of this model at room temperature and pressure:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Viscosity -> 0.5 Centipoise
@@ -892,12 +893,12 @@ DefineTests[
 		],
 		Example[{Options, pKa, "Specify the logarithmic acid dissociation constants of the substance at room temperature in water:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				pKa -> {{1, 2, 3}}
@@ -908,12 +909,12 @@ DefineTests[
 		],
 		Example[{Options, FixedAmounts, "If this sample model is purchased and stored in pre-measured amounts, the amounts that samples of this model exist in:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				FixedAmounts -> {0.5 Gram, 1 Gram}
@@ -924,12 +925,12 @@ DefineTests[
 		],
 		Example[{Options, TransferOutSolventVolumes, "If this sample model is purchased and stored in pre-measured amounts, specify the amounts of dissolution solvents required to solvate each of the fixed amounts that this model is handled in:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				FixedAmounts -> {0.5 Milligram, 1 Milligram},
@@ -941,12 +942,12 @@ DefineTests[
 		],
 		Example[{Options, SingleUse, "Specify if samples of this model must be used only once and then disposed of after use:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				SingleUse -> True
@@ -957,30 +958,48 @@ DefineTests[
 		],
 		Example[{Options, Tablet, "Specify if this sample model is composed of small disks of compressed solid substance:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
+				SolidUnitWeight -> 500 Milligram,
 				Tablet -> True
 			];
 			Download[sampleModel, Tablet],
 			True,
 			Variables :> {sampleModel}
 		],
-		Example[{Options, Sachet, "Specify if this sample model is in the form of a small pouch filled with a measured amount of loose solid substance:"},
+		Example[{Options, Capsule, "Specify if this sample model is composed of an openable pill containing solids inside it (as opposed to a tablet, where the pill is exclusively compsed of the solid sample):"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
+				MSDSFile -> NotApplicable,
+				IncompatibleMaterials -> {None},
+				SolidUnitWeight -> 500 Milligram,
+				Capsule -> True
+			];
+			Download[sampleModel, Capsule],
+			True,
+			Variables :> {sampleModel}
+		],
+		Example[{Options, Sachet, "Specify if this sample model is in the form of a small pouch filled with a measured amount of loose solid substance:"},
+			sampleModel = UploadSampleModel[
+				{
 					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
 				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+				State -> Solid,
+				BiosafetyLevel -> "BSL-1",
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				DefaultSachetPouch -> Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)],
@@ -993,14 +1012,14 @@ DefineTests[
 		],
 		Example[{Options, SolidUnitWeight, "If samples of this model come in tablet or sachet form, the average mass of sample in a single tablet or sachet:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Sachet -> True,
@@ -1013,14 +1032,14 @@ DefineTests[
 		],
 		Example[{Options, DefaultSachetPouch, "If samples of this model come in sachet form, the material that the enclosing pouch is made from:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Sachet -> True,
@@ -1033,12 +1052,12 @@ DefineTests[
 		],
 		Example[{Options, Fiber, "Specify if samples of this model consist of a thin cylindrical string of solid substance:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Fiber -> True
@@ -1049,12 +1068,12 @@ DefineTests[
 		],
 		Example[{Options, FiberCircumference, "If samples of this model come in fiber form, the length of the perimeter of the circular cross-section of the sample:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Fiber -> True,
@@ -1066,12 +1085,12 @@ DefineTests[
 		],
 		Example[{Options, Products, "Specify products that supply this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Products -> {Object[Product, "Test Product 1 for UploadSampleModel unit tests " <> $SessionUUID]}
@@ -1082,12 +1101,12 @@ DefineTests[
 		],
 		Example[{Options, ServiceProviders, "Specify companies that can be contracted to synthesize samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ServiceProviders -> Object[Company, Service, "Test Service Provider 1 for UploadSampleModel unit tests " <> $SessionUUID]
@@ -1098,12 +1117,12 @@ DefineTests[
 		],
 		Example[{Options, ThawTemperature, "Specify the typical temperature that samples of this model should be defrosted at before using in experimentation:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawTemperature -> 4 Celsius
@@ -1114,12 +1133,12 @@ DefineTests[
 		],
 		Example[{Options, ThawTime, "Specify the typical time that samples of this model should be defrosted before using in experimentation:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawTime -> 8 Hour
@@ -1130,12 +1149,12 @@ DefineTests[
 		],
 		Example[{Options, MaxThawTime, "Specify the default maximum time that samples of this model should be defrosted before using in experimentation:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				MaxThawTime -> 8 Hour
@@ -1146,12 +1165,12 @@ DefineTests[
 		],
 		Example[{Options, PipettingMethod, "Specify the default parameters describing how pure samples of this molecule should be manipulated by pipette:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				PipettingMethod -> Model[Method, Pipetting, "id:qdkmxzqkJlw1" (* "Aqueous" *)]
@@ -1162,12 +1181,12 @@ DefineTests[
 		],
 		Example[{Options, ThawCellsMethod, "Specify the default method object containing the parameters to use to bring cryovials containing this sample model up to ambient temperature:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawCellsMethod -> Object[Method, ThawCells, "Test Thaw Cells Method 1 for UploadSampleModel unit tests " <> $SessionUUID]
@@ -1178,12 +1197,12 @@ DefineTests[
 		],
 		Example[{Options, AsepticTransportContainerType, "Specify the manner in which samples of this model are contained in an aseptic barrier and if they need to be unbagged before being used in an experiment:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				AsepticTransportContainerType -> Individual
@@ -1194,12 +1213,12 @@ DefineTests[
 		],
 		Example[{Options, Notebook, "Specify the notebook this sample model will belong to. If set to Null, the sample model will be public and visible to all users:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Notebook -> Object[LaboratoryNotebook, "Test notebook for notebook-less test protocols"]
@@ -1210,12 +1229,12 @@ DefineTests[
 		],
 		Example[{Options, PreferredMALDIMatrix, "Specify the substance best suited to co-crystallize with samples of this model in preparation for mass spectrometry using the matrix-assisted laser desorption/ionization (MALDI) technique:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				PreferredMALDIMatrix -> Model[Sample, Matrix, "id:Z1lqpMGjeeW4" (* "DHAP MALDI matrix" *)]
@@ -1226,12 +1245,12 @@ DefineTests[
 		],
 		Example[{Options, AluminumFoil, "Specify if containers that contain this sample model should be wrapped in aluminum foil to protect the container contents from light by default:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				AluminumFoil -> True
@@ -1242,15 +1261,15 @@ DefineTests[
 		],
 		Example[{Options, Analytes, "Specify the molecular entities of primary interest in this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
+					{1 Milligram / Liter, Model[Molecule, "id:E8zoYvN6m61A" (* Caffeine *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
-					{1 Milligram / Liter, Model[Molecule, "id:E8zoYvN6m61A" (* Caffeine *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Analytes -> {Model[Molecule, "id:E8zoYvN6m61A" (* Caffeine *)]}
@@ -1261,15 +1280,15 @@ DefineTests[
 		],
 		Example[{Options, Aqueous, "Specify if samples of this model are a solution in water:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
+					{1 Milligram / Liter, Model[Molecule, "id:E8zoYvN6m61A" (* Caffeine *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
-					{1 Milligram / Liter, Model[Molecule, "id:E8zoYvN6m61A" (* Caffeine *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Aqueous -> True
@@ -1280,12 +1299,12 @@ DefineTests[
 		],
 		Example[{Options, AutoclaveUnsafe, "Specify if samples of this model are unstable and can potentially degrade under extreme heating conditions:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				AutoclaveUnsafe -> True
@@ -1296,12 +1315,12 @@ DefineTests[
 		],
 		Example[{Options, BarcodeTag, "Specify the secondary tag used to affix a barcode to this object:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				BarcodeTag -> Model[Item, Consumable, "id:Y0lXejMmXOo1" (* "Cabel Label Sticker Tag for stickering small objects" *)]
@@ -1312,12 +1331,12 @@ DefineTests[
 		],
 		Example[{Options, ChangeMediaMethod, "Specify the default method object containing the parameters to use to change the base cell growth solution for cultures of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ChangeMediaMethod -> Object[Method, ChangeMedia, "Test Change Media Method 1 for UploadSampleModel unit tests " <> $SessionUUID]
@@ -1328,12 +1347,12 @@ DefineTests[
 		],
 		Example[{Options, Conductivity, "Specify the electrical conductivity of samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Conductivity -> EmpiricalDistribution[{8500 Millisiemen / Centimeter}]
@@ -1344,12 +1363,12 @@ DefineTests[
 		],
 		Test["Specify if samples of this model are required to be continuously available for use in the lab, regardless of if it is InUse by a specific protocol:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ContinuousOperation -> True
@@ -1360,12 +1379,12 @@ DefineTests[
 		],
 		Test["Indicates that this model is historical and no longer used in the ECL:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Deprecated -> True
@@ -1376,12 +1395,12 @@ DefineTests[
 		],
 		Example[{Options, GloveBoxBlowerIncompatible, "Indicates that the glove box blower must be turned off to prevent damage to the catalyst in the glove box that is used to remove traces of water and oxygen when manipulating samples of this model inside of the glove box:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				GloveBoxBlowerIncompatible -> True
@@ -1392,12 +1411,12 @@ DefineTests[
 		],
 		Example[{Options, GloveBoxIncompatible, "Specify if samples of this model cannot be used inside of a glove box due high volatility and/or detrimental reactivity with the catalyst in the glove box that is used to remove traces of water and oxygen. Sulfur and sulfur compounds (such as H2S, RSH, COS, SO2, SO3), halides, halogen (Freon), alcohols, hydrazine, phosphene, arsine, arsenate, mercury, and saturation with water may deactivate the catalyst:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				GloveBoxIncompatible -> True
@@ -1408,12 +1427,12 @@ DefineTests[
 		],
 		Example[{Options, InertHandling, "Specify if samples of this model must be handled in a glove box under an unreactive atmosphere:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				InertHandling -> True
@@ -1424,12 +1443,12 @@ DefineTests[
 		],
 		Example[{Options, KitProducts, "Specify products, if this model is part of one or more kits:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				KitProducts -> {Object[Product, "Test Kit Product 1 for UploadSampleModel unit tests " <> $SessionUUID]}
@@ -1440,12 +1459,12 @@ DefineTests[
 		],
 		Example[{Options, LabWasteDisposal, "Specify if samples of this model may be safely disposed into a regular lab waste container:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				LabWasteDisposal -> True
@@ -1456,12 +1475,12 @@ DefineTests[
 		],
 		Example[{Options, NominalParticleSize, "Specify the manufacturer stated distribution of particle dimensions in the sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				NominalParticleSize -> EmpiricalDistribution[{1 Micrometer}]
@@ -1472,12 +1491,12 @@ DefineTests[
 		],
 		Example[{Options, NucleicAcidFree, "Specify if samples of this model are verified to be free from nucleic acids - large biomolecules composed of nucleotides that may encode genetic information, such as DNA and RNA:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				NucleicAcidFree -> True
@@ -1488,12 +1507,12 @@ DefineTests[
 		],
 		Example[{Options, Parafilm, "Specify if containers that contain this sample model should have their covers sealed with parafilm by default:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Parafilm -> True
@@ -1504,12 +1523,12 @@ DefineTests[
 		],
 		Example[{Options, ParticleWeight, "If this sample model is a powder, the average weight of a single particle of the sample:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ParticleWeight -> 1 Microgram
@@ -1520,12 +1539,12 @@ DefineTests[
 		],
 		Example[{Options, pH, "Specify the logarithmic concentration of hydrogen ions of samples of this model at room temperature:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				pH -> 12
@@ -1536,12 +1555,12 @@ DefineTests[
 		],
 		Test["Specify the recommended bin for samples of this model prior to dishwashing:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				PreferredWashBin -> Model[Container, WashBin, "id:mnk9jORX16EO" (* "DishwashBin for Sink" *)]
@@ -1552,12 +1571,12 @@ DefineTests[
 		],
 		Test["Specify if samples of this model may be prepared as needed during the course of an experiment:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Preparable -> True
@@ -1568,12 +1587,12 @@ DefineTests[
 		],
 		Example[{Options, PyrogenFree, "Specify if samples of this model are verified to be free from compounds that induce fever when introduced into the bloodstream, such as Endotoxins:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				PyrogenFree -> True
@@ -1584,12 +1603,12 @@ DefineTests[
 		],
 		Example[{Options, RefractiveIndex, "Specify the ratio of the speed of light in a vacuum to the speed of light travelling through samples of this model at 20 degree Celsius:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				RefractiveIndex -> 1.5
@@ -1600,12 +1619,12 @@ DefineTests[
 		],
 		Example[{Options, Resuspension, "Specify if one of the components in this sample model can only be prepared by adding a solution to its original container to dissolve it. The dissolved sample can be optionally removed from the original container for other preparation steps:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Resuspension -> True
@@ -1616,12 +1635,12 @@ DefineTests[
 		],
 		Example[{Options, ReversePipetting, "Specify if additional source sample should be aspirated (past the first stop of the pipette) to reduce the chance of bubble formation when dispensing into a destination position. It is recommended to set ReversePipetting->True if this sample model foams or forms bubbles easily:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ReversePipetting -> True
@@ -1632,12 +1651,12 @@ DefineTests[
 		],
 		Example[{Options, RNaseFree, "Specify if samples of this model are verified to be free from enzymes that break down ribonucleic acid (RNA):"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				RNaseFree -> True
@@ -1648,14 +1667,14 @@ DefineTests[
 		],
 		Example[{Options, SolidUnitWeightDistribution, "If samples of this model come in tablet or sachet form, the range of masses of sample in a single tablet or sachet:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{
+					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
+				},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {
-					{Null, Model[Material, "id:lYq9jROMExMr" (* "Pouch Material" *)]}
-				},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Sachet -> True,
@@ -1667,30 +1686,14 @@ DefineTests[
 			EqualP[1 Microgram],
 			Variables :> {sampleModel}
 		],
-		Test["Specify if a barcode should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking:",
-			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
-				Expires -> False,
-				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
-				State -> Liquid,
-				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
-				MSDSFile -> NotApplicable,
-				IncompatibleMaterials -> {None},
-				StickeredUponArrival -> True
-			];
-			Download[sampleModel, StickeredUponArrival],
-			True,
-			Variables :> {sampleModel}
-		],
 		Example[{Options, StoragePositions, "Specify the specific containers and positions in which samples of this model should typically be stored, allowing more granular organization within storage locations that satisfy default storage condition:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				StoragePositions -> {{Object[Container, Safe, "id:WNa4ZjKRKnZV" (* "Safey" *)], Null}}
@@ -1701,12 +1704,12 @@ DefineTests[
 		],
 		Example[{Options, SurfaceTension, "Specify the surface tension for samples of this model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				SurfaceTension -> 22.5 Millinewton / Meter
@@ -1717,12 +1720,12 @@ DefineTests[
 		],
 		Example[{Options, Tags, "Specify labels that are used for the management and organization of samples. If an aliquot is taken out of this sample, the new sample that is generated will inherit this sample's tags:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Tags -> {"Tag 1", "Tag 2"}
@@ -1733,12 +1736,12 @@ DefineTests[
 		],
 		Example[{Options, ThawMixRate, "Specify the default frequency of rotation the default instrument uses to homogenize samples of this model following thawing:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawMixRate -> 100 RPM
@@ -1749,12 +1752,12 @@ DefineTests[
 		],
 		Example[{Options, ThawMixTime, "Specify the default duration for which samples of this model are homogenized following thawing:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawMixTime -> 8 Hour
@@ -1765,12 +1768,12 @@ DefineTests[
 		],
 		Example[{Options, ThawMixType, "Specify the default style of motion used to homogenize samples of this model following defrosting:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawMixType -> Swirl
@@ -1781,12 +1784,12 @@ DefineTests[
 		],
 		Example[{Options, ThawNumberOfMixes, "Specify the default number of times samples of this model are homogenized by inversion or pipetting up and down following thawing:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ThawNumberOfMixes -> 10
@@ -1797,12 +1800,12 @@ DefineTests[
 		],
 		Example[{Options, TransferTemperature, "Specify the temperature at which samples of this model should be heated or cooled to when moved around the lab during experimentation, if different from ambient temperature:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				TransferTemperature -> 4 Celsius
@@ -1813,12 +1816,12 @@ DefineTests[
 		],
 		Example[{Options, TransportCondition, "Specify the environment in which samples of this model should be transported when in use by an experiment, if different from ambient conditions:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				TransportCondition -> Model[TransportCondition, "id:BYDOjvGYAvlm" (* Chilled *)]
@@ -1829,12 +1832,12 @@ DefineTests[
 		],
 		Example[{Options, UNII, "Specify the Unique Ingredient Identifier of this substance based on the unified identification scheme of FDA:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				UNII -> "3G6A5W338E"
@@ -1845,12 +1848,12 @@ DefineTests[
 		],
 		Test["Specify if the information in this model has been reviewed for accuracy by an ECL employee:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Verified -> True
@@ -1861,12 +1864,12 @@ DefineTests[
 		],
 		Example[{Options, WashCellsMethod, "Specify the default method object containing the parameters to use to purify cultures of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				WashCellsMethod -> Object[Method, WashCells, "Test Wash Cells Method 1 for UploadSampleModel unit tests " <> $SessionUUID]
@@ -1877,12 +1880,12 @@ DefineTests[
 		],
 		Test["Specify if samples of this model are a collection of other samples that are to be thrown out:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Waste -> True
@@ -1893,12 +1896,12 @@ DefineTests[
 		],
 		Test[Options, WasteType, "Indicates the type of waste collected in this sample model:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Waste -> True,
@@ -1910,12 +1913,12 @@ DefineTests[
 		],
 		Example[{Options, WettedMaterials, "Specify the types of matter of which this sample model is made that may come in direct contact with fluids:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				WettedMaterials -> {PVC}
@@ -1926,11 +1929,11 @@ DefineTests[
 		],
 		Example[{Options, State, "Specify the physical state of samples of this model when well solvated at room temperature and pressure:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				State -> Gas
@@ -1941,12 +1944,12 @@ DefineTests[
 		],
 		Example[{Options, SampleHandling, "Specify the method by which samples of this model should be manipulated in the lab when transfers out of the sample are requested:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				SampleHandling -> Slurry
@@ -1955,14 +1958,50 @@ DefineTests[
 			Slurry,
 			Variables :> {sampleModel}
 		],
+    Example[{Options, SampleHandling, "If the sample model is a tablet (Tablet set to True) or capsule (Capsule set to True), then SampleHandling will be set to Itemized:"},
+      sampleModel = UploadSampleModel[
+        {{Null, Null}},
+        Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+        Tablet -> True,
+        SolidUnitWeight -> 100 Milligram,
+        Expires -> False,
+        DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+        State -> Solid,
+        BiosafetyLevel -> "BSL-1",
+        MSDSFile -> NotApplicable,
+        IncompatibleMaterials -> {None},
+        SampleHandling -> Automatic
+      ];
+      Download[sampleModel, SampleHandling],
+      Itemized,
+      Variables :> {sampleModel}
+    ],
+    Test[{"If the sample model is a capsule (Capsule set to True), then SampleHandling will be set to Itemized:"},
+      sampleModel = UploadSampleModel[
+        {{Null, Null}},
+        Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+        Tablet -> Capsule,
+        SolidUnitWeight -> 100 Milligram,
+        Expires -> False,
+        DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
+        State -> Solid,
+        BiosafetyLevel -> "BSL-1",
+        MSDSFile -> NotApplicable,
+        IncompatibleMaterials -> {None},
+        SampleHandling -> Automatic
+      ];
+      Download[sampleModel, SampleHandling],
+      Itemized,
+      Variables :> {sampleModel}
+    ],
 		Example[{Options, CultureAdhesion, "Specify the default type of cell culture (adherent or suspension) that should be performed when growing any cells in this model. If a cell line can be cultured via an adherent or suspension culture, this is set to the most common cell culture type for the cell line:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				CultureAdhesion -> Adherent
@@ -1973,12 +2012,12 @@ DefineTests[
 		],
 		Example[{Options, Sterile, "Indicates that samples of this model arrive free of both microbial contamination and any microbial cell samples from the manufacturer, or is prepared free of both microbial contamination and any microbial cell samples by employing autoclaving, sterile filtration, or mixing exclusively sterile components with aseptic techniques during the course of experiments, as well as during sample storage and handling:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Sterile -> True
@@ -1989,12 +2028,12 @@ DefineTests[
 		],
 		Example[{Options, AsepticHandling, "Specify if special techniques should be used to prevent contamination by microorganisms when handling samples of this model. Aseptic techniques include sanitization, autoclaving, sterile filtration, mixing exclusively sterile components, and transferring in a biosafety cabinet during experimentation and storage:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				AsepticHandling -> True
@@ -2005,11 +2044,11 @@ DefineTests[
 		],
 		Example[{Options, DefaultStorageCondition, "Specify the typical environment in which samples of this model should be stored when not in use by an experiment. Default conditions may be overridden individually for any given sample:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Flammable -> True,
@@ -2021,11 +2060,11 @@ DefineTests[
 		],
 		Example[{Options, Expires, "Specify if samples of this model have a finite lifespan and become unsuitable for use after a given amount of time:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Expires -> True,
@@ -2038,11 +2077,11 @@ DefineTests[
 		],
 		Example[{Options, ShelfLife, "Specify the length of time after their creation date (DateCreated) that samples of this model are recommended for use, before being considered expired:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Expires -> True,
@@ -2055,11 +2094,11 @@ DefineTests[
 		],
 		Example[{Options, UnsealedShelfLife, "Specify the length of time after first being uncovered (DateUnsealed) that samples of this model are recommended for use before being considered expired:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Expires -> True,
@@ -2072,12 +2111,12 @@ DefineTests[
 		],
 		Example[{Options, TransportTemperature, "Specify the temperature at which samples of this model should be heated or cooled to when moved around the lab during experimentation, if different from ambient temperature:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				TransportTemperature -> 4 Celsius
@@ -2088,12 +2127,12 @@ DefineTests[
 		],
 		Example[{Options, Anhydrous, "Specify if this sample does not contain traces of water:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Anhydrous -> True
@@ -2104,12 +2143,12 @@ DefineTests[
 		],
 		Example[{Options, Radioactive, "Specify if pure samples of this sample model emit substantial ionizing radiation:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Radioactive -> True
@@ -2120,12 +2159,12 @@ DefineTests[
 		],
 		Example[{Options, Ventilated, "Specify if pure samples of this sample model must be handled in an enclosure where airflow is used to reduce exposure of the user to the substance and contaminated air is exhausted in a safe location. Samples may need to be ventilated if they are, for example, pungent, fuming or hazardous:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Ventilated -> True
@@ -2136,12 +2175,12 @@ DefineTests[
 		],
 		Example[{Options, Pungent, "Specify if pure samples of this sample model have a strong odor:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Ventilated -> True,
@@ -2153,12 +2192,12 @@ DefineTests[
 		],
 		Example[{Options, Fuming, "Specify if pure samples of this sample model emit fumes spontaneously when exposed to air:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Fuming -> True
@@ -2169,12 +2208,12 @@ DefineTests[
 		],
 		Example[{Options, Flammable, "Specify if pure samples of this sample model are easily set aflame under standard conditions. This corresponds to NFPA rating of 3 or greater:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:n0k9mG8Bv96n" (* "Freezer, Flammable" *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Flammable -> True
@@ -2185,12 +2224,12 @@ DefineTests[
 		],
 		Example[{Options, Acid, "Specify if this sample model forms strongly acidic solutions when dissolved in water (typically pKa <= 4) and requires secondary containment during storage:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:qdkmxzqoPakV" (* "Refrigerator, Acid" *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Acid -> True
@@ -2201,12 +2240,12 @@ DefineTests[
 		],
 		Example[{Options, Base, "Specify if this sample model forms strongly basic solutions when dissolved in water (typically pKaH >= 11) and requires secondary containment during storage:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:XnlV5jKzPXlb" (* "Refrigerator, Base" *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Base -> True
@@ -2217,12 +2256,12 @@ DefineTests[
 		],
 		Example[{Options, Pyrophoric, "Specify if pure samples of this sample model can ignite spontaneously upon exposure to air:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:O81aEBZ5Gnvx" (* "Freezer, Flammable Pyrophoric" *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Flammable -> True,
@@ -2234,12 +2273,12 @@ DefineTests[
 		],
 		Example[{Options, WaterReactive, "Specify if pure samples of this sample model react spontaneously upon exposure to water:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				WaterReactive -> True
@@ -2250,12 +2289,12 @@ DefineTests[
 		],
 		Test["Specify if pure samples of this sample model are currently banned from usage in the ECL because the facility isn't yet equipped to handle them:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				HazardousBan -> True
@@ -2266,11 +2305,11 @@ DefineTests[
 		],
 		Example[{Options, ExpirationHazard, "Specify if pure samples of this sample model become hazardous once they are expired and must be automatically disposed of when they pass their expiration date:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Expires -> True,
@@ -2284,12 +2323,12 @@ DefineTests[
 		],
 		Example[{Options, ParticularlyHazardousSubstance, "Specify if exposure to samples of this sample model has the potential to cause serious and lasting harm. A substance is considered particularly harmful if it is categorized by any of the following GHS classifications (as found on a MSDS): Reproductive Toxicity (H340, H360, H362),  Acute Toxicity (H300, H310, H330, H370, H371, H372, H373), Carcinogenicity (H350). Note that PHS designation primarily describes toxicity hazard and doesn't include other types of hazard such as water reactivity or being pyrophoric:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				ParticularlyHazardousSubstance -> True
@@ -2300,12 +2339,12 @@ DefineTests[
 		],
 		Example[{Options, DrainDisposal, "Specify if pure samples of this sample model may be safely disposed down a standard drain:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				DrainDisposal -> True
@@ -2316,12 +2355,12 @@ DefineTests[
 		],
 		Test["Specify if an MSDS is applicable for this sample model. If this option conflicts with the MSDSFile option, the latter will be used:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				IncompatibleMaterials -> {None},
 				MSDSRequired -> False
 			];
@@ -2331,12 +2370,12 @@ DefineTests[
 		],
 		Example[{Options, MSDSFile, "Specify a PDF file of the MSDS (Materials Safety Data Sheet) of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				IncompatibleMaterials -> {None},
 				DOTHazardClass -> "Class 0",
 				Flammable -> False,
@@ -2349,12 +2388,12 @@ DefineTests[
 		],
 		Example[{Options, NFPA, "Specify the National Fire Protection Association (NFPA) 704 hazard diamond classification for this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				NFPA -> {3, 0, 0, {Radioactive}}
@@ -2365,12 +2404,12 @@ DefineTests[
 		],
 		Example[{Options, DOTHazardClass, "Specify the Department of Transportation hazard classification of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				DOTHazardClass -> "Class 9 Miscellaneous Dangerous Goods Hazard"
@@ -2381,11 +2420,11 @@ DefineTests[
 		],
 		Example[{Options, BiosafetyLevel, "Specify the Biosafety classification of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				BiosafetyLevel -> "BSL-1"
@@ -2396,12 +2435,12 @@ DefineTests[
 		],
 		Example[{Options, DoubleGloveRequired, "Specify if working with samples of this sample model requires wearing two pairs of gloves:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				DoubleGloveRequired -> True
@@ -2412,12 +2451,12 @@ DefineTests[
 		],
 		Example[{Options, LightSensitive, "Specify if the samples of this sample model reacts or degrades in the presence of light and requires storage in the dark:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				LightSensitive -> True
@@ -2428,12 +2467,12 @@ DefineTests[
 		],
 		Example[{Options, IncompatibleMaterials, "Specify a list of materials that would be damaged if wetted by samples of this sample model:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {PVC}
 			];
@@ -2443,12 +2482,12 @@ DefineTests[
 		],
 		Example[{Options, LiquidHandlerIncompatible, "Specify if pure samples of this sample model cannot be reliably aspirated or dispensed on an automated liquid handling robot. Substances may be incompatible if they have a low boiling point, readily producing vapor, are highly viscous or are chemically incompatible with all tip types:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				LiquidHandlerIncompatible -> True
@@ -2459,12 +2498,12 @@ DefineTests[
 		],
 		Example[{Options, UltrasonicIncompatible, "Specify if volume measurements of pure samples of this sample model cannot be performed via the ultrasonic distance method due to vapors interfering with the reading:"},
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				UltrasonicIncompatible -> True
@@ -2475,12 +2514,12 @@ DefineTests[
 		],
 		Test["Specify if the database changes resulting from this function should be made immediately or if upload packets should be returned:",
 			UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Upload -> False
@@ -2489,12 +2528,12 @@ DefineTests[
 		],
 		Test["Specify what the function should return:",
 			UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Output -> {Result, Options, Tests}
@@ -2507,12 +2546,12 @@ DefineTests[
 		],
 		Test["Specify if error-checking in ValidObjectQ of the corresponding type that the user is trying to create or modify will be employed to ensure the uploaded object is ready for final verification. If Strict -> True, the Upload function will return $Failed if the final packet fails ValidObjectQ tests:",
 			UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None},
 				Strict -> True
@@ -2521,12 +2560,12 @@ DefineTests[
 		],
 		Test["Authors is populated automatically for new sample models:",
 			sampleModel = UploadSampleModel[
-				"Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
+				{{Null, Null}},
+				Name -> "Test sample model name for UploadSampleModel unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Liquid,
 				BiosafetyLevel -> "BSL-1",
-				Composition -> {{Null, Null}},
 				MSDSFile -> NotApplicable,
 				IncompatibleMaterials -> {None}
 			];
@@ -2581,11 +2620,10 @@ DefineTests[
 			},
 			Variables :> {sampleModel}
 		],
-		Test["Upload a sample model using a CAS number. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using a CAS number where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				"67-56-1",
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, "67-56-1"},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2598,20 +2636,23 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Methanol",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:M8n3rx0676xR"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
-		Test["Upload a sample model using a PubChem identifier specified as integer. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using a PubChem identifier specified as integer where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				887,
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, 887},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2624,20 +2665,23 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Methanol",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:M8n3rx0676xR"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
-		Test["Upload a sample model using a PubChem identifier. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using a PubChem identifier where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				PubChem[887],
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, PubChem[887]},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2650,20 +2694,23 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Methanol",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:M8n3rx0676xR"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
-		Test["Upload a sample model using an InChI. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using an InChI where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				"InChI=1S/CH4O/c1-2/h2H,1H3",
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, "InChI=1S/CH4O/c1-2/h2H,1H3"},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2676,20 +2723,23 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Methanol",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:M8n3rx0676xR"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
-		Test["Upload a sample model using an InChIKey. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using an InChIKey where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				"OKKJLVBELUTLKV-UHFFFAOYSA-N",
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, "OKKJLVBELUTLKV-UHFFFAOYSA-N"},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2702,20 +2752,23 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Methanol",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:M8n3rx0676xR"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
-		Test["Upload a sample model using a supplier URL. Name is resolved to the value from PubChem if left Automatic:",
+		Test["Upload a sample model using a supplier URL where the corresponding molecule already exists in Constellation:",
 			resolvedOptions = UploadSampleModel[
-				"https://www.thermofisher.com/order/catalog/product/039214.36",
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, "https://www.thermofisher.com/order/catalog/product/039214.36"},
 					{1 VolumePercent, Null}
 				},
 				Expires -> False,
@@ -2728,23 +2781,26 @@ DefineTests[
 			];
 			Lookup[
 				resolvedOptions,
-				Name
+				Composition
 			],
-			"Caffeine",
-			Variables :> {sampleModel},
+			{
+				{EqualP[99 VolumePercent], ObjectP[Model[Molecule, "id:E8zoYvN6m61A"]]},
+				{EqualP[1 VolumePercent], Null}
+			},
+			Variables :> {resolvedOptions},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
 			}
 		],
 		Test["When uploading a sample model using an identifier, the Name option is used if specified:",
 			resolvedOptions = UploadSampleModel[
-				"67-56-1",
-				Name -> "99% Methanol for UploadSampleModel unit tests 2 " <> $SessionUUID,
-				Composition -> {
-					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+				{
+					{99 VolumePercent, "67-56-1"},
 					{1 VolumePercent, Null}
 				},
+				Name -> "99% Methanol for UploadSampleModel unit tests 2 " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
 				State -> Liquid,
@@ -2758,10 +2814,319 @@ DefineTests[
 				Name
 			],
 			"99% Methanol for UploadSampleModel unit tests 2 " <> $SessionUUID,
+			Variables :> {resolvedOptions},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+				$installDefaultUploadFunctionDuplicateChecking = True
+			}
+		],
+		Test["Upload a sample model using a CAS number where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, "67-56-1"},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
 			Variables :> {sampleModel},
 			Stubs :> {
 				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
-				ValidObjectQ`Private`testsForPacket[___] := {}
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule["67-56-1", ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Test["Upload a sample model using a PubChem identifier specified as integer where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, 887},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
+			Variables :> {sampleModel},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule[PubChem[887], ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Test["Upload a sample model using a PubChem identifier where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, PubChem[887]},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
+			Variables :> {sampleModel},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule[PubChem[887], ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Test["Upload a sample model using an InChI where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, "InChI=1S/CH4O/c1-2/h2H,1H3"},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute]},
+			Variables :> {sampleModel},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule["InChI=1S/CH4O/c1-2/h2H,1H3", ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Test["Upload a sample model using an InChIKey where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, "OKKJLVBELUTLKV-UHFFFAOYSA-N"},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
+			Variables :> {sampleModel},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule["OKKJLVBELUTLKV-UHFFFAOYSA-N", ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Test["Upload a sample model using a supplier URL where the corresponding molecule doesn't already exist in Constellation:",
+			sampleModel = UploadSampleModel[
+				{
+					{99 VolumePercent, "https://www.thermofisher.com/order/catalog/product/039214.36"},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None}
+			];
+			Download[
+				sampleModel,
+				{
+					Composition[[1, 2]][Object],
+					Composition[[1, 2]][DateCreated],
+					Composition[[1, 2]][Density]
+				}
+			],
+			{ObjectP[Model[Molecule]], GreaterP[Now - 1 Minute], EqualP[1.01 Gram / Milliliter]},
+			Variables :> {sampleModel},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule["https://www.thermofisher.com/order/catalog/product/039214.36", ___] = {
+					(* Packets *) {<|Object -> CreateID[Model[Molecule]], Type -> Model[Molecule], Density -> 1.01 Gram / Milliliter|>},
+					(* Options *) {Density -> 1.01 Gram / Milliliter}
+				}
+			}
+		],
+		Example[{Messages, "MoleculeNotFound", "Throws an error if an identifier is supplied in the input but can't be converted into a Model[Molecule] automatically:"},
+			resolvedOptions = UploadSampleModel[
+				{
+					{99 VolumePercent, "Not a real molecule"},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None},
+				Output -> Options
+			];
+			Lookup[resolvedOptions, Composition],
+			{
+				{99 VolumePercent, "Not a real molecule"},
+				{1 VolumePercent, Null}
+			},
+			Messages :> {Error::ModelNotFound, Error::InvalidInput},
+			Variables :> {resolvedOptions},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule["Not a real molecule", ___] = {
+					(* Packets *) $Failed,
+					(* Options *) {Density -> Null}
+				}
+			}
+		],
+		Test["Properties are inherited from the composition if it includes only one known component:",
+			resolvedOptions = UploadSampleModel[
+				{
+					{80 VolumePercent, Model[Molecule, "Water"]},
+					{20 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
+				Output -> Options
+			];
+			Lookup[resolvedOptions, {Density, BoilingPoint}],
+			Download[Model[Molecule, "Water"], {Density, BoilingPoint}],
+			Variables :> {resolvedOptions}
+		],
+		Test["Properties are not inherited from the composition if it includes multiple known components:",
+			resolvedOptions = Quiet[UploadSampleModel[
+				{
+					{80 VolumePercent, Model[Molecule, "Water"]},
+					{20 VolumePercent, Model[Molecule, "Ethanol"]}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage, Flammable"],
+				State -> Liquid,
+				Output -> Options
+			]];
+			Lookup[resolvedOptions, {Density, BoilingPoint}],
+			{Null, Null},
+			Variables :> {resolvedOptions}
+		],
+		Test["Handles existing identity models that don't produce a valid result value from their corresponding upload function:",
+			UploadSampleModel[
+				{
+					{99 VolumePercent, Model[Molecule, "Water"]},
+					{1 VolumePercent, Null}
+				},
+				Expires -> False,
+				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
+				State -> Liquid,
+				BiosafetyLevel -> "BSL-1",
+				Flammable -> True,
+				IncompatibleMaterials -> {None},
+				Output -> Options
+			],
+			{_Rule..},
+			Stubs :> {
+				(* This prevents the duplicate name check from flagging. Can't avoid in this case as we have to use a known molecule *)
+				ValidObjectQ`Private`testsForPacket[___] := {},
+
+				(* Need to stub UploadMolecule unfortunately *)
+				(* This test needs the molecule to not exist in Constellation which can't be guaranteed when UploadMolecule can only pull information for real molecules *)
+				(* Duplicate checking can be switched off, but then the UploadMolecule name almost certainly clashes with the existing object at upload *)
+				UploadMolecule[Model[Molecule, "Water"], ___] = {
+					(* Invalid result *) $Failed,
+					(* Valid options *) {Density -> Null}
+				}
 			}
 		]
 	},
@@ -2781,7 +3146,10 @@ DefineTests[
 		$Notebook=Null,
 
 		(* Turn off duplicate checking for speed *)
-		$installDefaultUploadFunctionDuplicateChecking = False
+		$installDefaultUploadFunctionDuplicateChecking = False,
+
+		(* Ensure no cached UploadMolecule data *)
+		$duffUploadIdentityModelData = <||>
 	},
 	SymbolSetUp :> (
 		Module[{namedObjects,existingObjs},
@@ -2955,16 +3323,26 @@ DefineTests[
 	)
 ];
 
+(* TODO: Dummy test right now. In order for VPRQ to pass, exported function must have a test. Will need to add actual tests later *)
+DefineTests[UploadVerifiedSampleModel,
+	{
+		Test["Function returns the input object if all ValidObjectQ tests are passing:",
+			UploadVerifiedSampleModel[Model[Sample, "Sodium Chloride"], Verify -> True],
+			ObjectP[Model[Sample, "Sodium Chloride"]]
+		]
+	}
+];
+
 DefineTests[
 	UploadSampleModelOptions,
 	{
 		Example[{Basic, "Upload a new fulfillment model of 50/50 Water Methanol:"},
 			UploadSampleModelOptions[
-				"50/50 Water Methanol for UploadSampleModelOptions unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{50 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{50 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}
 				},
+				Name -> "50/50 Water Methanol for UploadSampleModelOptions unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
 				State -> Liquid,
@@ -2979,11 +3357,11 @@ DefineTests[
 			myOligomerAnalyte=UploadOligomer["My Oligomer Analyte for UploadSampleModelOptions unit tests " <> $SessionUUID, Molecule -> Strand[DNA["AATTGTTCGGACACT"]], PolymerType -> DNA];
 
 			UploadSampleModelOptions[
-				"My Oligomer Analyte in Water for UploadSampleModelOptions unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, Oligomer, "My Oligomer Analyte for UploadSampleModelOptions unit tests " <> $SessionUUID]},
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]}
 				},
+				Name -> "My Oligomer Analyte in Water for UploadSampleModelOptions unit tests " <> $SessionUUID,
 				Solvent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
@@ -2998,11 +3376,11 @@ DefineTests[
 		],
 		Example[{Basic, "Upload a new fulfillment model for 99% Pure HPLC Grade Methanol. The {1 VolumePercent, Null} entry in the Composition field indicates that 1 VolumePercent of the sample is an unknown impurity:"},
 			UploadSampleModelOptions[
-				"99% HPLC Grade Methanol for UploadSampleModelOptions unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
 					{1 VolumePercent, Null}
 				},
+				Name -> "99% HPLC Grade Methanol for UploadSampleModelOptions unit tests " <> $SessionUUID,
 				UsedAsSolvent -> True,
 				Grade -> HPLC,
 				Expires -> True,
@@ -3020,10 +3398,10 @@ DefineTests[
 		Example[{Additional, "Upload a new fulfillment model of an analyte that has fixed amounts:"},
 
 			UploadSampleModelOptions[
-				"My Analyte with Fixed Amounts for UploadSampleModelOptions unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
 				},
+				Name -> "My Analyte with Fixed Amounts for UploadSampleModelOptions unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
@@ -3039,8 +3417,12 @@ DefineTests[
 			_Grid
 		],
 		Example[{Options, "OpticalComposition", "Upload a new (1R)-(-)-10-camphorsulfonic acid sample model with its OpticalComposition field populated."},
-			UploadSampleModelOptions["(1R)-(-)-10-camphorsulfonic in methanol for UploadSampleModelOptions unit tests 1 " <> $SessionUUID,
-				Composition -> {{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}, {1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
+			UploadSampleModelOptions[
+				{
+					{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+					{1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}
+				},
+				Name -> "(1R)-(-)-10-camphorsulfonic in methanol for UploadSampleModelOptions unit tests 1 " <> $SessionUUID,
 				OpticalComposition -> {{100 Percent, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
 				UsedAsSolvent -> False,
 				Grade -> ACS,
@@ -3133,11 +3515,11 @@ DefineTests[
 	{
 		Example[{Basic, "Upload a new fulfillment model of 50/50 Water Methanol:"},
 			ValidUploadSampleModelQ[
-				"50/50 Water Methanol for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{50 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]},
 					{50 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}
 				},
+				Name -> "50/50 Water Methanol for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:vXl9j57YrPlN" (* Ambient Storage, Flammable *)],
 				State -> Liquid,
@@ -3152,11 +3534,11 @@ DefineTests[
 			myOligomerAnalyte=UploadOligomer["My Oligomer Analyte for ValidUploadSampleModelQ unit tests " <> $SessionUUID, Molecule -> Strand[DNA["AATTGTTCGGACACT"]], PolymerType -> DNA];
 
 			ValidUploadSampleModelQ[
-				"My Oligomer Analyte in Water for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, Oligomer, "My Oligomer Analyte for ValidUploadSampleModelQ unit tests " <> $SessionUUID]},
 					{100 VolumePercent, Model[Molecule, "id:vXl9j57PmP5D" (* Water *)]}
 				},
+				Name -> "My Oligomer Analyte in Water for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
 				Solvent -> Model[Sample, "id:8qZ1VWNmdLBD" (* Milli-Q water *)],
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
@@ -3171,11 +3553,11 @@ DefineTests[
 		],
 		Example[{Basic, "Upload a new fulfillment model for 99% Pure HPLC Grade Methanol. The {1 VolumePercent, Null} entry in the Composition field indicates that 1 VolumePercent of the sample is an unknown impurity:"},
 			ValidUploadSampleModelQ[
-				"99% HPLC Grade Methanol for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{99 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
 					{1 VolumePercent, Null}
 				},
+				Name -> "99% HPLC Grade Methanol for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
 				UsedAsSolvent -> True,
 				Grade -> HPLC,
 				Expires -> True,
@@ -3193,10 +3575,10 @@ DefineTests[
 		Example[{Additional, "Upload a new fulfillment model of an analyte that has fixed amounts:"},
 
 			ValidUploadSampleModelQ[
-				"My Analyte with Fixed Amounts for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
-				Composition -> {
+				{
 					{10 Micromolar, Model[Molecule, "id:BYDOjvG676mq" (* Sodium Chloride *)]}
 				},
+				Name -> "My Analyte with Fixed Amounts for ValidUploadSampleModelQ unit tests " <> $SessionUUID,
 				Expires -> False,
 				DefaultStorageCondition -> Model[StorageCondition, "id:7X104vnR18vX" (* Ambient Storage *)],
 				State -> Solid,
@@ -3212,8 +3594,12 @@ DefineTests[
 			BooleanP
 		],
 		Example[{Options, "OpticalComposition", "Upload a new (1R)-(-)-10-camphorsulfonic acid sample model with its OpticalComposition field populated."},
-			ValidUploadSampleModelQ["(1R)-(-)-10-camphorsulfonic in methanol for ValidUploadSampleModelQ unit tests 1 " <> $SessionUUID,
-				Composition -> {{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]}, {1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
+			ValidUploadSampleModelQ[
+				{
+					{100 VolumePercent, Model[Molecule, "id:M8n3rx0676xR" (* Methanol *)]},
+					{1 Millimolar, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}
+				},
+				Name -> "(1R)-(-)-10-camphorsulfonic in methanol for ValidUploadSampleModelQ unit tests 1 " <> $SessionUUID,
 				OpticalComposition -> {{100 Percent, Model[Molecule, "id:dORYzZJNK955" (* (1R)-(-)-10-camphorsulfonic acid *)]}},
 				UsedAsSolvent -> False,
 				Grade -> ACS,

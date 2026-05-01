@@ -518,9 +518,10 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	],resolvedPlatingMethods];
 	
 	(* WARNING CHECK #1: PlatingTemperature is less than 95% of the highest melting temperature of all gelling agents, which presents risk of media solidifying during the plating process. *)
+	(* It is possible that a solid media does not have a standalong gelling agents added. Manufacturer may offer a premix powder. In that case, treat the max as 90 Celsius, and keep it consistent with UploadMedia's evaluation of gellingAgentsMaxMeltingPoints *)
 	gellingAgentsPresent = Flatten[Quiet[Download[myMedia,{Model[GellingAgents][[All,2]][Object],GellingAgents[[All,2]][Object]}],{Download::FieldDoesntExist,Download::NotLinkField}]/.{$Failed->Nothing},1];
 	gellingAgentsMeltingPoints = Map[Function[{gellingAgents},N[Convert[Map[Lookup[Lookup[fastAssoc,#],MeltingPoint]&,gellingAgents],Celsius]]],gellingAgentsPresent];
-	gellingAgentsMaxMeltingPoints = Map[Max[#]&,gellingAgentsMeltingPoints];
+	gellingAgentsMaxMeltingPoints = Map[Max[(# /. {}->{90 Celsius})]&,gellingAgentsMeltingPoints];
 	recommendedPlatingTemperatures = Map[N[Convert[N[Convert[#,Kelvin]*1.025],Celsius]]&,gellingAgentsMaxMeltingPoints];
 	resolvedPlatingTemperatures = MapThread[Function[{specifiedPlatingTemperature,recommendedPlatingTemperature},
 		If[MatchQ[specifiedPlatingTemperature,TemperatureP],
@@ -701,7 +702,11 @@ resolvePlateMediaOptions[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}].
 	];
 
 	(* Resolve Post Processing Options *)
-	resolvedPostProcessingOptions = resolvePostProcessingOptions[myOptions,Sterile->True];
+	resolvedPostProcessingOptions = resolvePostProcessingOptions[
+		(* Append a TransferEnvironment of BSC arbituarily for the helper to resolve ImageSample accordingly. This is not really an option, but directly requested as a resource in the resource packet. *)
+		Append[myOptions, TransferEnvironment -> Model[Instrument, HandlingStation, BiosafetyCabinet, "id:XnlV5jNYpXYP"]],
+		Sterile -> True
+	];
 	
 	resolvedOptions = ReplaceRule[
 		Normal[roundedExperimentOptions],
@@ -945,13 +950,13 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 			Which[
 				(* If the media has LiquidMedia field populated, it is a MediaPhase->Solid and this resource will ask for its liquid form*)
 				MatchQ[liquidMedia, ObjectP[Model[Sample, Media]]],
-					Resource[Sample -> liquidMedia, Container -> container, Amount -> amount, Name -> name],
+				Resource[Sample -> liquidMedia, Container -> container, Amount -> amount, ExactAmount -> True, Tolerance -> 0.025 * amount, Name -> name],
 				(* It is otherwise a media model, request the resource in an appropriate container *)
 				MatchQ[media, ObjectP[Model[Sample, Media]]],
-					Resource[Sample -> media, Container -> container, Amount -> amount, Name -> name],
+				Resource[Sample -> media, Container -> container, Amount -> amount, ExactAmount -> True, Tolerance -> 0.025 * amount, Name -> name],
 				(* Otherwise requesting an object *)
 				True,
-					Resource[Sample->media,Amount->amount,Name->name]
+				Resource[Sample -> media, Amount -> amount, ExactAmount -> True, Tolerance -> 0.025 * amount, Name -> name]
 			]
 		]
 	],myMedia];
@@ -1001,7 +1006,7 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 	} = If[MatchQ[containerModels,{ObjectP[Model[Container,Plate,"id:O81aEBZjRXvx"]]..}] && MatchQ[resolvedPlatingMethods, {Pour..}], (*"Omni Tray Sterile Media Plate"*)
 		{
 			ConstantArray[Link[Resource[Sample->Model[Item, Tips, "id:aXRlGnZmOJdv"]]], Length[samplesInResources]], (*"50 mL glass barrier serological pipets, sterile"*)
-			Link[Resource[Instrument->Model[Instrument, HandlingStation, BiosafetyCabinet, "id:XnlV5jNYpXYP"]]], (*"Biosafety Cabinet Handling Station with Analytical Balance"*)
+			Link[Resource[Instrument->asepticTransferBSCModels["Memoization"]]], (*aseptic transfer BSC models*)
 			Link[Resource[Sample->Model[Container, WasteBin, "id:1ZA60vzK7jl8"]]], (*"Biohazard Waste Container, BSC (Aseptic Transfer)"*)
 			Link[Resource[Sample->Model[Item, Consumable, "id:7X104v6oeYNJ"]]], (*"Biohazard Waste Bags, 8x12"*)
 			Link[Resource[Sample->Model[Part, Lighter, "id:M8n3rx07ZGa9"]]], (*"BIC Grill Lighter"*)
@@ -1079,7 +1084,9 @@ plateMediaResourcePackets[myMedia:{ObjectP[{Object[Sample],Model[Sample,Media]}]
 		Replace[BiosafetyWasteBag]->biosafetyWasteBagResource,
 		FlameSource->flameSourceResource,
 		Replace[PlateBags]->plateBagsResources,
-
+		ImageSample -> Lookup[myResolvedOptions, ImageSample],
+		MeasureVolume -> Lookup[myResolvedOptions, MeasureVolume],
+		MeasureWeight -> Lookup[myResolvedOptions, MeasureWeight],
 		Replace[Checkpoints]->{
 			{"Picking Resources",resourcePickingTime,"Samples, containers, and plates required to execute this protocol are gathered from storage and stock solutions are freshly prepared.",
 				Link[Resource[Operator -> $BaselineOperator, Time -> resourcePickingTime]]},

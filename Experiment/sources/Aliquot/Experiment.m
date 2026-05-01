@@ -401,6 +401,7 @@ Error::NonEmptyContainers = "The containers `1` provided as ContainerOut options
 
 (* MapThreaded error checking *)
 Warning::UnknownAmount = "The following sample(s) do not have a known current volume or mass: `1`. Additional checks to validate the requested aliquot amounts will not be performed for these samples.";
+Warning::AliquotAmountPrecision = "The option `1` specified as `2`, which `3` achievable precision. Therefore, these amounts have been rounded to `4`.";
 Error::ConcentrationRatioMismatch = "Based on the current concentration(s) of `1`, they must be diluted by a ratio of `2` to reach the requested TargetConcentration, `3`. However, Amount (`4`) and `7` (`5`) were also specified, and are in a different ratio (`6`) than that required to reach TargetConcentration. Please consider letting either TargetConcentration or the Amount options remain Automatic.";
 Error::NoConcentration = "The TargetConcentration option cannot be reached for `1` because this sample does not have any current concentration information in the correct units for the specified TargetConcentrationAnalyte. Please request either an aliquot Volume only for this sample, or measure the concentration of the value specified with the TargetConcentrationAnalyte option.";
 Error::TargetConcentrationTooLarge = "The TargetConcentration specified for `1`, `2`, exceeds the current sample concentration(s), `3`. Currently, ExperimentAliquot only supports dilution. Please specify a TargetConcentration less than or equal to `3`.";
@@ -2396,7 +2397,8 @@ DefineOptions[resolveExperimentAliquotOptions,
 
 (* private function to resolve all the options *)
 resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}, myOptions:{_Rule...}, myResolutionOptions:OptionsPattern[resolveExperimentAliquotOptions]]:=Module[
-	{outputSpecification, safePooledOptions, pooledInputs, output, gatherTests, messages, inheritedCache, specifiedConcentratedBuffer, specifiedAssayBuffer,
+	{
+		outputSpecification, safePooledOptions, pooledInputs, output, gatherTests, messages, inheritedCache, specifiedConcentratedBuffer, specifiedAssayBuffer,
 		specifiedBufferDiluent, specifiedContainerOut, allBufferModels, allBufferObjs, containerOutModels,
 		containerOutObjs, samplePackets, sampleModelPackets, sampleContainerPackets,
 		sampleContainerModelPackets, bufferObjectPackets, bufferModelPackets, bufferContainerPackets,
@@ -2407,7 +2409,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		validNameTest,missingMolecularWeightErrors,stateAmountMismatchErrors, targetConcNotUsedWarnings,
 		bufferDilutionInvalidTest, overspecifiedBufferInvalidOptions, overspecifiedBufferInvalidTest,
 		notEmptyContainersOut, emptyContainerInvalidOptions, emptyContainerTests, mapThreadFriendlyOptions,
-		resolvedTargetConcentration, resolvedAmount,validMinAmountBoolLists, flatMinAmountBools, minsValid , resolvedAssayVolume, cannotResolveAmountErrors,
+		resolvedTargetConcentration, inputAmounts, resolvedAmount, validMinAmountBoolLists, amountPrecisionValidBoolLists,
+		roundingAmountTest, flatMinAmountBools, minsValid, resolvedAssayVolume, cannotResolveAmountErrors,
 		aliquotVolumeTooLargeErrors, noConcentrationErrors, targetConcentrationTooLargeErrors,
 		concentrationRatioMismatchErrors, samplesOutStorageCondition, consolidateAliquots, cannotResolveVolumeInvalidInputs,
 		cannotResolveVolumeTests, aliquotVolumeTooLargeSamples, aliquotVolumeTooLargeVolume,
@@ -2461,7 +2464,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		destinationWellsToTransferToNoZeroes, resolvedContainerOutLabel, fakeResolvedOptions, resolvedSampleOutLabel,
 		resolveMethod, containerOutLabelReplaceRules, sampleOutLabelReplaceRules, allPotentiallyLabeledSamples,
 		allPotentiallyLabeledContainers, sampleLabelReplaceRules, containerLabelReplaceRules, overMaxVolumeErrors,
-		overMaxVolumeOptions, overMaxVolumeTests},
+		overMaxVolumeOptions, overMaxVolumeTests
+	},
 
 	(* --- Setup our user specified options and cache --- *)
 
@@ -2869,8 +2873,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* do our big MapThread *)
 	{
 		resolvedTargetConcentration,
+		inputAmounts,
 		resolvedAmount,
 		validMinAmountBoolLists,
+		amountPrecisionValidBoolLists,
 		resolvedAssayVolume,
 		resolvedAssayBuffer,
 		resolvedConcentratedBuffer,
@@ -2895,15 +2901,17 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	} = Transpose[MapThread[
 		Function[{pooledSamplePackets, options, maxResolutionAmounts, potentialAnalytes},
 			Module[
-				{cannotResolveAmountError, aliquotVolumeTooLargeError, noConcentrationError, targetConcentrationTooLargeError,
+				{
+					cannotResolveAmountError, aliquotVolumeTooLargeError, noConcentrationError, targetConcentrationTooLargeError,
 					concentrationRatioMismatchError, cannotResolveAmountErrorFinal,
 					assayVolume, totalSampleVolume, potentialAssayVolumesNoNull, probableAssayVolume,
 					specifiedAssayVolume, bufferDilutionMismatchError, overspecifiedBufferError, bufferDilutionFactor,
 					bufferDiluent, concentratedBuffer, assayBuffer, bufferSpecifiedNoVolumeWarning, unknownAmountWarning,
 					missingMolecularWeightError, targetConcentrations, bufferTooConcentratedError,
-					potentialAssayVolume, validMinAmountBools, stateAmountMismatchError, targetConcNotUsedWarning,
+					potentialAssayVolume, validMinAmountBools, amountPrecisionValidBools, stateAmountMismatchError, targetConcNotUsedWarning,
 					pooledVolumeAboveAssayVolumeError, eitherConcP, dilutionFactors, concBufferPacket, concBufferModelPacket,
-					cannotResolveAssayVolumeError, amounts, bufferVolume, concBufferVolume, rawAssayVolume, overMaxVolumeError},
+					cannotResolveAssayVolumeError, specifiedAmounts, amounts, bufferVolume, concBufferVolume, rawAssayVolume, overMaxVolumeError
+				},
 
 				(* set our error tracking variables *)
 				{
@@ -2948,8 +2956,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 
 				(* within each pool, MapThread over everything again *)
 				{
+					specifiedAmounts,
 					amounts,
 					validMinAmountBools,
+					amountPrecisionValidBools,
 					potentialAssayVolume,
 					targetConcentrations,
 					unknownAmountWarning,
@@ -2964,14 +2974,16 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 					Function[
 						{samplePacket, amountOption, targetConcOption, maxResolutionAmount, potentialAnalytePacket, sourceLabelOption, sourceContainerLabelOption},
 						Module[
-							{unknownAmountWarningInsidePool, countQ, solidQ, liquidQ, specifiedAmount,
+							{
+								unknownAmountWarningInsidePool, countQ, solidQ, liquidQ, specifiedAmount,
 								targetConcentration, molecularWeight, missingMolecularWeightErrorInsidePool, sampleConc,
 								sampleMassConc, sampleVolume, resolvedSampleConc, noConcentrationErrorInsidePool,
 								targetConcentrationTooLargeErrorInsidePool, dilutionFactor, badConcQ,
 								potentialAssayVolumeInsidePool, potentialAssayVolumeSolidsInsidePool, amount,
 								aliquotVolumeTooLargeErrorInsidePool, sampleComposition,
 								stateAmountMismatchErrorInsidePool, roundedAmount, validRounding, roundedTargetConcentration,
-								roundedAssayVolume, targetConcNotUsedWarningInsidePool, validMinAmount},
+								roundedAssayVolume, targetConcNotUsedWarningInsidePool, validMinAmount, roundedAmountWarningQ
+							},
 
 							(* set the errors we care abut within this inner MapThread to False to start *)
 							{
@@ -3231,6 +3243,15 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 								],
 								True, {Null,True}
 							];
+							roundedAmountWarningQ = Which[
+								(* If we are throwing min amount warning, no need to throw AliquotAmountPrecision warning as well*)
+								MatchQ[validMinAmount, False],
+									False,
+								MatchQ[amount, Except[Automatic|All]] && MatchQ[roundedAmount, Except[All]],
+									!EqualQ[amount, roundedAmount],
+								True,
+									False
+							];
 							roundedAssayVolume = If[NullQ[potentialAssayVolumeInsidePool],
 								Null,
 								Quiet[AchievableResolution[potentialAssayVolumeInsidePool],{Error::MinimumAmount,Warning::AmountRounded}]
@@ -3242,8 +3263,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 							];
 
 							{
+								amount,
 								roundedAmount,
 								validMinAmount,
+								roundedAmountWarningQ,
 								roundedAssayVolume,
 								roundedTargetConcentration,
 								unknownAmountWarningInsidePool,
@@ -3467,8 +3490,10 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 				(* return the MapThread variables in order *)
 				{
 					targetConcentrations,
+					specifiedAmounts,
 					amounts,
 					validMinAmountBools,
+					amountPrecisionValidBools,
 					assayVolume,
 					assayBuffer,
 					concentratedBuffer,
@@ -3864,6 +3889,37 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 	(* Create a test if requested *)
 	invalidMinTest = If[!messages,
 		Test["All Amounts are above the minimum mass or volume that can be manipulated using standard transfer devices:",minsValid,True]
+	];
+
+	If[MemberQ[Flatten@amountPrecisionValidBoolLists, True] && !gatherTests && !MatchQ[$ECLApplication, Engine],
+		Message[
+			Warning::AliquotAmountPrecision,
+			(*1*)StringJoin[
+				"Amount ",
+				isOrAre[DeleteDuplicates[PickList[Flatten@inputAmounts, Flatten@amountPrecisionValidBoolLists]]]
+			],
+			(*2*)joinClauses[PickList[Flatten@inputAmounts, Flatten@amountPrecisionValidBoolLists]],
+			(*3*)pluralize[DeleteDuplicates[PickList[Flatten@inputAmounts, Flatten@amountPrecisionValidBoolLists]], "exceeds", "exceed"],
+			(*4*)joinClauses[PickList[Flatten@resolvedAmount, Flatten@amountPrecisionValidBoolLists]]
+		]
+	];
+
+	(* Make warnings regarding intensity precision rounding*)
+	roundingAmountTest = If[gatherTests,
+		Module[{failingTest, passingTest},
+			failingTest = If[MemberQ[Flatten@amountPrecisionValidBoolLists, True],
+				Warning["The precision of any user-supplied Amount options is compatible with instrumental precision:", True, False],
+				Nothing
+			];
+
+			passingTest = If[MemberQ[Flatten@amountPrecisionValidBoolLists, False],
+				Warning["The precision of any user-supplied Amount options is compatible with instrumental precision:", True, True],
+				Nothing
+			];
+
+			{failingTest, passingTest}
+		],
+		Nothing
 	];
 
 	(* Track Invalid Option - Blame any specified option that interplays with amount *)
@@ -5305,6 +5361,8 @@ resolveExperimentAliquotOptions[mySamples:{ListableP[ObjectP[Object[Sample]]]..}
 		emptyContainerTests,
 		cannotResolveVolumeTests,
 		aliquotVolumeTooLargeTest,
+		roundingAmountTest,
+		precisionTests,
 		invalidMinTest,
 		potentialAnalyteTests,
 		noConcentrationTest,

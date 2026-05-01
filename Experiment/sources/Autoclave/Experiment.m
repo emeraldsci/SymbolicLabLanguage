@@ -73,6 +73,17 @@ DefineOptions[ExperimentAutoclave,
 				]
 			}
 		],
+		IndexMatching[
+			IndexMatchingInput->"experiment samples",
+			{
+				OptionName->SkipCooling,
+				Default->False,
+				AllowNull->True,
+				Description->"If the autoclaved sample gets resource picked into a transporter right after the completion of the autoclave program, instead of doing a post-autoclave cooling.",
+				Category->"Hidden",
+				Widget->Widget[Type->Enumeration, Pattern:>BooleanP]
+			}
+		],
 		SimulationOption,
 		NonBiologyFuntopiaSharedOptions,
 		SubprotocolDescriptionOption,
@@ -2108,7 +2119,8 @@ autoclaveResourcePackets[myInputs:ListableP[ObjectP[{Object[Container,Vessel],Ob
 			Instrument->Link[autoclaveResource],
 			AluminumFoil->Link[aluminumFoilResource],
 			AutoclaveTape->Link[autoclaveTapeResource],
-			Replace[AutoclaveProgram]->{autoclaveProgram},
+			Replace[AutoclaveProgram] -> {autoclaveProgram},
+			Replace[AutoclaveSkipCoolings] -> Lookup[myResolvedOptions, SkipCooling],
 			SterilizationTime->sterilizationTime,
 			SterilizationTemperature->sterilizationTemperature,
 			Replace[SecondaryContainer]->secondaryContainerResource,

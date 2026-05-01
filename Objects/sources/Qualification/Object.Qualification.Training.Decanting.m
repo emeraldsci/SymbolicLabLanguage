@@ -24,6 +24,14 @@ DefineObjectType[Object[Qualification,Training,Decanting], {
 			Relation -> Object[Protocol,ManualSamplePreparation],
 			Description -> "The manual sample preparation sub protocol that prepares the sample from which the supernatent is decanted.",
 			Category -> "General"
+		},
+		DecantingSample -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The sample prepared in DecantingSamplePreparationProtocol from which the supernatent is decanted.",
+			Category -> "General"
 		}
 	}
 }

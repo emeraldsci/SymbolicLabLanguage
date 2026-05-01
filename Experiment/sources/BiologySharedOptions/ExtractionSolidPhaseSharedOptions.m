@@ -21,7 +21,7 @@ $SPEPurificationOptionMap={
 	SolidPhaseExtractionLoadingTemperatureEquilibrationTime -> LoadingSampleTemperatureEquilibrationTime,
 	SolidPhaseExtractionLoadingCentrifugeIntensity -> LoadingSampleCentrifugeIntensity,
 	SolidPhaseExtractionLoadingPressure -> LoadingSamplePressure,
-	SolidPhaseExtractionLoadingTime -> LoadingSampleDrainTime,
+	SolidPhaseExtractionLoadingTime -> LoadingTime,
 	CollectSolidPhaseExtractionLoadingFlowthrough -> CollectLoadingSampleFlowthrough,
 	SolidPhaseExtractionLoadingFlowthroughContainerOut -> LoadingSampleFlowthroughContainer,
 	SolidPhaseExtractionWashSolution -> WashingSolution,
@@ -30,7 +30,7 @@ $SPEPurificationOptionMap={
 	SolidPhaseExtractionWashTemperatureEquilibrationTime -> WashingSolutionTemperatureEquilibrationTime,
 	SolidPhaseExtractionWashCentrifugeIntensity -> WashingSolutionCentrifugeIntensity,
 	SolidPhaseExtractionWashPressure -> WashingSolutionPressure,
-	SolidPhaseExtractionWashTime -> WashingSolutionDrainTime,
+	SolidPhaseExtractionWashTime -> WashingTime,
 	CollectSolidPhaseExtractionWashFlowthrough -> CollectWashingSolution,
 	SolidPhaseExtractionWashFlowthroughContainerOut -> WashingSolutionCollectionContainer,
 	SecondarySolidPhaseExtractionWashSolution -> SecondaryWashingSolution,
@@ -39,7 +39,7 @@ $SPEPurificationOptionMap={
 	SecondarySolidPhaseExtractionWashTemperatureEquilibrationTime -> SecondaryWashingSolutionTemperatureEquilibrationTime,
 	SecondarySolidPhaseExtractionWashCentrifugeIntensity -> SecondaryWashingSolutionCentrifugeIntensity,
 	SecondarySolidPhaseExtractionWashPressure -> SecondaryWashingSolutionPressure,
-	SecondarySolidPhaseExtractionWashTime -> SecondaryWashingSolutionDrainTime,
+	SecondarySolidPhaseExtractionWashTime -> SecondaryWashingTime,
 	CollectSecondarySolidPhaseExtractionWashFlowthrough -> CollectSecondaryWashingSolution,
 	SecondarySolidPhaseExtractionWashFlowthroughContainerOut -> SecondaryWashingSolutionCollectionContainer,
 	TertiarySolidPhaseExtractionWashSolution -> TertiaryWashingSolution,
@@ -48,7 +48,7 @@ $SPEPurificationOptionMap={
 	TertiarySolidPhaseExtractionWashTemperatureEquilibrationTime -> TertiaryWashingSolutionTemperatureEquilibrationTime,
 	TertiarySolidPhaseExtractionWashCentrifugeIntensity -> TertiaryWashingSolutionCentrifugeIntensity,
 	TertiarySolidPhaseExtractionWashPressure -> TertiaryWashingSolutionPressure,
-	TertiarySolidPhaseExtractionWashTime -> TertiaryWashingSolutionDrainTime,
+	TertiarySolidPhaseExtractionWashTime -> TertiaryWashingTime,
 	CollectTertiarySolidPhaseExtractionWashFlowthrough -> CollectTertiaryWashingSolution,
 	TertiarySolidPhaseExtractionWashFlowthroughContainerOut -> TertiaryWashingSolutionCollectionContainer,
 	SolidPhaseExtractionElutionSolution -> ElutingSolution,
@@ -57,7 +57,7 @@ $SPEPurificationOptionMap={
 	SolidPhaseExtractionElutionSolutionTemperatureEquilibrationTime -> ElutingSolutionTemperatureEquilibrationTime,
 	SolidPhaseExtractionElutionCentrifugeIntensity -> ElutingSolutionCentrifugeIntensity,
 	SolidPhaseExtractionElutionPressure -> ElutingSolutionPressure,
-	SolidPhaseExtractionElutionTime -> ElutingSolutionDrainTime
+	SolidPhaseExtractionElutionTime -> ElutingTime
 };
 
 DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
@@ -241,7 +241,7 @@ DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
 		}
 	],
 	ModifyOptions[ExperimentSolidPhaseExtraction,
-		LoadingSampleDrainTime,
+		LoadingTime,
 		{
 			OptionName -> SolidPhaseExtractionLoadingTime,
 			Default -> Automatic,
@@ -447,7 +447,7 @@ DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
 		}
 	],
 	ModifyOptions[ExperimentSolidPhaseExtraction,
-		WashingSolutionDrainTime,
+		WashingTime,
 		{
 			OptionName -> SolidPhaseExtractionWashTime,
 			Default -> Automatic,
@@ -627,7 +627,7 @@ DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
 		}
 	],
 	ModifyOptions[ExperimentSolidPhaseExtraction,
-		SecondaryWashingSolutionDrainTime,
+		SecondaryWashingTime,
 		{
 			OptionName -> SecondarySolidPhaseExtractionWashTime,
 			Default -> Automatic,
@@ -807,7 +807,7 @@ DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
 		}
 	],
 	ModifyOptions[ExperimentSolidPhaseExtraction,
-		TertiaryWashingSolutionDrainTime,
+		TertiaryWashingTime,
 		{
 			OptionName -> TertiarySolidPhaseExtractionWashTime,
 			Default -> Automatic,
@@ -1021,7 +1021,7 @@ DefineOptionSet[ExtractionSolidPhaseSharedOptions:>{
 		}
 	],
 	ModifyOptions[ExperimentSolidPhaseExtraction,
-		ElutingSolutionDrainTime,
+		ElutingTime,
 		{
 			OptionName -> SolidPhaseExtractionElutionTime,
 			Default -> Automatic,

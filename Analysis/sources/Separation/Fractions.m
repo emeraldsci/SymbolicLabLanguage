@@ -79,7 +79,7 @@ Warning::IncludeHasNoEffect = "The inclusions `1` specified in the Include optio
 Warning::IncludeOutsideDomain = "The inclusions `1` specified in the Include option apply to fraction which are not in the Domain. Expand the domain to include the fractions selected in the Include option.";
 Error::MissingCollectedFractions = "The collected fractions information is missing for: `1`.";
 Error::FractionalIndexes = "Include expects positive integer values to select collected fractions by index. Alternatively, units of time can be used to select fractions within a timespan.";
-Error::UnexpectedUnits = "Time units are expected for fraction selection, however the following units were encountered: `1`.";
+Error::UnexpectedUnits = "Time units are expected for fraction selection; however, the following units were encountered: `1`.";
 
 inputPatternAnalyzeFractionsP = Alternatives[
 	ObjectP[Object[Data, Chromatography]],

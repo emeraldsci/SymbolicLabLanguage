@@ -272,7 +272,13 @@ extractDateStartedLogsRaw[objectLogRow_]:=If[KeyExistsQ[Lookup[objectLogRow,Fiel
 (* ::Subsubsection::Closed:: *)
 (*mmVersionURLString*)
 
-mmVersionURLString[version:(_String|Null)]:=If[MatchQ[version,Null],"13-3-1",StringReplace[version,"."->"-"]];
+mmVersionURLString[version : (_String | Null)] := StringReplace[
+	If[MatchQ[version, Null],
+		$DefaultManifoldMathematicaVersionString,
+		version
+	],
+	"." -> "-"
+];
 
 (* ::Subsubsection::Closed:: *)
 (*getFargateLogURL*)

@@ -257,7 +257,7 @@ validSensorConductivityQTests[packet:PacketP[Object[Sensor,Conductivity]]]:={};
 (*validSensorFlowRateQTests*)
 
 
-validSensorFlowRateQTests[packet:PacketP[Object[Sensor,FlowRate]]]:={};
+validSensorVolumetricFlowMeterQTests[packet:PacketP[Object[Sensor,VolumetricFlowMeter]]]:={};
 
 
 (* ::Subsection::Closed:: *)
@@ -306,12 +306,18 @@ validSensorVibrationQTests[packet:PacketP[Object[Sensor,Vibration]]]:={};
 validSensorAccelerationVibrationQTests[packet:PacketP[Object[Sensor,AccelerationVibration]]]:={};
 
 (* ::Subsection:: *)
-(*validSensorLightQTests*)
+(*validSensorIlluminanceQTests*)
 
 
-validSensorLightQTests[packet:PacketP[Object[Sensor,Light]]]:={
+validSensorIlluminanceQTests[packet:PacketP[Object[Sensor,Illuminance]]]:={
 }
 
+(* ::Subsection:: *)
+(*validSensorIrradianceQTests*)
+
+
+validSensorIrradianceQTests[packet:PacketP[Object[Sensor,Irradiance]]]:={
+}
 
 
 
@@ -327,11 +333,12 @@ registerValidQTestFunction[Object[Sensor, pH],validSensorpHQTests];
 registerValidQTestFunction[Object[Sensor, Pressure],validSensorPressureQTests];
 registerValidQTestFunction[Object[Sensor, RelativeHumidity],validSensorRelativeHumidityQTests];
 registerValidQTestFunction[Object[Sensor, Temperature],validSensorTemperatureQTests];
-registerValidQTestFunction[Object[Sensor, FlowRate],validSensorFlowRateQTests];
+registerValidQTestFunction[Object[Sensor, VolumetricFlowMeter],validSensorVolumetricFlowMeterQTests];
 registerValidQTestFunction[Object[Sensor, Volume],validSensorVolumeQTests];
 registerValidQTestFunction[Object[Sensor, Distance],validSensorDistanceSensorQTests];
 registerValidQTestFunction[Object[Sensor, Weight],validSensorWeightQTests];
 registerValidQTestFunction[Object[Sensor, BubbleCounter],validSensorBubbleCounterQTests];
 registerValidQTestFunction[Object[Sensor, AccelerationVibration],validSensorAccelerationVibrationQTests];
 registerValidQTestFunction[Object[Sensor, Vibration],validSensorVibrationQTests];
-registerValidQTestFunction[Object[Sensor, Light],validSensorLightQTests];
+registerValidQTestFunction[Object[Sensor, Illuminance],validSensorIlluminanceQTests];
+registerValidQTestFunction[Object[Sensor, Irradiance],validSensorIrradianceQTests];

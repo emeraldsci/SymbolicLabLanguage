@@ -444,6 +444,14 @@ DefineTests[ExperimentAutoclave,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentAutoclave[Object[Container,Vessel,"Test 50mL Tube with 25mL water sample inside for ExperimentAutoclave" <> $SessionUUID], CentrifugeIntensity -> 1001 RPM,AliquotContainer->Model[Container, Vessel, "250mL Glass Bottle"], Output -> Options];
+			Lookup[options, CentrifugeIntensity],
+			1000*RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		(* Note: CentrifugeTime cannot go above 5Minute without restricting the types of centrifuges that can be used. *)
 		Example[{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options = ExperimentAutoclave[Object[Container,Vessel,"Test 50mL Tube with 25mL water sample inside for ExperimentAutoclave" <> $SessionUUID], CentrifugeTime -> 5*Minute,AliquotContainer->Model[Container, Vessel, "250mL Glass Bottle"], Output -> Options];
@@ -606,6 +614,14 @@ DefineTests[ExperimentAutoclave,
 			300*Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAutoclave[Object[Sample, "Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], AliquotAmount -> 300.1 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			300 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options = ExperimentAutoclave[Object[Sample,"Available test 500 mL water sample in a 2 L glass bottle for ExperimentAutoclave" <> $SessionUUID], AssayVolume -> 300*Milliliter, Output -> Options];
@@ -787,6 +803,7 @@ DefineTests[ExperimentAutoclave,
 			],
 			ObjectP[Object[Protocol, Autoclave]]]
 	},
+	TurnOffMessages :> {Warning::InaccurateBalance, Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance},
 	SetUp :> ($CreatedObjects = {}),
 	TearDown :> (
 		EraseObject[$CreatedObjects, Force -> True, Verbose -> False];
@@ -794,8 +811,6 @@ DefineTests[ExperimentAutoclave,
 	),
 	SymbolSetUp:> (
 
-		Off[Warning::SamplesOutOfStock];
-		Off[Warning::InstrumentUndergoingMaintenance];
 
 		Module[{allObjects, existsFilter},
 			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)
@@ -1180,8 +1195,6 @@ DefineTests[ExperimentAutoclave,
 	),
 	SymbolTearDown :> (
 
-		On[Warning::SamplesOutOfStock];
-		On[Warning::InstrumentUndergoingMaintenance];
 
 		Module[{allObjects, existsFilter},
 			(* Define a list of all of the objects that are created in the SymbolSetUp - containers, samples, models, etc. *)

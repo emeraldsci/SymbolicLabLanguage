@@ -136,6 +136,8 @@ Guide[
 			{ExperimentVisualInspection, "Monitors the insoluble particles in the given sample while its container is agitated."},
 			{ExperimentMeasureViscosity, "Measures a fluid's viscosity defined as the resistance to deformation by assessing the flow rate of the sample when loaded into the viscometer chip."},
 			{ExperimentDynamicFoamAnalysis, "Characterizes the foamability, stability, drainage process and structure of liquid-based foams by monitoring foam generation and decay of a sample."},
+			{ExperimentDissolution, "Characterizes the dissolution process of a given solid dosage unit in a media of choice generating video of the process and aliquots from specified timepoints."},
+			{ExperimentKarlFischerTitration, "Measures the amount of water present in a given sample by either titrating it directly in a reaction vessel, or by heating the sample, bubbling the headspace gas into a reaction vessel, and titrating the resulting solution."},
 			{ExperimentMeasureMeltingPoint, "Measures the melting points of the solid samples using a melting point apparatus that applies an increasing temperature gradient to melting point capillary tubes containing a small amount of the input samples."}
 		},
 		"Cellular Experiments" -> {

@@ -103,6 +103,14 @@ DefineObjectType[Object[UnitOperation, ImageSample], {
 			Description -> "For each member of SampleLink, the source(s) of illumination that will be used for imaging, where All implies all available light sources will be active simultaneously.",
 			Category -> "General",
 			IndexMatching -> SampleLink
+		},
+		ColorReference -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> ColorReferencesP,
+			Description -> "For each member of SampleLink, the reference sample sets used to compare colors with the sample.",
+			Category -> "General",
+			IndexMatching -> SampleLink
 		}
 	}
 }]

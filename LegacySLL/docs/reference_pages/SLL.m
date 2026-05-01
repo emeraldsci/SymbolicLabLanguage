@@ -282,7 +282,8 @@ DefineUsage[NamedObject,
 			{"NamedObject[expr]", "namedExpr", "returns `expr` with all ObjectReferences, Links, and Packets replaced with the ObjectReferences by Name where applicable (to infinite depth)."}
 		},
 		MoreInformation -> {
-			"If a packet containing a name is supplied as input or in the cache, NamedObject doesn't contact the database and therefore object validity is not verified."
+			"If a packet containing a name is supplied as input or in the cache, NamedObject doesn't contact the database and therefore object validity is not verified.",
+			"Objects that have been erased can be converted to their last named object form using Historical -> True."
 		},
 		Input :> {
 			{"obj", ObjectP[], "A valid SLL object reference, link, or packet."},
@@ -399,6 +400,36 @@ DefineUsage[
 
 
 
+(* ::Subsection::Closed:: *)
+(*UploadValidPackets*)
+
+
+DefineUsage[
+	UploadValidPackets,
+	{
+		BasicDefinitions -> {
+			{"UploadValidPackets[packets]", "uploadResults", "uploads valid 'packets' to the database and returns a message about any invalid packets."}
+		},
+		MoreInformation -> {
+			"Packets are validated using ValidUploadQ before upload and only valid packets are uploaded.",
+			"UploadValidPackets should only be used when each packet is fully independent of all other packets to ensure the database is left in a consistent state.",
+			"If all valid packets pass ValidUploadQ, they are uploaded in bulk."
+		},
+		Input :> {
+			{"packets", {PacketP[]..}, "A list of packets to upload."}
+		},
+		Output :> {
+			{"uploadResults", {ObjectReferenceP[]...} | {}, "The new or updated objects."}
+		},
+		SeeAlso -> {
+			"Upload",
+			"ValidUploadQ"
+		},
+		Author -> {"hayley"}
+	}
+];
+
+
 (* ::Subsection:: *)
 (*optionsToTable*)
 
@@ -424,5 +455,35 @@ DefineUsage[
 			"SafeOptions"
 		},
 		Author->{"hayley", "mohamad.zandian"}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*PreferredBeaker*)
+
+
+DefineUsage[PreferredBeaker,
+	{
+		BasicDefinitions -> {
+			{"PreferredBeaker[volume]","container","returns the smallest model of beaker which can hold the provided 'volume'."}
+		},
+		AdditionalDefinitions -> {
+			{"PreferredContainer[All]","containers","returns all beakers that could be chosen for the given 'model' for any volume."}
+		},
+		MoreInformation -> {
+			"The fields EngineDefault is used to determine only beakers with EngineDefault->True or all beakers should be returned."
+		},
+		Input :> {
+			{"volume",GreaterP[0 Milliliter],"The contents' volume to be contained in a preferred model container."}
+		},
+		Output :> {
+			{"container",Model[Container],"The beaker model best suited to contain the input volume."},
+			{"containers",{Model[Container]..},"All beaker models compatible with the given option values."}
+		},
+		SeeAlso -> {
+			"PreferredContainer",
+			"TransferDevices"
+		},
+		Author -> {"xu.yi"}
 	}
 ];

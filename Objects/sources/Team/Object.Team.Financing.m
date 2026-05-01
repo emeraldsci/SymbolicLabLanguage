@@ -178,6 +178,13 @@ DefineObjectType[Object[Team, Financing], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		Departments -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> EmeraldDepartmentP | _String,
+			Description -> "The departments or functions in this organization that use the Cloud Lab.",
+			Category -> "Organizational Information"
+		},
 
 		NextBillingCycle -> {
 			Format -> Single,
@@ -319,6 +326,14 @@ DefineObjectType[Object[Team, Financing], {
 			Description -> "Indicates if the charges of this team is free from federal, state or local tax.",
 			Category -> "Organizational Information",
 			AdminWriteOnly->True
+		},
+		EmailDomains -> {
+				Format -> Multiple,
+				Class -> String,
+				Pattern :> _String,
+				Description -> "Allowlist of email domains for team members.",
+				Category -> "Organizational Information",
+				Developer -> True
 		}
 	}
 }]

@@ -259,6 +259,12 @@ validModelPartBeamStopQTests[packet:PacketP[Model[Part,BeamStop]]] := {};
 
 
 (* ::Subsection::Closed:: *)
+(*validModelPartBladeQTests*)
+
+validModelPartBladeQTests[packet : PacketP[Model[Part, Blade]]] := {};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelPartBLIPlateCoverQTests*)
 
 
@@ -1875,6 +1881,14 @@ validModelPartRespiratorQTests[packet:PacketP[Model[Part,Respirator]]]:={};
 validModelPartRespiratorFilterQTests[packet:PacketP[Model[Part,RespiratorFilter]]]:={};
 
 
+
+(* ::Subsection::Closed:: *)
+(*validModelPartScraperQTests*)
+
+validModelPartScraperQTests[packet : PacketP[Model[Part, Scraper]]] := {};
+
+
+
 (* ::Subsection::Closed:: *)
 (*validModelPartDryingCartridgeQTests*)
 
@@ -1950,7 +1964,6 @@ validModelPartTybeBlockQTests[packet:PacketP[Model[Part, TubeBlock]]]:={
 };
 
 
-
 (* ::Subsection:: *)
 (* Test Registration *)
 
@@ -1969,6 +1982,7 @@ registerValidQTestFunction[Model[Part, Backdrop],validModelPartBackdropQTests];
 registerValidQTestFunction[Model[Part, Battery],validModelPartBatteryQTests];
 registerValidQTestFunction[Model[Part, BackfillVent],validModelPartBackfillVentQTests];
 registerValidQTestFunction[Model[Part, BeamStop],validModelPartBeamStopQTests];
+registerValidQTestFunction[Model[Part, Blade], validModelPartBladeQTests];
 registerValidQTestFunction[Model[Part, Brake],validModelPartBrakeQTests];
 registerValidQTestFunction[Model[Part, BLIPlateCover],validModelPartBLIPlateCoverQTests];
 registerValidQTestFunction[Model[Part, BristlePlate],validModelPartBristlePlateTests];
@@ -2072,6 +2086,7 @@ registerValidQTestFunction[Model[Part, FloodLight],validModelPartFloodLightQTest
 registerValidQTestFunction[Model[Part, SafetyWashStation],validModelPartSafetyWashStationQTests];
 registerValidQTestFunction[Model[Part, Respirator],validModelPartRespiratorQTests];
 registerValidQTestFunction[Model[Part, RespiratorFilter],validModelPartRespiratorFilterQTests];
+registerValidQTestFunction[Model[Part, Scraper], validModelPartScraperQTests];
 registerValidQTestFunction[Model[Part, StickerPrinter],validModelPartStickerPrinterQTests];
 registerValidQTestFunction[Model[Part, SamplingProbe],validModelPartSamplingProbeQTests];
 registerValidQTestFunction[Model[Part, CuttingJig],validModelPartCuttingJigQTests];

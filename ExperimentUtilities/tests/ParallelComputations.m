@@ -485,7 +485,7 @@ DefineTests[
 					SLLVersion -> "stable",
 					SLLCommit -> "abcde",
 					HardwareConfiguration -> Standard,
-					MathematicaVersion -> "13.3.1",
+					MathematicaVersion -> "14.2.0",
 					RunAsUser -> Link[Object[User, Emerald, Developer, "steven"]]
 				|>,
 				<|
@@ -496,7 +496,7 @@ DefineTests[
 					SLLVersion -> "stable",
 					SLLCommit -> "abcde",
 					HardwareConfiguration -> Standard,
-					MathematicaVersion -> "13.3.1",
+					MathematicaVersion -> "14.2.0",
 					RunAsUser -> Link[Object[User, Emerald, Developer, "steven"]]
 				|>,
 				<|

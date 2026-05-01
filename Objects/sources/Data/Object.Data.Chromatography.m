@@ -660,12 +660,12 @@ DefineObjectType[Object[Data, Chromatography], {
 			Description -> "The frequency of measurement for a UVVis or Photo Diode Array (PDA) detectors.",
 			Category -> "Detection"
 		},
-		SmoothingTimeConstant -> {
+		HammingWindowWidth -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterP[0*Second],
 			Units -> Second,
-			Description -> "The time window used for data filtering with UVVis or Photo Diode Array (PDA) detectors, which controls the degree of baseline smoothing and the impact on peak height degradation.",
+			Description -> "The time window that defines how absorbance data are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects.",
 			Category -> "Detection"
 		},
 		ExcitationWavelength -> {
@@ -1052,6 +1052,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Category -> "Experimental Results",
 			Abstract -> True
 		},
+		SmoothedAbsorbance -> {
+			Format -> Single,
+			Class -> BigQuantityArray,
+			Pattern :> BigQuantityArrayP[{Minute, Milli*AbsorbanceUnit}],
+			Units -> {Minute, AbsorbanceUnit Milli},
+			Description -> "The HammingWindowWidth-processed chromatogram of Absorbance at AbsorbanceWavelength vs. time during the experiment for the UV visible (UVVis) detector. The data processing step influences both baseline smoothness and peak height degradation. Within the HammingWindowWidth window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection.",
+			Category -> "Data Processing"
+		},
 		SecondaryAbsorbance -> {
 			Format -> Single,
 			Class -> QuantityArray,
@@ -1059,6 +1067,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Units -> {Minute, AbsorbanceUnit Milli},
 			Description -> "The chromatogram of absorbance at SecondaryAbsorbanceWavelength vs. time during the experiment.",
 			Category -> "Experimental Results"
+		},
+		SecondarySmoothedAbsorbance -> {
+			Format -> Single,
+			Class -> BigQuantityArray,
+			Pattern :> BigQuantityArrayP[{Minute, Milli*AbsorbanceUnit}],
+			Units -> {Minute, AbsorbanceUnit Milli},
+			Description -> "The HammingWindowWidth-processed chromatogram of SecondaryAbsorbance at SecondaryAbsorbanceWavelength vs. time during the experiment for the UV visible (UVVis) detector. The data processing step influences both baseline smoothness and peak height degradation. Within the HammingWindowWidth window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection.",
+			Category -> "Data Processing"
 		},
 		TertiaryAbsorbance -> {
 			Format -> Single,
@@ -1068,6 +1084,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Description -> "The chromatogram of absorbance at TertiaryAbsorbanceWavelength vs. time during the experiment.",
 			Category -> "Experimental Results"
 		},
+		TertiarySmoothedAbsorbance -> {
+			Format -> Single,
+			Class -> BigQuantityArray,
+			Pattern :> BigQuantityArrayP[{Minute, Milli*AbsorbanceUnit}],
+			Units -> {Minute, AbsorbanceUnit Milli},
+			Description -> "The HammingWindowWidth-processed chromatogram of TertiaryAbsorbance at TertiaryAbsorbanceWavelength vs. time during the experiment for the UV visible (UVVis) detector. The data processing step influences both baseline smoothness and peak height degradation. Within the HammingWindowWidth window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection.",
+			Category -> "Data Processing"
+		},
 		QuaternaryAbsorbance ->{
 			Format -> Single,
 			Class -> QuantityArray,
@@ -1075,6 +1099,14 @@ DefineObjectType[Object[Data, Chromatography], {
 			Units -> {Minute, MilliAbsorbanceUnit},
 			Description -> "The chromatogram of absorbance at QuaternaryAbsorbanceWavelength vs. time during the experiment.",
 			Category -> "Experimental Results"
+		},
+		QuaternarySmoothedAbsorbance -> {
+			Format -> Single,
+			Class -> BigQuantityArray,
+			Pattern :> BigQuantityArrayP[{Minute, Milli*AbsorbanceUnit}],
+			Units -> {Minute, AbsorbanceUnit Milli},
+			Description -> "The HammingWindowWidth-processed chromatogram of QuaternaryAbsorbance at QuaternaryAbsorbanceWavelength vs. time during the experiment for the UV visible (UVVis) detector. The data processing step influences both baseline smoothness and peak height degradation. Within the HammingWindowWidth window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection.",
+			Category -> "Data Processing"
 		},
 		Absorbance3D-> {
 			Format -> Single,

@@ -1720,6 +1720,14 @@ DefineObjectType[Object[Protocol,CapillaryGelElectrophoresisSDS],
 				Description -> "The image of the instrument deck after all reagents and the AssayPlate have been loaded.",
 				Category -> "General",
 				Developer->True
+			},
+			Calibrated -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the calibration passed. This field exists as CESDS and CIEF share procdrues, but this is only used for the latter.",
+				Category -> "Calibration",
+				Developer -> True
 			}
 		}
 	}

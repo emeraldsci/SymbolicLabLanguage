@@ -261,7 +261,7 @@ DefineTests[
 			Unitless[{A -> Meter, B -> 2Kilometer}, Centimeter],
 			{A -> 100, B -> 200000}
 		],
-		Test["Incompatible untis in expression:",
+		Test["Incompatible units in expression:",
 			Unitless[{A -> Meter, B -> 2Second}, Centimeter],
 			{A -> 100, B -> $Failed},
 			Messages :> {Quantity::compat}
@@ -6963,31 +6963,36 @@ DefineTests[StringToQuantity,
 		],
 		Test["All canonical Emerald units are interpreted from ToString forms without requiring the Wolfram Server:",
 			(
+				(* Get a list of emerald units *)
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[1]];
+
 				(* Convert to strings *)
 				emeraldUnitStrings = ToString /@ emeraldUnits;
 
-				StringToQuantity[emeraldUnitStrings, Server -> False]
+				(* evaluating variables calculated in the expected section in the results section can lead to some weird behavior so just doing the Equal call here *)
+				StringToQuantity[emeraldUnitStrings, Server -> False] == emeraldUnits
 			),
-			EqualP /@ emeraldUnits,
-			SetUp :> {
-				(* Get a list of emerald units *)
-				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[1]]
-			},
+			True,
 			Variables :> {emeraldUnits, emeraldUnitStrings}
 		],
 		Test["All canonical Emerald units are interpreted from TextString forms without requiring the Wolfram Server:",
 			(
-				(* Convert to strings *)
-				emeraldUnitStrings = TextString /@ emeraldUnits;
-
-				StringToQuantity[emeraldUnitStrings, Server -> False]
-			),
-			EqualP /@ emeraldUnits,
-			SetUp :> {
 				(* Get a list of emerald units *)
-				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[Alternatives[1, Dozen]]]
-			},
-			Variables :> {emeraldUnits, emeraldUnitStrings}
+				emeraldUnits = Cases[First /@ List @@ (EmeraldUnits`Private`canonicalUnitLookup), Except[Alternatives[1, Dozen]]];
+
+
+				(* Convert to strings *)
+				(* NOTE: TextString[Quantity[1, "StandardAccelerationOfGravity"]] gives "1 g" which then when going backwards will (rightly) send you to 1 Gram *)
+				(* this is probably fine; we just need the tests here to understand that TextString is not a one-to-one function *)
+				emeraldUnitStrings = TextString /@ emeraldUnits;
+				gravityPosition = First@FirstPosition[emeraldUnits, Quantity[1, "StandardAccelerationOfGravity"]];
+
+				(* evaluating variables calculated in the expected section in the results section can lead to some weird behavior so just doing the Equal call here *)
+				Delete[StringToQuantity[emeraldUnitStrings, Server -> False], gravityPosition] == Delete[emeraldUnits, gravityPosition]
+
+			),
+			True,
+			Variables :> {emeraldUnits, emeraldUnitStrings, gravityPosition}
 		],
 		Test["All prefixed canonical Emerald units are interpreted from ToString forms without requiring the Wolfram Server:",
 			(

@@ -41,6 +41,15 @@ DefineObjectType[Object[Part,Computer],{
 			Category->"Part Specifications"
 		},
 
+		BackupHardDriveHash->{
+			Format->Single,
+			Class->String,
+			Pattern:>_String,
+			Description->"The SHA-256 hash of the backup hard drive of the computer.",
+			Category->"Part Specifications",
+			Developer->True
+		},
+
 		InstrumentSoftware->{
 			Format->Multiple,
 			Class->{Expression,String},
@@ -92,6 +101,14 @@ DefineObjectType[Object[Part,Computer],{
 			Relation->Object[Part,KVMSwitch][ConnectedComputers],
 			Description->"The KVMSwitch that is capable of controlling this computer.",
 			Category->"Part Specifications"
+		},
+		OperatorCart -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container, OperatorCart][WorkstationComputer],
+			Description -> "The cart to which this computer is currently or permanently assigned.",
+			Category -> "Usage Information"
 		}
 
 	}

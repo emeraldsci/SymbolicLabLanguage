@@ -710,13 +710,13 @@ resolveInputsAndOptionsSimulateKinetics[inputMechanism_,inputIC_,simTime_,unreso
 	initialStates = ToState[#,allSpecs]& /@ initialConditions  /.s_Strand:>flattenDegenerate[s]/.  s_Structure :> StructureSort[NucleicAcids`Private`consolidateBonds[s]];
 	stateUnits = #[Units]& /@ initialStates;
 
-	su = Quiet[#["Unit"]&/@initialStates,{Quantity::compat, Max::nord2}];
+	su = Quiet[#["Unit"]&/@initialStates,{Quantity::compat, Max::nord2, Max::nordq}];
 	(* add Units if necessary, or complain about them *)
 	initialStateTests = Quiet[Check[
 									MapThread[inconsistentInitialConditionUnitsTestOrEmpty[#1,collectTestsBoolean,"Consistent initial state units:",CompatibleUnitQ[#2]] &, {initialStates, stateUnits}],
 									$Failed,
 									{Error::InvalidInput, Error::InvalidOption}
-									], {Quantity::compat, Max::nord2}];
+									], {Quantity::compat, Max::nord2, Max::nordq}];
 
 	initialStates = MapThread[
 		Which[
@@ -846,8 +846,8 @@ inconsistentInitialConditionUnitsTestOrEmpty[struct_,makeTest:BooleanP,descripti
 	Test[description,expression,True],
 	If[TrueQ[expression],
 		{},
-		Message[Error::InconsistentInitialConditionUnits,struct];
-		Message[Error::InvalidInput,struct];
+		Message[Error::InconsistentInitialConditionUnits,First[struct]];
+		Message[Error::InvalidInput,First[struct]];
 	]
 ];
 

@@ -314,6 +314,10 @@ resolveFilterMethod[myContainers : ListableP[Automatic|ObjectP[{Object[Container
 			"the Aliquot Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
+		If[MatchQ[Lookup[safeOps, WorkCell], Null],
+			"The WorkCell option is set to Null",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOps, Preparation], Manual],
 			"the Preparation option is set to Manual by the user",
 			Nothing
@@ -323,7 +327,7 @@ resolveFilterMethod[myContainers : ListableP[Automatic|ObjectP[{Object[Container
 	(* Create a list of reasons why we need Preparation->Robotic. *)
 	roboticRequirementStrings={
 		Module[{roboticOnlyOptions},
-			roboticOnlyOptions=Select[{Counterweight,Pressure,RetentateWashPressure,Volume},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)];
+			roboticOnlyOptions=Select[{Counterweight,Pressure,RetentateWashPressure,RetentateWashPipettingMethod,Volume},(!MatchQ[Lookup[ToList[myOptions], #, Null], ListableP[Null|Automatic]]&)];
 
 			If[Length[roboticOnlyOptions]>0,
 				"the following Robotic-only options were specified "<>ToString[roboticOnlyOptions],
@@ -332,6 +336,10 @@ resolveFilterMethod[myContainers : ListableP[Automatic|ObjectP[{Object[Container
 		],
 		If[MemberQ[Lookup[expandedSafeOps,FiltrationType], AirPressure],
 			"the AirPressure filtration type can only be set for robotic preparation",
+			Nothing
+		],
+		If[MatchQ[Lookup[safeOps, WorkCell], WorkCellP],
+			"The WorkCell option is specified (only robotic preparation supports using a work cell)",
 			Nothing
 		],
 		If[MatchQ[Lookup[safeOps, Preparation], Robotic],

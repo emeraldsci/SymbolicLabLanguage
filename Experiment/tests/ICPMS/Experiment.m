@@ -1186,7 +1186,7 @@ DefineTests[ExperimentICPMS,
 				PreparatoryUnitOperations-> {
 					LabelContainer[
 						Label -> "My Pooled Sample",
-						Container -> Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *)
+						Container -> Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *)
 					],
 					Transfer[
 						Source -> {
@@ -2101,11 +2101,11 @@ DefineTests[ExperimentICPMS,
 			Block[{$DeveloperUpload=True},
 				UploadSample[
 					{
-						Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *),
-						Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *),
-						Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *),
-						Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *),
-						Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *),
+						Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *),
+						Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *),
+						Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *),
+						Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *),
+						Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *),
 						Model[Container, Vessel, "id:1ZA60vLXrOo6"] (* "100 mL rectangular translucent white plastic bottle" *),
 						Model[Container, Vessel, "id:1ZA60vLXrOo6"] (* "100 mL rectangular translucent white plastic bottle" *),
 						Model[Container, Vessel, "id:1ZA60vLXrOo6"] (* "100 mL rectangular translucent white plastic bottle" *),

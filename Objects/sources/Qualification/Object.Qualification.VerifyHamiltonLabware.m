@@ -199,6 +199,19 @@ DefineObjectType[Object[Qualification,VerifyHamiltonLabware], {
 			Developer -> True,
 			Headers -> {"Object to Place","Destination Object","Destination Position"}
 		},
+		FilterPlatePlacements -> {
+			Format -> Multiple,
+			Class -> {Link, Link},
+			Pattern :> {_Link, _Link},
+			Relation -> {
+				Object[Container] | Model[Container],
+				Object[Container] | Model[Container]
+			},
+			Description -> "A list of placements for filter plates that must be placed on top of a holder plate on the deck, to prevent contamination from filter plate nozzles touching bare deck surfaces. Each entry is {filterPlate, holderPlate}. During qualification execution, the holder plate is uncovered before placing the filter plate on top.",
+			Headers -> {"Filter Plate", "Holder Plate"},
+			Category -> "Placements",
+			Developer -> True
+		},
 		LidSpacerPlacements -> {
 			Format -> Multiple,
 			Class -> {Link, Expression},

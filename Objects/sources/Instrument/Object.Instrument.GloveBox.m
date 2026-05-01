@@ -39,6 +39,14 @@ DefineObjectType[Object[Instrument, GloveBox], {
 			Description -> "The sensor for respective GloveBox antichamber(s) in the form: {Antechamber, Sensor}. The antechamber is designated by the symbol Small, Large, Left or Right.",
 			Headers -> {"Antechamber","Sensor"},
 			Category -> "Sensor Information"
+		},
+		VolumetricFlowRateSensor -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sensor][DevicesMonitored],
+			Description -> "The device measuring the volumetric flow rate of Nitrogen flowing into the instrument.",
+			Category -> "Sensor Information"
 		}
 	}
 }];

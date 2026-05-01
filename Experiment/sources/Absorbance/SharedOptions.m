@@ -192,7 +192,7 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 			AllowNull->True,
 			Widget->Widget[Type->Object,Pattern:>ObjectP[{Model[Sample],Object[Sample]}]],
 			Description->"The object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SamplesIn to take account for any artifacts.",
-			ResolutionDescription->"Automatically set to Null if BlankMeasurement is False. Otherwise, automatically set to the value of Solvent in SamplesIn. If Solvent not specfied, set to Model[Sample, \"Milli-Q water\"].",
+			ResolutionDescription->"Automatically set to Null if BlankMeasurement is False. Otherwise, automatically set to the value of Solvent in SamplesIn. If Solvent not specified, set to Model[Sample, \"Milli-Q water\"].",
 			Category->"Data Processing"
 		},
 		{
@@ -206,6 +206,7 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 		},
 		IndexMatchingInput->"experiment samples"
 	],
+	BlankLabelOptions,
 	BMGSamplingOptions,
 	(* SamplingPattern overwrites value in BMGSamplingOptions since here we want to allow Null *)
 	{
@@ -225,7 +226,6 @@ DefineOptionSet[AbsorbanceSharedOptions :> {
 	SimulationOption,
 	PreparationOption,
 	WorkCellOption,
-	BlankLabelOptions,
 	{
 		OptionName -> NumberOfReplicates,
 		Default -> Automatic,

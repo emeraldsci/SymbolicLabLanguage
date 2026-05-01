@@ -5,7 +5,7 @@
 
 
 DefineObjectType[Object[Item, Consumable, Blade], {
-	Description->"A consumable razer blade used as the cutting edge when loaded into box cutters.",
+	Description->"A consumable cutting blade used with various cutting tools and equipment.",
 	CreatePrivileges->None,
 	Cache->Download,
 	Fields -> {

@@ -3784,6 +3784,7 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
     (* Get our robotic unit operation packets. *)
     (* quieting the warning about sterile transferring because LLE will likely not contaminate things when extracting RNA, but will cause the warning to get thrown *)
     (* there is no way around this because the phase separators are not sterile and we can't get a sterile one in hand.  For this case, we're deciding that that is ok *)
+    (* We also quiet any precision warning since 1)we have thrown precision warning in this experiment 2)MM added trailing 0s to resolved values and that will trigger the warning *)
     {{roboticUnitOperationPackets, roboticRunTime}, roboticSimulation} = Quiet[
       ExperimentRoboticCellPreparation[
         primitives,
@@ -3803,7 +3804,7 @@ extractProteinResourcePackets[mySamples:ListableP[ObjectP[Object[Sample]]],myTem
         QueuePosition -> Lookup[expandedResolvedOptions, QueuePosition],
         CoverAtEnd -> False
       ],
-      Warning::ConflictingSourceAndDestinationAsepticHandling
+      {Warning::ConflictingSourceAndDestinationAsepticHandling, Warning::CentrifugePrecision, Warning::InstrumentPrecision}
     ];
 
     (* Create our own output unit operation packet, linking up the "sub" robotic unit operation objects. *)

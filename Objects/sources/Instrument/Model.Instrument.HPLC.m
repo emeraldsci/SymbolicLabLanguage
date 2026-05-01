@@ -140,35 +140,6 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Description -> "The permitted frequency settings for absorbance measurements using the UV-Vis or Photodiode Array (PDA) detector on this instrument model.",
 			Category -> "Instrument Specifications"
 		},
-		(* For Dionex *)
-		MinSmoothingTimeConstant -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0*Second],
-			Units -> Second,
-			Description -> "The minimum allowed time window on the instrument software for data filtering in absorbance collection on this instrument model. The smoothing time constant affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise.",
-			Category -> "Instrument Specifications"
-		},
-		MaxSmoothingTimeConstant -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterP[0*Second],
-			Units -> Second,
-			Description -> "The maximum allowed time window on the instrument software for data filtering in absorbance collection on this instrument model. The smoothing time constant affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise.",
-			Category -> "Instrument Specifications"
-		},
-		(* For Waters and Agilent *)
-		(* Agilent only allows one value per sampling rate (except for the highest 120 Hz, it allows 0.031 Second and 0.016 Second, we will call them Medium and Small *)
-		SmoothingTimeConstants -> {
-			Format -> Multiple,
-			Class -> {Real, Real, Real, Real, Real, Real},
-			Pattern :> {GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second], GreaterP[0*Second]},
-			Units -> {Second, Second, Second, Second, Second, Second},
-			Headers -> {"Small", "Medium", "Large", "Minimum", "Maximum", "Increment"},
-			Description -> "For each member of AbsorbanceSamplingRates, the allowed time windows on the instrument software for data filtering in absorbance collection, which affects baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. The instrument supports both pre-defined settings - Small, Medium, and Large as well as user-selectable discrete values that are evenly spaced by the specified Increment between the Minimum and Maximum, inclusive.",
-			Category -> "Instrument Specifications",
-			IndexMatching -> AbsorbanceSamplingRates
-		},
 		ExcitationSource -> {
 			Format -> Single,
 			Class -> Expression,
@@ -553,7 +524,7 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterEqualP[0*Micro*Liter],
 			Units -> Liter Micro,
-			Description -> "The minimum sample volume required for a single run.",
+			Description -> "The minimum sample volume that can be injected in a single run.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},
@@ -571,7 +542,7 @@ DefineObjectType[Model[Instrument, HPLC], {
 			Class -> Real,
 			Pattern :> GreaterP[0*Micro*Liter],
 			Units -> Liter Micro,
-			Description -> "The maximum sample volume that that can be injected in a single run.",
+			Description -> "The maximum sample volume that can be injected in a single run.",
 			Category -> "Operating Limits",
 			Abstract -> True
 		},

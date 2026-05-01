@@ -1609,6 +1609,11 @@ validPartRespiratorQTests[packet:PacketP[Object[Part, Respirator]]] := {};
 validPartRespiratorFilterQTests[packet:PacketP[Object[Part, RespiratorFilter]]] := {};
 
 
+(* ::Subsection::Closed:: *)
+(*validPartScraperQTests*)
+
+validPartScraperQTests[packet : PacketP[Object[Part, Scraper]]] := {};
+
 
 (* ::Subsection:: *)
 (*validPartStickerPrinterQTests*)
@@ -1830,6 +1835,7 @@ registerValidQTestFunction[Object[Part, FloodLight], validPartFloodLightQTests];
 registerValidQTestFunction[Object[Part, SafetyWashStation], validPartSafetyWashStationQTests];
 registerValidQTestFunction[Object[Part, Respirator], validPartRespiratorQTests];
 registerValidQTestFunction[Object[Part, RespiratorFilter], validPartRespiratorFilterQTests];
+registerValidQTestFunction[Object[Part, Scraper], validPartScraperQTests];
 registerValidQTestFunction[Object[Part, StickerPrinter], validPartStickerPrinterQTests];
 registerValidQTestFunction[Object[Part, SamplingProbe], validPartSamplingProbeQTests];
 registerValidQTestFunction[Object[Part, CuttingJig], validPartCuttingJigQTests];

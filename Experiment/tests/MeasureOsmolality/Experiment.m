@@ -657,6 +657,17 @@ DefineTests[
 			EquivalenceFunction->Equal,
 			Variables:>{options}
 		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMeasureOsmolality[Object[Sample, "Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
 		Example[{Options,CentrifugeTime,"The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				CentrifugeTime->5 Minute,
@@ -710,9 +721,9 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,FiltrationType,"The type of filtration method that should be used to perform the filtration:"},
-			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+			options=ExperimentMeasureOsmolality[Object[Sample,"Test large Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				FiltrationType->Syringe,
-				FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"],
+				FilterContainerOut->Model[Container,Vessel,"50mL Tube"],
 				Output->Options
 			];
 			Lookup[options,FiltrationType],
@@ -720,9 +731,9 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,FilterInstrument,"The instrument that should be used to perform the filtration:"},
-			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+			options=ExperimentMeasureOsmolality[Object[Sample,"Test large Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
 				FilterInstrument->Model[Instrument,SyringePump,"NE-1010 Syringe Pump"],
-				FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"],
+				FilterContainerOut->Model[Container,Vessel,"50mL Tube"],
 				Output->Options
 			];
 			Lookup[options,FilterInstrument],
@@ -730,8 +741,8 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,Filter,"The filter that should be used to remove impurities from the SamplesIn prior to starting the experiment:"},
-			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
-				FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"],
+			options=ExperimentMeasureOsmolality[Object[Sample,"Test large Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				FilterContainerOut->Model[Container,Vessel,"50mL Tube"],
 				Filter->Model[Item,Filter,"Disk Filter, PES, 0.22um, 30mm"],
 				Output->Options
 			];
@@ -778,8 +789,8 @@ DefineTests[
 			Variables:>{options}
 		],
 		Example[{Options,FilterSyringe,"The syringe used to force that sample through a filter:"},
-			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
-				FilterContainerOut->Model[Container,Plate,"96-well PCR Plate"],
+			options=ExperimentMeasureOsmolality[Object[Sample,"Test large Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				FilterContainerOut->Model[Container,Vessel,"50mL Tube"],
 				FiltrationType->Syringe,
 				FilterSyringe->Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				Output->Options
@@ -898,6 +909,19 @@ DefineTests[
 			95 Microliter,
 			EquivalenceFunction->Equal,
 			Variables:>{options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMeasureOsmolality[
+				Object[Sample, "Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],
+				AliquotAmount -> 95.01 Microliter,
+				AliquotContainer -> Model[Container, Vessel, "1mL HPLC Vial (total recovery) with Cap and PTFE/Silicone Septum"],
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			95 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AssayVolume,"The desired total volume of the aliquoted sample plus dilution buffer:"},
 			options=ExperimentMeasureOsmolality[Object[Sample,"Test Milli-Q water sample for ExperimentMeasureOsmolality "<>$SessionUUID],

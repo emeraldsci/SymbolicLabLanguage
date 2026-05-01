@@ -294,7 +294,7 @@ DefineObjectType[Object[Protocol, NMR], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Model[Instrument, FumeHood], Object[Instrument, FumeHood]],
+			Relation -> Alternatives[Object[Instrument, FumeHood], Model[Instrument, FumeHood], Object[Instrument, HandlingStation, FumeHood], Model[Instrument, HandlingStation, FumeHood]],
 			Description -> "Indicates the fume hood where the SealedCoaxialInserts are transferred into the NMRTubes.",
 			Category -> "General",
 			Developer -> True

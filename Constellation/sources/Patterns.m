@@ -180,6 +180,97 @@ ObjectReferenceP[object:objectP | modelP]:=PatternTest[
 	SameObjectQ[#, object]&
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*Additional ObjectReferenceQ*)
+(* Check for specific forms of object reference *)
+NamedObjectReferenceQ[expr_] := And[ObjectReferenceQ[expr], StringQ[Last[expr]], !StringStartsQ[Last[expr], "id:"]];
+IDObjectReferenceQ[expr_] := And[ObjectReferenceQ[expr], StringQ[Last[expr]], StringStartsQ[Last[expr], "id:"]];
+
+NamedObjectReferenceP[]=PatternTest[
+	objectP | modelP,
+	NamedObjectReferenceQ[#]&
+];
+
+NamedObjectReferenceP[Model[]]=NamedObjectReferenceP[Model];
+
+NamedObjectReferenceP[Object[]]=NamedObjectReferenceP[Object];
+
+NamedObjectReferenceP[type:typeP]:=NamedObjectReferenceP[type]=PatternTest[
+	Append[
+		Append[
+			type,
+			___Symbol
+		],
+		_String
+	],
+	NamedObjectReferenceQ[#]&
+];
+
+NamedObjectReferenceP[types:{typeP...}]:=NamedObjectReferenceP[types]=Apply[
+	Alternatives,
+	Map[
+		NamedObjectReferenceP,
+		types
+	]
+];
+
+NamedObjectReferenceP[Model]=PatternTest[
+	modelP,
+	NamedObjectReferenceQ[#]&
+];
+
+NamedObjectReferenceP[Object]=PatternTest[
+	objectP,
+	NamedObjectReferenceQ[#]&
+];
+
+NamedObjectReferenceP[object:objectP | modelP]:=PatternTest[
+	objectP | modelP,
+	And[NamedObjectReferenceQ[#], SameObjectQ[#, object]]&
+];
+
+IDObjectReferenceP[]=PatternTest[
+	objectP | modelP,
+	IDObjectReferenceQ[#]&
+];
+
+IDObjectReferenceP[Model[]]=IDObjectReferenceP[Model];
+
+IDObjectReferenceP[Object[]]=IDObjectReferenceP[Object];
+
+IDObjectReferenceP[type:typeP]:=IDObjectReferenceP[type]=PatternTest[
+	Append[
+		Append[
+			type,
+			___Symbol
+		],
+		_String
+	],
+	IDObjectReferenceQ[#]&
+];
+
+IDObjectReferenceP[types:{typeP...}]:=IDObjectReferenceP[types]=Apply[
+	Alternatives,
+	Map[
+		IDObjectReferenceP,
+		types
+	]
+];
+
+IDObjectReferenceP[Model]=PatternTest[
+	modelP,
+	IDObjectReferenceQ[#]&
+];
+
+IDObjectReferenceP[Object]=PatternTest[
+	objectP,
+	IDObjectReferenceQ[#]&
+];
+
+IDObjectReferenceP[object:objectP | modelP]:=PatternTest[
+	objectP | modelP,
+	And[IDObjectReferenceQ[#], SameObjectQ[#, object]]&
+];
 
 
 (* ::Subsubsection::Closed:: *)

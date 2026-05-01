@@ -10,7 +10,7 @@ OnLoad[
 	Error::InvalidOption = "Because an error was encountered for option(s): `1`, the result cannot be generated. Please double check these errors and run the function again to proceed.";
 	Error::InvalidInput = "Because an error was encountered for input(s): `1`, the result cannot be generated. Please double check these errors and then run the function again to proceed.";
 	Error::NonUniqueName = "The requested name, `1`, is already taken for type `2`. Please rename the existing object or specify a unique name for the current object.";
-	Error::InputLengthMismatch = "The inputs, `1`, has a value of length `2`, however it is expected to match the length of `3` which is length `4`. Please provide a single value to `1` or make sure the lengths of `1` and `3` match.";
+	Error::InputLengthMismatch = "The inputs, `1`, has a value of length `2`; however, it is expected to match the length of `3` which is length `4`. Please provide a single value to `1` or make sure the lengths of `1` and `3` match.";
 	Error::EmptyContainers = "The following containers are empty and so cannot be used: `1`. Please check you've specified the correct containers or directly specify samples instead.";
 	Error::DiscardedSamples = "The following object(s) specified are discarded and so cannot be used: `1`.  Please check the Status field of the samples in question, or provide alternative, non-discarded samples to use.";
 	Error::DeprecatedModels = "The following model(s) specified are deprecated and so cannot be used: `1`.  Please check the Deprecated field of the models in question, or provide alternative, non-deprecated models to use.";

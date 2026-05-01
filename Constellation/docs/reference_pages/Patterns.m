@@ -122,6 +122,98 @@ DefineUsage[ObjectReferenceP,
 		Author -> {"platform"}
 	}];
 
+(* ::Subsubsection::Closed:: *)
+(*NamedObjectReferenceQ*)
+
+
+DefineUsage[NamedObjectReferenceQ,
+	{
+		BasicDefinitions -> {
+			{"NamedObjectReferenceQ[expression]", "bool", "returns True if 'expression' is an object reference of a defined type in named form."}
+		},
+		Input :> {
+			{"expression", _, "Expression to check."}
+		},
+		Output :> {
+			{"bool", True | False, "True or False."}
+		},
+		SeeAlso -> {"NamedObjectReferenceP", "ObjectReferenceQ", "IDObjectReferenceQ"},
+		Author -> {"david.ascough"}
+	}
+];
+
+(* ::Subsubsection::Closed:: *)
+(*IDObjectReferenceQ*)
+
+
+DefineUsage[IDObjectReferenceQ,
+	{
+		BasicDefinitions -> {
+			{"IDObjectReferenceQ[expression]", "bool", "returns True if 'expression' is an object reference of a defined type in ID form."}
+		},
+		Input :> {
+			{"expression", _, "Expression to check."}
+		},
+		Output :> {
+			{"bool", True | False, "True or False."}
+		},
+		SeeAlso -> {"NamedObjectReferenceP", "ObjectReferenceQ", "NamedObjectReferenceQ"},
+		Author -> {"david.ascough"}
+	}
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*NamedObjectReferenceP*)
+
+
+DefineUsage[NamedObjectReferenceP,
+	{
+		BasicDefinitions -> {
+			{"NamedObjectReferenceP[]", "pattern", "returns a 'pattern' which matches an Object/Model of any defined type in named form."},
+			{"NamedObjectReferenceP[type]", "pattern", "returns a 'pattern' which matches an Object/Model that is a sub-type of 'type' in named form."},
+			{"NamedObjectReferenceP[Object]", "pattern", "returns a 'pattern' which matches an Object of any defined Object types in named form."},
+			{"NamedObjectReferenceP[Model]", "pattern", "returns a 'pattern' which matches a Model of any defined Model types in named form."},
+			{"NamedObjectReferenceP[object]", "pattern", "returns a 'pattern' which matches any form of the given 'object' in named form."}
+		},
+		Input :> {
+			{"type", (Object[__Symbol] | Model[__Symbol]), "Returned pattern will only match Objects/Models which are sub-types of 'type' in named form."},
+			{"object", Object[__Symbol, _String] | Model[__Symbol, _String], "Returned pattern will only match the specific object provided in named form."}
+		},
+		Output :> {
+			{"pattern", _PatternTest, "A pattern which matches defined Object/Model types."}
+		},
+		SeeAlso -> {"NamedObjectReferenceQ", "ObjectReferenceQ", "IDObjectReferenceP"},
+		Author -> {"david.ascough"}
+	}
+];
+
+
+(* ::Subsubsection::Closed:: *)
+(*IDObjectReferenceP*)
+
+
+DefineUsage[IDObjectReferenceP,
+	{
+		BasicDefinitions -> {
+			{"IDObjectReferenceP[]", "pattern", "returns a 'pattern' which matches an Object/Model of any defined type in ID form."},
+			{"IDObjectReferenceP[type]", "pattern", "returns a 'pattern' which matches an Object/Model that is a sub-type of 'type' in ID form."},
+			{"IDObjectReferenceP[Object]", "pattern", "returns a 'pattern' which matches an Object of any defined Object types in ID form."},
+			{"IDObjectReferenceP[Model]", "pattern", "returns a 'pattern' which matches a Model of any defined Model types in ID form."},
+			{"IDObjectReferenceP[object]", "pattern", "returns a 'pattern' which matches any form of the given 'object' in ID form."}
+		},
+		Input :> {
+			{"type", (Object[__Symbol] | Model[__Symbol]), "Returned pattern will only match Objects/Models which are sub-types of 'type' in ID form."},
+			{"object", Object[__Symbol, _String] | Model[__Symbol, _String], "Returned pattern will only match the specific object provided in ID form."}
+		},
+		Output :> {
+			{"pattern", _PatternTest, "A pattern which matches defined Object/Model types."}
+		},
+		SeeAlso -> {"NamedObjectReferenceQ", "ObjectReferenceQ", "NamedObjectReferenceP"},
+		Author -> {"david.ascough"}
+	}
+];
+
 
 (* ::Subsubsection::Closed:: *)
 (* PacketP *)

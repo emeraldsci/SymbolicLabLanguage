@@ -4196,7 +4196,7 @@ DefineTests[ExperimentGasChromatography,
 		Example[
 			{Options,FiltrationType,"Specify the type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentGasChromatography[
-				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
+				{Object[Sample, "ExperimentGC Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 4" <> $SessionUUID], Object[Sample, "ExperimentGC Test Sample 3" <> $SessionUUID]},
 				FiltrationType->Syringe,
 				Output -> Options
 			];
@@ -10279,7 +10279,7 @@ DefineTests[ExperimentGCMS,
 		Example[
 			{Options,FiltrationType,"Specify the type of filtration method that should be used to perform the filtration:"},
 			options=ExperimentGCMS[
-				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 2" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
+				{Object[Sample, "ExperimentGCMS Test Sample 1" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 4" <> $SessionUUID], Object[Sample, "ExperimentGCMS Test Sample 3" <> $SessionUUID]},
 				FiltrationType->Syringe,
 				Output -> Options
 			];

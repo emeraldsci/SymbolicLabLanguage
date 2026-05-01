@@ -17907,7 +17907,13 @@ DefineTests[RestrictSamples,
         Example[{Options, UpdatedBy, "Specify the UpdatedBy option to indicate who is listed in the RestrictedLog:"},
             RestrictSamples[Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], UpdatedBy -> Object[User, "id:n0k9mG8AXZP6"]];
             Download[Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], RestrictedLog],
-            {{_?DateObjectQ, True, ObjectP[Object[User, "id:n0k9mG8AXZP6"]]}}
+            {{_?DateObjectQ, True, ObjectP[Object[User, "id:n0k9mG8AXZP6"]], Null}}
+        ],
+        Example[{Options, Reason, "Specify the Reason option to store a reason in the RestrictedLog:"},
+            Upload[<|Object -> Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], Restricted -> Null, Replace[RestrictedLog] -> {}|>];
+            RestrictSamples[Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], Reason -> "Testing restriction"];
+            Download[Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], RestrictedLog],
+            {{_?DateObjectQ, True, ObjectP[Object[User]], "Testing restriction"}}
         ],
         Test["When Upload -> False, return a list of change packets:",
             RestrictSamples[{Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamples tests" <> $SessionUUID]}, Upload -> False],
@@ -17923,14 +17929,14 @@ DefineTests[RestrictSamples,
         ],
         Test["When Output -> Options, return a list of options:",
             RestrictSamples[{Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamples tests" <> $SessionUUID]}, Output -> Options],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
             RestrictSamples[{Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamples tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}],
             {
                 {__EmeraldTest},
                 Null,
-                {UpdatedBy -> ObjectP[Object[User]]},
+                {UpdatedBy -> ObjectP[Object[User]], Reason -> Null},
                 {ObjectReferenceP[Object[Sample, "Sample to Restrict 1 for RestrictSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Sample to Restrict 2 for RestrictSamples tests" <> $SessionUUID]]}
             }
         ]
@@ -18048,50 +18054,50 @@ DefineTests[RestrictSamplesOptions,
     {
         Example[{Basic, "Returns all non-hidden options when called on one sample:"},
             RestrictSamplesOptions[Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Basic, "Returns all non-hidden options when called on multiple samples:"},
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Basic, "Containers may also be restricted from automatic use with this function:"},
             RestrictSamplesOptions[Object[Container, Vessel, "Tube to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Additional, "Restrict a mixed group of containers and samples from automatic use in experiments:"},
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "Tube to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Options, UpdatedBy, "Specify the UpdatedBy option to indicate who is listed in the RestrictedLog:"},
             RestrictSamplesOptions[Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], UpdatedBy -> Object[User, "id:n0k9mG8AXZP6"], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User, "id:n0k9mG8AXZP6"]]},
+            {UpdatedBy -> ObjectP[Object[User, "id:n0k9mG8AXZP6"]], Reason -> Null},
             SetUp :> {
                 Upload[<|Object -> #, Restricted -> Null, Replace[RestrictedLog] -> {}|>& /@ {Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}]
             }
         ],
         Test["When Output -> Tests, return the list of options:",
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Tests, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> Preview, return the list of options:",
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Preview, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> Options, return a list of options:",
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Options, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> {Tests, Preview, Options, Result}, return a list all those non-hidden options:",
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Additional, "If given an empty list, returns a list of options:"},
             RestrictSamplesOptions[{}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Options, OutputFormat, "Returns all non-hidden options in a list:"},
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Options, OutputFormat, "Returns all non-hidden options in table, or if no options, an empty list:"},
             RestrictSamplesOptions[{Object[Sample, "Sample to Restrict 1 for RestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Restrict 2 for RestrictSamplesOptions tests" <> $SessionUUID]}],
@@ -18553,7 +18559,13 @@ DefineTests[UnrestrictSamples,
         Example[{Options, UpdatedBy, "Specify the UpdatedBy option to indicate who is listed in the RestrictedLog:"},
             UnrestrictSamples[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], UpdatedBy -> Object[User, "id:n0k9mG8AXZP6"]];
             Download[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], RestrictedLog],
-            {{_?DateObjectQ, False, ObjectP[Object[User, "id:n0k9mG8AXZP6"]]}}
+            {{_?DateObjectQ, False, ObjectP[Object[User, "id:n0k9mG8AXZP6"]], Null}}
+        ],
+        Example[{Options, Reason, "Specify the Reason option to store a reason in the RestrictedLog:"},
+            Upload[<|Object -> Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], Restricted -> True, Replace[RestrictedLog] -> {}|>];
+            UnrestrictSamples[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], Reason -> "Testing unrestricted"];
+            Download[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], RestrictedLog],
+            {{_?DateObjectQ, False, ObjectP[Object[User]], "Testing unrestricted"}}
         ],
         Example[{Additional, "If given an empty list, return an empty list:"},
             UnrestrictSamples[{}],
@@ -18573,14 +18585,14 @@ DefineTests[UnrestrictSamples,
         ],
         Test["When Output -> Options, return a list of non-hidden options:",
             UnrestrictSamples[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamples tests" <> $SessionUUID]}, Output -> Options],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> {Tests, Preview, Options, Result}, return a list all those outputs in that order:",
             UnrestrictSamples[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamples tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}],
             {
                 {__EmeraldTest},
                 Null,
-                {UpdatedBy -> ObjectP[Object[User]]},
+                {UpdatedBy -> ObjectP[Object[User]], Reason -> Null},
                 {ObjectReferenceP[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamples tests" <> $SessionUUID]], ObjectReferenceP[Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamples tests" <> $SessionUUID]]}
             }
         ]
@@ -18698,46 +18710,46 @@ DefineTests[UnrestrictSamplesOptions,
     {
         Example[{Basic, "Returns all non-hidden options when called on one sample:"},
             UnrestrictSamplesOptions[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Basic, "Returns all non-hidden options when called on multiple samples:"},
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]},
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null},
             SetUp :> {
                 Upload[<|Object -> #, Restricted -> True|>& /@ {Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}]
             }
         ],
         Example[{Basic, "Containers may also be allowed for automatic use with this function:"},
             UnrestrictSamplesOptions[Object[Container, Vessel, "Tube to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Additional, "Open a mixed group of containers and samples for automatic use in experiments:"},
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Container, Vessel, "Tube to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Options, UpdatedBy, "Specify the UpdatedBy option to indicate who is listed in the RestrictedLog:"},
             UnrestrictSamplesOptions[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], UpdatedBy -> Object[User, "id:n0k9mG8AXZP6"], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User, "id:n0k9mG8AXZP6"]]}
+            {UpdatedBy -> ObjectP[Object[User, "id:n0k9mG8AXZP6"]], Reason -> Null}
         ],
         Example[{Additional, "If given an empty list, return a list of options:"},
             UnrestrictSamplesOptions[{}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> Tests, return the list of options:",
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Tests, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> Preview, return the list of options:",
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Preview, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> Options, return a list of options:",
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, Output -> Options, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Test["When Output -> {Tests, Preview, Options, Result}, return a list all those non-hidden options:",
             UnrestrictSamplesOptions[{Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], Object[Sample, "Sample to Unrestrict 2 for UnrestrictSamplesOptions tests" <> $SessionUUID]}, Output -> {Tests, Preview, Options, Result}, OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ],
         Example[{Options, OutputFormat, "Returns all non-hidden options as a table, or if no options, returns an empty list:"},
             UnrestrictSamplesOptions[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID]],
@@ -18745,7 +18757,7 @@ DefineTests[UnrestrictSamplesOptions,
         ],
         Example[{Options, OutputFormat, "Returns all non-hidden options as a list:"},
             UnrestrictSamplesOptions[Object[Sample, "Sample to Unrestrict 1 for UnrestrictSamplesOptions tests" <> $SessionUUID], OutputFormat -> List],
-            {UpdatedBy -> ObjectP[Object[User]]}
+            {UpdatedBy -> ObjectP[Object[User]], Reason -> Null}
         ]
     },
     SetUp :> (

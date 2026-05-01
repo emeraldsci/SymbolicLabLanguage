@@ -201,7 +201,8 @@ PlotContainerCoverNotebookMismatches[date_?DateObjectQ, ops:OptionsPattern[]]:= 
 (*at specified time increments*)
 PlotContainerCoverNotebookMismatches[startDate_?DateObjectQ, endDate_?DateObjectQ, increment_]:=Module[
 	{flooredIncrement, roundedEndDate, roundedStartDate, dateRange, existingData, newData, finalData, sortedFinalData, requestedDateRange, existingDates,
-		newDates, filteredData, filePath, newCloudFile, plotData, nullContainerNotebookData, nullCoverNotebookData, mismatchingNotebookData, conflictingNotebookData
+		newDates, filteredData, filePath, newCloudFile, plotData, nullContainerNotebookData, nullCoverNotebookData, mismatchingNotebookData, conflictingNotebookData,
+		existingRawData
 	},
 
 	(*we aren't tracking the mismatches any more specific timing than daily. If a smaller increment is requested, then return failed*)
@@ -223,7 +224,16 @@ PlotContainerCoverNotebookMismatches[startDate_?DateObjectQ, endDate_?DateObject
 	requestedDateRange = DateRange[roundedStartDate, roundedEndDate, flooredIncrement];
 
 	(*import cloud file with name "Container-Cover Mismatches Per Day" containing existing data*)
-	existingData = ToExpression@ImportCloudFile[Object[EmeraldCloudFile,"Container-Cover Mismatches Per Day"], Format->"CSV"];
+	existingRawData = ImportCloudFile[Object[EmeraldCloudFile,"Container-Cover Mismatches Per Day"], Format->"CSV"];
+	existingData = Map[
+		Function[{entry},
+			If[DateObjectQ[entry[[1]]],
+				entry,
+				Prepend[ToExpression@Rest[entry], DateObject[First[entry]]]
+			]
+		]&,
+		existingRawData
+	];
 
 	(*check all the dates we have in the existing cloud file*)
 	existingDates = existingData[[All,1]];

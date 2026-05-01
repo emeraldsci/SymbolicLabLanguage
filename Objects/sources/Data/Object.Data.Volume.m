@@ -68,7 +68,8 @@ DefineObjectType[Object[Data, Volume], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Object[Container, Plate],
-				Object[Container, Vessel]
+				Object[Container, Vessel],
+				Object[Container, Cuvette]
 			],
 			Description -> "The container that housed the sample for which this volume measurement was taken.",
 			Category -> "General"
@@ -79,7 +80,8 @@ DefineObjectType[Object[Data, Volume], {
 			Pattern :> _Link,
 			Relation -> Alternatives[
 				Model[Container, Plate],
-				Model[Container, Vessel]
+				Model[Container, Vessel],
+				Model[Container, Cuvette]
 			],
 			Description -> "The model of the container for which this volume measurement was made.",
 			Category -> "General"
@@ -231,7 +233,7 @@ DefineObjectType[Object[Data, Volume], {
 				Object[Data, RelativeHumidity][CorrelatedData],
 				Object[Data, Temperature][CorrelatedData],
 				Object[Data, Volume][CorrelatedData],
-				Object[Data, FlowRate][CorrelatedData]
+				Object[Data, VolumetricFlowRate][CorrelatedData]
 			],
 			Description -> "Other sensor data objects that were created concurrently to this data object in the same function call.",
 			Category -> "Experimental Results"

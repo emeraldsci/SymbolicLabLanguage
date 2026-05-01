@@ -650,12 +650,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "PreFlush",
 			IndexMatching -> SampleExpression
 		},
-		PreFlushingSolutionDrainTime -> {
+		PreFlushingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute] | Null,
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for PreFlushingSolution to be flushed through the sorbent. If PreFlushingSolutionUntilDrained is set to True, then PreFlushingSolution is continually flushed through the ExtractionCartridge in cycle of PreFlushingSolutionDrainTime until it is drained entirely. If PreFlushingSolutionUntilDrained is set to False, then PreFlushingSolution is flushed through ExtractionCartridge for PreFlushingSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, The amount of time for PreFlushingSolution to be flushed through the sorbent. If PreFlushingSolutionUntilDrained is set to True, then PreFlushingSolution is continually flushed through the ExtractionCartridge in cycle of PreFlushingTime until it is drained entirely. If PreFlushingSolutionUntilDrained is set to False, then PreFlushingSolution is flushed through ExtractionCartridge for PreFlushingTime once.",
+			Category -> "PreFlush",
+			IndexMatching -> SampleExpression
+		},
+		PreFlushingSolutionDrainTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, the amount of time to wait after PreFlushingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "PreFlush",
+			IndexMatching -> SampleExpression
+		},
+		PreFlushingSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the PreFlushingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "PreFlush",
 			IndexMatching -> SampleExpression
 		},
@@ -667,7 +685,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "PreFlush",
 			IndexMatching -> SampleExpression
 		},
-		MaxPreFlushingSolutionDrainTime -> {
+		MaxPreFlushingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -857,12 +875,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Equilibration",
 			IndexMatching -> SampleExpression
 		},
-		ConditioningSolutionDrainTime -> {
+		ConditioningTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute] | Null,
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for ConditioningSolution to be flushed through the sorbent. If ConditioningSolutionUntilDrained is set to True, then ConditioningSolution is continually flushed through the ExtractionCartridge in cycle of ConditioningSolutionDrainTime until it is drained entirely. If ConditioningSolutionUntilDrained is set to False, then ConditioningSolution is flushed through ExtractionCartridge for ConditioningSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, The amount of time for ConditioningSolution to be flushed through the sorbent. If ConditioningSolutionUntilDrained is set to True, then ConditioningSolution is continually flushed through the ExtractionCartridge in cycle of ConditioningTime until it is drained entirely. If ConditioningSolutionUntilDrained is set to False, then ConditioningSolution is flushed through ExtractionCartridge for ConditioningTime once.",
+			Category -> "Equilibration",
+			IndexMatching -> SampleExpression
+		},
+		ConditioningSolutionDrainTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, the amount of time to wait after ConditioningSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Equilibration",
+			IndexMatching -> SampleExpression
+		},
+		ConditioningSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the ConditioningSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "Equilibration",
 			IndexMatching -> SampleExpression
 		},
@@ -874,7 +910,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Equilibration",
 			IndexMatching -> SampleExpression
 		},
-		MaxConditioningSolutionDrainTime -> {
+		MaxConditioningTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -1057,7 +1093,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Loading",
 			IndexMatching -> SampleExpression
 		},
-		LoadingSampleDrainTime -> {
+		LoadingTime -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> (GreaterEqualP[0 Minute] | Null) | {(GreaterEqualP[0 Minute] | Null)..},
@@ -1065,20 +1101,37 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Loading",
 			IndexMatching -> SampleExpression
 		},
+		LoadingSampleDrainTime -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> (GreaterEqualP[0 Minute] | Null) | {(GreaterEqualP[0 Minute] | Null)..},
+			Description -> "For each member of SampleExpression, the amount of time to wait after LoadingSample has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Loading",
+			IndexMatching -> SampleExpression
+		},
+		LoadingSamplePipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the sample when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+			Category -> "Loading",
+			IndexMatching -> SampleExpression
+		},
 		LoadingSampleUntilDrained -> {
 			Format -> Multiple,
 			Class -> Expression,
 			Pattern :> BooleanP,
-			Description -> "For each member of SampleExpression, Indicates if the sample is continually flushed through the cartridge in cycle of LoadingSampleDrainTime until it is drained entirely, or until MaxSampleDrainTime has been reached.",
+			Description -> "For each member of SampleExpression, Indicates if the sample is continually flushed through the cartridge in cycle of LoadingTime until it is drained entirely, or until MaxSampleDrainTime has been reached.",
 			Category -> "Loading",
 			IndexMatching -> SampleExpression
 		},
-		MaxLoadingSampleDrainTime -> {
+		MaxLoadingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
 			Units -> Minute,
-			Description -> "For each member of SampleExpression,Indicates the maximum amount of time to flush the sample through sorbent. Sample is flushed in cycles of LoadingSampleDrainTime until either LoadingSampleVolume is entirely drained or MaxLoadingSampleDrainTime has been reached.",
+			Description -> "For each member of SampleExpression,Indicates the maximum amount of time to flush the sample through sorbent. Sample is flushed in cycles of LoadingTime until either LoadingSampleVolume is entirely drained or MaxLoadingTime has been reached.",
 			Category -> "Loading",
 			IndexMatching -> SampleExpression
 		},
@@ -1262,12 +1315,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
+		WashingTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, The amount of time for WashingSolution to be flushed through the sorbent. If WashingSolutionUntilDrained is set to True, then WashingSolution is continually flushed through the ExtractionCartridge in cycle of WashingTime until it is drained entirely. If WashingSolutionUntilDrained is set to False, then WashingSolution is flushed through ExtractionCartridge for WashingTime once.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
 		WashingSolutionDrainTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for WashingSolution to be flushed through the sorbent. If WashingSolutionUntilDrained is set to True, then WashingSolution is continually flushed through the ExtractionCartridge in cycle of WashingSolutionDrainTime until it is drained entirely. If WashingSolutionUntilDrained is set to False, then WashingSolution is flushed through ExtractionCartridge for WashingSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, the amount of time to wait after WashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
+		WashingSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the WashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
@@ -1279,7 +1350,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
-		MaxWashingSolutionDrainTime -> {
+		MaxWashingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -1469,12 +1540,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
+		SecondaryWashingTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, The amount of time for SecondaryWashingSolution to be flushed through the sorbent. If SecondaryWashingSolutionUntilDrained is set to True, then SecondaryWashingSolution is continually flushed through the ExtractionCartridge in cycle of SecondaryWashingTime until it is drained entirely. If SecondaryWashingSolutionUntilDrained is set to False, then SecondaryWashingSolution is flushed through ExtractionCartridge for SecondaryWashingTime once.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
 		SecondaryWashingSolutionDrainTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for SecondaryWashingSolution to be flushed through the sorbent. If SecondaryWashingSolutionUntilDrained is set to True, then SecondaryWashingSolution is continually flushed through the ExtractionCartridge in cycle of SecondaryWashingSolutionDrainTime until it is drained entirely. If SecondaryWashingSolutionUntilDrained is set to False, then SecondaryWashingSolution is flushed through ExtractionCartridge for SecondaryWashingSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, the amount of time to wait after SecondaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
+		SecondaryWashingSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the SecondaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
@@ -1486,7 +1575,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
-		MaxSecondaryWashingSolutionDrainTime -> {
+		MaxSecondaryWashingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -1676,12 +1765,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
+		TertiaryWashingTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, The amount of time for TertiaryWashingSolution to be flushed through the sorbent. If TertiaryWashingSolutionUntilDrained is set to True, then TertiaryWashingSolution is continually flushed through the ExtractionCartridge in cycle of TertiaryWashingTime until it is drained entirely. If TertiaryWashingSolutionUntilDrained is set to False, then TertiaryWashingSolution is flushed through ExtractionCartridge for TertiaryWashingTime once.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
 		TertiaryWashingSolutionDrainTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for TertiaryWashingSolution to be flushed through the sorbent. If TertiaryWashingSolutionUntilDrained is set to True, then TertiaryWashingSolution is continually flushed through the ExtractionCartridge in cycle of TertiaryWashingSolutionDrainTime until it is drained entirely. If TertiaryWashingSolutionUntilDrained is set to False, then TertiaryWashingSolution is flushed through ExtractionCartridge for TertiaryWashingSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, the amount of time to wait after TertiaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Washing",
+			IndexMatching -> SampleExpression
+		},
+		TertiaryWashingSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the TertiaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
@@ -1693,7 +1800,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Washing",
 			IndexMatching -> SampleExpression
 		},
-		MaxTertiaryWashingSolutionDrainTime -> {
+		MaxTertiaryWashingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -1882,12 +1989,30 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Elution",
 			IndexMatching -> SampleExpression
 		},
+		ElutingTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleExpression, The amount of time for ElutingSolution to be flushed through the sorbent. If ElutingSolutionUntilDrained is set to True, then ElutingSolution is continually flushed through the ExtractionCartridge in cycle of ElutingTime until it is drained entirely. If ElutingSolutionUntilDrained is set to False, then ElutingSolution is flushed through ExtractionCartridge for ElutingTime once.",
+			Category -> "Elution",
+			IndexMatching -> SampleExpression
+		},
 		ElutingSolutionDrainTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0 Minute],
 			Units -> Minute,
-			Description -> "For each member of SampleExpression, The amount of time for ElutingSolution to be flushed through the sorbent. If ElutingSolutionUntilDrained is set to True, then ElutingSolution is continually flushed through the ExtractionCartridge in cycle of ElutingSolutionDrainTime until it is drained entirely. If ElutingSolutionUntilDrained is set to False, then ElutingSolution is flushed through ExtractionCartridge for ElutingSolutionDrainTime once.",
+			Description -> "For each member of SampleExpression, the amount of time to wait after ElutingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			Category -> "Elution",
+			IndexMatching -> SampleExpression
+		},
+		ElutingSolutionPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Model[Method, Pipetting],
+			Description -> "For each member of SampleExpression, the pipetting parameters used to manipulate the ElutingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
 			Category -> "Elution",
 			IndexMatching -> SampleExpression
 		},
@@ -1899,7 +2024,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Category -> "Elution",
 			IndexMatching -> SampleExpression
 		},
-		MaxElutingSolutionDrainTime -> {
+		MaxElutingTime -> {
 			Format -> Multiple,
 			Class -> Real,
 			Pattern :> GreaterP[0 Minute],
@@ -2067,7 +2192,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Pattern :> {_Link, LocationPositionP | {LocationPositionP..} | _String | {_String..} | _?NumberQ },
 			Relation -> {Object[Sample] | Model[Sample] | Model[Container] | Object[Container], Null},
 			Description -> "For each member of SampleExpression, A list of deck placements used for placing the PreFlushing solution bottle on the GX-271 liquid handler deck.",
-			Headers -> {"PreFLushing Solution", "Placement"},
+			Headers -> {"PreFlushing Solution", "Placement"},
 			Category -> "Placements",
 			Developer -> True,
 			IndexMatching -> SampleExpression
@@ -2166,6 +2291,14 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Description -> "For each member of SampleExpression, A list of deck placements used for placing the cartridges on the liquid handler deck.",
 			Headers -> {"ExtractionCartridge", "Placement"},
 			Category -> "Placements",
+			IndexMatching -> SampleExpression
+		},
+		CartridgePosition -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> WellP,
+			Description -> "For each member of SampleExpression, the well position within the ExtractionCartridge where the pooled SamplesIn will be placed.",
+			Category -> "General",
 			IndexMatching -> SampleExpression
 		},
 		PreFlushingContainerOutPlacements -> {
@@ -2571,7 +2704,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Developer -> True
 		},
 		(* TODO remove this *)
-		PreFlushingSolutionDrainTimeSingle -> {
+		PreFlushingTimeSingle -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern :> GreaterEqualP[0],
@@ -2579,6 +2712,132 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Developer -> True,
 			Category -> "Sample Preparation",
 			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		ConditioningTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		WashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		SecondaryWashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		TertiaryWashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		ElutingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		LoadingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxPreFlushingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxConditioningTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxWashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxSecondaryWashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxTertiaryWashingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxElutingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		MaxLoadingTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting time options to single to use in time of the procedure."
+		},
+		PreFlushingSolutionDrainTimeSingle -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0],
+			Units -> Minute,
+			Developer -> True,
+			Category -> "Sample Preparation",
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		ConditioningSolutionDrainTimeSingle -> {
 			Format -> Single,
@@ -2587,7 +2846,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		WashingSolutionDrainTimeSingle -> {
 			Format -> Single,
@@ -2596,7 +2855,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		SecondaryWashingSolutionDrainTimeSingle -> {
 			Format -> Single,
@@ -2605,7 +2864,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		TertiaryWashingSolutionDrainTimeSingle -> {
 			Format -> Single,
@@ -2614,7 +2873,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		ElutingSolutionDrainTimeSingle -> {
 			Format -> Single,
@@ -2623,7 +2882,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		LoadingSampleDrainTimeSingle -> {
 			Format -> Single,
@@ -2632,70 +2891,7 @@ DefineObjectType[Object[UnitOperation, SolidPhaseExtraction], {
 			Units -> Minute,
 			Developer -> True,
 			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxPreFlushingSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxConditioningSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxWashingSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxSecondaryWashingSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxTertiaryWashingSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxElutingSolutionDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
-		},
-		MaxLoadingSampleDrainTimeSingle -> {
-			Format -> Single,
-			Class -> Real,
-			Pattern :> GreaterEqualP[0],
-			Units -> Minute,
-			Developer -> True,
-			Category -> "Sample Preparation",
-			Description -> "Converting time options to single to use in time of the procedure."
+			Description -> "Converting drain time options to single to use in time of the procedure."
 		},
 		PreFlushingSolutionPressureSingle -> {
 			Format -> Single,

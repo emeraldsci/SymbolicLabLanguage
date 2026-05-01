@@ -52,6 +52,24 @@ DefineOptionSet[VerifyOption :> {
 	}
 }];
 
+DefineOptionSet[ParameterizationOption :> {
+	{
+		OptionName -> Parameterize,
+		Default -> Receiving,
+		AllowNull -> False,
+		Widget -> Widget[
+			Type -> Enumeration,
+			Pattern :> Alternatives[
+				Receiving,
+				True,
+				False
+			]
+		],
+		Description -> "Indicates if a Parameterization will be enqueued if function determined that the model only need in-lab parameterization to pass VOQ. When set to Receiving, this model will be parameterized upon receiving; when set to True, a Parameterization maintenance will be enqueued right away. If set to False, function will set PendingParameterization -> False.",
+		Category -> "Hidden"
+	}
+}];
+
 (* Define this feature flag to enable/disable feature to automatically upload and create new ProductModel, DefaultContainerModel and/or DefaultCoverModel *)
 (* TODO This feature should not be turned on until we are ready to start the new sample intake system for external users *)
 $AllowAutoNewModelCreation = False;
@@ -342,25 +360,38 @@ parsePubChemCID[cid_] := Module[
 	namesAndIdentifiersJSON = safeParse[extractJSON[pubchemRecord, {"Section", "TOCHeading" == "Names and Identifiers", "Section"}], _List];
 
 	(* Parse out Synonyms *)
-	synonyms = safeParse[
-		Module[
-			{synonymDataAssociations, allSynonyms},
+	synonyms = Module[{pubChemSynonyms},
 
-			(* Extract the list of associations containing synonym data *)
-			synonymDataAssociations = extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Synonyms", "Section", "TOCHeading" == "MeSH Entry Terms", "Information"}];
+		(* Get the synonyms from PubChem *)
+		pubChemSynonyms = safeParse[
+			Module[
+				{synonymDataAssociations, allSynonyms, sanitizedSynonyms},
 
-			(* Extract the whole strings - each is a synonym *)
-			allSynonyms = extractValues[synonymDataAssociations];
+				(* Extract the list of associations containing synonym data *)
+				synonymDataAssociations = extractJSON[namesAndIdentifiersJSON, {"TOCHeading" == "Synonyms", "Section", "TOCHeading" == "MeSH Entry Terms", "Information"}];
 
-			(* Add the molecule name if it's not a member *)
-			If[!MemberQ[allSynonyms, moleculeName],
-				Prepend[allSynonyms, moleculeName],
-				allSynonyms
-			]
-		],
+				(* Extract the whole strings - each is a synonym *)
+				allSynonyms = extractValues[synonymDataAssociations];
 
-		(* Ensure a list of strings is returned *)
-		{_String...}
+				(* Filter out some known problematic values from PubChem *)
+				sanitizedSynonyms = Cases[allSynonyms, Except["(none)"]];
+
+				(* Add the molecule name if it's not a member *)
+				If[!MemberQ[sanitizedSynonyms, moleculeName],
+					Prepend[sanitizedSynonyms, moleculeName],
+					sanitizedSynonyms
+				]
+			],
+
+			(* Ensure a list of strings is returned *)
+			{_String...}
+		];
+
+		(* If PubChem synonyms failed, use the name if possible *)
+		If[FailureQ[pubChemSynonyms] && StringQ[moleculeName],
+			{moleculeName},
+			pubChemSynonyms
+		]
 	];
 
 	(* Molecular formula *)
@@ -2635,7 +2666,6 @@ parsePubChemCID[cid_] := Module[
 (* ::Subsubsection::Closed:: *)
 (*PubChem CID to Association (parsePubChem) *)
 
-
 parsePubChem[PubChem[myPubChemID_]]:=Module[
 	{result},
 
@@ -3448,56 +3478,101 @@ pathToCloudFilePacket[file : Alternatives[FilePathP, _File]] := (pathToCloudFile
 	UploadCloudFile[file, Upload -> False]
 ]);
 
-(* Helper function to call the external UploadXX functions inside another function and memoize the result *)
+(* ::Subsubsection::Closed:: *)
 
+Warning::AutocreatedObjectsNeedVerification = "The following objects `1` have been created automatically besides the main objects you requested. Please note that these objects does not contain full Field values and you are required verify these objects by running VerifyObjects function on them.";
+
+(* execute upload *)
+(* An association which records the input to use for each upload functions. Format is Function -> {input1, input2} *)
+$uploadFunctionInputLookup = <|
+	UploadContainerModel -> {Type, ProductInformation},
+	UploadCoverModel -> {Type, ProductInformation},
+	UploadMolecule -> {Name, Null},
+	UploadSampleModel -> {Name, Null},
+	UploadColumn -> {Name, Null},
+	UploadProduct -> {ProductURL, Null}
+|>;
+(* Helper function to call the external UploadXX functions inside another function and memoize the result *)
+DefineOptions[executeDefaultUploadFunction,
+	Options :> {
+		{Force -> False, BooleanP, "Indicate if the function output Null and empty list in case no objects can be created."}
+	}
+];
 (* Output of this function will be {object(s), packet(s)}. First output is the same as if running UploadXX with Upload -> True, second output is the same as if running UploadXX with Upload -> False *)
-(* This function is listable, however it's required that we end up using one single UploadXX function for all inputs *)
-executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String] := Module[
+(* This function is listable; however, it's required that we end up using one single UploadXX function for all inputs *)
+executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String, ops:OptionsPattern[]] := Module[
 	{
 		optionWithUploadFalse, result, mainResultPackets, outputObjects, correctedOutputObjects,
 		modelUploadFunction, uploadFunctionInput1, uploadFunctionInput2, modelParentTypes,
-		uploadFunctions, selectedUploadFunctions
+		uploadFunctions, selectedUploadFunctions, forceOptionPresentQ, failureReturn, safeOps, ignoreErrorQ,
+		input1Field, input2Field, optionForUploadFunction
 	},
 
-	(* Enforce Upload -> False and Stict -> False rule *)
-	optionWithUploadFalse = ReplaceRule[options, {Upload -> False, Strict -> False}];
+	safeOps = SafeOptions[executeDefaultUploadFunction, ToList[ops]];
 
-	(* For each input type, find the list of parent types. This is because some upload function may be defined on the parent type in $ObjectBuilders *)
-	(* Also, sort the list of types starting from child type. For example, if input type is Model[Container, Vessel, Filter], we want the result to be {Model[Container, Vessel, Filter], Model[Container, Vessel], Model[Container]} *)
-	modelParentTypes = Reverse[ValidObjectQ`Private`returnAllSubTypesForType[#]]& /@ ToList[myModelType];
+	ignoreErrorQ = Lookup[safeOps, Force];
 
-	(* Lookup the Upload function we need for parent type tree of each input *)
-	uploadFunctions = Lookup[$ObjectBuilders, #, Null]& /@ modelParentTypes;
-	(* For each input of myModelType, select the first upload function that's not Null *)
-	selectedUploadFunctions = FirstCase[#, Except[Null], Null]& /@ uploadFunctions;
-	(* Finally, find the upload function that will be used for all inputs. If we need more than 1 type of upload function, return error later *)
-	modelUploadFunction = If[Length[DeleteDuplicates[selectedUploadFunctions]] > 1,
-		Null,
-		First[selectedUploadFunctions]
+	failureReturn = If[ignoreErrorQ,
+		If[MatchQ[myModelType, _List],
+			{ConstantArray[Null, Length[myModelType]], {}},
+			{Null, myModelType}
+		],
+		{$Failed, $Failed}
 	];
+
+	(* If $AllowAutoNewModelCreation == False, return failureReturn right away *)
+	If[MatchQ[$AllowAutoNewModelCreation, False],
+		Return[failureReturn, Module]
+	];
+
+	(* find the upload function that will be used for all inputs *)
+	modelUploadFunction = identifyUploadFunction[myModelType];
 
 	(* If we didn't find the Upload function, return $Failed now *)
 	If[NullQ[modelUploadFunction],
+		Return[failureReturn, Module]
+	];
+
+	(* Check if the upload function has a Force option *)
+	forceOptionPresentQ = MemberQ[Keys[Options[modelUploadFunction]], "Force"];
+
+	(* Enforce Upload -> False and Strict -> False rule. If Force option presents for the function, also enforce Force -> True *)
+	optionWithUploadFalse = If[forceOptionPresentQ,
+		ReplaceRule[options, {Upload -> False, Strict -> False, Force -> True}],
+		ReplaceRule[options, {Upload -> False, Strict -> False}]
+	];
+
+	(* Lookup the input for the upload function. If we can't find it in $uploadFunctionInputLookup, return $Failed now *)
+	If[!KeyExistsQ[$uploadFunctionInputLookup, modelUploadFunction],
 		Return[{$Failed, $Failed}, Module]
 	];
 
-	(* Then construct the inputs for the Upload function *)
-	uploadFunctionInput1 = Switch[modelUploadFunction,
-		(* For UploadSampleModel and UploadColumn, use the resolved Name as input *)
-		(UploadSampleModel | UploadColumn),
-			Lookup[options, Name, Null],
-		(* For UploadContainerModel and UploadCoverModel, use the type as input *)
-		(UploadContainerModel | UploadCoverModel),
-			myModelType,
-		(* TODO will add input for UploadProduct function in the upload product branch. Don't do it now because the new version has different input than current version *)
-		(* Anything else set to Null (i.e., no first input) *)
-		_,
-			Null
+	{input1Field, input2Field} = Lookup[$uploadFunctionInputLookup, modelUploadFunction];
+
+	(* Then construct the inputs for the Upload function. If Input does not exist according to $uploadFunctionInputLookup, set to Missing so it will be excluded later *)
+	(* Not setting to Null because it's possible that function can legitimately has Null as input *)
+	uploadFunctionInput1 = Switch[input1Field,
+		(* If input1Field is Type, use myModelType *)
+		Type, myModelType,
+		(* If input1Field is Null, set to Missing *)
+		Null, Missing,
+		(* Otherwise, look up from the options *)
+		_, Lookup[options, input1Field, Null]
 	];
 
-	(* second input for the Upload function: None of the above requires a second input, so set to Null *)
-	(* subject to change in the future as we enable more uploads *)
-	uploadFunctionInput2 = Null;
+	uploadFunctionInput2 = Switch[input2Field,
+		(* If input1Field is Type, use myModelType *)
+		Type, myModelType,
+		(* If input1Field is Null, set to Missing *)
+		Null, Missing,
+		(* Otherwise, look up from the options *)
+		_, Lookup[options, input2Field, Null]
+	];
+
+	(* Construct the option: Remove whatever is part of input *)
+	optionForUploadFunction = DeleteCases[optionWithUploadFalse,
+		Alternatives[input1Field, input2Field] -> _
+	];
 
 	(* Run the UploadXX function. Note that different UploadXX function can have anywhere between 0 - 2 required inputs *)
 	(* Suppress all error messages. Will throw error in the upstream function instead *)
@@ -3505,19 +3580,19 @@ executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _R
 	result = Block[{$AllowAutoNewModelCreation = False},
 		Quiet[
 			Which[
-				NullQ[uploadFunctionInput1],
-				modelUploadFunction[optionWithUploadFalse],
-				NullQ[uploadFunctionInput2],
-				modelUploadFunction[uploadFunctionInput1, optionWithUploadFalse],
+				MatchQ[uploadFunctionInput1, Missing],
+					modelUploadFunction[optionForUploadFunction],
+				MatchQ[uploadFunctionInput2, Missing],
+					modelUploadFunction[uploadFunctionInput1, optionForUploadFunction],
 				True,
-				modelUploadFunction[uploadFunctionInput1, uploadFunctionInput2, optionWithUploadFalse]
+					modelUploadFunction[uploadFunctionInput1, uploadFunctionInput2, optionForUploadFunction]
 			]
 		]
 	];
 
 	(* If the function return value is not a packet or list of packets, return $Failed *)
 	If[!MatchQ[result, ListableP[PacketP[]]],
-		Return[{$Failed, $Failed}, Module]
+		Return[failureReturn, Module]
 	];
 
 	(* Find the packets that is the expected type *)
@@ -3537,7 +3612,7 @@ executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _R
 	If[!MemberQ[$Memoization, ExternalUpload`Private`executeDefaultUploadFunction],
 		AppendTo[$Memoization, ExternalUpload`Private`executeDefaultUploadFunction]
 	];
-	Set[executeDefaultUploadFunction[myModelType, options, label], {correctedOutputObjects, result}];
+	Set[executeDefaultUploadFunction[myModelType, options, label, ops], {correctedOutputObjects, result}];
 
 	(* Finally output results *)
 	{correctedOutputObjects, result}
@@ -3547,6 +3622,28 @@ executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _R
 executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String, Object] := First[executeDefaultUploadFunction[myModelType, options, label]];
 executeDefaultUploadFunction[myModelType:ListableP[TypeP[]], options:{(_Rule| _RuleDelayed)...}, label_String, Packet] := Last[executeDefaultUploadFunction[myModelType, options, label]];
 
+
+(* helper *)
+(* identifyUploadFunction *)
+identifyUploadFunction[myModelType:ListableP[TypeP[]]] := Module[
+	{modelParentTypes, uploadFunctions, selectedUploadFunctions},
+
+	(* For each input type, find the list of parent types. This is because some upload function may be defined on the parent type in $ObjectBuilders *)
+	(* Also, sort the list of types starting from child type. For example, if input type is Model[Container, Vessel, Filter], we want the result to be {Model[Container, Vessel, Filter], Model[Container, Vessel], Model[Container]} *)
+	modelParentTypes = Reverse[ValidObjectQ`Private`returnAllSubTypesForType[#]]& /@ ToList[myModelType];
+
+	(* Lookup the Upload function we need for parent type tree of each input *)
+	uploadFunctions = Lookup[$ObjectBuilders, #, Null]& /@ modelParentTypes;
+	(* For each input of myModelType, select the first upload function that's not Null *)
+	selectedUploadFunctions = FirstCase[#, Except[Null], Null]& /@ uploadFunctions;
+	(* Finally, find the upload function that will be used for all inputs. If we need more than 1 type of upload function, set to Null, which will trigger error downstream *)
+	If[Length[DeleteDuplicates[selectedUploadFunctions]] > 1,
+		Null,
+		First[selectedUploadFunctions]
+	]
+];
+
+identifyUploadFunction[myModel:ListableP[ObjectP[]]] := identifyUploadFunction[Download[myModel, Type]];
 
 (* ::Subsection::Closed:: *)
 (*Shared Option Sets*)
@@ -4245,6 +4342,28 @@ DefineOptionSet[
 		}
 ];
 
+(* ::Subsubsection::Closed:: *)
+(*UnresolvedInputsOptions*)
+
+
+DefineOptionSet[
+	UnresolvedInputsOptions :>
+		{
+			{
+				OptionName -> UnresolvedInputs,
+				Default -> {},
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Expression,
+					Pattern :> _List,
+					Size -> Paragraph
+				],
+				Description -> "The raw inputs of the Upload function. This option cannot be set manually.",
+				Category -> "Hidden"
+			}
+		}
+];
+
 
 (* ::Subsubsection::Closed:: *)
 (*CellOptions*)
@@ -4828,6 +4947,15 @@ DefineOptionSet[
 				Category -> "Physical Properties"
 			},
 			{
+				OptionName -> pI,
+				Default -> Automatic,
+				AllowNull -> True,
+				Widget -> Widget[Type -> Number, Pattern :> RangeP[-Infinity, Infinity]],
+				Description -> "The isoelectric point pH at which a molecule (usually a protein or amino acid) has no net electrical charge.",
+				ResolutionDescription -> "If creating a new object, Automatic resolves to Null. For existing objects, Automatic resolves to the current field value.",
+				Category -> "Physical Properties"
+			},
+			{
 				OptionName -> Fluorescent,
 				Default -> Automatic,
 				AllowNull -> True,
@@ -5262,7 +5390,7 @@ scrapeMoleculeData[
 	(* Helper function to check what input type we have *)
 	inputType[input_] := Switch[input,
 		MoleculeP, "Molecule",
-		_PubChem|_Integer, "PubChem",
+		_PubChem | _Integer, "PubChem",
 		InChIP, "InChI",
 		InChIKeyP, "InChIKey",
 		CASNumberP, "CAS",
@@ -5294,7 +5422,7 @@ scrapeMoleculeData[
 								"Molecule", parseChemicalIdentifier[MoleculeValue[identifier, "InChI"]],
 
 								(* UploadMolecule[PubChem[myPubChemID]] *)
-								"PubChem", parsePubChem[identifier],
+								"PubChem", If[IntegerQ[identifier], parsePubChem[PubChem[identifier]], parsePubChem[identifier]],
 
 								(* UploadMolecule[inchi] *)
 								"InChI", parseChemicalIdentifier[identifier],
@@ -5599,7 +5727,7 @@ generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpt
 	{
 		existingPacket, fields, convertedPacket, diffedPacket, output, genericOptions, irrelevantFields,
 		packet, resolvedOptionsNoNull, fieldDefinitions, safeOps, removeNull, fieldsToAppend, convertedOptionSymbols, convertedFieldValues,
-		auxilliaryUploadPackets, allUploadPackets, nullPatterns, packetWithCorrectEmptyList
+		auxiliaryUploadPackets, allUploadPackets, nullPatterns, packetWithCorrectEmptyList
 	},
 	(* get the options *)
 	safeOps = SafeOptions[generateChangePackets, ToList[myOptions]];
@@ -5618,7 +5746,7 @@ generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpt
 	fields = Association[fieldDefinitions];
 
 	(* For each of our options, see if it exists as a field of the same name in the object. *)
-	{convertedOptionSymbols, convertedFieldValues, auxilliaryUploadPackets} = If[!MatchQ[resolvedOptionsNoNull, {}],
+	{convertedOptionSymbols, convertedFieldValues, auxiliaryUploadPackets} = If[!MatchQ[resolvedOptionsNoNull, {}],
 		Transpose @ KeyValueMap[
 			Function[{optionSymbol, optionValue},
 				(* If this option doesn't exist as a field, do not include it in the change packet. *)
@@ -5773,8 +5901,8 @@ generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpt
 	(* Find irrelevant options that were specified *)
 	irrelevantFields = Complement[Keys[resolvedOptionsNoNull], Join[Keys[fields], genericOptions]];
 
-	(* Combine the main packet with the auxilliary packets *)
-	allUploadPackets = Flatten[{packet, auxilliaryUploadPackets}];
+	(* Combine the main packet with the auxiliary packets *)
+	allUploadPackets = Flatten[{packet, auxiliaryUploadPackets}];
 
 	output /. {Packet -> allUploadPackets, IrrelevantFields -> irrelevantFields}
 
@@ -5783,7 +5911,7 @@ generateChangePackets[myType_, resolvedOptions:{(_Rule| _RuleDelayed)...}, myOpt
 (* Define a helper to format the field value *)
 (* Tuple is returned with field value in first position and list of packets for upload in second position (required if a URL/file path provided for cloud file field) *)
 formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule | _RuleDelayed)..}] := Module[
-	{format, class, relation, headers, preProcessedOptionValue, standardFieldValue, standardFieldValueAuxilliaryUploadPackets, translatedFieldValue},
+	{format, class, relation, headers, preProcessedOptionValue, standardFieldValue, standardFieldValueAuxiliaryUploadPackets, translatedFieldValue},
 	(* Look up the key field definitions *)
 	{format, class, relation, headers} = Lookup[fieldDefinition, {Format, Class, Relation, Headers}, Null];
 
@@ -5794,7 +5922,7 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 
 	(* Format field values according to standard rules for the field type *)
 	(* Some fields (URLS) also return cloud file packets for upload *)
-	{standardFieldValue, standardFieldValueAuxilliaryUploadPackets} = Which[
+	{standardFieldValue, standardFieldValueAuxiliaryUploadPackets} = Which[
 		(* For links to cloud files, if our field value is indeed EmeraldCloudFile, wrap that with Link[] *)
 		(* If our field value is not EmeraldCloudFile (most likely string, either local file path or url), replace that with UploadCloudFile *)
 		(* Could be a mixed list of both *)
@@ -5860,7 +5988,7 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 				linkedObjectReferences
 			];
 
-			(* Return the field value and the auxilliary packets *)
+			(* Return the field value and the auxiliary packets *)
 			{correctlyListedOutput, Cases[sanitizedPackets, PacketP[]]}
 		],
 
@@ -6070,7 +6198,7 @@ formatFieldValue[objectType_, optionName_, optionValue_, fieldDefinition:{(_Rule
 	(* Return the final field value with the upload packets *)
 	{
 		translatedFieldValue,
-		standardFieldValueAuxilliaryUploadPackets
+		standardFieldValueAuxiliaryUploadPackets
 	}
 ];
 
@@ -6262,20 +6390,28 @@ translateCustomOptionValue[field_Symbol, optionValue_] := Switch[field,
 (*preProcessOptionValue*)
 
 (* Helper to convert incompletely defined options to fully defined options before standard processing *)
-preProcessOptionValue[objectType : TypeP[], fieldName_Symbol, optionValue_] := Switch[{objectType, fieldName, optionValue},
-	(* Object[Sample][Composition] has a 3rd column for date that needs to be added at upload time *)
-	(* Convert any field value with only two columns *)
-	{Object[Sample], Composition, {{_, _}..}},
-	Module[{now},
-		now = Now;
+preProcessOptionValue[objectType : TypeP[], fieldName_Symbol, optionValue_] := Module[{optionValueStrippedLinks},
 
-		(* Append the upload time to each row *)
-		Append[#, now] & /@ optionValue
-	],
+	(* First, strip any links as they may not be correct *)
+	(* This can happen legitimately if the field definition has a different backlink to the same field in a different type *)
+	optionValueStrippedLinks = ReplaceAll[optionValue, Link[x_, ___] :> x];
 
-	(* Leave anything else unchanged *)
-	_,
-	optionValue
+	(* Perform any additional conversions required *)
+	Switch[{objectType, fieldName, optionValueStrippedLinks},
+		(* Object[Sample][Composition] has a 3rd column for date that needs to be added at upload time *)
+		(* Convert any field value with only two columns *)
+		{Object[Sample], Composition, {{_, _}..}},
+		Module[{now},
+			now = Now;
+
+			(* Append the upload time to each row *)
+			Append[#, now] & /@ optionValueStrippedLinks
+		],
+
+		(* Leave anything else unchanged *)
+		_,
+		optionValueStrippedLinks
+	]
 ];
 
 
@@ -6336,6 +6472,83 @@ stripChangePacket[myChangePacket_Association, myOptions:OptionsPattern[stripChan
 (* Get the full Error::MyError\[Rule]listOfCorrespondingInvalidOptions for the type given and all the supertypes of that type. *)
 lookupInvalidOptionMap[myType_]:=Flatten[ValidObjectQ`Private`errorToOptionMap /@ NestWhileList[Most[#]&, myType, (Length[#] != 1&)]];
 
+(* ::Subsection::Closed:: *)
+(*UploadVerified*)
+DefineOptions[uploadVerified,
+	Options :> {
+		IndexMatching[
+			IndexMatchingInput -> "Input Data",
+			{
+				OptionName -> Verified,
+				Default -> True,
+				AllowNull -> False,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description->"Indicates if Object will be set to Verified.",
+				Category -> "Hidden"
+			},
+			{
+				OptionName -> PendingParameterization,
+				Default -> Null,
+				AllowNull -> True,
+				Widget -> Widget[
+					Type -> Enumeration,
+					Pattern :> BooleanP
+				],
+				Description->"Indicates if Object's PendingParameterization field should be updated, if applicable.",
+				Category -> "Hidden"
+			}
+		],
+		UploadOption
+	}
+];
+
+uploadVerified[myObjects:ListableP[ObjectP[]], ops:OptionsPattern[]] := Module[
+	{safeOps, upload, verified, validLengths, expandedSafeOps, listedObjects, allPackets, now, pendingParameterization},
+	safeOps = SafeOptions[uploadVerified, ToList[ops]];
+
+	(* Call ValidInputLengthsQ to make sure all options are the right length *)
+	validLengths = ValidInputLengthsQ[uploadVerified, {myObjects}, safeOps, Output -> Result];
+
+	(* If option lengths are invalid return $Failed *)
+	If[!validLengths,
+		Return[$Failed]
+	];
+
+	listedObjects = Download[ToList[myObjects], Object];
+	(* Expand index-matching options *)
+	expandedSafeOps = Last[ExpandIndexMatchedInputs[uploadVerified, {listedObjects}, safeOps]];
+
+	{upload, verified, pendingParameterization} = Lookup[expandedSafeOps, {Upload, Verified, PendingParameterization}];
+
+	(* Record current time *)
+	now = Now;
+
+	(* Construct packets *)
+	allPackets = MapThread[
+		If[NullQ[#3],
+			<|
+				Object -> #1,
+				Verified -> #2,
+				Append[VerifiedLog] -> {#2, Link[$PersonID], now}
+			|>,
+			<|
+				Object -> #1,
+				Verified -> #2,
+				Append[VerifiedLog] -> {#2, Link[$PersonID], now},
+				PendingParameterization -> #3
+			|>
+		]&,
+		{listedObjects, verified, pendingParameterization}
+	];
+
+	If[TrueQ[upload],
+		Upload[allPackets],
+		allPackets
+	]
+];
 
 (* ::Subsection::Closed:: *)
 (*Sister Functions*)
@@ -6344,6 +6557,9 @@ LazyLoading[$DelayDefaultUploadFunction, installDefaultValidQFunction, DownValue
 
 Error::InvalidURL = "The `1` URL(s), `2`, did not return `3` when downloaded for inputs `4`. Please double check the URL(s).";
 Error::InvalidLocalFile = "The `1` path(s), `2`, did not return `3` when imported for inputs `4`. Please double check the URL(s).";
+Error::CannotSpecifyTemplate = "Template option should not be provided for inputs `1` because it can only be specified when creating new models. Please set the Template option to Null for these inputs.";
+Error::InvalidFileDirectory = "The provided `2` file(s) `1` cannot be found in your PC. Please check your spelling, or try other option instead.";
+Error::InvalidFileURL = "The provided `2` urls `1` cannot be correctly downloaded and imported. Please check your spelling, or consider manually save it to your PC and use the file path instead.";
 
 installDefaultValidQFunction[myFunction_, myType_]:=Module[{validQFunctionString, validQFunctionSymbol, stringInputName},
 	(* Do surgery to add Valid <> myFunction <> Q. *)
@@ -6546,23 +6762,25 @@ LazyLoading[$DelayDefaultUploadFunction, installDefaultVerificationFunction,
 	DownValueTrigger -> True];
 
 Warning::NotYetVerified = "Your changes has not been uploaded because Verify -> False. Please review the resulted options and correct as needed. When you are ready to upload your changes, re-run the function with Verify -> True.";
-Error::InteralOnlyFunction = "Function `1` is meant for internal user only. Please use the `2` function instead.";
+Error::InternalOnlyFunction = "Function `1` is meant for internal user only. Please use the `2` function instead.";
 
 DefineOptions[installDefaultVerificationFunction,
 	Options :> {
 		{AllowedMessages -> {}, {Hold[_MessageName]...}, "The messages that's OK to throw from the main upload function, in which cases we still set Verified -> True for the input objects."},
-		{OptionCategoryChange -> {}, {<| Options -> _Symbol, Category -> _String |>...}, "The options that needs to change category between main function and verification function. The syntax for this option is {<|Option -> OptionSymbol, Category -> 'new category'|>...}. This is especially useful to hide/show certain options."}
+		{OptionCategoryChange -> {}, {<| Options -> _Symbol, Category -> _String |>...}, "The options that needs to change category between main function and verification function. The syntax for this option is {<|Option -> OptionSymbol, Category -> 'new category'|>...}. This is especially useful to hide/show certain options."},
+		{ParameterizationFunction -> Null, (Null | _Symbol), "Indicate if the model to be verified also needs in-lab parameterization. If this option is set to True, function will check the PendingParameterization field of this object after running the main Upload function, and if this field value is True, automatically enqueues a parameterization function."}
 	}
 ];
 
 installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTypes:ListableP[TypeP[]], ops:OptionsPattern[]] := Module[
 	{
 		verificationFunctionString, verificationFunctionSymbol, uploadFunctionOptionSymbols, filteredOptionRules,
-		safeOps, allowedMessages, optionCategoryChange, optionsNeedCategoryChange, optionToNewCategoryAssoc
+		safeOps, allowedMessages, optionCategoryChange, optionsNeedCategoryChange, optionToNewCategoryAssoc,
+		parameterizationFunction
 	},
 
 	safeOps = SafeOptions[installDefaultVerificationFunction, ToList[ops]];
-	{allowedMessages, optionCategoryChange} = Lookup[safeOps, {AllowedMessages, OptionCategoryChange}];
+	{allowedMessages, optionCategoryChange, parameterizationFunction} = Lookup[safeOps, {AllowedMessages, OptionCategoryChange, ParameterizationFunction}];
 
 	(* Construct the function name: *)
 	(* UploadXX -> UploadVerifiedXX, e.g. UploadSampleModel -> UploadVerifiedSampleModel *)
@@ -6591,11 +6809,14 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 						"Sets the Verified field to True. Intend that only verified objects will be able to be used in the lab in the future."
 					},
 					Inputs :> {
-						{
-							InputName -> myInputName,
-							Description -> "The common name of type(s) allowed for this function.",
-							Widget -> Widget[Type -> Object, Pattern :> ObjectP[myAllowedTypes]]
-						}
+						IndexMatching[
+							{
+								InputName -> myInputName,
+								Description -> "The common name of type(s) allowed for this function.",
+								Widget -> Widget[Type -> Object, Pattern :> ObjectP[myAllowedTypes]]
+							},
+							IndexName -> "Input Data"
+						]
 					},
 					Outputs :> {
 						{
@@ -6629,21 +6850,30 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 	(* Construct an assoc for all option -> new category *)
 	optionToNewCategoryAssoc = AssociationThread[optionsNeedCategoryChange, Lookup[optionCategoryChange, Category]];
 
-	(* Remove Strict and Output options, since user won't be able to control these two anyway *)
-	(* Also remove Cache, Simulation and Upload options, we'll use DefineOptions to redefine these two. It's a problem with ModifyOptions that the Widget will be set to Null, and DefineOptions will reject them *)
+	(* Remove Strict option, since user won't be able to control it anyway *)
+	(* Also remove Simulation option. It's a problem with ModifyOptions that the Widget will be set to Null, and DefineOptions will reject them *)
 	filteredOptionRules = If[MemberQ[optionsNeedCategoryChange, #],
 		{OptionName -> #, Category -> Lookup[optionToNewCategoryAssoc, #]},
 		{OptionName -> #}
 	] & /@ DeleteCases[uploadFunctionOptionSymbols, Alternatives[Strict, Simulation]];
 
-	(* Define options. Pass all options from main upload function except Output and Strict. Also add Verify option *)
-	DefineOptions[verificationFunctionSymbol,
-		Options :> {
-			VerifyOption,
-			AllowWarningsOption,
-			SimulationOption
-		},
-		SharedOptions :> {ModifyOptions[myFunction, filteredOptionRules]}
+	(* Define options. Pass all options from main upload function except Strict. Also add Verify option *)
+	If[NullQ[parameterizationFunction],
+		DefineOptions[verificationFunctionSymbol,
+			Options :> {
+				VerifyOption,
+				AllowWarningsOption
+			},
+			SharedOptions :> {ModifyOptions[myFunction, filteredOptionRules]}
+		],
+		DefineOptions[verificationFunctionSymbol,
+			Options :> {
+				VerifyOption,
+				AllowWarningsOption,
+				ParameterizationOption
+			},
+			SharedOptions :> {ModifyOptions[myFunction, filteredOptionRules]}
+		]
 	];
 
 	(* Install the downvalue *)
@@ -6651,16 +6881,30 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 	verificationFunctionSymbol[myInput:ListableP[ObjectP[myAllowedTypes]], myOptions:OptionsPattern[]] := Module[
 		{
 			functionOption, verify, optionForUploadFunction, uploadFunctionReturn, uploadFunctionEvaluationData,
-			allMessages, allowedMessageNames, allMessageNames, validReturnQ, allowWarningQ, allMessageNamesNoWarning
+			allMessages, allowedMessageNames, allMessageNames, validReturnQ, allowWarningQ, allMessageNamesNoWarning,
+			needParameterizationQ, needParameterizationModels, noNeedParameterizationObjects, outputSpecification,
+			parameterizeTiming, finalVerificationPackets, resolvedVerified, resolvedPendingParameterization,
+			uploadFunctionOutput, uploadFunctionResultOutput, uploadFunctionOptionsOutput, resolvedOutput, upload
 		},
 
 		(* Read all option and extract the Verify option *)
 		functionOption = SafeOptions[verificationFunctionSymbol, ToList[myOptions]];
-		{verify, allowWarningQ} = Lookup[functionOption, {Verify, AllowWarnings}];
+		{verify, allowWarningQ, parameterizeTiming, upload} = Lookup[functionOption, {Verify, AllowWarnings, Parameterize, Upload}, Null];
+
+		(* Read the user-specified Output option; If not provided, set to Null for now *)
+		outputSpecification = Lookup[ToList[myOptions], Output, Null];
+
+		resolvedOutput = If[NullQ[outputSpecification],
+			If[TrueQ[verify],
+				Result,
+				Options
+			],
+			outputSpecification
+		];
 
 		(* Prevent external user from using this function *)
 		If[!MatchQ[$PersonID, ObjectP[Object[User, Emerald]]],
-			Message[Error::InteralOnlyFunction, verificationFunctionSymbol, myFunction];
+			Message[Error::InternalOnlyFunction, verificationFunctionSymbol, myFunction];
 			Return[$Failed]
 		];
 
@@ -6673,22 +6917,17 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 			ReplaceRule[
 				Normal[KeyDrop[ToList[myOptions], {Verify, AllowWarnings}], Association],
 				{
-					If[MatchQ[$ECLApplication, CommandCenter],
-						Nothing,
-						Output -> Result
-					],
-					Strict -> True
+					Strict -> True,
+					Output -> resolvedOutput
 				}
 			],
 			(* If we have Verify -> False, that means we are NOT YET at the final step, we should output all options for developer to review *)
 			ReplaceRule[
 				Normal[KeyDrop[ToList[myOptions], {Verify, AllowWarnings}], Association],
 				{
-					If[MatchQ[$ECLApplication, CommandCenter],
-						Upload -> False,
-						Output -> Options
-					],
-					Strict -> True
+					Upload -> False,
+					Strict -> True,
+					Output -> resolvedOutput
 				}
 			]
 		];
@@ -6706,6 +6945,33 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 		allMessages = Lookup[uploadFunctionEvaluationData, "MessagesExpressions"];
 		allMessageNames = Replace[allMessages, HoldPattern[Message[x_, y___]] :> x, 2];
 
+		(* Find the Result output of the upload function *)
+		uploadFunctionOutput = Lookup[optionForUploadFunction, Output];
+
+		uploadFunctionResultOutput = Switch[uploadFunctionOutput,
+			(* if the output option is just Result, we know the Result output is just the entire output return *)
+			Result,
+				uploadFunctionReturn,
+			(* If the output option is a list that contains Result, find the position and extract the corresponding position from function return *)
+			_List?(MemberQ[#, Result] &),
+				Extract[uploadFunctionReturn, FirstPosition[uploadFunctionOutput, Result]],
+			(* Any other case the Result is not part of output; set the result output to empty set *)
+			_,
+				{}
+		];
+		(* Similarly, extract the options output *)
+		uploadFunctionOptionsOutput = Switch[uploadFunctionOutput,
+			(* if the output option is just Options, we know the Result output is just the entire output return *)
+			Options,
+				uploadFunctionReturn,
+			(* If the output option is a list that contains Options, find the position and extract the corresponding position from function return *)
+			_List?(MemberQ[#, Options] &),
+				Extract[uploadFunctionReturn, FirstPosition[uploadFunctionOutput, Options]],
+			(* Any other case the Options is not part of output; set the result output to $Failed *)
+			_,
+				$Failed
+		];
+
 		(* If AllowWarning -> True, remove the warnings from message list when doing the validation check *)
 		allMessageNamesNoWarning = If[allowWarningQ,
 			Select[allMessageNames, !MatchQ[Replace[#, Hold[MessageName[head_, tag_]]:> head], Warning]&],
@@ -6720,22 +6986,50 @@ installDefaultVerificationFunction[myFunction_, myInputName_String, myAllowedTyp
 		(* If Verify -> False, the return is always invalid *)
 		validReturnQ = And[
 			TrueQ[verify],
-			MatchQ[uploadFunctionReturn, ListableP[ObjectReferenceP[]]],
+			MatchQ[uploadFunctionResultOutput, ListableP[ObjectReferenceP[]]],
 			Length[Complement[allMessageNamesNoWarning, allowedMessageNames]] == 0
 		];
 
+		(* The UploadXX function should be able to determine if the model still needs parameterization or not *)
+		needParameterizationQ = If[!NullQ[parameterizationFunction] && validReturnQ,
+			TrueQ /@ Quiet[Download[ToList[uploadFunctionResultOutput], PendingParameterization]],
+			ConstantArray[False, Length[ToList[uploadFunctionResultOutput]]]
+		];
+
+		resolvedVerified = If[validReturnQ,
+			Not /@ needParameterizationQ,
+			ConstantArray[False, Length[ToList[uploadFunctionResultOutput]]]
+		];
+
+		resolvedPendingParameterization = Switch[parameterizeTiming,
+			True,
+			(* TODO uncomment this after ParameterizeContainer and ParameterizeCover works for model without available objects *)
+				(*parameterizationFunction[PickList[ToList[uploadFunctionResultOutput], needParameterizationQ]];*)
+				needParameterizationQ /. False -> Null,
+			False,
+				needParameterizationQ /. {False -> Null, True -> False},
+			Receiving,
+				needParameterizationQ /. False -> Null,
+			_,
+				ConstantArray[Null, Length[needParameterizationQ]]
+		];
+
+		(* If we need parameterization and there are at least one model that need parameterization, enqueue parameterization *)
+		finalVerificationPackets = uploadVerified[uploadFunctionResultOutput, Verified -> resolvedVerified, PendingParameterization -> resolvedPendingParameterization, Upload -> False];
+
 		(* If the Upload function completed successfully, do a second upload to set Verified -> True *)
 		Which[
-			(* If Verify -> True and result is valid, set Verified -> True for all inputs and return the inputs *)
+			(* If Verify -> True and result is valid, set Verified -> True for all inputs that does not need Parameterization and return the inputs *)
+			(* For inputs that need parameterization, set Verified -> False and PendingParameterization -> True *)
 			validReturnQ,
-				Upload[<| Object -> #, Verified -> True |>& /@ ToList[myInput]];
-				myInput,
-			(* If Verify -> False, just return the output from the upload function (should be list of options) *)
+				Upload[finalVerificationPackets];
+				resolvedOutput /. {Result -> uploadFunctionResultOutput, Preview -> Null, Options -> uploadFunctionOptionsOutput},
+			(* If Verify -> False, change both Result and Options output to the resolved options *)
 			!verify,
-				uploadFunctionReturn,
+				resolvedOutput /. {Result -> uploadFunctionOptionsOutput, Preview -> Null, Options -> uploadFunctionOptionsOutput},
 			(* The last case is Verify -> True but our result is not valid. In this case return $Failed *)
 			True,
-				$Failed
+				resolvedOutput /. {Result -> $Failed, Preview -> Null, Options -> uploadFunctionOptionsOutput}
 		]
 	];
 
@@ -6883,7 +7177,7 @@ InstallIdentityModelTests[myFunction_, basicDescription_, defaultFunctionArgumen
 			AdditionalOptions -> {DrainDisposal -> True}
 		|>,
 		MSDSRequired -> <|
-			Description -> "Use the MSDSRequired option to indicate that an MSDS file must be supplied for this identity model. An MSDS file is required by SLL the identity model is detected to be hazardous, however, it is best to always provide an MSDS when possible:",
+			Description -> "Use the MSDSRequired option to indicate that an MSDS file must be supplied for this identity model. An MSDS file is required by SLL the identity model is detected to be hazardous; however, it is best to always provide an MSDS when possible:",
 			AdditionalOptions -> {MSDSRequired -> False}
 		|>,
 		NFPA -> <|
@@ -7159,8 +7453,8 @@ DefineOptions[installDefaultUploadFunction,
 			Category -> "Organizational Information"
 		},
 		{
-			OptionName -> AuxilliaryPacketsFunction,
-			Default -> generateDefaultUploadFunctionAuxilliaryPackets,
+			OptionName -> AuxiliaryPacketsFunction,
+			Default -> generateDefaultUploadFunctionAuxiliaryPackets,
 			AllowNull -> False,
 			Pattern :> _Symbol,
 			Description -> "Specify the head of the function to use to generate changes to additional objects in the function definition.",
@@ -7229,7 +7523,7 @@ $installDefaultUploadFunctionDuplicateChecking = True;
 (* Overload that specifies the option resolver to use. *)
 installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[installDefaultUploadFunction]]:=Module[
 	{
-		safeOptions, installNameOverload, installObjectOverload, optionResolver, auxilliaryPacketsFunction,
+		safeOptions, installNameOverload, installObjectOverload, optionResolver, auxiliaryPacketsFunction,
 		singletonFunctionPattern, listableFunctionPattern, documentationDefinitionNumberOption, inputPatternOption,
 		packetCreationFunction, runVOQTestsQ, duplicateObjectChecksOption
 	},
@@ -7242,7 +7536,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 		installNameOverload,
 		installObjectOverload,
 		optionResolver,
-		auxilliaryPacketsFunction,
+		auxiliaryPacketsFunction,
 		documentationDefinitionNumberOption,
 		inputPatternOption,
 		packetCreationFunction,
@@ -7253,7 +7547,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 			InstallNameOverload,
 			InstallObjectOverload,
 			OptionResolver,
-			AuxilliaryPacketsFunction,
+			AuxiliaryPacketsFunction,
 			DocumentationDefinitionNumber,
 			InputPattern,
 			PacketCreationFunction,
@@ -7409,7 +7703,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 	With[
 		{
 			optionResolverFunction = optionResolver,
-			auxPacketsFunction = auxilliaryPacketsFunction,
+			auxPacketsFunction = auxiliaryPacketsFunction,
 			packetFunction = packetCreationFunction,
 			docsNumber = documentationDefinitionNumberOption /. Null -> 1,
 			duplicateCheckData = duplicateObjectChecksOption
@@ -7419,7 +7713,8 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 			{
 				listedInputs, listedOptions, outputSpecification, cache, simulation, output, gatherTests, safeOptions, safeOptionTests, validLengths, validLengthTests,
 				expandedInputs, expandedSpecifiedOptions, mapThreadSpecifiedOptions, mapThreadSpecifiedOptionsWithCache, mapThreadSafeOptionsWithCache,
-				resolvedInputs, resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, collapsedResolvedOptions, uploadPackets, auxilliaryUploadPackets, auxilliaryPackets,				voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions, allInvalidInputs, allInvalidOptions,
+				resolvedInputs, resolvedOptions, resolvedOptionsInvalidInputs, resolvedOptionsInvalidOptions, collapsedResolvedOptions, uploadPackets, auxiliaryUploadPackets, auxiliaryPackets,
+				voqTestResults, voqTests, voqInvalidInputs, voqInvalidOptions, allInvalidInputs, allInvalidOptions,
 				resultRule, previewRule, optionsRule, testsRule, specifiedObjectsExistQ, specifiedObjectsExistTests, uploadPacketsInvalidOptions,
 				inputObjectCache, listedOptionsWithCache, safeOptionsWithCache, appendToFieldsQ, objectPackets, resolvedInputObjectPackets,
 				optionResolverTests
@@ -7452,7 +7747,8 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 					{specifiedObjects, nonExistentObjects, nonExistentObjectsTests},
 
 					(* Get any objects that were specified *)
-					specifiedObjects = Cases[toListInputs, ObjectP[]];
+					(* Infinite depth as some inputs, such as Composition, have objects nested within *)
+					specifiedObjects = Cases[toListInputs, ObjectP[], Infinity];
 
 					nonExistentObjects = If[MatchQ[sanitizedInputs, $Failed],
 						(* Check if they exist *)
@@ -8107,9 +8403,12 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 			(* Collapse and filter the resolved options *)
 			collapsedResolvedOptions = CollapseIndexMatchedOptions[
 				myFunction,
-				RemoveHiddenOptions[
-					myFunction,
-					Replace[Merge[resolvedOptions, Identity], Association -> List, {1}, Heads -> True]
+				DeleteCases[
+					RemoveHiddenOptions[
+						myFunction,
+						Replace[Merge[resolvedOptions, Identity], Association -> List, {1}, Heads -> True]
+					],
+					UnresolvedOptions -> _
 				],
 				Ignore -> listedOptions,
 				Messages -> False
@@ -8121,7 +8420,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 			(* Check if we're appending to fields (rather than replacing the whole contents *)
 			appendToFieldsQ = Lookup[safeOptionsWithCache, Append, False];
 
-			{uploadPackets, auxilliaryUploadPackets, uploadPacketsInvalidOptions} = packetFunction[
+			{uploadPackets, auxiliaryUploadPackets, uploadPacketsInvalidOptions} = packetFunction[
 				myType,
 				resolvedInputs,
 				resolvedOptions,
@@ -8139,9 +8438,9 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 				}]
 			];
 
-			(* Now create upload packets for any auxilliary changes, if needed *)
+			(* Now create upload packets for any auxiliary changes, if needed *)
 			(* The default function returns an empty list *)
-			auxilliaryPackets = auxPacketsFunction[myType, resolvedInputs, listedOptionsWithCache, resolvedOptions];
+			auxiliaryPackets = auxPacketsFunction[myType, resolvedInputs, listedOptionsWithCache, resolvedOptions];
 
 
 			(* Perform error checking using VOQ system *)
@@ -8340,7 +8639,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 						MapThread[
 							Function[{tests, passingQ, messageQ},
 								If[!passingQ && !messageQ,
-									RunUnitTest[<|"Function" -> tests|>, Verbose -> Failures]
+									RunUnitTest[<|"Function" -> tests|>, Verbose -> Failures, ClearMemoization -> False]
 								]
 							],
 							{allVOQTests, passingQs, messagesQs}
@@ -8396,7 +8695,7 @@ installDefaultUploadFunction[myFunction_, myType_, options:OptionsPattern[instal
 					];
 
 					(* Otherwise combine all the upload packets *)
-					allUploadPackets = Flatten[{uploadPackets, auxilliaryUploadPackets, auxilliaryPackets}];
+					allUploadPackets = Flatten[{uploadPackets, auxiliaryUploadPackets, auxiliaryPackets}];
 
 					(* If not uploading, return the packets *)
 					If[!TrueQ[Lookup[safeOptions, Upload]],
@@ -8688,6 +8987,19 @@ duffDuplicateSearch[
 (* ::Subsubsection::Closed:: *)
 (*resolveDefaultUploadFunctionOptions*)
 
+DefineOptions[resolveDefaultUploadFunctionOptions,
+	Options :> {
+		{
+			OptionName -> ExcludeIrrelevantOptions,
+			Default -> False,
+			AllowNull -> False,
+			Pattern :> BooleanP,
+			Description -> "Indicate if options that's not part of a field of the object type should be excluded or not.",
+			Category -> "Organizational Information"
+		}
+	}
+];
+
 (* Takes in a list of inputs and a list of options, return a list of resolved options. *)
 resolveDefaultUploadFunctionOptions[myType_, myInput:{___}, myOptions_, rawOptions_] := Module[
 	{result},
@@ -8756,7 +9068,7 @@ resolveDefaultUploadFunctionOptions[myType_, myName_String, myOptions_, rawOptio
 
 (* Core overload *)
 (* For existing objects *)
-resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_]:=Module[
+resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_, keepIrrelevantOptionsQ:BooleanP]:=Module[
 	{objectPacket, fields, modifiedOptions, resolvedOptions, specifiedOptionsWithoutAutomatic},
 
 	(* Lookup our packet from our cache. *)
@@ -8820,8 +9132,36 @@ resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawO
 		Association@objectPacket
 	];
 
-	(* Return our resolved options as a list. *)
-	Normal[resolvedOptions]
+	(* Return our resolved options as a list. If we are keeping the Irrelevant options, merge the resolved option with user-specified ones *)
+	If[keepIrrelevantOptionsQ,
+		Normal[Join[Association[specifiedOptionsWithoutAutomatic], resolvedOptions], Association],
+		Normal[resolvedOptions, Association]
+	]
+];
+
+resolveDefaultUploadFunctionOptions[myType_, myInput:ObjectP[], myOptions_, rawOptions_] := resolveDefaultUploadFunctionOptions[myType, myInput, myOptions, rawOptions, False];
+
+
+(* ::Subsubsection::Closed:: *)
+(*translateCustomFieldValue*)
+
+(* Helper to convert the values of fields into format suitable for options where the relationship between the two is non-standard *)
+translateCustomFieldValue[field_Symbol, fieldValue_] := Switch[field,
+
+	(* NFPA : {Health -> 1, Flammability -> 2, Reactivity -> 3, Special -> {Oxidizer}} -> {1, 2, 3, {Oxidizer}} *)
+	NFPA,
+	If[MatchQ[fieldValue, {_Rule..}],
+		{
+			Lookup[fieldValue, Health],
+			Lookup[fieldValue, Flammability],
+			Lookup[fieldValue, Reactivity],
+			Lookup[fieldValue, Special]
+		},
+		fieldValue
+	],
+
+	_,
+	fieldValue
 ];
 
 
@@ -9080,7 +9420,7 @@ resolveMSDSOptions[
 (* ::Subsubsection::Closed:: *)
 (* generateDefaultUploadPackets *)
 
-(* The function to create the main upload packet, and some auxillary Object[EmeraldCloudFile] packets *)
+(* The function to create the main upload packet, and some auxiliary Object[EmeraldCloudFile] packets *)
 DefineOptions[generateDefaultUploadPackets, Options :> {
 	{Append -> False, BooleanP, "Indicate whether changes to Multiple fields should have Append[] head. If this option is set to False, then all changes will have Replace[] head instead."},
 	{ExistingPacket -> <||>, ({_Association...} | <||>), "The current packet of the object as in Constellation."}
@@ -9113,7 +9453,7 @@ generateDefaultUploadPackets[myType_, myInputs_List, myOptions:{{_Rule...}..}, m
 	(* Core upload packet is always the first one *)
 	initialChangePackets = First /@ initialChangePacketLists;
 
-	(* Remainder, if any, are auxilliary packets *)
+	(* Remainder, if any, are auxiliary packets *)
 	auxUploadPackets = Flatten[Rest /@ initialChangePacketLists];
 
 	(* Check if any of the fields in the core packets came back as $Failed *)
@@ -9202,7 +9542,7 @@ generateDefaultUploadPackets[myType_, myInputs_List, myOptions:{{_Rule...}..}, m
 		{myInputs, initialChangePackets}
 	];
 
-	(* Return the core and auxilliary upload packets *)
+	(* Return the core and auxiliary upload packets *)
 	{
 		fullChangePackets,
 		auxUploadPackets,
@@ -9211,12 +9551,13 @@ generateDefaultUploadPackets[myType_, myInputs_List, myOptions:{{_Rule...}..}, m
 
 ];
 
+
 (* ::Subsubsection::Closed:: *)
-(* generateDefaultUploadFunctionAuxilliaryPackets *)
+(* generateDefaultUploadFunctionAuxiliaryPackets *)
 
 (* Function simply returns an empty list *)
 (* This makes implementation easier rather than conditionally writing the main function definition *)
-generateDefaultUploadFunctionAuxilliaryPackets[___] := {};
+generateDefaultUploadFunctionAuxiliaryPackets[___] := {};
 
 
 (* ::Subsection::Closed:: *)
@@ -9286,7 +9627,7 @@ combineEHSFields[ehsField_, sourceEHSValue_, destinationEHSValue_]:=Module[{},
 		ShelfLife | UnsealedShelfLife,
 		(* If we have a Null, go with the value: *)
 		If[MemberQ[{sourceEHSValue, destinationEHSValue}, Null | $Failed],
-			FirstCase[{sourceEHSValue, destinationEHSValue}, _?NumericQ, Null],
+			FirstCase[{sourceEHSValue, destinationEHSValue}, _?NumericQ | _?QuantityQ, Null],
 			Min[{sourceEHSValue, destinationEHSValue}]
 		],
 
@@ -9794,7 +10135,7 @@ combineEHSFields[ehsField_, sourceObject:ObjectP[], destinationObject:ObjectP[],
 		ShelfLife | UnsealedShelfLife | ExpirationDate,
 		If[!MemberQ[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ],
 			Null,
-			Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
+			MinDate[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 		],
 
 		(* Fields that get Nulled if there are competing values: *)
@@ -10068,7 +10409,7 @@ combineEHSFields[ehsFields_List, sourceObject:ObjectP[], destinationObject:Objec
 						ShelfLife | UnsealedShelfLife | ExpirationDate,
 						If[!MemberQ[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ],
 							Null,
-							Min[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
+							MinDate[Cases[newDestinationEHSFieldPercentages[[All, 1]], _?DateObjectQ]]
 						],
 
 						(* Fields that get Nulled if there are competing values:*)
@@ -10141,63 +10482,122 @@ deleteCachePacket[cache_List, object_]:=Module[{objects, associationFiltered, as
 
 (* approximate density from composition *)
 (* overload with 2 volumes passed in *)
-approximateDensity[compositionTuples:{{VolumeP, PacketP[] | Null}..}]:=Module[
+approximateDensity[volumeTuples : {{VolumeP, PacketP[] | Null}..}] := Module[
 	{volumes, totalVolume, volumePercents, newTuples},
-	volumes = compositionTuples[[All,1]];
+
+	(* Extract all the volumes *)
+	volumes = volumeTuples[[All, 1]];
+
+	(* Compute the total volume *)
 	totalVolume = Total[volumes];
-	volumePercents = If[totalVolume == 0 Liter,
+
+	(* Convert the volumes to volume percent, handling the 0 edge case *)
+	volumePercents = If[EqualQ[totalVolume, 0 Liter],
+
+		(* If we got 0 total volume, it means we're transferring nothing into nothing *)
+		(* Current behavior is to pass through all components as 0 VolumePercent - not sure exactly why, but we default to the density of water in such cases later on *)
 		ConstantArray[0 VolumePercent, Length[volumes]],
-		(# * VolumePercent / totalVolume)& /@ volumes
+
+		(* If we have non-zero volumes, compute the volume percents *)
+		((# / totalVolume) * 100 VolumePercent)& /@ volumes
 	];
-	newTuples = Transpose@{volumePercents, compositionTuples[[All,2]]};
+
+	(* Sub the volume parts into the original tuples *)
+	newTuples = Transpose[{volumePercents, volumeTuples[[All, 2]]}];
+
+	(* Run the core overload with the volume percents *)
 	approximateDensity[newTuples]
 ];
 
 (* core overload *)
-approximateDensity[compositionTuples:{{CompositionP | Null, PacketP[] | Null}..}]:=Module[{initialList, filteredList, initialContributions, scalingFactor, densities},
-	initialList=Map[
-		{
-			#[[1]],
-			Lookup[#[[2]], Density, Quantity[0.997`, "Grams" / "Liters"]],
-			#[[2]]
-		}&,
+approximateDensity[compositionTuples : {{CompositionP | Null, PacketP[] | Null}..}] := Module[
+	{defaultComponentDensity, defaultSolutionDensity, densityTuples, filteredList, relativeMassContributions, scalingFactor, densities},
+
+	(* Use the density of water at room temperature as the default density *)
+	defaultComponentDensity = 0.997 Gram / Milliliter;
+
+	(* Use the density of 1 Kilogram / Liter for the solution *)
+	(* we are doing something shady here - we assume that we have 1kg and 1L of our mixture. This is not true, but we will get rid of the units this way and hopefully will be not completely off from the target density *)
+	defaultSolutionDensity = 1 Kilogram / Liter;
+
+	(* Add density to the input tuples *)
+	densityTuples = Map[
+		With[{safePacket = If[MatchQ[#[[2]], PacketP[]], #[[2]], <||>]},
+			{
+				#[[1]],
+				Lookup[safePacket, Density, Null] /. Null -> defaultComponentDensity,
+				safePacket
+			}
+		]&,
 		compositionTuples
 	];
 
 	(* remove any Nulls and items of low concentration since they don't affect density much *)
-	filteredList=DeleteCases[initialList,
-		_?(MatchQ[First@#,
+	filteredList = DeleteCases[
+		densityTuples,
+		{
 			Alternatives[
 				Null,
-				LessP[Quantity[5.`, "MassPercent"]],
-				LessP[Quantity[5.`, "VolumePercent"]],
-				LessP[Quantity[0.5`, "Moles" / "Liters"]],
-				LessP[Quantity[10.`, "Grams" / "Liters"]],
+				LessP[5 MassPercent],
+				LessP[5 VolumePercent],
+				LessP[0.5 Mole / Liter],
+				LessP[10 Gram / Liter],
 				(_?QuantityQ | _?NumericQ)?PercentConfluencyQ
-			]]&)];
+			],
+			__
+		}
+	];
 
-	(* we are doing something shady here - we assume that we have 1kg and 1L of our mixture. This is not true,
-	but we will get rid of the units this way and hopefully will be not completely off from the target density *)
-	initialContributions=(Switch[#[[1]],
-		(_?QuantityQ | _?NumericQ)?ConcentrationQ, UnitConvert[#[[1]], "Moles" / "Liters"] * Lookup[#[[3]], MolecularWeight] * Quantity[1.`, "Liters"] / Quantity[1.`, "Kilograms"],
-		(_?QuantityQ | _?NumericQ)?MassConcentrationQ, UnitConvert[#[[1]], "Grams" / "Liters"] * Quantity[1.`, "Liters"] / Quantity[1.`, "Kilograms"],
-		(_?QuantityQ | _?NumericQ)?VolumePercentQ, #[[1]] / (100 * VolumePercent) * If[MatchQ[Lookup[#[[3]], Density], DensityP], Lookup[#[[3]], Density], Quantity[0.997`, ("Grams") / ("Milliliters")]] * Quantity[1.`, "Liters"] / Quantity[1.`, "Kilograms"],
-		(* we already have mass %, great *)
-		(_?QuantityQ | _?NumericQ)?MassPercentQ, #[[1]] / (100 * MassPercent)
-	])& /@ filteredList;
+	(* Compute the relative amounts in mass of stuff per mass of solution *)
+	relativeMassContributions = Module[{compositionAmount, componentDensity, componentPacket},
 
-	(* make a scaling factor - by how much we need to multiply the # we have to get total of 100% *)
-	scalingFactor=If[MatchQ[initialContributions, Null | {EqualP[0]...}], 1 , 1 / Total[initialContributions]];
+		{compositionAmount, componentDensity, componentPacket} = #;
 
-	(* density of the identity models in use *)
-	densities=Map[If[CompatibleUnitQ[Lookup[#, Density], "Grams" / "Liters"], Lookup[#, Density], Quantity[0.997`, ("Grams") / ("Milliliters")]]&, filteredList[[All, 3]]];
+		Switch[compositionAmount,
 
-	(* return density *)
-	If[
-		MatchQ[densities, {}] || MatchQ[initialContributions, {EqualP[0]...}],
-		Quantity[0.997`, ("Grams") / ("Milliliters")],
-		UnitConvert[Total[MapThread[(#1 * scalingFactor * #2)&, {initialContributions, densities}]], "Grams" / "Liters"]]
+			(* Concentration *)
+			(_?QuantityQ | _?NumericQ)?ConcentrationQ,
+			compositionAmount * Lookup[componentPacket, MolecularWeight] / defaultSolutionDensity,
+
+			(* Mass concentration *)
+			(_?QuantityQ | _?NumericQ)?MassConcentrationQ,
+			compositionAmount / defaultSolutionDensity,
+
+			(* Volume percent *)
+			(_?QuantityQ | _?NumericQ)?VolumePercentQ,
+			(compositionAmount / (100 * VolumePercent)) * componentDensity / defaultSolutionDensity,
+
+			(* we already have mass %, great *)
+			(_?QuantityQ | _?NumericQ)?MassPercentQ,
+			compositionAmount / (100 * MassPercent),
+
+			(* Catch all for other composition units which don't contribute to density *)
+			_,
+			0
+		]
+	]& /@ filteredList;
+
+	(* Make a scaling factor - by how much we need to multiply the # we have to get total of 100% *)
+	scalingFactor = If[MatchQ[relativeMassContributions, Null | {EqualP[0]...}],
+		1,
+		1 / Total[relativeMassContributions]
+	];
+
+	(* Density of the identity models in use *)
+	densities = filteredList[[All, 2]];
+
+	(* Return density *)
+	If[MatchQ[densities, {}] || MatchQ[relativeMassContributions, {EqualP[0]...}],
+		(* Use the default component density if we can't compute anything better *)
+		defaultComponentDensity,
+
+		(* Otherwise estimate the solution density from the weighted density component contributions *)
+		UnitConvert[Total[relativeMassContributions * densities * scalingFactor], Gram / Liter]
+	]
 ];
+
+(* Use density of water if composition is unknown *)
+approximateDensity[{}] := 0.997 Gram / Milliliter;
 
 (* ::Subsubsection::Closed:: *)
 (*RunOptionValidationTests*)
@@ -10581,7 +10981,7 @@ ValidObjectQMessages[myInput_, newPacket:PacketP[], myOptions_, funcOptions:Opti
 
 	(* Get the VOQ results *)
 	voqResult=Block[{ECL`$UnitTestMessages=True},
-		RunUnitTest[<|"Function" -> packetTests|>, OutputFormat -> TestSummary, Verbose -> False]
+		RunUnitTest[<|"Function" -> packetTests|>, OutputFormat -> TestSummary, Verbose -> False, ClearMemoization -> False]
 	];
 
 	(* Get the test summaries for the failed tests *)
@@ -10689,7 +11089,7 @@ cubaneData = <|
 	IUPAC -> "cubane",
 	InChI -> "InChI=1S/C8H8/c1-2-5-3(1)7-4(1)6(2)8(5)7/h1-8H",
 	InChIKey -> "TXWRERCHRDBNLG-UHFFFAOYSA-N",
-	Synonyms -> Null,
+	Synonyms -> {"Cubane"},
 	State -> Null,
 	pKa -> Null,
 	LogP -> Null,

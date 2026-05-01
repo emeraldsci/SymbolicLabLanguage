@@ -83,7 +83,7 @@ absorbanceCore[absorbanceSpectrum:CoordinatesP, waveLength:(_?NumericQ | _Span)]
 	];
 
 	(* make interpolating functions for the spectrum *)
-	analyteInterpolation = Quiet[Interpolation[absorbanceSpectrum]];
+	analyteInterpolation = Quiet[Interpolation[absorbanceSpectrum, InterpolationOrder->1]];
 
 	(* pull the absorbance points out of the spectra *)
 	res = analyteInterpolation[Range[minWavelength, maxWavelength]];

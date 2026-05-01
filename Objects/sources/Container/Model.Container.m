@@ -50,6 +50,14 @@ DefineObjectType[Model[Container], {
 			Category -> "Organizational Information",
 			Developer -> True
 		},
+		TrainingModel -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> BooleanP,
+			Description -> "Indicates that objects of this model are only supposed to be used in trainings.",
+			Category -> "Organizational Information",
+			Developer -> True
+		},
 		ParameterizationPlaceholder -> {
 			Format -> Single,
 			Class -> Expression,
@@ -148,6 +156,17 @@ DefineObjectType[Model[Container], {
 			Category -> "Cover Information"
 		},
 
+		(*--- Liner Information ---*)
+		DefaultLinerModels -> {
+			Format -> Multiple,
+			Class -> {String, Link},
+			Pattern :> {_String, _Link},
+			Relation -> {Null, Model[Item, Liner]},
+			Description -> "The standard protective insert model to be placed within each position of containers of this model. No position indicates that the liner covers the whole surface.",
+			Category -> "Liner Information",
+			Headers -> {"Position", "Liner Model"}
+		},
+
 		(* --- Container Specifications ---*)
 		Ampoule -> {
 			Format -> Single,
@@ -155,22 +174,6 @@ DefineObjectType[Model[Container], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if this model is a sealed vessel containing a measured quantity of substance, meant for single-use. Ampoule will be cracked open to retrieve its contents, and discarded after use.",
 			Category -> "Container Specifications"
-		},
-		Aspiratable -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if this samples can be transferred out of this container when it is not Covered.",
-			Category -> "Container Specifications",
-			Abstract -> True
-		},
-		Dispensable -> {
-			Format -> Single,
-			Class -> Boolean,
-			Pattern :> BooleanP,
-			Description -> "Indicates if samples can be dispensed into this container when it is not Covered.",
-			Category -> "Container Specifications",
-			Abstract -> True
 		},
 		AssociatedAccessories -> {
 			Format -> Multiple,
@@ -385,6 +388,13 @@ DefineObjectType[Model[Container], {
 			Class -> Expression,
 			Pattern :> WellTreatmentP,
 			Description -> "The surface modification, if any, on the interior of this container. Option include LowBinding, TissueCultureTreated, Glass, GlassFilter, PolyethersulfoneFilter (PES Filter) and HydrophilicPolypropyleneFilter.",
+			Category -> "Container Specifications"
+		},
+		Spout -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this container has a spout that makes it easy to be used for liquid transfer.",
 			Category -> "Container Specifications"
 		},
 
@@ -789,6 +799,14 @@ DefineObjectType[Model[Container], {
 			Abstract->True,
 			Category -> "Container Specifications"
 		},
+		PileStorageOnly -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern:>BooleanP,
+			Description->"Indicates if this container, when used as a storage destination, should always have Pile StorageFormat.",
+			Category -> "Inventory",
+			Developer -> True
+		},
 		(* Note: Containers with StorageBuffer->True are allowed to be resource picked when stocked, even if they have a sample inside of them. *)
 		StorageBuffer -> {
 			Format -> Single,
@@ -828,14 +846,6 @@ DefineObjectType[Model[Container], {
 			Relation -> Alternatives[Object[Company,Service][PreferredContainers], Object[Company, Supplier][PreferredContainers]],
 			Description -> "Companies that provide custom synthesis in this model.",
 			Category -> "Inventory"
-		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
 		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,
@@ -1012,6 +1022,31 @@ DefineObjectType[Model[Container], {
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this model has been validated for use with TransferDevices.",
+			Category -> "Compatibility",
+			Developer -> True
+		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any portions of the exterior surfaces of this container are sensitive and prone to contamination.",
+			Category -> "Compatibility"
+		},
+        ExposedInterior -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicates if any sensitive portions of the interior surfaces of this container are open to the external environment and prone to contamination.",
+            Category -> "Compatibility"
+        },
+		CompatibleHandle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Handle][CompatibleComponents]
+			],
+			Description -> "The handle that is appropriate for moving this container around the lab.",
 			Category -> "Compatibility",
 			Developer -> True
 		},

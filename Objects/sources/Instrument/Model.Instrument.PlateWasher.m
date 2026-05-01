@@ -31,6 +31,54 @@ DefineObjectType[Model[Instrument, PlateWasher], {
 			Description -> "The shaking pattern that this plate washer model is capable of performing during mixing.",
 			Category -> "Instrument Specifications"
 		},
+		XOffsetConversion -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The physical distance represented by one internal motor step of the plate washer along the X-axis. Defines how far the manifold tube moves horizontally per step and provides the conversion factor between motor steps and scientific unit.",
+			Category -> "Instrument Specifications"
+		},
+		MaxXOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The maximum physical distance represented by one internal motor step of the plate washer along the X-axis.",
+			Category -> "Instrument Specifications"
+		},
+		YOffsetConversion -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The physical distance represented by one internal motor step of the plate washer along the Y-axis. Defines how far the manifold tube moves in the front to back direction per step and provides the conversion factor between motor steps and scientific unit.",
+			Category -> "Instrument Specifications"
+		},
+		MaxYOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The maximum physical distance represented by one internal motor step of the plate washer along the Y-axis.",
+			Category -> "Instrument Specifications"
+		},
+		ZOffsetConversion -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The physical distance represented by one internal motor step of the plate washer along the Z-axis. Defines how far the manifold tube moves vertically per step and provides the conversion factor between motor steps and scientific unit.",
+			Category -> "Instrument Specifications"
+		},
+		MaxZOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Meter],
+			Units -> Millimeter,
+			Description -> "The maximum physical distance represented by one internal motor step of the plate washer along the Z-axis.",
+			Category -> "Instrument Specifications"
+		},
 		MinDispenseVolume -> {
 			Format -> Single,
 			Class -> Real,

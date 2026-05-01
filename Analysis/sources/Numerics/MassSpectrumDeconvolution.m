@@ -927,6 +927,7 @@ plotMassSpectrumDeconvolutionPreview[mzValues_, intValues_, ops:OptionsPattern[E
 
 ];
 
+(* Used in external functions. *)
 pointsToPeaks[data_List] := Module[{},
   (* Helper function which takes a list of points and converts it into a modified list of points, such that the lines connecting the points are
   perfectly vertical. ex. {{10, 100}, {20, 200}} is expanded to {{10, 0}, {10, 100}, {10, 0}, {20,0}, {20,200}, {20,0}}. *)
@@ -944,6 +945,7 @@ pointsToPeaks[data_List] := Module[{},
 
 ];
 
+(* Used in external functions. *)
 pointsToPeaks[data_QuantityArray] := Module[
   {
     xUnit, yUnit, dataFlat
@@ -1035,6 +1037,7 @@ resolvePreviewOptions[inputsNewFlat_, optionsNew_] := Module[
 
 ];
 
+(* Used in external functions. *)
 mapThreadAssociateTo[listOfAssocs1_, listOfAssocs2_] := Module[
   {
     listOfAssocsNew, assoc1, assoc2

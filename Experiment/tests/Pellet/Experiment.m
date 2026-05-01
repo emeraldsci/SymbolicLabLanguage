@@ -174,7 +174,7 @@ DefineTests[ExperimentPellet,
 					Object[Sample,"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]
 				},
 				AliquotAmount -> 8.6 Milliliter,
-				AliquotContainer -> Model[Container, Vessel, "id:GmzlKjPen8z4"]
+				AliquotContainer -> Model[Container, Vessel, "id:bq9LA0dBGGR6"](* "50mL Tube"*)
 			];
 			Download[protocol,SterileTechnique],
 			{True},
@@ -248,7 +248,23 @@ DefineTests[ExperimentPellet,
 		],
 		(* TODO::These tests has expected results representing the aspirator-hacky version, will need to revisit when the BSC are equipped with aspirators *)
 		Example[
-			{Options,{SupernatantTransferInstrument, SupernatantTransferTips, SupernatantTransferTipType, SupernatantTransferTipMaterial, SupernatantTransferReversePipetting, SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix, SupernatantTransferDispenseMix, SupernatantTransferAspirationMixVolume, SupernatantTransferNumberOfAspirationMixes, SupernatantTransferMaxNumberOfAspirationMixes, SupernatantTransferDispenseMixVolume, SupernatantTransferNumberOfDispenseMixes, SupernatantTransferAspirationRate, SupernatantTransferDispenseRate, SupernatantTransferOverAspirationVolume, SupernatantTransferOverDispenseVolume, SupernatantTransferAspirationWithdrawalRate, SupernatantTransferDispenseWithdrawalRate, SupernatantTransferAspirationEquilibrationTime, SupernatantTransferDispenseEquilibrationTime, SupernatantTransferAspirationMixRate, SupernatantTransferDispenseMixRate, SupernatantTransferAspirationPosition, SupernatantTransferDispensePosition, SupernatantTransferAspirationPositionOffset, SupernatantTransferAspirationAngle, SupernatantTransferDispensePositionOffset, SupernatantTransferDispenseAngle, SupernatantTransferCorrectionCurve, SupernatantTransferPipettingMethod, SupernatantTransferDynamicAspiration, SupernatantTransferDeviceChannel},"Unless otherwise specified, supernatant transfer options that are automatically resolved by Transfer are returned when Preparation -> Manual:"},
+			{
+        Options,
+        {
+          SupernatantTransferInstrument, SupernatantTransferTips, SupernatantTransferTipType, SupernatantTransferTipMaterial,
+          SupernatantTransferReversePipetting, SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix,
+          SupernatantTransferDispenseMix, SupernatantTransferAspirationMixVolume, SupernatantTransferNumberOfAspirationMixes,
+          SupernatantTransferMaxNumberOfAspirationMixes, SupernatantTransferDispenseMixVolume, SupernatantTransferNumberOfDispenseMixes,
+          SupernatantTransferAspirationRate, SupernatantTransferDispenseRate, SupernatantTransferOverAspirationVolume,
+          SupernatantTransferOverDispenseVolume, SupernatantTransferAspirationWithdrawalRate, SupernatantTransferDispenseWithdrawalRate,
+          SupernatantTransferAspirationEquilibrationTime, SupernatantTransferDispenseEquilibrationTime,
+          SupernatantTransferAspirationMixRate, SupernatantTransferDispenseMixRate, SupernatantTransferAspirationPosition,
+          SupernatantTransferDispensePosition, SupernatantTransferAspirationPositionOffset, SupernatantTransferAspirationAngle,
+          SupernatantTransferDispensePositionOffset, SupernatantTransferDispenseAngle, SupernatantTransferCorrectionCurve,
+          SupernatantTransferPipettingMethod, SupernatantTransferDynamicAspiration, SupernatantTransferDeviceChannel
+        },
+        "Unless otherwise specified, supernatant transfer options are automatically resolved by Transfer are returned when Preparation -> Manual:"
+      },
 			options=Download[
 				ExperimentPellet[
 					{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
@@ -288,7 +304,23 @@ DefineTests[ExperimentPellet,
 		],
 		(* End of TODO*)
 		Example[
-			{Options,{SupernatantTransferInstrument, SupernatantTransferTips, SupernatantTransferTipType, SupernatantTransferTipMaterial, SupernatantTransferReversePipetting, SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix, SupernatantTransferDispenseMix, SupernatantTransferAspirationMixVolume, SupernatantTransferNumberOfAspirationMixes, SupernatantTransferMaxNumberOfAspirationMixes, SupernatantTransferDispenseMixVolume, SupernatantTransferNumberOfDispenseMixes, SupernatantTransferAspirationRate, SupernatantTransferDispenseRate, SupernatantTransferOverAspirationVolume, SupernatantTransferOverDispenseVolume, SupernatantTransferAspirationWithdrawalRate, SupernatantTransferDispenseWithdrawalRate, SupernatantTransferAspirationEquilibrationTime, SupernatantTransferDispenseEquilibrationTime, SupernatantTransferAspirationMixRate, SupernatantTransferDispenseMixRate, SupernatantTransferAspirationPosition, SupernatantTransferDispensePosition, SupernatantTransferAspirationPositionOffset, SupernatantTransferAspirationAngle, SupernatantTransferDispensePositionOffset, SupernatantTransferDispenseAngle, SupernatantTransferCorrectionCurve, SupernatantTransferPipettingMethod, SupernatantTransferDynamicAspiration, SupernatantTransferDeviceChannel},"Unless otherwise specified, supernatant transfer options that are automatically resolved by Transfer when Preparation -> Robotic:"},
+			{
+        Options,
+        {
+          SupernatantTransferInstrument, SupernatantTransferTips, SupernatantTransferTipType, SupernatantTransferTipMaterial,
+          SupernatantTransferReversePipetting, SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix,
+          SupernatantTransferDispenseMix, SupernatantTransferAspirationMixVolume, SupernatantTransferNumberOfAspirationMixes,
+          SupernatantTransferMaxNumberOfAspirationMixes, SupernatantTransferDispenseMixVolume, SupernatantTransferNumberOfDispenseMixes,
+          SupernatantTransferAspirationRate, SupernatantTransferDispenseRate, SupernatantTransferOverAspirationVolume,
+          SupernatantTransferOverDispenseVolume, SupernatantTransferAspirationWithdrawalRate, SupernatantTransferDispenseWithdrawalRate,
+          SupernatantTransferAspirationEquilibrationTime, SupernatantTransferDispenseEquilibrationTime, SupernatantTransferAspirationMixRate,
+          SupernatantTransferDispenseMixRate, SupernatantTransferAspirationPosition, SupernatantTransferDispensePosition,
+          SupernatantTransferAspirationPositionOffset, SupernatantTransferAspirationAngle, SupernatantTransferDispensePositionOffset,
+          SupernatantTransferDispenseAngle, SupernatantTransferCorrectionCurve, SupernatantTransferPipettingMethod,
+          SupernatantTransferDynamicAspiration, SupernatantTransferDeviceChannel
+        },
+        "Unless otherwise specified, supernatant transfer options are automatically resolved by Transfer when Preparation -> Robotic:"
+      },
 			protocol=ExperimentPellet[
 				Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentPellet"<>$SessionUUID],
 				SupernatantVolume -> 0.5 Milliliter,
@@ -308,6 +340,42 @@ DefineTests[ExperimentPellet,
 			},
 			Variables:>{protocol, options}
 		],
+    Example[
+      {
+        Options, {SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix},
+        "Unless otherwise specified, SupernatantTransferSlurryTransfer and SupernatantTransferAspirationMix are always set to False when Preparation -> Manual, even when the input solution is a slurry (SampleHandling set to Slurry):"
+      },
+      options=Download[
+        ExperimentPellet[
+          {Object[Sample,"Test slurry sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+          SupernatantVolume -> 10 Milliliter,
+          Preparation -> Manual,
+          ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP protocol for ExperimentPellet" <> $SessionUUID](* To make sure we generate Object[Protocol,Pellet] so that we can check these resolved hidden options*)
+        ],
+        ResolvedOptions
+      ];
+      Lookup[options, {SupernatantTransferSlurryTransfer, SupernatantTransferAspirationMix}],
+      {
+        {False},
+        {False}
+      },
+      Variables:>{options}
+    ],
+    Test[
+      {"Unless otherwise specified, SupernatantTransferSlurryTransfer and SupernatantTransferAspirationMix are always set to False when Preparation -> Robotic, even when the input solution is a slurry (SampleHandling set to Slurry):"},
+      protocol=ExperimentPellet[
+        Object[Sample,"Test slurry sample in 96 deep-well plate (1) for ExperimentPellet"<>$SessionUUID],
+        SupernatantVolume -> 0.5 Milliliter,
+        Preparation -> Robotic
+      ];
+      (*grab the resolved options in the transfer UO within the Pellet UO*)
+      options = Download[protocol,OutputUnitOperations[[1]][RoboticUnitOperations][[2]][ResolvedUnitOperationOptions]];
+      Lookup[options, {SlurryTransfer, AspirationMix}],
+      {
+        {False}, {False}
+      },
+      Variables:>{protocol, options}
+    ],
 		Example[
 			{Options,{ResuspensionInstrument, ResuspensionTips, ResuspensionTipType, ResuspensionTipMaterial, ResuspensionReversePipetting, ResuspensionSlurryTransfer, ResuspensionAspirationMix, ResuspensionDispenseMix, ResuspensionAspirationMixVolume, ResuspensionNumberOfAspirationMixes, ResuspensionMaxNumberOfAspirationMixes, ResuspensionDispenseMixVolume, ResuspensionNumberOfDispenseMixes, ResuspensionAspirationRate, ResuspensionDispenseRate, ResuspensionOverAspirationVolume, ResuspensionOverDispenseVolume, ResuspensionAspirationWithdrawalRate, ResuspensionDispenseWithdrawalRate, ResuspensionAspirationEquilibrationTime, ResuspensionDispenseEquilibrationTime, ResuspensionAspirationMixRate, ResuspensionDispenseMixRate, ResuspensionAspirationPosition, ResuspensionDispensePosition, ResuspensionAspirationPositionOffset, ResuspensionAspirationAngle, ResuspensionDispensePositionOffset, ResuspensionDispenseAngle, ResuspensionCorrectionCurve, ResuspensionPipettingMethod, ResuspensionDynamicAspiration, ResuspensionDeviceChannel},"Unless otherwise specified, resuspension transfer options that are automatically resolved by Transfer are returned when Preparation -> Manual:"},
 			options=Download[
@@ -723,6 +791,17 @@ DefineTests[ExperimentPellet,
 			Variables:>{options}
 		],
 		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision}
+		],
+		Example[
 			{Options,CentrifugeTime,"Specify the amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				CentrifugeTime->11Minute,
@@ -866,7 +945,7 @@ DefineTests[ExperimentPellet,
 			{Options,FilterSyringe,"Specify the syringe used to force that sample through a filter:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				FilterMaterial -> PES, Filtration->True,
-				FilterAliquot -> 100*Microliter,
+				FilterAliquot -> 800*Microliter,
 				FilterPoreSize->0.22Micrometer,
 				FilterSyringe->Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				Output->Options
@@ -879,7 +958,7 @@ DefineTests[ExperimentPellet,
 			{Options,FilterHousing,"Specify the filter housing that should be used to hold the filter membrane when filtration is performed using a standalone filter membrane:"},
 			options=ExperimentPellet[{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
 				FilterMaterial -> PES, Filtration->True,
-				FilterAliquot -> 100*Microliter,
+				FilterAliquot -> 800*Microliter,
 				FilterPoreSize->0.22Micrometer,
 				FilterSyringe->Model[Container, Syringe, "id:AEqRl9Kz1VD1"],
 				FilterHousing->Null,
@@ -1004,6 +1083,19 @@ DefineTests[ExperimentPellet,
 			Lookup[options,AliquotAmount],
 			RangeP[0.9 Milliliter, 1.1 Milliliter],
 			Variables:>{options}
+		],
+		Example[
+			{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentPellet[
+				{Object[Sample, "Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID]},
+				AliquotAmount -> 1.0001 Milliliter,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			1 Milliliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[
 			{Options,TargetConcentration,"Specify the desired final concentration of analyte in the AliquotSamples after dilution of aliquots of SamplesIn with the ConcentratedBuffer and BufferDiluent which should be used in lieu of the SamplesIn for the experiment:"},
@@ -1397,6 +1489,18 @@ DefineTests[ExperimentPellet,
 				ExperimentPellet[containerID, Simulation -> simulationToPassIn, Output -> Options]
 			],
 			{__Rule}
+		],
+		Example[{Messages, "ConflictingUnitOperationMethodRequirements", "If Preparation is set to or required to be Manual, WorkCell cannot be used:"},
+			ExperimentPellet[
+				{"A1", Object[Container,Vessel,"Test container 1 for ExperimentPellet"<>$SessionUUID]},
+				SupernatantVolume->All,
+				WorkCell -> STAR
+			],
+			$Failed,
+			Messages :> {
+				Error::ConflictingUnitOperationMethodRequirements,
+				Error::InvalidOption
+			}
 		]
 	},
 	TurnOffMessages :> {Warning::SamplesOutOfStock, Warning::InstrumentUndergoingMaintenance, Warning::DeprecatedProduct},
@@ -1412,7 +1516,8 @@ DefineTests[ExperimentPellet,
 		Module[
 			{
 				objects, existsFilter, testBench, emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4,
-				emptyContainer5, waterSample1, waterSample2, waterSample3, waterSample4, cellsample1
+				emptyContainer5, emptyContainer6, emptyContainer7, waterSample1, waterSample2, waterSample3, waterSample4,
+        cellsample1, slurrySample1, slurrySample2
 			},
 			$CreatedObjects={};
 
@@ -1425,12 +1530,16 @@ DefineTests[ExperimentPellet,
 				Object[Container,Vessel,"Test container 3 for ExperimentPellet"<>$SessionUUID],
 				Object[Container,Plate,"Test container 4 for ExperimentPellet"<>$SessionUUID],
 				Object[Container,Vessel,"Test container 5 for ExperimentPellet"<>$SessionUUID],
+        Object[Container,Vessel,"Test container 6 for ExperimentPellet"<>$SessionUUID],
+        Object[Container,Plate,"Test container 7 for ExperimentPellet"<>$SessionUUID],
 
 				Object[Sample,"Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample in 50mL tube (2) for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample in 1L Glass Bottle for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
+        Object[Sample,"Test slurry sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
+        Object[Sample,"Test slurry sample in 96 deep-well plate (1) for ExperimentPellet"<>$SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Test MSP protocol for ExperimentPellet"<>$SessionUUID]
 			};
 			existsFilter = DatabaseMemberQ[objects];
@@ -1449,77 +1558,114 @@ DefineTests[ExperimentPellet,
 			];
 
 			(* Create containers for our test samples. *)
-			{emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5} = UploadSample[
+			{
+        emptyContainer1, emptyContainer2, emptyContainer3,
+        emptyContainer4, emptyContainer5, emptyContainer6,
+        emptyContainer7
+      } = UploadSample[
 				{
 					Model[Container,Vessel,"50mL Tube"],
 					Model[Container,Vessel,"50mL Tube"],
 					Model[Container,Vessel,"1L Glass Bottle"],
 					Model[Container,Plate,"96-well 2mL Deep Well Plate"],
-					Model[Container,Vessel,"50mL Tube"]
+					Model[Container,Vessel,"50mL Tube"],
+          Model[Container,Vessel,"50mL Tube"],
+          Model[Container,Plate,"96-well 2mL Deep Well Plate"]
 				},
 				{
 					{"Work Surface", testBench},
 					{"Work Surface", testBench},
 					{"Work Surface", testBench},
 					{"Work Surface", testBench},
-					{"Work Surface", testBench}
+					{"Work Surface", testBench},
+          {"Work Surface", testBench},
+          {"Work Surface", testBench}
 				},
 				Name -> {
 					"Test container 1 for ExperimentPellet"<>$SessionUUID,
 					"Test container 2 for ExperimentPellet"<>$SessionUUID,
 					"Test container 3 for ExperimentPellet"<>$SessionUUID,
 					"Test container 4 for ExperimentPellet"<>$SessionUUID,
-					"Test container 5 for ExperimentPellet"<>$SessionUUID
+					"Test container 5 for ExperimentPellet"<>$SessionUUID,
+          "Test container 6 for ExperimentPellet"<>$SessionUUID,
+          "Test container 7 for ExperimentPellet"<>$SessionUUID
 				},
 				FastTrack -> True
 				];
 
 			(* Create the test samples themselves. *)
-			{waterSample1, waterSample2, waterSample3, waterSample4, cellsample1} = UploadSample[
+			{
+        waterSample1, waterSample2, waterSample3, waterSample4,
+        cellsample1, slurrySample1, slurrySample2
+      } = UploadSample[
 				{
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
 					Model[Sample,"Milli-Q water"],
-					{{100 VolumePercent, Model[Cell, Mammalian, "HEK293"]}}
+					{{100 VolumePercent, Model[Cell, Bacteria, "E.coli MG1655"]}},
+          Model[Sample,"Milli-Q water"],
+          Model[Sample,"Milli-Q water"]
 				},
 				{
 					{"A1", emptyContainer1},
 					{"A1", emptyContainer2},
 					{"A1", emptyContainer3},
 					{"A1", emptyContainer4},
-					{"A1", emptyContainer5}
+					{"A1", emptyContainer5},
+          {"A1", emptyContainer6},
+          {"A1", emptyContainer7}
 				},
-				InitialAmount -> {40 Milliliter, 20 Milliliter, 0.5 Liter, 1 Milliliter, 1 Milliliter},
+				InitialAmount -> {
+          40 Milliliter, 20 Milliliter, 0.5 Liter, 1 Milliliter,
+          1 Milliliter, 40 Milliliter, 1 Milliliter
+        },
 				Name -> {
 					"Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID,
 					"Test water sample in 50mL tube (2) for ExperimentPellet"<>$SessionUUID,
 					"Test water sample in 1L Glass Bottle for ExperimentPellet"<>$SessionUUID,
 					"Test water sample 1 in 96 deep-well plate for ExperimentPellet"<>$SessionUUID,
-					"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID
+					"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID,
+          "Test slurry sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID,
+          "Test slurry sample in 96 deep-well plate (1) for ExperimentPellet"<>$SessionUUID
 				},
 				Living -> {
 					False,
 					False,
 					False,
 					False,
-					True
+					True,
+          False,
+          False
 				},
 				CellType -> {
 					Null,
 					Null,
 					Null,
 					Null,
-					Mammalian
+					Bacterial,
+          Null,
+          Null
 				},
 				CultureAdhesion -> {
 					Null,
 					Null,
 					Null,
 					Null,
-					Suspension
+					Automatic,
+          Null,
+          Null
 				},
 				State -> Liquid,
+        SampleHandling -> {
+          Automatic,
+          Automatic,
+          Automatic,
+          Automatic,
+          Automatic,
+          Slurry,
+          Slurry
+        },
 				FastTrack -> True
 			];
 			Upload[{
@@ -1543,12 +1689,16 @@ DefineTests[ExperimentPellet,
 				Object[Container,Vessel,"Test container 3 for ExperimentPellet"<>$SessionUUID],
 				Object[Container,Plate,"Test container 4 for ExperimentPellet"<>$SessionUUID],
 				Object[Container,Vessel,"Test container 5 for ExperimentPellet"<>$SessionUUID],
+        Object[Container,Vessel,"Test container 6 for ExperimentPellet"<>$SessionUUID],
+        Object[Container,Plate,"Test container 7 for ExperimentPellet"<>$SessionUUID],
 
 				Object[Sample,"Test water sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample in 50mL tube (2) for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample in 1L Glass Bottle for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test water sample 1 in 96 deep-well plate for ExperimentPellet"<>$SessionUUID],
 				Object[Sample,"Test cell sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
+        Object[Sample,"Test slurry sample in 50mL tube (1) for ExperimentPellet"<>$SessionUUID],
+        Object[Sample,"Test slurry sample in 96 deep-well plate (1) for ExperimentPellet"<>$SessionUUID],
 				Object[Protocol, ManualSamplePreparation, "Test MSP protocol for ExperimentPellet"<>$SessionUUID]
 			}], ObjectP[]];
 

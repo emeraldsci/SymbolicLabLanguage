@@ -143,7 +143,7 @@ DefineOptionSet[PreFlushOptions :> {
 		},
 		(* TODO do it based on equipment *)
 		{
-			OptionName -> PreFlushingSolutionDrainTime,
+			OptionName -> PreFlushingTime,
 			Default -> Automatic,
 			AllowNull -> True,
 			Category -> "PreFlushing",
@@ -152,8 +152,8 @@ DefineOptionSet[PreFlushOptions :> {
 				Pattern :> RangeP[0 * Minute, $MaxExperimentTime],
 				Units -> {Minute, {Second, Minute, Hour}}
 			],
-			Description -> "The amount of time for PreFlushingSolution to be flushed through the sorbent. If PreFlushingSolutionUntilDrained is set to True, then PreFlushingSolution is continually flushed through the ExtractionCartridge in cycle of PreFlushingSolutionDrainTime until it is drained entirely. If PreFlushingSolutionUntilDrained is set to False, then PreFlushingSolution is flushed through ExtractionCartridge for PreFlushingSolutionDrainTime once.",
-			ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxPreFlushingSolutionDrainTime, whichever is shorter.",
+			Description -> "The amount of time for PreFlushingSolution to be flushed through the sorbent. If PreFlushingSolutionUntilDrained is set to True, then PreFlushingSolution is continually flushed through the ExtractionCartridge in cycle of PreFlushingTime until it is drained entirely. If PreFlushingSolutionUntilDrained is set to False, then PreFlushingSolution is flushed through ExtractionCartridge for PreFlushingTime once.",
+			ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxPreFlushingTime, whichever is shorter.",
 			NestedIndexMatching -> False
 		},
 		{
@@ -165,11 +165,11 @@ DefineOptionSet[PreFlushOptions :> {
 				Type -> Enumeration,
 				Pattern :> BooleanP
 			],
-			Description -> "Indicates if PreFlushingSolution is continually flushed through the cartridge in cycle of every PreFlushingDrainTime until it is drained entirely, or until MaxPreFlushingDrainTime has been reached.",
+			Description -> "Indicates if PreFlushingSolution is continually flushed through the cartridge in cycle of every PreFlushingTime until it is drained entirely, or until MaxPreFlushingTime has been reached.",
 			ResolutionDescription -> "Automatically set to True if ExtractionMethod are Gravity, Pressure, Vacuum or Centrifuge."
 		},
 		{
-			OptionName -> MaxPreFlushingSolutionDrainTime,
+			OptionName -> MaxPreFlushingTime,
 			Default -> Automatic,
 			AllowNull -> True,
 			Category -> "PreFlushing",
@@ -178,8 +178,36 @@ DefineOptionSet[PreFlushOptions :> {
 				Pattern :> GreaterP[0 Minute],
 				Units -> {Minute, {Second, Minute, Hour}}
 			],
-			Description -> "Indicates the maximum amount of time to flush PreFlushingSolution through sorbent. PreFlushingSolution is flushed in cycles of PreFlushingDrainTime until either PreFlushingSolution is entirely drained or MaxPreFlushingDrainTime has been reached.",
-			ResolutionDescription -> "Automatically set to 3 time of the maximum of PreFlushingDrainTime."
+			Description -> "Indicates the maximum amount of time to flush PreFlushingSolution through sorbent. PreFlushingSolution is flushed in cycles of PreFlushingTime until either PreFlushingSolution is entirely drained or MaxPreFlushingTime has been reached.",
+			ResolutionDescription -> "Automatically set to 3 time of the maximum of PreFlushingTime."
+		},
+		(* Robotic Specific - Gravity Drain *)
+		{
+			OptionName -> PreFlushingSolutionDrainTime,
+			Default -> Automatic,
+			AllowNull -> True,
+			Category -> "PreFlushing",
+			Widget -> Widget[
+				Type -> Quantity,
+				Pattern :> RangeP[0 * Minute, $MaxExperimentTime],
+				Units -> {Minute, {Second, Minute, Hour}}
+			],
+			Description -> "The amount of time to wait after PreFlushingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+			ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and PreFlushing -> True, or Null otherwise.",
+			NestedIndexMatching -> False
+		},
+		(* Robotic Specific - Pipetting Method *)
+		{
+			OptionName -> PreFlushingSolutionPipettingMethod,
+			Default -> Null,
+			AllowNull -> True,
+			Category -> "PreFlushing",
+			Widget -> Widget[
+				Type -> Object,
+				Pattern :> ObjectP[Model[Method, Pipetting]]
+			],
+			Description -> "The pipetting parameters used to manipulate the PreFlushingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+			NestedIndexMatching -> False
 		},
 		(* Centrifuge Specific *)
 		{
@@ -619,7 +647,7 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 						Pattern :> Alternatives[Ambient]
 					]
 				],
-				Description -> "The environmental temperature where the Instrument is set up for ExperimentSolidPhaseExtraction to be performed. The solutions' temperture can be different from ExtractionTemperature."
+				Description -> "The environmental temperature where the Instrument is set up for ExperimentSolidPhaseExtraction to be performed. The solutions' temperature can be different from ExtractionTemperature."
 			},
 			{
 				OptionName -> ExtractionCartridgeStorageCondition,
@@ -745,32 +773,51 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			(* Injection, Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
-					Description -> "The amount of time to set on the Instrument for ConditioningSolution to be flushed through the sorbent. If ConditioningSolutionUntilDrained is set to True, then ConditioningSolution is continually flushed through the ExtractionCartridge in cycle of ConditioningSolutionDrainTime until it is drained entirely. If ConditioningSolutionUntilDrained is set to False, then ConditioningSolution is flushed through ExtractionCartridge for ConditioningSolutionDrainTime once.",
-					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxConditioningSolutionDrainTime, whichever is shorter.",
+					Description -> "The amount of time to set on the Instrument for ConditioningSolution to be flushed through the sorbent. If ConditioningSolutionUntilDrained is set to True, then ConditioningSolution is continually flushed through the ExtractionCartridge in cycle of ConditioningTime until it is drained entirely. If ConditioningSolutionUntilDrained is set to False, then ConditioningSolution is flushed through ExtractionCartridge for ConditioningTime once.",
+					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxConditioningTime, whichever is shorter.",
 					Category -> "Conditioning"
 				}
-			] /. {PreFlushingSolutionDrainTime -> ConditioningSolutionDrainTime},
+			] /. {PreFlushingTime -> ConditioningTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
-					Description -> "Indicates if ConditioningSolution is continually flushed through the cartridge in cycle of ConditioningSolutionDrainTime until it is drained entirely, or until MaxConditioningSolutionDrainTime has been reached.",
+					Description -> "Indicates if ConditioningSolution is continually flushed through the cartridge in cycle of ConditioningTime until it is drained entirely, or until MaxConditioningTime has been reached.",
 					ResolutionDescription -> "Automatically set to True if ExtractionMethod are Gravity, Pressure, Vacuum or Centrifuge.",
 					Category -> "Conditioning"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> ConditioningSolutionUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
-					Description -> "Indicates the maximum amount of time to flush ConditioningSolution through sorbent. ConditioningSolution is flushed in cycles of every ConditioningSolutionDrainTime until MaxConditioningSolutionDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to 3 times of maximum ConditioningSolutionDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush ConditioningSolution through sorbent. ConditioningSolution is flushed in cycles of every ConditioningTime until MaxConditioningTime has been reached.",
+					ResolutionDescription -> "Automatically set to 3 times of maximum ConditioningTime.",
 					Category -> "Conditioning"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxConditioningSolutionDrainTime},
+			] /. {MaxPreFlushingTime -> MaxConditioningTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Description -> "The amount of time to wait after ConditioningSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and Conditioning -> True, or Null otherwise.",
+					Category -> "Conditioning"
+				}
+			] /. {PreFlushingSolutionDrainTime -> ConditioningSolutionDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the ConditioningSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "Conditioning"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> ConditioningSolutionPipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -913,33 +960,52 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			] /. {PreFlushingSolutionDispenseRate -> LoadingSampleDispenseRate},
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
 					AllowNull -> False,
 					Description -> "The amount of time that the sample is flushed through the sorbent after sample loading.",
-					ResolutionDescription -> "If the LoadingSampleVolume and LoadingSampleDispenseRate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of SampleMaxDrainTime, whichever is shorter.",
+					ResolutionDescription -> "If the LoadingSampleVolume and LoadingSampleDispenseRate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of SampleMaxTime, whichever is shorter.",
 					Category -> "LoadingSample"
 				}
-			] /. {PreFlushingSolutionDrainTime -> LoadingSampleDrainTime},
+			] /. {PreFlushingTime -> LoadingTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
-					Description -> "Indicates if the sample is continually flushed through the cartridge in cycle of LoadingSampleDrainTime until it is drained entirely, or until MaxSampleDrainTime has been reached.",
+					Description -> "Indicates if the sample is continually flushed through the cartridge in cycle of LoadingTime until it is drained entirely, or until MaxSampleTime has been reached.",
 					ResolutionDescription -> "Automatically set to True if ExtractionMethod is Gravity, Pressure, Vacuum or Centrifuge.",
 					Category -> "LoadingSample"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> LoadingSampleUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
-					Description -> "Indicates the maximum amount of time to flush the sample through sorbent. Sample is flushed in cycles of LoadingSampleDrainTime until either LoadingSampleVolume is entirely drained or MaxLoadingSampleDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to 3 * of the maximum of LoadingSampleDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush the sample through sorbent. Sample is flushed in cycles of LoadingTime until either LoadingSampleVolume is entirely drained or MaxLoadingTime has been reached.",
+					ResolutionDescription -> "Automatically set to 3 * of the maximum of LoadingTime.",
 					Category -> "LoadingSample"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxLoadingSampleDrainTime},
+			] /. {MaxPreFlushingTime -> MaxLoadingTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Description -> "The amount of time to wait after the sample has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic, or Null otherwise.",
+					Category -> "LoadingSample"
+				}
+			] /. {PreFlushingSolutionDrainTime -> LoadingSampleDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the sample when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "LoadingSample"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> LoadingSamplePipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -1048,32 +1114,51 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			(* Injection, Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
-					Description -> "The amount of time to set on the Instrument for WashingSolution to be flushed through the sorbent. If WashingSolutionUntilDrained is set to True, then WashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of WashingSolutionDrainTime until it is drained entirely. If WashingSolutionUntilDrained is set to False, then WashingSolution is flushed through ExtractionCartridge for WashingSolutionDrainTime once.",
-					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxWashingSolutionDrainTime, whichever is shorter.",
+					Description -> "The amount of time to set on the Instrument for WashingSolution to be flushed through the sorbent. If WashingSolutionUntilDrained is set to True, then WashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of WashingTime until it is drained entirely. If WashingSolutionUntilDrained is set to False, then WashingSolution is flushed through ExtractionCartridge for WashingTime once.",
+					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxWashingTime, whichever is shorter.",
 					Category -> "Washing"
 				}
-			] /. {PreFlushingSolutionDrainTime -> WashingSolutionDrainTime},
+			] /. {PreFlushingTime -> WashingTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
-					Description -> "Indicates if WashingSolution is continually flushed through the cartridge in cycle of WashingSolutionDrainTime until it is drained entirely, or until MaxWashingSolutionDrainTime has been reached.",
+					Description -> "Indicates if WashingSolution is continually flushed through the cartridge in cycle of WashingTime until it is drained entirely, or until MaxWashingTime has been reached.",
 					ResolutionDescription -> "Automatically set to True if ExtractionMethod are Gravity, Pressure, Vacuum or Centrifuge.",
 					Category -> "Washing"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> WashingSolutionUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
-					Description -> "Indicates the maximum amount of time to flush WashingSolution through sorbent. WashingSolution is flushed in cycles of every WashingSolutionDrainTime until MaxWashingSolutionDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to 3 times of maximum WashingSolutionDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush WashingSolution through sorbent. WashingSolution is flushed in cycles of every WashingTime until MaxWashingTime has been reached.",
+					ResolutionDescription -> "Automatically set to 3 times of maximum WashingTime.",
 					Category -> "Washing"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxWashingSolutionDrainTime},
+			] /. {MaxPreFlushingTime -> MaxWashingTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Description -> "The amount of time to wait after WashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and Washing -> True, or Null otherwise.",
+					Category -> "Washing"
+				}
+			] /. {PreFlushingSolutionDrainTime -> WashingSolutionDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the WashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "Washing"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> WashingSolutionPipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -1193,35 +1278,55 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			(* Injection, Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
 					Default -> Automatic,
-					Description -> "The amount of time to set on the Instrument for SecondaryWashingSolution to be flushed through the sorbent. If SecondaryWashingSolutionUntilDrained is set to True, then SecondaryWashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of SecondaryWashingSolutionDrainTime until it is drained entirely. If SecondaryWashingSolutionUntilDrained is set to False, then SecondaryWashingSolution is flushed through ExtractionCartridge for SecondaryWashingSolutionDrainTime once.",
-					ResolutionDescription -> "Automatically set to be the same as WashingSolutionDrainTime.",
+					Description -> "The amount of time to set on the Instrument for SecondaryWashingSolution to be flushed through the sorbent. If SecondaryWashingSolutionUntilDrained is set to True, then SecondaryWashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of SecondaryWashingTime until it is drained entirely. If SecondaryWashingSolutionUntilDrained is set to False, then SecondaryWashingSolution is flushed through ExtractionCartridge for SecondaryWashingTime once.",
+					ResolutionDescription -> "Automatically set to be the same as WashingTime.",
 					Category -> "SecondaryWashing"
 				}
-			] /. {PreFlushingSolutionDrainTime -> SecondaryWashingSolutionDrainTime},
+			] /. {PreFlushingTime -> SecondaryWashingTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
 					Default -> Automatic,
-					Description -> "Indicates if SecondaryWashingSolution is continually flushed through the cartridge in cycle of SecondaryWashingSolutionDrainTime until it is drained entirely, or until MaxSecondaryWashingSolutionDrainTime has been reached.",
+					Description -> "Indicates if SecondaryWashingSolution is continually flushed through the cartridge in cycle of SecondaryWashingTime until it is drained entirely, or until MaxSecondaryWashingTime has been reached.",
 					ResolutionDescription -> "Automatically set to be the same as WashingSolutionUntilDrained.",
 					Category -> "SecondaryWashing"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> SecondaryWashingSolutionUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
 					Default -> Automatic,
-					Description -> "Indicates the maximum amount of time to flush SecondaryWashingSolution through sorbent. SecondaryWashingSolution is flushed in cycles of every SecondaryWashingSolutionDrainTime until MaxSecondaryWashingSolutionDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to be the same as MaxWashingSolutionDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush SecondaryWashingSolution through sorbent. SecondaryWashingSolution is flushed in cycles of every SecondaryWashingTime until MaxSecondaryWashingTime has been reached.",
+					ResolutionDescription -> "Automatically set to be the same as MaxWashingTime.",
 					Category -> "SecondaryWashing"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxSecondaryWashingSolutionDrainTime},
+			] /. {MaxPreFlushingTime -> MaxSecondaryWashingTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Default -> Automatic,
+					Description -> "The amount of time to wait after SecondaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and SecondaryWashing -> True, or Null otherwise.",
+					Category -> "SecondaryWashing"
+				}
+			] /. {PreFlushingSolutionDrainTime -> SecondaryWashingSolutionDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the SecondaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "SecondaryWashing"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> SecondaryWashingSolutionPipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -1344,35 +1449,55 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			(* Injection, Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
 					Default -> Automatic,
-					Description -> "The amount of time to set on the Instrument for TertiaryWashingSolution to be flushed through the sorbent. If TertiaryWashingSolutionUntilDrained is set to True, then TertiaryWashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of TertiaryWashingSolutionDrainTime until it is drained entirely. If TertiaryWashingSolutionUntilDrained is set to False, then TertiaryWashingSolution is flushed through ExtractionCartridge for TertiaryWashingSolutionDrainTime once.",
-					ResolutionDescription -> "Automatically set to be the same as WashingSolutionDrainTime.",
+					Description -> "The amount of time to set on the Instrument for TertiaryWashingSolution to be flushed through the sorbent. If TertiaryWashingSolutionUntilDrained is set to True, then TertiaryWashingSolution is continually flushed thorugh the ExtractionCartridge in cycle of TertiaryWashingTime until it is drained entirely. If TertiaryWashingSolutionUntilDrained is set to False, then TertiaryWashingSolution is flushed through ExtractionCartridge for TertiaryWashingTime once.",
+					ResolutionDescription -> "Automatically set to be the same as WashingTime.",
 					Category -> "TertiaryWashing"
 				}
-			] /. {PreFlushingSolutionDrainTime -> TertiaryWashingSolutionDrainTime},
+			] /. {PreFlushingTime -> TertiaryWashingTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
 					Default -> Automatic,
-					Description -> "Indicates if TertiaryWashingSolution is continually flushed through the cartridge in cycle of TertiaryWashingSolutionDrainTime until it is drained entirely, or until MaxTertiaryWashingSolutionDrainTime has been reached.",
+					Description -> "Indicates if TertiaryWashingSolution is continually flushed through the cartridge in cycle of TertiaryWashingTime until it is drained entirely, or until MaxTertiaryWashingTime has been reached.",
 					ResolutionDescription -> "Automatically set to be the same as WashingSolutionUntilDrained.",
 					Category -> "TertiaryWashing"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> TertiaryWashingSolutionUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
 					Default -> Automatic,
-					Description -> "Indicates the maximum amount of time to flush TertiaryWashingSolution through sorbent. TertiaryWashingSolution is flushed in cycles of every TertiaryWashingSolutionDrainTime until MaxTertiaryWashingSolutionDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to be the same as MaxWashingSolutionDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush TertiaryWashingSolution through sorbent. TertiaryWashingSolution is flushed in cycles of every TertiaryWashingTime until MaxTertiaryWashingTime has been reached.",
+					ResolutionDescription -> "Automatically set to be the same as MaxWashingTime.",
 					Category -> "TertiaryWashing"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxTertiaryWashingSolutionDrainTime},
+			] /. {MaxPreFlushingTime -> MaxTertiaryWashingTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Default -> Automatic,
+					Description -> "The amount of time to wait after TertiaryWashingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and TertiaryWashing -> True, or Null otherwise.",
+					Category -> "TertiaryWashing"
+				}
+			] /. {PreFlushingSolutionDrainTime -> TertiaryWashingSolutionDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the TertiaryWashingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "TertiaryWashing"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> TertiaryWashingSolutionPipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -1488,32 +1613,51 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 			(* Injection, Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
-				PreFlushingSolutionDrainTime,
+				PreFlushingTime,
 				{
-					Description -> "The amount of time to set on the Instrument for ElutingSolution to be flushed through the sorbent. If ElutingSolutionUntilDrained is set to True, then ElutingSolution is continually flushed thorugh the ExtractionCartridge in cycle of ElutingSolutionDrainTime until it is drained entirely. If ElutingSolutionUntilDrained is set to False, then ElutingSolution is flushed through ExtractionCartridge for ElutingSolutionDrainTime once.",
-					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxElutingSolutionDrainTime, whichever is shorter.",
+					Description -> "The amount of time to set on the Instrument for ElutingSolution to be flushed through the sorbent. If ElutingSolutionUntilDrained is set to True, then ElutingSolution is continually flushed thorugh the ExtractionCartridge in cycle of ElutingTime until it is drained entirely. If ElutingSolutionUntilDrained is set to False, then ElutingSolution is flushed through ExtractionCartridge for ElutingTime once.",
+					ResolutionDescription -> "If the Volume and Rate is given then it is calculate by Volume/Rate. Otherwise automatically set to 2 minutes, or the value of MaxElutingTime, whichever is shorter.",
 					Category -> "Eluting"
 				}
-			] /. {PreFlushingSolutionDrainTime -> ElutingSolutionDrainTime},
+			] /. {PreFlushingTime -> ElutingTime},
 			(* Gravity, Pressure, Vacuum and Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
 				PreFlushingSolutionUntilDrained,
 				{
-					Description -> "Indicates if ElutingSolution is continually flushed through the cartridge in cycle of ElutingSolutionDrainTime until it is drained entirely, or until MaxElutingSolutionDrainTime has been reached.",
+					Description -> "Indicates if ElutingSolution is continually flushed through the cartridge in cycle of ElutingTime until it is drained entirely, or until MaxElutingTime has been reached.",
 					ResolutionDescription -> "Automatically set to True if ExtractionMethod are Gravity, Pressure, Vacuum or Centrifuge.",
 					Category -> "Eluting"
 				}
 			] /. {PreFlushingSolutionUntilDrained -> ElutingSolutionUntilDrained},
 			ModifyOptions[
 				PreFlushOptions,
-				MaxPreFlushingSolutionDrainTime,
+				MaxPreFlushingTime,
 				{
-					Description -> "Indicates the maximum amount of time to flush ElutingSolution through sorbent. ElutingSolution is flushed in cycles of every ElutingSolutionDrainTime until MaxElutingSolutionDrainTime has been reached.",
-					ResolutionDescription -> "Automatically set to 3 times of maximum ElutingSolutionDrainTime.",
+					Description -> "Indicates the maximum amount of time to flush ElutingSolution through sorbent. ElutingSolution is flushed in cycles of every ElutingTime until MaxElutingTime has been reached.",
+					ResolutionDescription -> "Automatically set to 3 times of maximum ElutingTime.",
 					Category -> "Eluting"
 				}
-			] /. {MaxPreFlushingSolutionDrainTime -> MaxElutingSolutionDrainTime},
+			] /. {MaxPreFlushingTime -> MaxElutingTime},
+			(* Robotic Specific - Gravity Drain *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionDrainTime,
+				{
+					Description -> "The amount of time to wait after ElutingSolution has been added to the sorbent before applying force, in order to allow gravity drainage. Only applicable when Preparation is Robotic.",
+					ResolutionDescription -> "Automatically set to 0 Minute if Preparation -> Robotic and Eluting -> True, or Null otherwise.",
+					Category -> "Eluting"
+				}
+			] /. {PreFlushingSolutionDrainTime -> ElutingSolutionDrainTime},
+			(* Robotic Specific - Pipetting Method *)
+			ModifyOptions[
+				PreFlushOptions,
+				PreFlushingSolutionPipettingMethod,
+				{
+					Description -> "The pipetting parameters used to manipulate the ElutingSolution when transferring into the extraction cartridge. Only applicable when Preparation is Robotic.",
+					Category -> "Eluting"
+				}
+			] /. {PreFlushingSolutionPipettingMethod -> ElutingSolutionPipettingMethod},
 			(* Centrifuge Specific *)
 			ModifyOptions[
 				PreFlushOptions,
@@ -1569,16 +1713,18 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 				Description -> "Indicate the target aliquot volume, wells and container to be used before running SPE."
 			},
 			{
-				OptionName -> CartridgePlacement,
-				Default -> Null,
+				OptionName -> CartridgePosition,
+				Default -> Automatic,
 				AllowNull -> True,
-				Category -> "Hidden",
+				Category -> "Sample Preparation",
 				Widget -> Widget[
-					Type -> Expression,
-					Pattern :> _String | WellPositionP | _?NumericQ,
-					Size -> Line
+					Type -> String,
+					Pattern :> WellP,
+					Size -> Line,
+					PatternTooltip -> "Enumeration must be any well from A1 to H12."
 				],
-				Description -> "Indicate the location of ExtractionCartridge where the pooled SamplesIn will go into."
+				Description -> "The well position within the ExtractionCartridge where the pooled SamplesIn will be placed.",
+				ResolutionDescription -> "Automatically resolved based on the AllowedPositions of the ExtractionCartridge model, with positions assigned sequentially to each sample."
 			},
 			{
 				OptionName -> PreFlushingCollectionContainerOutLabel,
@@ -1712,7 +1858,7 @@ DefineOptions[ExperimentSolidPhaseExtraction,
 (* ::Subsection:: *)
 (*ErrorDefinition*)
 Warning::mtwarningExtractionStrategyElutingIncompatible = "ExtractionStrategy Negative for SamplesIn `1` are now switched to Positive because Eluting is set to True or ElutingSolution was defined.";
-Error::TooLargeRequestVolume = "The requested LoadingSampleVolume of `1` for samples `3` are larger than the actual sample volume `2`.";
+Warning::TooLargeRequestVolume = "The requested LoadingSampleVolume of `1` for samples `3` are larger than the actual sample volume `2`.  The full volume will be used instead.";
 Error::ConflictingMobilePhaseOptions = "The following options `1` are conflicting with each other and cannot be supported by existing Instrument. Please allow these options to be automatic.";
 Error::SPECannotSupportVolume = "Currently, SolidPhaseExtraction cannot support LoadingSampleVolume of `1`.";
 Error::GX271tooManyCollectionPlate = "The maximum number of collection plate on the deck of `1` is 1, please consider changing the following options `2`.";
@@ -1721,12 +1867,11 @@ Error::SPECannotSupportSamples = "SolidPhaseExtraction cannot find supporting In
 Error::SPECentrifugeIntensityTooHigh = "The centrifuge options `3` with value `1` is above the limit of Instrument `2` OR we do not have Instrument that can support that specified CentrifugeIntensity.";
 Error::SPEExtractionCartidgeTooLargeForInstrument = "The following extraction cartridges `1` cannot run SolidPhaseExtraction with the following instrument `2` because the size is too big. Only 3 ml cartridge can fit on the current instrument.";
 Warning::SPEExtractionCartridgeAndSorbentMismatch = "The supplied ExtractionCartridge `1` do not have the same ExtractionSorbent as supplied `2`.";
-Warning::PressureMustBeBoolean = "The option `2` for following Instrument `1` has to be True or False, and it is now converted to True.";
 Error::DispenseRateOutOfBound = "The DispenseRate that the following Instrument `1` can generate are `2`. Your current setting for Option `3` are `4`. Please adjust the DispenseRate to be within Instrument limits.";
 Error::errorAmbientOnlyInstrument = "The following Instruments `1` can only run SolidPhaseExtraction at Ambient temperature only and they cannot support the following ExtractionTemperature `2`. Please consider using other instrument that can support the indicated ExtractionTemperature, or set ExtractionTemperature to Ambient.";
 Error::ExtractionTemperatureOutOfBound = "The following Instruments `1` can only run SolidPhaseExtraction at temperature `2`. The following ExtractionTemperature `3` is out of Instrument limits. Please consider using other instrument that can support the indicated ExtractionTemperature, or set ExtractionTemperature to be within Instrument limits.";
 Error::incompatibleInstrumentAndCollectionContainer = "The following container `1` in Option `2` is not compatible with Instrument `3`. Instrument `3` can support the following container `4`. Please change `2` accordingly.";
-Warning::PositiveStrategyWithoutEluting = "ExtractionStrategy for SamplesIn `1` are Positive, however you are not eluting purified samples out. Please consider changing Options Eluting or CollectElutingSolution to True or define ElutingSolution.";
+Warning::PositiveStrategyWithoutEluting = "ExtractionStrategy for SamplesIn `1` are Positive; however, you are not eluting purified samples out. Please consider changing Options Eluting or CollectElutingSolution to True or define ElutingSolution.";
 Warning::ExtractionStrategyTertiaryWashingSwitchIncompatible = "ExtractionStrategy Negative for SamplesIn `1` are now switched to Positive because TertiaryWashing is set to True or TertiaryWashingSolution was defined.";
 Warning::ExtractionStrategySecondaryWashingSwitchIncompatible = "ExtractionStrategy Negative for SamplesIn `1` are now switched to Positive because SecondaryWashing is set to True or SecondaryWashingSolution was defined.";
 Warning::ExtractionStrategyWashingSwitchIncompatible = "ExtractionStrategy Negative for SamplesIn `1` are now switched to Positive because Washing is set to True or WashingSolution was defined.";
@@ -2083,8 +2228,8 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 	(* list all options that associate with container *)
 	allContainerOptions = {SourceContainer, PreFlushingSolutionCollectionContainer, ConditioningSolutionCollectionContainer, WashingSolutionCollectionContainer, SecondaryWashingSolutionCollectionContainer, TertiaryWashingSolutionCollectionContainer, ElutingSolutionCollectionContainer};
 	(* compile all container that user specified, in case its not listed in preferred container  *)
-	specifiedContainerObjects = Cases[Lookup[expandedSafeOps, allContainerOptions], ObjectReferenceP[Object]];
-	specifiedContainerModels = Cases[Lookup[expandedSafeOps, allContainerOptions], ObjectReferenceP[Model]];
+	specifiedContainerObjects = Cases[Lookup[expandedSafeOps, allContainerOptions], ObjectReferenceP[Object], Infinity];
+	specifiedContainerModels = Cases[Lookup[expandedSafeOps, allContainerOptions], ObjectReferenceP[Model], Infinity];
 
 	(* now we group things base on type *)
 	(* since any input solution are input samples to so just combine them *)
@@ -2377,8 +2522,7 @@ ExperimentSolidPhaseExtractionCore[myPooledSamples : ListableP[{ObjectP[Object[S
 									StartDate -> Lookup[safeOps, StartDate],
 									HoldOrder -> Lookup[safeOps, HoldOrder],
 									QueuePosition -> Lookup[safeOps, QueuePosition],
-									Cache -> cacheBall,
-									Simulation -> simulation
+									Cache -> cacheBall
 								},
 								postProcessingOptions
 							]
@@ -2497,18 +2641,18 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		mtSecondaryWashingSolutionUntilDrained,
 		mtTertiaryWashingSolutionUntilDrained,
 		mtElutingSolutionUntilDrained,
-		mtPreFlushingSolutionDrainTime,
-		mtConditioningSolutionDrainTime,
-		mtWashingSolutionDrainTime,
-		mtSecondaryWashingSolutionDrainTime,
-		mtTertiaryWashingSolutionDrainTime,
-		mtElutingSolutionDrainTime,
-		mtMaxPreFlushingSolutionDrainTime,
-		mtMaxConditioningSolutionDrainTime,
-		mtMaxWashingSolutionDrainTime,
-		mtMaxSecondaryWashingSolutionDrainTime,
-		mtMaxTertiaryWashingSolutionDrainTime,
-		mtMaxElutingSolutionDrainTime,
+		mtPreFlushingTime,
+		mtConditioningTime,
+		mtWashingTime,
+		mtSecondaryWashingTime,
+		mtTertiaryWashingTime,
+		mtElutingTime,
+		mtMaxPreFlushingTime,
+		mtMaxConditioningTime,
+		mtMaxWashingTime,
+		mtMaxSecondaryWashingTime,
+		mtMaxTertiaryWashingTime,
+		mtMaxElutingTime,
 		mtExtractionTemperature,
 		mtQuantitativeLoadingSample,
 		mtQuantitativeLoadingSampleSolution,
@@ -2518,8 +2662,8 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		mtLoadingSampleTemperature,
 		mtLoadingSamplePressure,
 		mtLoadingSampleDispenseRate,
-		mtLoadingSampleDrainTime,
-		mtMaxLoadingSampleDrainTime,
+		mtLoadingTime,
+		mtMaxLoadingTime,
 		mtPreFlushingSolutionCollectionContainer,
 		mtConditioningSolutionCollectionContainer,
 		mtWashingSolutionCollectionContainer,
@@ -2553,7 +2697,12 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		mtElutingSolutionLabel,
 		mtSamplesInStorageCondition,
 		mtSamplesOutStorageCondition,
-		mtLoadingSampleUntilDrained,
+		mtLoadingSampleUntilDrained, mtPreFlushingSolutionDrainTime, mtConditioningSolutionDrainTime,
+		mtWashingSolutionDrainTime, mtSecondaryWashingSolutionDrainTime, mtTertiaryWashingSolutionDrainTime,
+		mtElutingSolutionDrainTime, mtLoadingSampleDrainTime,
+		mtPreFlushingSolutionPipettingMethod, mtConditioningSolutionPipettingMethod,
+		mtWashingSolutionPipettingMethod, mtSecondaryWashingSolutionPipettingMethod, mtTertiaryWashingSolutionPipettingMethod,
+		mtElutingSolutionPipettingMethod, mtLoadingSamplePipettingMethod,
 		(* error and warning *)
 		mtunequalLoadingSampleVolumeLengthError,
 		mtincompatibleInstrumentSampleVolumeError,
@@ -2618,13 +2767,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		mtwarningVolumeTooHigh,
 		mtconflictingCartridgeSorbentWarning,
 		mtwarningExtractionStrategyChange,
-		mtwarningPreFlushingPressureMustBeBoolean,
-		mtwarningConditioningPressureMustBeBoolean,
-		mtwarningWashingPressureMustBeBoolean,
-		mtwarningElutingPressureMustBeBoolean,
-		mtwarningSecondaryWashingPressureMustBeBoolean,
-		mtwarningTertiaryWashingPressureMustBeBoolean,
-		mtwarningLoadingSamplePressureMustBeBoolean,
 		preFlushingSolutionCentrifugeIntensityError,
 		conditioningSolutionCentrifugeIntensityError,
 		washingSolutionCentrifugeIntensityError,
@@ -2738,18 +2880,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		suggestedContainer,
 		badContainer,
 		uniqueError,
-		errorPreFlushingPressureMustBeBooleanOptionName,
-		errorConditioningPressureMustBeBooleanOptionName,
-		errorWashingPressureMustBeBooleanOptionName,
-		errorSecondaryWashingPressureMustBeBooleanOptionName,
-		errorTertiaryWashingPressureMustBeBooleanOptionName,
-		errorElutingPressureMustBeBooleanOptionName,
-		errorLoadingSamplePressureMustBeBooleanOptionName,
-		allPressureMustBeBooleanOption,
-		allPressureMustBeBooleanOptionName,
-		allPressureMustBeBooleanSwitch,
-		allPressureMustBeBooleanQ,
-		pressureMustBeBooleanTest,
 		tooLargeLoadingSampleVolumeTest,
 		conflictingMethodInferringMobilePhaseOptionsTest,
 		conflictingSuppliedMethodAndImpliedMethodErrorTest,
@@ -2859,7 +2989,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		mtcannotFindCartridgeWithSuppliedError,
 		mtcannotFindCartridgeWithSuppliedErrorOptionName,
 		mtcannotFindCartridgeWithSuppliedErrorTest,
-		mtresolvedExtractionCartridgeStorageCondition,
+		mtresolvedExtractionCartridgeStorageCondition, alreadyOccupiedPositionsPerCartridge,
+		alreadySpecifiedPositionsPerCartridge, unavailablePositions, availablePositionsPerCartridge,
+		specifiedCartridgePositions, resolvedCartridgeModels, occupiedPositionsByCartridge,
+		availablePositionsByCartridge, mtresolvedCartridgePosition,
 		incompatibleExtractionMethodAndExtractionCartridgeErrorNameTest
 	},
 
@@ -3165,28 +3298,27 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 	totalNumberOfSamples = Length[simulatedSamples];
 	(*-- OPTION PRECISION CHECKS --*)
 	(* check only with time for now, because we have other options are Instrument dependent, we can not set it arbitrarily *)
-	(* TODO add all numerical options here *)
 	timeOptionsPrecisions = {
 		{PreFlushingSolutionTemperatureEquilibrationTime, 1 Second},
-		{PreFlushingSolutionDrainTime, 1 Second},
+		{PreFlushingTime, 1 Second},
 		{ConditioningSolutionTemperatureEquilibrationTime, 1 Second},
-		{ConditioningSolutionDrainTime, 1 Second},
-		{MaxConditioningSolutionDrainTime, 1 Second},
+		{ConditioningTime, 1 Second},
+		{MaxConditioningTime, 1 Second},
 		{LoadingSampleTemperatureEquilibrationTime, 1 Second},
-		{LoadingSampleDrainTime, 1 Second},
-		{MaxPreFlushingSolutionDrainTime, 1 Second},
+		{LoadingTime, 1 Second},
+		{MaxPreFlushingTime, 1 Second},
 		{WashingSolutionTemperatureEquilibrationTime, 1 Second},
-		{WashingSolutionDrainTime, 1 Second},
-		{MaxWashingSolutionDrainTime, 1 Second},
+		{WashingTime, 1 Second},
+		{MaxWashingTime, 1 Second},
 		{SecondaryWashingSolutionTemperatureEquilibrationTime, 1 Second},
-		{SecondaryWashingSolutionDrainTime, 1 Second},
-		{MaxSecondaryWashingSolutionDrainTime, 1 Second},
+		{SecondaryWashingTime, 1 Second},
+		{MaxSecondaryWashingTime, 1 Second},
 		{TertiaryWashingSolutionTemperatureEquilibrationTime, 1 Second},
-		{TertiaryWashingSolutionDrainTime, 1 Second},
-		{MaxTertiaryWashingSolutionDrainTime, 1 Second},
+		{TertiaryWashingTime, 1 Second},
+		{MaxTertiaryWashingTime, 1 Second},
 		{ElutingSolutionTemperatureEquilibrationTime, 1 Second},
-		{ElutingSolutionDrainTime, 1 Second},
-		{MaxElutingSolutionDrainTime, 1 Second}
+		{ElutingTime, 1 Second},
+		{MaxElutingTime, 1 Second}
 	};
 	(* round to defined precision *)
 	{roundedSPEOptions, precisionTests} = If[gatherTests,
@@ -3267,18 +3399,18 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		(*60*)mtSecondaryWashingSolutionUntilDrained,
 		(*61*)mtTertiaryWashingSolutionUntilDrained,
 		(*62*)mtElutingSolutionUntilDrained,
-		(*63*)mtPreFlushingSolutionDrainTime,
-		(*64*)mtConditioningSolutionDrainTime,
-		(*65*)mtWashingSolutionDrainTime,
-		(*66*)mtSecondaryWashingSolutionDrainTime,
-		(*67*)mtTertiaryWashingSolutionDrainTime,
-		(*68*)mtElutingSolutionDrainTime,
-		(*69*)mtMaxPreFlushingSolutionDrainTime,
-		(*70*)mtMaxConditioningSolutionDrainTime,
-		(*71*)mtMaxWashingSolutionDrainTime,
-		(*72*)mtMaxSecondaryWashingSolutionDrainTime,
-		(*73*)mtMaxTertiaryWashingSolutionDrainTime,
-		(*74*)mtMaxElutingSolutionDrainTime,
+		(*63*)mtPreFlushingTime,
+		(*64*)mtConditioningTime,
+		(*65*)mtWashingTime,
+		(*66*)mtSecondaryWashingTime,
+		(*67*)mtTertiaryWashingTime,
+		(*68*)mtElutingTime,
+		(*69*)mtMaxPreFlushingTime,
+		(*70*)mtMaxConditioningTime,
+		(*71*)mtMaxWashingTime,
+		(*72*)mtMaxSecondaryWashingTime,
+		(*73*)mtMaxTertiaryWashingTime,
+		(*74*)mtMaxElutingTime,
 		(*75*)mtExtractionTemperature,
 		(*76*)mtQuantitativeLoadingSample,
 		(*77*)mtQuantitativeLoadingSampleSolution,
@@ -3286,11 +3418,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		(*79*)mtLoadingSampleVolume,
 		(*80*)mtLoadingSampleTemperatureEquilibrationTime,
 		(*81*)mtLoadingSampleTemperature,
-(*		mtMixLoadingSampleFlowthrough,*)
 		(*82*)mtLoadingSamplePressure,
 		(*83*)mtLoadingSampleDispenseRate,
-		(*84*)mtLoadingSampleDrainTime,
-		(*85*)mtMaxLoadingSampleDrainTime,
+		(*84*)mtLoadingTime,
+		(*85*)mtMaxLoadingTime,
 		(*86*)mtPreFlushingSolutionCollectionContainer,
 		(*87*)mtConditioningSolutionCollectionContainer,
 		(*88*)mtWashingSolutionCollectionContainer,
@@ -3318,147 +3449,154 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		(*110*)mtSamplesInStorageCondition,
 		(*111*)mtSamplesOutStorageCondition,
 		(*112*)mtLoadingSampleUntilDrained,
+		(*113*)mtPreFlushingSolutionDrainTime,
+		(*114*)mtConditioningSolutionDrainTime,
+		(*115*)mtWashingSolutionDrainTime,
+		(*116*)mtSecondaryWashingSolutionDrainTime,
+		(*117*)mtTertiaryWashingSolutionDrainTime,
+		(*118*)mtElutingSolutionDrainTime,
+		(*119*)mtLoadingSampleDrainTime,
+		(*120*)mtPreFlushingSolutionPipettingMethod,
+		(*121*)mtConditioningSolutionPipettingMethod,
+		(*122*)mtWashingSolutionPipettingMethod,
+		(*123*)mtSecondaryWashingSolutionPipettingMethod,
+		(*124*)mtTertiaryWashingSolutionPipettingMethod,
+		(*125*)mtElutingSolutionPipettingMethod,
+		(*126*)mtLoadingSamplePipettingMethod,
 		(* error and warning *)
-		(*113*)mtunequalLoadingSampleVolumeLengthError,
-		(*114*)mtincompatibleInstrumentSampleVolumeError,
-		(*115*)mtincompatibleCartridgeInstrumentError,
-		(*116*)mtincompatibleExtractionMethodSampleVolumeError,
-		(*117*)mtincompatibleExtractionCartridgeError,
-		(*118*)mtincompatibleInstrumentAndMethodError,
-		(*119*)mtincompatibleInstrumentAndExtractionCartridgeError,
-		(*120*)mtincompatibleExtractionMethodAndExtractionCartridgeError,
-		(*121*)mtincompatibleInstrumentExtractionMethodExtractionCartridgeError,
-		(*122*)mtwarningExtractionStrategyWashingSwitchIncompatible,
-		(*123*)mtskippedWashingError,
-		(*124*)mtwarningExtractionStrategySecondaryWashingSwitchIncompatible,
-		(*125*)mtskippedSecondaryWashingError,
-		(*126*)mtwarningExtractionStrategyTertiaryWashingSwitchIncompatible,
-		(*127*)mtwarningPositiveStrategyWithoutEluting,
-		(*128*)mtwarningExtractionStrategyElutingIncompatible,
-		(*129*)mterrorPreFlushingPressureTooLow,
-		(*130*)mterrorPreFlushingPressureTooHigh,
-		(*131*)mterrorPreFlushingDispenseRateTooLow,
-		(*132*)mterrorPreFlushingDispenseRateTooHigh,
-		(*133*)mterrorConditioningPressureTooLow,
-		(*134*)mterrorConditioningPressureTooHigh,
-		(*135*)mterrorConditioningDispenseRateTooLow,
-		(*136*)mterrorConditioningDispenseRateTooHigh,
-		(*137*)mterrorWashingPressureTooLow,
-		(*138*)mterrorWashingPressureTooHigh,
-		(*139*)mterrorWashingDispenseRateTooLow,
-		(*140*)mterrorWashingDispenseRateTooHigh,
-		(*141*)mterrorElutingPressureTooLow,
-		(*142*)mterrorElutingPressureTooHigh,
-		(*143*)mterrorElutingDispenseRateTooLow,
-		(*144*)mterrorElutingDispenseRateTooHigh,
-		(*145*)mterrorSecondaryWashingPressureTooLow,
-		(*146*)mterrorSecondaryWashingPressureTooHigh,
-		(*147*)mterrorSecondaryWashingDispenseRateTooLow,
-		(*148*)mterrorSecondaryWashingDispenseRateTooHigh,
-		(*149*)mterrorTertiaryWashingPressureTooLow,
-		(*150*)mterrorTertiaryWashingPressureTooHigh,
-		(*151*)mterrorTertiaryWashingDispenseRateTooLow,
-		(*152*)mterrorTertiaryWashingDispenseRateTooHigh,
-		(*153*)mterrorAmbientOnlyInstrument,
-		(*154*)mterrorExtractionTemperatureTooLow,
-		(*155*)mterrorExtractionTemperatureTooHigh,
-		(*156*)mtunequalLengthQuantitativeLoadingSampleError,
-		(*157*)mtunequalLengthQuantitativeLoadingSampleSolutionError,
-		(*158*)mtunequalLengthQuantitativeLoadingSampleVolumeError,
-		(*159*)mtunequalLengthLoadingSampleTemperatureError,
-		(*160*)mtunequalLengthLoadingSampleTemperatureEquilibrationTimeError,
-		(*161*)mterrorLoadingSamplePressureTooLow,
-		(*162*)mterrorLoadingSamplePressureTooHigh,
-		(*163*)mterrorLoadingSampleDispenseRateTooLow,
-		(*164*)mterrorLoadingSampleDispenseRateTooHigh,
-		(*165*)mtwarningIncompatiblePreFlushingSolutionCollectionContainer,
-		(*166*)mtwarningIncompatibleConditioningSolutionCollectionContainer,
-		(*167*)mtwarningIncompatibleWashingSolutionCollectionContainer,
-		(*168*)mtwarningIncompatibleSecondaryWashingSolutionCollectionContainer,
-		(*169*)mtwarningIncompatibleTertiaryWashingSolutionCollectionContainer,
-		(*170*)mtwarningIncompatibleElutingSolutionCollectionContainer,
-		(*171*)mtwarningIncompatibleLoadingSampleFlowthroughContainer,
-		(*172*)mtincompatibleExtractionCartridgeSampleVolumeError,
-		(*173*)mtwarningVolumeTooHigh,
-		(*174*)mtconflictingCartridgeSorbentWarning,
-		(*175*)mtwarningExtractionStrategyChange,
-		(*176*)mtwarningPreFlushingPressureMustBeBoolean,
-		(*177*)mtwarningConditioningPressureMustBeBoolean,
-		(*178*)mtwarningWashingPressureMustBeBoolean,
-		(*179*)mtwarningElutingPressureMustBeBoolean,
-		(*180*)mtwarningSecondaryWashingPressureMustBeBoolean,
-		(*181*)mtwarningTertiaryWashingPressureMustBeBoolean,
-		(*182*)mtwarningLoadingSamplePressureMustBeBoolean,
-		(*183*)mtvolumeTooLargeWarning,
-		(*184*)mtconflictingMethodInferringMobilePhaseOptionsError,
-		(*185*)mtconflictingSuppliedMethodAndImpliedMethodError,
-		(*186*)mtspeCannotSupportVolumeError,
-		(*187*)mtspeCannotSupportCollectionError,
-		(*188*)mtspeCannotSupportCartridgeError,
-		(*189*)mtspeCannotSupportMethodError,
-		(*190*)mtspeCannotSupportCartridgeError,
-		(*191*)mtspeCannotSupportMethodError,
-		(*192*)mtnoCompatibleInstrumentError,
-		(*193*)mtconflictingCartridgeSorbentWarning,
-		(*194*)mtconflictingSuppliedMethodAndImpliedMethodErrorOptionName,
-		(*195*)mtbadLoadingSampleVolume,
-		(*196*)mtnoCompatibleInstrumentErrorName,
-		(*197*)mttooBigCartridgeError,
-		(*198*)mttooManyCollectionPlateOnGX271DeckError,
-		(*199*)mttooManyCollectionPlateOnGX271DeckOptionName,
-		(*200*)mttooManyTypeOfSolutionOnGX271OptionName,
-		(*201*)mttooManyTypeOfSolutionOnGX271Error,
-		(*202*)mtcannotSupportQuantitativeLoadingError,
-		(*203*)mtcannotSupportQuantitativeLoadingErrorOptionName,
-		(*204*)mtquantitativeLoadingSampleSolutionError,
-		(*205*)mtnotSPECartridgeError,
-		(*206*)mtspeCannotSupportPreFlushVolume,
-		(*207*)mtspeCannotSupportConditionVolume,
-		(*208*)mtspeCannotSupportWashVolume,
-		(*209*)mtspeCannotSupportSecondaryWashVolume,
-		(*210*)mtspeCannotSupportTertiaryWashVolume,
-		(*211*)mtspeCannotSupportEluteVolume,
-		(*212*)mtspeCannotSupportQuantVolume,
-		(*213*)mtspeCannotSupportInstrumentError,
-		(*214*)mtbadVolumePreFlushName,
-		(*215*)mtbadVolumeConditionName,
-		(*216*)mtbadVolumeWashName,
-		(*217*)mtbadVolumeSecWashName,
-		(*218*)mtbadVolumeTerWashName,
-		(*219*)mtbadVolumeEluteName,
-		(*220*)mtbadVolumeQuantLoadName,
-		(*221*)mtbadInstrumentName,
-		(*222*)mterrorPreFlushingVolumeInstrument,
-		(*223*)mterrorConditioningVolumeInstrument,
-		(*224*)mterrorWashingVolumeInstrument,
-		(*225*)mterrorElutingVolumeInstrument,
-		(*226*)mterrorSecondaryWashingVolumeInstrument,
-		(*227*)mterrorTertiaryWashingVolumeInstrument,
-		(*228*)mterrorLoadingSampleVolumeInstrument,
-		(*229*)mterrorPreFlushingInstrumentSolutionTemperature,
-		(*230*)mterrorConditioningInstrumentSolutionTemperature,
-		(*231*)mterrorWashingInstrumentSolutionTemperature,
-		(*232*)mterrorElutingInstrumentSolutionTemperature,
-		(*233*)mterrorSecondaryWashingInstrumentSolutionTemperature,
-		(*234*)mterrorTertiaryWashingInstrumentSolutionTemperature,
-		(*235*)mterrorLoadingSampleInstrumentSolutionTemperature,
-		(*236*)mtcannotFindCartridgeWithSuppliedError,
+		(*127*)mtunequalLoadingSampleVolumeLengthError,
+		(*128*)mtincompatibleInstrumentSampleVolumeError,
+		(*129*)mtincompatibleCartridgeInstrumentError,
+		(*130*)mtincompatibleExtractionMethodSampleVolumeError,
+		(*131*)mtincompatibleExtractionCartridgeError,
+		(*132*)mtincompatibleInstrumentAndMethodError,
+		(*133*)mtincompatibleInstrumentAndExtractionCartridgeError,
+		(*134*)mtincompatibleExtractionMethodAndExtractionCartridgeError,
+		(*135*)mtincompatibleInstrumentExtractionMethodExtractionCartridgeError,
+		(*136*)mtwarningExtractionStrategyWashingSwitchIncompatible,
+		(*137*)mtskippedWashingError,
+		(*138*)mtwarningExtractionStrategySecondaryWashingSwitchIncompatible,
+		(*139*)mtskippedSecondaryWashingError,
+		(*140*)mtwarningExtractionStrategyTertiaryWashingSwitchIncompatible,
+		(*141*)mtwarningPositiveStrategyWithoutEluting,
+		(*142*)mtwarningExtractionStrategyElutingIncompatible,
+		(*143*)mterrorPreFlushingPressureTooLow,
+		(*144*)mterrorPreFlushingPressureTooHigh,
+		(*145*)mterrorPreFlushingDispenseRateTooLow,
+		(*146*)mterrorPreFlushingDispenseRateTooHigh,
+		(*147*)mterrorConditioningPressureTooLow,
+		(*148*)mterrorConditioningPressureTooHigh,
+		(*149*)mterrorConditioningDispenseRateTooLow,
+		(*150*)mterrorConditioningDispenseRateTooHigh,
+		(*151*)mterrorWashingPressureTooLow,
+		(*152*)mterrorWashingPressureTooHigh,
+		(*153*)mterrorWashingDispenseRateTooLow,
+		(*154*)mterrorWashingDispenseRateTooHigh,
+		(*155*)mterrorElutingPressureTooLow,
+		(*156*)mterrorElutingPressureTooHigh,
+		(*157*)mterrorElutingDispenseRateTooLow,
+		(*158*)mterrorElutingDispenseRateTooHigh,
+		(*159*)mterrorSecondaryWashingPressureTooLow,
+		(*160*)mterrorSecondaryWashingPressureTooHigh,
+		(*161*)mterrorSecondaryWashingDispenseRateTooLow,
+		(*162*)mterrorSecondaryWashingDispenseRateTooHigh,
+		(*163*)mterrorTertiaryWashingPressureTooLow,
+		(*164*)mterrorTertiaryWashingPressureTooHigh,
+		(*165*)mterrorTertiaryWashingDispenseRateTooLow,
+		(*166*)mterrorTertiaryWashingDispenseRateTooHigh,
+		(*167*)mterrorAmbientOnlyInstrument,
+		(*168*)mterrorExtractionTemperatureTooLow,
+		(*169*)mterrorExtractionTemperatureTooHigh,
+		(*170*)mtunequalLengthQuantitativeLoadingSampleError,
+		(*171*)mtunequalLengthQuantitativeLoadingSampleSolutionError,
+		(*172*)mtunequalLengthQuantitativeLoadingSampleVolumeError,
+		(*173*)mtunequalLengthLoadingSampleTemperatureError,
+		(*174*)mtunequalLengthLoadingSampleTemperatureEquilibrationTimeError,
+		(*175*)mterrorLoadingSamplePressureTooLow,
+		(*176*)mterrorLoadingSamplePressureTooHigh,
+		(*177*)mterrorLoadingSampleDispenseRateTooLow,
+		(*178*)mterrorLoadingSampleDispenseRateTooHigh,
+		(*179*)mtwarningIncompatiblePreFlushingSolutionCollectionContainer,
+		(*180*)mtwarningIncompatibleConditioningSolutionCollectionContainer,
+		(*181*)mtwarningIncompatibleWashingSolutionCollectionContainer,
+		(*182*)mtwarningIncompatibleSecondaryWashingSolutionCollectionContainer,
+		(*183*)mtwarningIncompatibleTertiaryWashingSolutionCollectionContainer,
+		(*184*)mtwarningIncompatibleElutingSolutionCollectionContainer,
+		(*185*)mtwarningIncompatibleLoadingSampleFlowthroughContainer,
+		(*186*)mtincompatibleExtractionCartridgeSampleVolumeError,
+		(*187*)mtwarningVolumeTooHigh,
+		(*188*)mtconflictingCartridgeSorbentWarning,
+		(*189*)mtwarningExtractionStrategyChange,
+		(*190*)mtvolumeTooLargeWarning,
+		(*191*)mtconflictingMethodInferringMobilePhaseOptionsError,
+		(*192*)mtconflictingSuppliedMethodAndImpliedMethodError,
+		(*193*)mtspeCannotSupportVolumeError,
+		(*194*)mtspeCannotSupportCollectionError,
+		(*195*)mtspeCannotSupportCartridgeError,
+		(*196*)mtspeCannotSupportMethodError,
+		(*197*)mtspeCannotSupportCartridgeError,
+		(*198*)mtspeCannotSupportMethodError,
+		(*199*)mtnoCompatibleInstrumentError,
+		(*200*)mtconflictingCartridgeSorbentWarning,
+		(*201*)mtconflictingSuppliedMethodAndImpliedMethodErrorOptionName,
+		(*202*)mtbadLoadingSampleVolume,
+		(*203*)mtnoCompatibleInstrumentErrorName,
+		(*204*)mttooBigCartridgeError,
+		(*205*)mttooManyCollectionPlateOnGX271DeckError,
+		(*206*)mttooManyCollectionPlateOnGX271DeckOptionName,
+		(*207*)mttooManyTypeOfSolutionOnGX271OptionName,
+		(*208*)mttooManyTypeOfSolutionOnGX271Error,
+		(*209*)mtcannotSupportQuantitativeLoadingError,
+		(*210*)mtcannotSupportQuantitativeLoadingErrorOptionName,
+		(*211*)mtquantitativeLoadingSampleSolutionError,
+		(*212*)mtnotSPECartridgeError,
+		(*213*)mtspeCannotSupportPreFlushVolume,
+		(*214*)mtspeCannotSupportConditionVolume,
+		(*215*)mtspeCannotSupportWashVolume,
+		(*216*)mtspeCannotSupportSecondaryWashVolume,
+		(*217*)mtspeCannotSupportTertiaryWashVolume,
+		(*218*)mtspeCannotSupportEluteVolume,
+		(*219*)mtspeCannotSupportQuantVolume,
+		(*220*)mtspeCannotSupportInstrumentError,
+		(*221*)mtbadVolumePreFlushName,
+		(*222*)mtbadVolumeConditionName,
+		(*223*)mtbadVolumeWashName,
+		(*224*)mtbadVolumeSecWashName,
+		(*225*)mtbadVolumeTerWashName,
+		(*226*)mtbadVolumeEluteName,
+		(*227*)mtbadVolumeQuantLoadName,
+		(*228*)mtbadInstrumentName,
+		(*229*)mterrorPreFlushingVolumeInstrument,
+		(*230*)mterrorConditioningVolumeInstrument,
+		(*231*)mterrorWashingVolumeInstrument,
+		(*232*)mterrorElutingVolumeInstrument,
+		(*233*)mterrorSecondaryWashingVolumeInstrument,
+		(*234*)mterrorTertiaryWashingVolumeInstrument,
+		(*235*)mterrorLoadingSampleVolumeInstrument,
+		(*236*)mterrorPreFlushingInstrumentSolutionTemperature,
+		(*237*)mterrorConditioningInstrumentSolutionTemperature,
+		(*238*)mterrorWashingInstrumentSolutionTemperature,
+		(*239*)mterrorElutingInstrumentSolutionTemperature,
+		(*240*)mterrorSecondaryWashingInstrumentSolutionTemperature,
+		(*241*)mterrorTertiaryWashingInstrumentSolutionTemperature,
+		(*242*)mterrorLoadingSampleInstrumentSolutionTemperature,
+		(*243*)mtcannotFindCartridgeWithSuppliedError,
 		(* intermediate variable *)
-		(*237*)mtnumberOfPreFlushingSolutionCollectionContainer,
-		(*238*)mtnumberOfConditioningSolutionCollectionContainer,
-		(*239*)mtnumberOfWashingSolutionCollectionContainer,
-		(*240*)mtnumberOfSecondaryWashingSolutionCollectionContainer,
-		(*241*)mtnumberOfTertiaryWashingSolutionCollectionContainer,
-		(*242*)mtnumberOfElutingSolutionCollectionContainer,
-		(*243*)mtnumberOfLoadingSampleFlowthroughContainer,
-		(*244*)mtinstrumentModel,
-		(*245*)mtpooledSampleVolumes,
-		(*246*)mtpoolsize,
-		(*247*)mtsampleVolumes,
-		(*248*)mtconflictingMobilePhaseOptionName,
-		(*249*)mtnumberOfCollection,
-		(*250*)mtimpliedCollectionNameError,
-		(*251*)mtresolvedExtractionCartridgeStorageCondition
+		(*244*)mtnumberOfPreFlushingSolutionCollectionContainer,
+		(*245*)mtnumberOfConditioningSolutionCollectionContainer,
+		(*246*)mtnumberOfWashingSolutionCollectionContainer,
+		(*247*)mtnumberOfSecondaryWashingSolutionCollectionContainer,
+		(*248*)mtnumberOfTertiaryWashingSolutionCollectionContainer,
+		(*249*)mtnumberOfElutingSolutionCollectionContainer,
+		(*250*)mtnumberOfLoadingSampleFlowthroughContainer,
+		(*251*)mtinstrumentModel,
+		(*252*)mtpooledSampleVolumes,
+		(*253*)mtpoolsize,
+		(*254*)mtsampleVolumes,
+		(*255*)mtconflictingMobilePhaseOptionName,
+		(*256*)mtnumberOfCollection,
+		(*257*)mtimpliedCollectionNameError,
+		(*258*)mtresolvedExtractionCartridgeStorageCondition
 	} = Transpose[
 		MapThread[
 			Function[{samplePacket, options},
@@ -3528,12 +3666,26 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						unresolvedSecondaryWashingSolutionDrainTime,
 						unresolvedTertiaryWashingSolutionDrainTime,
 						unresolvedElutingSolutionDrainTime,
-						unresolvedMaxPreFlushingSolutionDrainTime,
-						unresolvedMaxConditioningSolutionDrainTime,
-						unresolvedMaxWashingSolutionDrainTime,
-						unresolvedMaxSecondaryWashingSolutionDrainTime,
-						unresolvedMaxTertiaryWashingSolutionDrainTime,
-						unresolvedMaxElutingSolutionDrainTime,
+						unresolvedLoadingSampleDrainTime,
+						unresolvedPreFlushingSolutionPipettingMethod,
+						unresolvedConditioningSolutionPipettingMethod,
+						unresolvedWashingSolutionPipettingMethod,
+						unresolvedSecondaryWashingSolutionPipettingMethod,
+						unresolvedTertiaryWashingSolutionPipettingMethod,
+						unresolvedElutingSolutionPipettingMethod,
+						unresolvedLoadingSamplePipettingMethod,
+						unresolvedPreFlushingTime,
+						unresolvedConditioningTime,
+						unresolvedWashingTime,
+						unresolvedSecondaryWashingTime,
+						unresolvedTertiaryWashingTime,
+						unresolvedElutingTime,
+						unresolvedMaxPreFlushingTime,
+						unresolvedMaxConditioningTime,
+						unresolvedMaxWashingTime,
+						unresolvedMaxSecondaryWashingTime,
+						unresolvedMaxTertiaryWashingTime,
+						unresolvedMaxElutingTime,
 						unresolvedExtractionTemperature,
 						unresolvedQuantitativeLoadingSample,
 						unresolvedQuantitativeLoadingSampleSolution,
@@ -3544,8 +3696,8 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						unresolvedCollectLoadingSampleFlowthrough,
 						unresolvedLoadingSamplePressure,
 						unresolvedLoadingSampleDispenseRate,
-						unresolvedLoadingSampleDrainTime,
-						unresolvedMaxLoadingSampleDrainTime,
+						unresolvedLoadingTime,
+						unresolvedMaxLoadingTime,
 						unresolvedPreFlushingSolutionCollectionContainer,
 						unresolvedConditioningSolutionCollectionContainer,
 						unresolvedWashingSolutionCollectionContainer,
@@ -3732,12 +3884,26 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						resolvedSecondaryWashingSolutionDrainTime,
 						resolvedTertiaryWashingSolutionDrainTime,
 						resolvedElutingSolutionDrainTime,
-						resolvedMaxPreFlushingSolutionDrainTime,
-						resolvedMaxConditioningSolutionDrainTime,
-						resolvedMaxWashingSolutionDrainTime,
-						resolvedMaxSecondaryWashingSolutionDrainTime,
-						resolvedMaxTertiaryWashingSolutionDrainTime,
-						resolvedMaxElutingSolutionDrainTime,
+						resolvedLoadingSampleDrainTime,
+						resolvedPreFlushingSolutionPipettingMethod,
+						resolvedConditioningSolutionPipettingMethod,
+						resolvedWashingSolutionPipettingMethod,
+						resolvedSecondaryWashingSolutionPipettingMethod,
+						resolvedTertiaryWashingSolutionPipettingMethod,
+						resolvedElutingSolutionPipettingMethod,
+						resolvedLoadingSamplePipettingMethod,
+						resolvedPreFlushingTime,
+						resolvedConditioningTime,
+						resolvedWashingTime,
+						resolvedSecondaryWashingTime,
+						resolvedTertiaryWashingTime,
+						resolvedElutingTime,
+						resolvedMaxPreFlushingTime,
+						resolvedMaxConditioningTime,
+						resolvedMaxWashingTime,
+						resolvedMaxSecondaryWashingTime,
+						resolvedMaxTertiaryWashingTime,
+						resolvedMaxElutingTime,
 						resolvedInstrumentModel,
 						resolvedExtractionTemperature,
 						resolvedQuantitativeLoadingSample,
@@ -3748,8 +3914,8 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						resolvedCollectLoadingSampleFlowthrough,
 						resolvedLoadingSamplePressure,
 						resolvedLoadingSampleDispenseRate,
-						resolvedLoadingSampleDrainTime,
-						resolvedMaxLoadingSampleDrainTime,
+						resolvedLoadingTime,
+						resolvedMaxLoadingTime,
 						resolvedPreFlushingSolutionCollectionContainer,
 						resolvedConditioningSolutionCollectionContainer,
 						resolvedWashingSolutionCollectionContainer,
@@ -3790,18 +3956,18 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						copiedCollectSecondaryWashingSolution,
 						copiedSecondaryWashingSolutionPressure,
 						copiedSecondaryWashingSolutionDispenseRate,
-						copiedSecondaryWashingSolutionDrainTime,
+						copiedSecondaryWashingTime,
 						copiedSecondaryWashingSolutionUntilDrained,
-						copiedMaxSecondaryWashingSolutionDrainTime,
+						copiedMaxSecondaryWashingTime,
 						copiedTertiaryWashingSolution, copiedTertiaryWashingSolutionVolume,
 						copiedTertiaryWashingSolutionTemperature,
 						copiedTertiaryWashingSolutionTemperatureEquilibrationTime,
 						copiedCollectTertiaryWashingSolution,
 						copiedTertiaryWashingSolutionPressure,
 						copiedTertiaryWashingSolutionDispenseRate,
-						copiedTertiaryWashingSolutionDrainTime,
+						copiedTertiaryWashingTime,
 						copiedTertiaryWashingSolutionUntilDrained,
-						copiedMaxTertiaryWashingSolutionDrainTime,
+						copiedMaxTertiaryWashingTime,
 						copiedSecondaryWashingSolutionLabel,
 						copiedTertiaryWashingSolutionLabel,
 						copiedSecondaryWashingSolutionCollectionContainer, copiedTertiaryWashingSolutionCollectionContainer,
@@ -3826,8 +3992,8 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						resolvedLoadingSampleTemperatureEquilibrationTime,
 						pooledResolvedLoadingSamplePressure,
 						pooledResolvedLoadingSampleDispenseRate,
-						pooledResolvedLoadingSampleDrainTime,
-						pooledResolvedMaxLoadingSampleDrainTime,
+						pooledResolvedLoadingTime,
+						pooledResolvedMaxLoadingTime,
 						resolvedLoadingSampleTemperature,
 						poolederrorLoadingSamplePressureTooLow,
 						poolederrorLoadingSamplePressureTooHigh,
@@ -3849,14 +4015,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						semiResolvedCollectElutingSolution,
 						ignoredLoadingSampleLabel,
 						defaultSampleStorageCondition,
-						warningPreFlushingPressureMustBeBoolean,
-						warningConditioningPressureMustBeBoolean,
-						warningWashingPressureMustBeBoolean,
-						warningElutingPressureMustBeBoolean,
-						warningSecondaryWashingPressureMustBeBoolean,
-						warningTertiaryWashingPressureMustBeBoolean,
-						warningLoadingSamplePressureMustBeBoolean,
-						pooledwarningLoadingSamplePressureMustBeBoolean,
 						impliedCollectByContainerOptionName,
 						impliedCollectByOptionOptionName,
 						impliedCollectionNameError,
@@ -4002,287 +4160,281 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						speCannotSupportCollectionError,
 						speCannotSupportCartridgeError,
 						speCannotSupportMethodError,
-						warningPreFlushingPressureMustBeBoolean,
-						warningConditioningPressureMustBeBoolean,
-						warningWashingPressureMustBeBoolean,
-						warningElutingPressureMustBeBoolean,
-						warningSecondaryWashingPressureMustBeBoolean,
-						warningTertiaryWashingPressureMustBeBoolean,
-						warningLoadingSamplePressureMustBeBoolean,
 						tooBigCartridgeError
-					} = ConstantArray[False, 77];
+					} = ConstantArray[False, 70];
 					(* pull all unresolved options *)
 					{
-						(*1*)
-						unresolvedLoadingSampleVolume,
-						unresolvedInstrument,
-						unresolvedExtractionCartridge,
-						unresolvedExtractionMethod,
-						unresolvedExtractionSorbent,
-						unresolvedExtractionMode,
-						unresolvedExtractionStrategy,
-						unresolvedPreFlushingSwitch,
-						unresolvedConditioningSwitch,
-						unresolvedWashingSwitch,
-						(*11*)
-						unresolvedSecondaryWashingSwitch,
-						unresolvedTertiaryWashingSwitch,
-						unresolvedElutingSwitch,
-						unresolvedPreFlushingSolution,
-						unresolvedConditioningSolution,
-						unresolvedWashingSolution,
-						unresolvedSecondaryWashingSolution,
-						unresolvedTertiaryWashingSolution,
-						unresolvedElutingSolution,
-						unresolvedPreFlushingSolutionVolume,
-						(*21*)
-						unresolvedConditioningSolutionVolume,
-						unresolvedWashingSolutionVolume,
-						unresolvedSecondaryWashingSolutionVolume,
-						unresolvedTertiaryWashingSolutionVolume,
-						unresolvedElutingSolutionVolume,
-						unresolvedPreFlushingSolutionTemperature,
-						unresolvedConditioningSolutionTemperature,
-						unresolvedWashingSolutionTemperature,
-						unresolvedSecondaryWashingSolutionTemperature,
-						unresolvedTertiaryWashingSolutionTemperature,
-						(*31*)
-						unresolvedElutingSolutionTemperature,
-						unresolvedPreFlushingSolutionTemperatureEquilibrationTime,
-						unresolvedConditioningSolutionTemperatureEquilibrationTime,
-						unresolvedWashingSolutionTemperatureEquilibrationTime,
-						unresolvedSecondaryWashingSolutionTemperatureEquilibrationTime,
-						unresolvedTertiaryWashingSolutionTemperatureEquilibrationTime,
-						unresolvedElutingSolutionTemperatureEquilibrationTime,
-						unresolvedPreFlushingSolutionDispenseRate,
-						unresolvedConditioningSolutionDispenseRate,
-						unresolvedWashingSolutionDispenseRate,
-						(*41*)
-						unresolvedSecondaryWashingSolutionDispenseRate,
-						unresolvedTertiaryWashingSolutionDispenseRate,
-						unresolvedElutingSolutionDispenseRate,
-						unresolvedPreFlushingSolutionPressure,
-						unresolvedConditioningSolutionPressure,
-						unresolvedWashingSolutionPressure,
-						unresolvedSecondaryWashingSolutionPressure,
-						unresolvedTertiaryWashingSolutionPressure,
-						unresolvedElutingSolutionPressure,
-						unresolvedCollectPreFlushingSolution,
-						(*51*)
-						unresolvedCollectConditioningSolution,
-						unresolvedCollectWashingSolution,
-						unresolvedCollectSecondaryWashingSolution,
-						unresolvedCollectTertiaryWashingSolution,
-						unresolvedCollectElutingSolution,
-						(*61*)
-						unresolvedPreFlushingSolutionUntilDrained,
-						unresolvedConditioningSolutionUntilDrained,
-						unresolvedWashingSolutionUntilDrained,
-						unresolvedSecondaryWashingSolutionUntilDrained,
-						unresolvedTertiaryWashingSolutionUntilDrained,
-						unresolvedElutingSolutionUntilDrained,
-						unresolvedPreFlushingSolutionDrainTime,
-						unresolvedConditioningSolutionDrainTime,
-						unresolvedWashingSolutionDrainTime,
-						(*71*)
-						unresolvedSecondaryWashingSolutionDrainTime,
-						unresolvedTertiaryWashingSolutionDrainTime,
-						unresolvedElutingSolutionDrainTime,
-						unresolvedMaxPreFlushingSolutionDrainTime,
-						unresolvedMaxConditioningSolutionDrainTime,
-						unresolvedMaxWashingSolutionDrainTime,
-						unresolvedMaxSecondaryWashingSolutionDrainTime,
-						unresolvedMaxTertiaryWashingSolutionDrainTime,
-						unresolvedMaxElutingSolutionDrainTime,
-						unresolvedExtractionTemperature,
-						(*81*)
-						unresolvedQuantitativeLoadingSample,
-						unresolvedQuantitativeLoadingSampleSolution,
-						unresolvedQuantitativeLoadingSampleVolume,
-						unresolvedLoadingSampleUntilDrained,
-						(*91*)
-						unresolvedLoadingSampleTemperature,
-						unresolvedLoadingSampleTemperatureEquilibrationTime,
-						unresolvedCollectLoadingSampleFlowthrough,
-						unresolvedLoadingSamplePressure,
-						unresolvedLoadingSampleDispenseRate,
-						unresolvedLoadingSampleDrainTime,
-						unresolvedMaxLoadingSampleDrainTime,
-						unresolvedPreFlushingSolutionCollectionContainer,
-						(*101*)
-						unresolvedConditioningSolutionCollectionContainer,
-						unresolvedWashingSolutionCollectionContainer,
-						unresolvedSecondaryWashingSolutionCollectionContainer,
-						unresolvedTertiaryWashingSolutionCollectionContainer,
-						unresolvedElutingSolutionCollectionContainer,
-						unresolvedLoadingSampleFlowthroughContainer,
-						unresolvedSampleLabel,
-						unresolvedSourceContainerLabel,
-						unresolvedExtractionCartridgeLabel,
-						unresolvedPreFlushingSampleOutLabel,
-						(*111*)
-						unresolvedConditioningSampleOutLabel,
-						unresolvedLoadingSampleFlowthroughSampleOutLabel,
-						unresolvedWashingSampleOutLabel,
-						unresolvedSecondaryWashingSampleOutLabel,
-						unresolvedTertiaryWashingSampleOutLabel,
-						unresolvedElutingSampleOutLabel,
-						unresolvedSampleOutLabel,
-						unresolvedPreFlushingSolutionLabel,
-						unresolvedConditioningSolutionLabel,
-						unresolvedWashingSolutionLabel,
-						unresolvedSecondaryWashingSolutionLabel,
-						(*122*)
-						unresolvedTertiaryWashingSolutionLabel,
-						unresolvedElutingSolutionLabel,
-						unresolvedSamplesInStorageCondition,
-						unresolvedSamplesOutStorageCondition,
-						unresolvedPreFlushingSolutionCentrifugeIntensity,
-						unresolvedConditioningSolutionCentrifugeIntensity,
-						unresolvedLoadingSampleCentrifugeIntensity,
-						unresolvedWashingSolutionCentrifugeIntensity,
-						unresolvedSecondaryWashingSolutionCentrifugeIntensity,
-						unresolvedTertiaryWashingSolutionCentrifugeIntensity,
-						(*132*)
-						unresolvedElutingSolutionCentrifugeIntensity,
-						unresolvedPreparation,
-						unresolvedExtractionCartridgeStorageCondition
+						(*1*)unresolvedLoadingSampleVolume,
+						(*2*)unresolvedInstrument,
+						(*3*)unresolvedExtractionCartridge,
+						(*4*)unresolvedExtractionMethod,
+						(*5*)unresolvedExtractionSorbent,
+						(*6*)unresolvedExtractionMode,
+						(*7*)unresolvedExtractionStrategy,
+						(*8*)unresolvedPreFlushingSwitch,
+						(*9*)unresolvedConditioningSwitch,
+						(*10*)unresolvedWashingSwitch,
+						(*11*)unresolvedSecondaryWashingSwitch,
+						(*12*)unresolvedTertiaryWashingSwitch,
+						(*13*)unresolvedElutingSwitch,
+						(*14*)unresolvedPreFlushingSolution,
+						(*15*)unresolvedConditioningSolution,
+						(*16*)unresolvedWashingSolution,
+						(*17*)unresolvedSecondaryWashingSolution,
+						(*18*)unresolvedTertiaryWashingSolution,
+						(*19*)unresolvedElutingSolution,
+						(*20*)unresolvedPreFlushingSolutionVolume,
+						(*21*)unresolvedConditioningSolutionVolume,
+						(*22*)unresolvedWashingSolutionVolume,
+						(*23*)unresolvedSecondaryWashingSolutionVolume,
+						(*24*)unresolvedTertiaryWashingSolutionVolume,
+						(*25*)unresolvedElutingSolutionVolume,
+						(*26*)unresolvedPreFlushingSolutionTemperature,
+						(*27*)unresolvedConditioningSolutionTemperature,
+						(*28*)unresolvedWashingSolutionTemperature,
+						(*29*)unresolvedSecondaryWashingSolutionTemperature,
+						(*30*)unresolvedTertiaryWashingSolutionTemperature,
+						(*31*)unresolvedElutingSolutionTemperature,
+						(*32*)unresolvedPreFlushingSolutionTemperatureEquilibrationTime,
+						(*33*)unresolvedConditioningSolutionTemperatureEquilibrationTime,
+						(*34*)unresolvedWashingSolutionTemperatureEquilibrationTime,
+						(*35*)unresolvedSecondaryWashingSolutionTemperatureEquilibrationTime,
+						(*36*)unresolvedTertiaryWashingSolutionTemperatureEquilibrationTime,
+						(*37*)unresolvedElutingSolutionTemperatureEquilibrationTime,
+						(*38*)unresolvedPreFlushingSolutionDispenseRate,
+						(*39*)unresolvedConditioningSolutionDispenseRate,
+						(*40*)unresolvedWashingSolutionDispenseRate,
+						(*41*)unresolvedSecondaryWashingSolutionDispenseRate,
+						(*42*)unresolvedTertiaryWashingSolutionDispenseRate,
+						(*43*)unresolvedElutingSolutionDispenseRate,
+						(*44*)unresolvedPreFlushingSolutionPressure,
+						(*45*)unresolvedConditioningSolutionPressure,
+						(*46*)unresolvedWashingSolutionPressure,
+						(*47*)unresolvedSecondaryWashingSolutionPressure,
+						(*48*)unresolvedTertiaryWashingSolutionPressure,
+						(*49*)unresolvedElutingSolutionPressure,
+						(*50*)unresolvedCollectPreFlushingSolution,
+						(*51*)unresolvedCollectConditioningSolution,
+						(*52*)unresolvedCollectWashingSolution,
+						(*53*)unresolvedCollectSecondaryWashingSolution,
+						(*54*)unresolvedCollectTertiaryWashingSolution,
+						(*55*)unresolvedCollectElutingSolution,
+						(*56*)unresolvedPreFlushingSolutionUntilDrained,
+						(*57*)unresolvedConditioningSolutionUntilDrained,
+						(*58*)unresolvedWashingSolutionUntilDrained,
+						(*59*)unresolvedSecondaryWashingSolutionUntilDrained,
+						(*60*)unresolvedTertiaryWashingSolutionUntilDrained,
+						(*61*)unresolvedElutingSolutionUntilDrained,
+						(*62*)unresolvedPreFlushingSolutionDrainTime,
+						(*63*)unresolvedConditioningSolutionDrainTime,
+						(*64*)unresolvedWashingSolutionDrainTime,
+						(*65*)unresolvedSecondaryWashingSolutionDrainTime,
+						(*66*)unresolvedTertiaryWashingSolutionDrainTime,
+						(*67*)unresolvedElutingSolutionDrainTime,
+						(*68*)unresolvedLoadingSampleDrainTime,
+						(* these seven are just defaulted to Null so we are already resolved at this stage *)
+						(*69*)resolvedPreFlushingSolutionPipettingMethod,
+						(*70*)resolvedConditioningSolutionPipettingMethod,
+						(*71*)resolvedWashingSolutionPipettingMethod,
+						(*72*)resolvedSecondaryWashingSolutionPipettingMethod,
+						(*73*)resolvedTertiaryWashingSolutionPipettingMethod,
+						(*74*)resolvedElutingSolutionPipettingMethod,
+						(*75*)resolvedLoadingSamplePipettingMethod,
+						(*76*)unresolvedPreFlushingTime,
+						(*77*)unresolvedConditioningTime,
+						(*78*)unresolvedWashingTime,
+						(*79*)unresolvedSecondaryWashingTime,
+						(*80*)unresolvedTertiaryWashingTime,
+						(*81*)unresolvedElutingTime,
+						(*82*)unresolvedMaxPreFlushingTime,
+						(*83*)unresolvedMaxConditioningTime,
+						(*84*)unresolvedMaxWashingTime,
+						(*85*)unresolvedMaxSecondaryWashingTime,
+						(*86*)unresolvedMaxTertiaryWashingTime,
+						(*87*)unresolvedMaxElutingTime,
+						(*88*)unresolvedExtractionTemperature,
+						(*89*)unresolvedQuantitativeLoadingSample,
+						(*90*)unresolvedQuantitativeLoadingSampleSolution,
+						(*91*)unresolvedQuantitativeLoadingSampleVolume,
+						(*92*)unresolvedLoadingSampleUntilDrained,
+						(*93*)unresolvedLoadingSampleTemperature,
+						(*94*)unresolvedLoadingSampleTemperatureEquilibrationTime,
+						(*95*)unresolvedCollectLoadingSampleFlowthrough,
+						(*96*)unresolvedLoadingSamplePressure,
+						(*97*)unresolvedLoadingSampleDispenseRate,
+						(*98*)unresolvedLoadingTime,
+						(*99*)unresolvedMaxLoadingTime,
+						(*100*)unresolvedPreFlushingSolutionCollectionContainer,
+						(*101*)unresolvedConditioningSolutionCollectionContainer,
+						(*102*)unresolvedWashingSolutionCollectionContainer,
+						(*103*)unresolvedSecondaryWashingSolutionCollectionContainer,
+						(*104*)unresolvedTertiaryWashingSolutionCollectionContainer,
+						(*105*)unresolvedElutingSolutionCollectionContainer,
+						(*106*)unresolvedLoadingSampleFlowthroughContainer,
+						(*107*)unresolvedSampleLabel,
+						(*108*)unresolvedSourceContainerLabel,
+						(*109*)unresolvedExtractionCartridgeLabel,
+						(*110*)unresolvedPreFlushingSampleOutLabel,
+						(*111*)unresolvedConditioningSampleOutLabel,
+						(*112*)unresolvedLoadingSampleFlowthroughSampleOutLabel,
+						(*113*)unresolvedWashingSampleOutLabel,
+						(*114*)unresolvedSecondaryWashingSampleOutLabel,
+						(*115*)unresolvedTertiaryWashingSampleOutLabel,
+						(*116*)unresolvedElutingSampleOutLabel,
+						(*117*)unresolvedSampleOutLabel,
+						(*118*)unresolvedPreFlushingSolutionLabel,
+						(*119*)unresolvedConditioningSolutionLabel,
+						(*120*)unresolvedWashingSolutionLabel,
+						(*121*)unresolvedSecondaryWashingSolutionLabel,
+						(*122*)unresolvedTertiaryWashingSolutionLabel,
+						(*123*)unresolvedElutingSolutionLabel,
+						(*124*)unresolvedSamplesInStorageCondition,
+						(*125*)unresolvedSamplesOutStorageCondition,
+						(*126*)unresolvedPreFlushingSolutionCentrifugeIntensity,
+						(*127*)unresolvedConditioningSolutionCentrifugeIntensity,
+						(*128*)unresolvedLoadingSampleCentrifugeIntensity,
+						(*129*)unresolvedWashingSolutionCentrifugeIntensity,
+						(*130*)unresolvedSecondaryWashingSolutionCentrifugeIntensity,
+						(*131*)unresolvedTertiaryWashingSolutionCentrifugeIntensity,
+						(*132*)unresolvedElutingSolutionCentrifugeIntensity,
+						(*133*)unresolvedPreparation,
+						(*134*)unresolvedExtractionCartridgeStorageCondition
 					} = Lookup[options,
 						{
-							(*1*)
-							LoadingSampleVolume,
-							Instrument,
-							ExtractionCartridge,
-							ExtractionMethod,
-							ExtractionSorbent,
-							ExtractionMode,
-							ExtractionStrategy,
-							PreFlushing,
-							Conditioning,
-							Washing,
-							(*11*)
-							SecondaryWashing,
-							TertiaryWashing,
-							Eluting,
-							PreFlushingSolution,
-							ConditioningSolution,
-							WashingSolution,
-							SecondaryWashingSolution,
-							TertiaryWashingSolution,
-							ElutingSolution,
-							PreFlushingSolutionVolume,
-							(*21*)
-							ConditioningSolutionVolume,
-							WashingSolutionVolume,
-							SecondaryWashingSolutionVolume,
-							TertiaryWashingSolutionVolume,
-							ElutingSolutionVolume,
-							PreFlushingSolutionTemperature,
-							ConditioningSolutionTemperature,
-							WashingSolutionTemperature,
-							SecondaryWashingSolutionTemperature,
-							TertiaryWashingSolutionTemperature,
-							(*31*)
-							ElutingSolutionTemperature,
-							PreFlushingSolutionTemperatureEquilibrationTime,
-							ConditioningSolutionTemperatureEquilibrationTime,
-							WashingSolutionTemperatureEquilibrationTime,
-							SecondaryWashingSolutionTemperatureEquilibrationTime,
-							TertiaryWashingSolutionTemperatureEquilibrationTime,
-							ElutingSolutionTemperatureEquilibrationTime,
-							PreFlushingSolutionDispenseRate,
-							ConditioningSolutionDispenseRate,
-							WashingSolutionDispenseRate,
-							(*41*)
-							SecondaryWashingSolutionDispenseRate,
-							TertiaryWashingSolutionDispenseRate,
-							ElutingSolutionDispenseRate,
-							PreFlushingSolutionPressure,
-							ConditioningSolutionPressure,
-							WashingSolutionPressure,
-							SecondaryWashingSolutionPressure,
-							TertiaryWashingSolutionPressure,
-							ElutingSolutionPressure,
-							CollectPreFlushingSolution,
-							(*51*)
-							CollectConditioningSolution,
-							CollectWashingSolution,
-							CollectSecondaryWashingSolution,
-							CollectTertiaryWashingSolution,
-							CollectElutingSolution,
-							(*61*)
-							PreFlushingSolutionUntilDrained,
-							ConditioningSolutionUntilDrained,
-							WashingSolutionUntilDrained,
-							SecondaryWashingSolutionUntilDrained,
-							TertiaryWashingSolutionUntilDrained,
-							ElutingSolutionUntilDrained,
-							PreFlushingSolutionDrainTime,
-							ConditioningSolutionDrainTime,
-							WashingSolutionDrainTime,
-							(*71*)
-							SecondaryWashingSolutionDrainTime,
-							TertiaryWashingSolutionDrainTime,
-							ElutingSolutionDrainTime,
-							MaxPreFlushingSolutionDrainTime,
-							MaxConditioningSolutionDrainTime,
-							MaxWashingSolutionDrainTime,
-							MaxSecondaryWashingSolutionDrainTime,
-							MaxTertiaryWashingSolutionDrainTime,
-							MaxElutingSolutionDrainTime,
-							ExtractionTemperature,
-							(*81*)
-							QuantitativeLoadingSample,
-							QuantitativeLoadingSampleSolution,
-							QuantitativeLoadingSampleVolume,
-							LoadingSampleUntilDrained,
-							(*91*)
-							LoadingSampleTemperature,
-							LoadingSampleTemperatureEquilibrationTime,
-							CollectLoadingSampleFlowthrough,
-							LoadingSamplePressure,
-							LoadingSampleDispenseRate,
-							LoadingSampleDrainTime,
-							MaxLoadingSampleDrainTime,
-							PreFlushingSolutionCollectionContainer,
-							(*101*)
-							ConditioningSolutionCollectionContainer,
-							WashingSolutionCollectionContainer,
-							SecondaryWashingSolutionCollectionContainer,
-							TertiaryWashingSolutionCollectionContainer,
-							ElutingSolutionCollectionContainer,
-							LoadingSampleFlowthroughContainer,
-							SampleLabel,
-							SourceContainerLabel,
-							ExtractionCartridgeLabel,
-							PreFlushingSampleOutLabel,
-							(*111*)
-							ConditioningSampleOutLabel,
-							LoadingSampleFlowthroughSampleOutLabel,
-							WashingSampleOutLabel,
-							SecondaryWashingSampleOutLabel,
-							TertiaryWashingSampleOutLabel,
-							ElutingSampleOutLabel,
-							SampleOutLabel,
-							PreFlushingSolutionLabel,
-							ConditioningSolutionLabel,
-							WashingSolutionLabel,
-							SecondaryWashingSolutionLabel,
-							(*122*)
-							TertiaryWashingSolutionLabel,
-							ElutingSolutionLabel,
-							SamplesInStorageCondition,
-							SamplesOutStorageCondition,
-							PreFlushingSolutionCentrifugeIntensity,
-							ConditioningSolutionCentrifugeIntensity,
-							LoadingSampleCentrifugeIntensity,
-							WashingSolutionCentrifugeIntensity,
-							SecondaryWashingSolutionCentrifugeIntensity,
-							TertiaryWashingSolutionCentrifugeIntensity,
-							(*132*)
-							ElutingSolutionCentrifugeIntensity,
-							Preparation,
-							ExtractionCartridgeStorageCondition
+							(*1*)LoadingSampleVolume,
+							(*2*)Instrument,
+							(*3*)ExtractionCartridge,
+							(*4*)ExtractionMethod,
+							(*5*)ExtractionSorbent,
+							(*6*)ExtractionMode,
+							(*7*)ExtractionStrategy,
+							(*8*)PreFlushing,
+							(*9*)Conditioning,
+							(*10*)Washing,
+							(*11*)SecondaryWashing,
+							(*12*)TertiaryWashing,
+							(*13*)Eluting,
+							(*14*)PreFlushingSolution,
+							(*15*)ConditioningSolution,
+							(*16*)WashingSolution,
+							(*17*)SecondaryWashingSolution,
+							(*18*)TertiaryWashingSolution,
+							(*19*)ElutingSolution,
+							(*20*)PreFlushingSolutionVolume,
+							(*21*)ConditioningSolutionVolume,
+							(*22*)WashingSolutionVolume,
+							(*23*)SecondaryWashingSolutionVolume,
+							(*24*)TertiaryWashingSolutionVolume,
+							(*25*)ElutingSolutionVolume,
+							(*26*)PreFlushingSolutionTemperature,
+							(*27*)ConditioningSolutionTemperature,
+							(*28*)WashingSolutionTemperature,
+							(*29*)SecondaryWashingSolutionTemperature,
+							(*30*)TertiaryWashingSolutionTemperature,
+							(*31*)ElutingSolutionTemperature,
+							(*32*)PreFlushingSolutionTemperatureEquilibrationTime,
+							(*33*)ConditioningSolutionTemperatureEquilibrationTime,
+							(*34*)WashingSolutionTemperatureEquilibrationTime,
+							(*35*)SecondaryWashingSolutionTemperatureEquilibrationTime,
+							(*36*)TertiaryWashingSolutionTemperatureEquilibrationTime,
+							(*37*)ElutingSolutionTemperatureEquilibrationTime,
+							(*38*)PreFlushingSolutionDispenseRate,
+							(*39*)ConditioningSolutionDispenseRate,
+							(*40*)WashingSolutionDispenseRate,
+							(*41*)SecondaryWashingSolutionDispenseRate,
+							(*42*)TertiaryWashingSolutionDispenseRate,
+							(*43*)ElutingSolutionDispenseRate,
+							(*44*)PreFlushingSolutionPressure,
+							(*45*)ConditioningSolutionPressure,
+							(*46*)WashingSolutionPressure,
+							(*47*)SecondaryWashingSolutionPressure,
+							(*48*)TertiaryWashingSolutionPressure,
+							(*49*)ElutingSolutionPressure,
+							(*50*)CollectPreFlushingSolution,
+							(*51*)CollectConditioningSolution,
+							(*52*)CollectWashingSolution,
+							(*53*)CollectSecondaryWashingSolution,
+							(*54*)CollectTertiaryWashingSolution,
+							(*55*)CollectElutingSolution,
+							(*56*)PreFlushingSolutionUntilDrained,
+							(*57*)ConditioningSolutionUntilDrained,
+							(*58*)WashingSolutionUntilDrained,
+							(*59*)SecondaryWashingSolutionUntilDrained,
+							(*60*)TertiaryWashingSolutionUntilDrained,
+							(*61*)ElutingSolutionUntilDrained,
+							(*62*)PreFlushingSolutionDrainTime,
+							(*63*)ConditioningSolutionDrainTime,
+							(*64*)WashingSolutionDrainTime,
+							(*65*)SecondaryWashingSolutionDrainTime,
+							(*66*)TertiaryWashingSolutionDrainTime,
+							(*67*)ElutingSolutionDrainTime,
+							(*68*)LoadingSampleDrainTime,
+							(*69*)PreFlushingSolutionPipettingMethod,
+							(*70*)ConditioningSolutionPipettingMethod,
+							(*71*)WashingSolutionPipettingMethod,
+							(*72*)SecondaryWashingSolutionPipettingMethod,
+							(*73*)TertiaryWashingSolutionPipettingMethod,
+							(*74*)ElutingSolutionPipettingMethod,
+							(*75*)LoadingSamplePipettingMethod,
+							(*76*)PreFlushingTime,
+							(*77*)ConditioningTime,
+							(*78*)WashingTime,
+							(*79*)SecondaryWashingTime,
+							(*80*)TertiaryWashingTime,
+							(*81*)ElutingTime,
+							(*82*)MaxPreFlushingTime,
+							(*83*)MaxConditioningTime,
+							(*84*)MaxWashingTime,
+							(*85*)MaxSecondaryWashingTime,
+							(*86*)MaxTertiaryWashingTime,
+							(*87*)MaxElutingTime,
+							(*88*)ExtractionTemperature,
+							(*89*)QuantitativeLoadingSample,
+							(*90*)QuantitativeLoadingSampleSolution,
+							(*91*)QuantitativeLoadingSampleVolume,
+							(*92*)LoadingSampleUntilDrained,
+							(*93*)LoadingSampleTemperature,
+							(*94*)LoadingSampleTemperatureEquilibrationTime,
+							(*95*)CollectLoadingSampleFlowthrough,
+							(*96*)LoadingSamplePressure,
+							(*97*)LoadingSampleDispenseRate,
+							(*98*)LoadingTime,
+							(*99*)MaxLoadingTime,
+							(*100*)PreFlushingSolutionCollectionContainer,
+							(*101*)ConditioningSolutionCollectionContainer,
+							(*102*)WashingSolutionCollectionContainer,
+							(*103*)SecondaryWashingSolutionCollectionContainer,
+							(*104*)TertiaryWashingSolutionCollectionContainer,
+							(*105*)ElutingSolutionCollectionContainer,
+							(*106*)LoadingSampleFlowthroughContainer,
+							(*107*)SampleLabel,
+							(*108*)SourceContainerLabel,
+							(*109*)ExtractionCartridgeLabel,
+							(*110*)PreFlushingSampleOutLabel,
+							(*111*)ConditioningSampleOutLabel,
+							(*112*)LoadingSampleFlowthroughSampleOutLabel,
+							(*113*)WashingSampleOutLabel,
+							(*114*)SecondaryWashingSampleOutLabel,
+							(*115*)TertiaryWashingSampleOutLabel,
+							(*116*)ElutingSampleOutLabel,
+							(*117*)SampleOutLabel,
+							(*118*)PreFlushingSolutionLabel,
+							(*119*)ConditioningSolutionLabel,
+							(*120*)WashingSolutionLabel,
+							(*121*)SecondaryWashingSolutionLabel,
+							(*122*)TertiaryWashingSolutionLabel,
+							(*123*)ElutingSolutionLabel,
+							(*124*)SamplesInStorageCondition,
+							(*125*)SamplesOutStorageCondition,
+							(*126*)PreFlushingSolutionCentrifugeIntensity,
+							(*127*)ConditioningSolutionCentrifugeIntensity,
+							(*128*)LoadingSampleCentrifugeIntensity,
+							(*129*)WashingSolutionCentrifugeIntensity,
+							(*130*)SecondaryWashingSolutionCentrifugeIntensity,
+							(*131*)TertiaryWashingSolutionCentrifugeIntensity,
+							(*132*)ElutingSolutionCentrifugeIntensity,
+							(*133*)Preparation,
+							(*134*)ExtractionCartridgeStorageCondition
 						}
 					];
 
@@ -4536,9 +4688,9 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						unresolvedCollectWashingSolution,
 						unresolvedWashingSolutionPressure,
 						unresolvedWashingSolutionDispenseRate,
-						unresolvedWashingSolutionDrainTime,
+						unresolvedWashingTime,
 						unresolvedWashingSolutionUntilDrained,
-						unresolvedMaxWashingSolutionDrainTime,
+						unresolvedMaxWashingTime,
 						unresolvedWashingSolutionLabel,
 						unresolvedWashingSolutionCollectionContainer
 					};
@@ -4550,9 +4702,9 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						unresolvedCollectSecondaryWashingSolution,
 						unresolvedSecondaryWashingSolutionPressure,
 						unresolvedSecondaryWashingSolutionDispenseRate,
-						unresolvedSecondaryWashingSolutionDrainTime,
+						unresolvedSecondaryWashingTime,
 						unresolvedSecondaryWashingSolutionUntilDrained,
-						unresolvedMaxSecondaryWashingSolutionDrainTime,
+						unresolvedMaxSecondaryWashingTime,
 						unresolvedSecondaryWashingSolutionLabel,
 						unresolvedSecondaryWashingSolutionCollectionContainer
 					};
@@ -4564,9 +4716,9 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						unresolvedCollectTertiaryWashingSolution,
 						unresolvedTertiaryWashingSolutionPressure,
 						unresolvedTertiaryWashingSolutionDispenseRate,
-						unresolvedTertiaryWashingSolutionDrainTime,
+						unresolvedTertiaryWashingTime,
 						unresolvedTertiaryWashingSolutionUntilDrained,
-						unresolvedMaxTertiaryWashingSolutionDrainTime,
+						unresolvedMaxTertiaryWashingTime,
 						unresolvedTertiaryWashingSolutionLabel,
 						unresolvedTertiaryWashingSolutionCollectionContainer
 					};
@@ -5332,102 +5484,98 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 
 					(* PreFlushing *)
 					{
-						resolvedPreFlushingSolutionVolume,
-						resolvedPreFlushingSolutionTemperatureEquilibrationTime,
-						resolvedPreFlushingSolutionPressure,
-						resolvedPreFlushingSolutionDispenseRate,
-						resolvedPreFlushingSolutionDrainTime,
-						resolvedMaxPreFlushingSolutionDrainTime,
-						resolvedPreFlushingSolutionTemperature,
-						resolvedPreFlushingSolutionLabel,
-						errorPreFlushingPressureTooLow,
-						errorPreFlushingPressureTooHigh,
-						errorPreFlushingDispenseRateTooLow,
-						errorPreFlushingDispenseRateTooHigh,
-						warningPreFlushingPressureMustBeBoolean,
-						errorPreFlushingVolumeInstrument,
-						errorPreFlushingInstrumentSolutionTemperature
+						(*1*)resolvedPreFlushingSolutionVolume,
+						(*2*)resolvedPreFlushingSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedPreFlushingSolutionPressure,
+						(*4*)resolvedPreFlushingSolutionDispenseRate,
+						(*5*)resolvedPreFlushingTime,
+						(*6*)resolvedMaxPreFlushingTime,
+						(*7*)resolvedPreFlushingSolutionTemperature,
+						(*8*)resolvedPreFlushingSolutionLabel,
+						(*9*)errorPreFlushingPressureTooLow,
+						(*10*)errorPreFlushingPressureTooHigh,
+						(*11*)errorPreFlushingDispenseRateTooLow,
+						(*12*)errorPreFlushingDispenseRateTooHigh,
+						(*13*)errorPreFlushingVolumeInstrument,
+						(*14*)errorPreFlushingInstrumentSolutionTemperature
 					} = speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 						resolvedPreFlushingSwitch, unresolvedPreFlushingSolutionVolume,
 						unresolvedPreFlushingSolutionTemperature, unresolvedPreFlushingSolutionTemperatureEquilibrationTime,
 						resolvedCollectPreFlushingSolution,
 						unresolvedPreFlushingSolutionPressure, unresolvedPreFlushingSolutionDispenseRate,
-						unresolvedPreFlushingSolutionDrainTime, resolvedPreFlushingSolutionUntilDrained, unresolvedMaxPreFlushingSolutionDrainTime,
+						unresolvedPreFlushingTime, resolvedPreFlushingSolutionUntilDrained, unresolvedMaxPreFlushingTime,
 						unresolvedPreFlushingSolutionLabel, resolvedPreparation, resolvedPreFlushingSolution
 					];
 					(* Conditioning *)
 					{
-						resolvedConditioningSolutionVolume,
-						resolvedConditioningSolutionTemperatureEquilibrationTime,
-						resolvedConditioningSolutionPressure,
-						resolvedConditioningSolutionDispenseRate,
-						resolvedConditioningSolutionDrainTime,
-						resolvedMaxConditioningSolutionDrainTime,
-						resolvedConditioningSolutionTemperature,
-						resolvedConditioningSolutionLabel,
-						errorConditioningPressureTooLow,
-						errorConditioningPressureTooHigh,
-						errorConditioningDispenseRateTooLow,
-						errorConditioningDispenseRateTooHigh,
-						warningConditioningPressureMustBeBoolean,
-						errorConditioningVolumeInstrument,
-						errorConditioningInstrumentSolutionTemperature
+						(*1*)resolvedConditioningSolutionVolume,
+						(*2*)resolvedConditioningSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedConditioningSolutionPressure,
+						(*4*)resolvedConditioningSolutionDispenseRate,
+						(*5*)resolvedConditioningTime,
+						(*6*)resolvedMaxConditioningTime,
+						(*7*)resolvedConditioningSolutionTemperature,
+						(*8*)resolvedConditioningSolutionLabel,
+						(*9*)errorConditioningPressureTooLow,
+						(*10*)errorConditioningPressureTooHigh,
+						(*11*)errorConditioningDispenseRateTooLow,
+						(*12*)errorConditioningDispenseRateTooHigh,
+						(*13*)errorConditioningVolumeInstrument,
+						(*14*)errorConditioningInstrumentSolutionTemperature
 					} = speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 						resolvedConditioningSwitch, unresolvedConditioningSolutionVolume,
 						unresolvedConditioningSolutionTemperature, unresolvedConditioningSolutionTemperatureEquilibrationTime,
 						resolvedCollectConditioningSolution,
 						unresolvedConditioningSolutionPressure, unresolvedConditioningSolutionDispenseRate,
-						unresolvedConditioningSolutionDrainTime, resolvedConditioningSolutionUntilDrained, unresolvedMaxConditioningSolutionDrainTime,
+						unresolvedConditioningTime, resolvedConditioningSolutionUntilDrained, unresolvedMaxConditioningTime,
 						unresolvedConditioningSolutionLabel, resolvedPreparation, resolvedConditioningSolution
 					];
 					(* Washing *)
 					{
-						resolvedWashingSolutionVolume,
-						resolvedWashingSolutionTemperatureEquilibrationTime,
-						resolvedWashingSolutionPressure,
-						resolvedWashingSolutionDispenseRate,
-						resolvedWashingSolutionDrainTime,
-						resolvedMaxWashingSolutionDrainTime,
-						resolvedWashingSolutionTemperature,
-						resolvedWashingSolutionLabel,
-						errorWashingPressureTooLow,
-						errorWashingPressureTooHigh,
-						errorWashingDispenseRateTooLow,
-						errorWashingDispenseRateTooHigh,
-						warningWashingPressureMustBeBoolean,
-						errorWashingVolumeInstrument,
-						errorWashingInstrumentSolutionTemperature
+						(*1*)resolvedWashingSolutionVolume,
+						(*2*)resolvedWashingSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedWashingSolutionPressure,
+						(*4*)resolvedWashingSolutionDispenseRate,
+						(*5*)resolvedWashingTime,
+						(*6*)resolvedMaxWashingTime,
+						(*7*)resolvedWashingSolutionTemperature,
+						(*8*)resolvedWashingSolutionLabel,
+						(*9*)errorWashingPressureTooLow,
+						(*10*)errorWashingPressureTooHigh,
+						(*11*)errorWashingDispenseRateTooLow,
+						(*12*)errorWashingDispenseRateTooHigh,
+						(*13*)errorWashingVolumeInstrument,
+						(*14*)errorWashingInstrumentSolutionTemperature
 					} = speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 						resolvedWashingSwitch, unresolvedWashingSolutionVolume,
 						unresolvedWashingSolutionTemperature, unresolvedWashingSolutionTemperatureEquilibrationTime,
 						resolvedCollectWashingSolution,
 						unresolvedWashingSolutionPressure, unresolvedWashingSolutionDispenseRate,
-						unresolvedWashingSolutionDrainTime, resolvedWashingSolutionUntilDrained, unresolvedMaxWashingSolutionDrainTime,
+						unresolvedWashingTime, resolvedWashingSolutionUntilDrained, unresolvedMaxWashingTime,
 						unresolvedWashingSolutionLabel, resolvedPreparation, resolvedWashingSolution
 					];
 					(* ELuting *)
 					{
-						resolvedElutingSolutionVolume,
-						resolvedElutingSolutionTemperatureEquilibrationTime,
-						resolvedElutingSolutionPressure,
-						resolvedElutingSolutionDispenseRate,
-						resolvedElutingSolutionDrainTime,
-						resolvedMaxElutingSolutionDrainTime,
-						resolvedElutingSolutionTemperature,
-						resolvedElutingSolutionLabel,
-						errorElutingPressureTooLow,
-						errorElutingPressureTooHigh,
-						errorElutingDispenseRateTooLow,
-						errorElutingDispenseRateTooHigh,
-						warningElutingPressureMustBeBoolean,
-						errorElutingVolumeInstrument,
-						errorElutingInstrumentSolutionTemperature
+						(*1*)resolvedElutingSolutionVolume,
+						(*2*)resolvedElutingSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedElutingSolutionPressure,
+						(*4*)resolvedElutingSolutionDispenseRate,
+						(*5*)resolvedElutingTime,
+						(*6*)resolvedMaxElutingTime,
+						(*7*)resolvedElutingSolutionTemperature,
+						(*8*)resolvedElutingSolutionLabel,
+						(*9*)errorElutingPressureTooLow,
+						(*10*)errorElutingPressureTooHigh,
+						(*11*)errorElutingDispenseRateTooLow,
+						(*12*)errorElutingDispenseRateTooHigh,
+						(*13*)errorElutingVolumeInstrument,
+						(*14*)errorElutingInstrumentSolutionTemperature
 					} = speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 						resolvedElutingSwitch, unresolvedElutingSolutionVolume,
 						unresolvedElutingSolutionTemperature, unresolvedElutingSolutionTemperatureEquilibrationTime,
 						resolvedCollectElutingSolution,
 						unresolvedElutingSolutionPressure, unresolvedElutingSolutionDispenseRate,
-						unresolvedElutingSolutionDrainTime, resolvedElutingSolutionUntilDrained, unresolvedMaxElutingSolutionDrainTime,
+						unresolvedElutingTime, resolvedElutingSolutionUntilDrained, unresolvedMaxElutingTime,
 						unresolvedElutingSolutionLabel, resolvedPreparation, resolvedElutingSolution
 					];
 					(* --8-- for secondary and tertiary washing, we should set it according to the wash if no other info is given *)
@@ -5443,9 +5591,9 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						copiedCollectSecondaryWashingSolution,
 						copiedSecondaryWashingSolutionPressure,
 						copiedSecondaryWashingSolutionDispenseRate,
-						copiedSecondaryWashingSolutionDrainTime,
+						copiedSecondaryWashingTime,
 						copiedSecondaryWashingSolutionUntilDrained,
-						copiedMaxSecondaryWashingSolutionDrainTime,
+						copiedMaxSecondaryWashingTime,
 						copiedSecondaryWashingSolutionLabel,
 						copiedSecondaryWashingSolutionCollectionContainer
 					} = MapThread[ReplaceAll[#1, Automatic -> #2]&, {secondaryOptions, primaryOptions}];
@@ -5457,30 +5605,29 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						copiedCollectTertiaryWashingSolution,
 						copiedTertiaryWashingSolutionPressure,
 						copiedTertiaryWashingSolutionDispenseRate,
-						copiedTertiaryWashingSolutionDrainTime,
+						copiedTertiaryWashingTime,
 						copiedTertiaryWashingSolutionUntilDrained,
-						copiedMaxTertiaryWashingSolutionDrainTime,
+						copiedMaxTertiaryWashingTime,
 						copiedTertiaryWashingSolutionLabel,
 						copiedTertiaryWashingSolutionCollectionContainer
 					} = MapThread[ReplaceAll[#1, Automatic -> #2]&, {tertiaryOptions, primaryOptions}];
 
 					(* pass to speSolutionResolver as usual *)
 					{
-						resolvedSecondaryWashingSolutionVolume,
-						resolvedSecondaryWashingSolutionTemperatureEquilibrationTime,
-						resolvedSecondaryWashingSolutionPressure,
-						resolvedSecondaryWashingSolutionDispenseRate,
-						resolvedSecondaryWashingSolutionDrainTime,
-						resolvedMaxSecondaryWashingSolutionDrainTime,
-						resolvedSecondaryWashingSolutionTemperature,
-						resolvedSecondaryWashingSolutionLabel,
-						errorSecondaryWashingPressureTooLow,
-						errorSecondaryWashingPressureTooHigh,
-						errorSecondaryWashingDispenseRateTooLow,
-						errorSecondaryWashingDispenseRateTooHigh,
-						warningSecondaryWashingPressureMustBeBoolean,
-						errorSecondaryWashingVolumeInstrument,
-						errorSecondaryWashingInstrumentSolutionTemperature
+						(*1*)resolvedSecondaryWashingSolutionVolume,
+						(*2*)resolvedSecondaryWashingSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedSecondaryWashingSolutionPressure,
+						(*4*)resolvedSecondaryWashingSolutionDispenseRate,
+						(*5*)resolvedSecondaryWashingTime,
+						(*6*)resolvedMaxSecondaryWashingTime,
+						(*7*)resolvedSecondaryWashingSolutionTemperature,
+						(*8*)resolvedSecondaryWashingSolutionLabel,
+						(*9*)errorSecondaryWashingPressureTooLow,
+						(*10*)errorSecondaryWashingPressureTooHigh,
+						(*11*)errorSecondaryWashingDispenseRateTooLow,
+						(*12*)errorSecondaryWashingDispenseRateTooHigh,
+						(*13*)errorSecondaryWashingVolumeInstrument,
+						(*14*)errorSecondaryWashingInstrumentSolutionTemperature
 					} = speSolutionResolver[
 						simulatedCache,
 						tableExtractionOptions,
@@ -5494,36 +5641,35 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						copiedCollectSecondaryWashingSolution,
 						copiedSecondaryWashingSolutionPressure,
 						copiedSecondaryWashingSolutionDispenseRate,
-						copiedSecondaryWashingSolutionDrainTime,
+						copiedSecondaryWashingTime,
 						copiedSecondaryWashingSolutionUntilDrained,
-						copiedMaxSecondaryWashingSolutionDrainTime,
+						copiedMaxSecondaryWashingTime,
 						copiedSecondaryWashingSolutionLabel,
 						resolvedPreparation,
 						resolvedSecondaryWashingSolution
 					];
 
 					{
-						resolvedTertiaryWashingSolutionVolume,
-						resolvedTertiaryWashingSolutionTemperatureEquilibrationTime,
-						resolvedTertiaryWashingSolutionPressure,
-						resolvedTertiaryWashingSolutionDispenseRate,
-						resolvedTertiaryWashingSolutionDrainTime,
-						resolvedMaxTertiaryWashingSolutionDrainTime,
-						resolvedTertiaryWashingSolutionTemperature,
-						resolvedTertiaryWashingSolutionLabel,
-						errorTertiaryWashingPressureTooLow,
-						errorTertiaryWashingPressureTooHigh,
-						errorTertiaryWashingDispenseRateTooLow,
-						errorTertiaryWashingDispenseRateTooHigh,
-						warningTertiaryWashingPressureMustBeBoolean,
-						errorTertiaryWashingVolumeInstrument,
-						errorTertiaryWashingInstrumentSolutionTemperature
+						(*1*)resolvedTertiaryWashingSolutionVolume,
+						(*2*)resolvedTertiaryWashingSolutionTemperatureEquilibrationTime,
+						(*3*)resolvedTertiaryWashingSolutionPressure,
+						(*4*)resolvedTertiaryWashingSolutionDispenseRate,
+						(*5*)resolvedTertiaryWashingTime,
+						(*6*)resolvedMaxTertiaryWashingTime,
+						(*7*)resolvedTertiaryWashingSolutionTemperature,
+						(*8*)resolvedTertiaryWashingSolutionLabel,
+						(*9*)errorTertiaryWashingPressureTooLow,
+						(*10*)errorTertiaryWashingPressureTooHigh,
+						(*11*)errorTertiaryWashingDispenseRateTooLow,
+						(*12*)errorTertiaryWashingDispenseRateTooHigh,
+						(*13*)errorTertiaryWashingVolumeInstrument,
+						(*14*)errorTertiaryWashingInstrumentSolutionTemperature
 					} = speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 						resolvedTertiaryWashingSwitch, copiedTertiaryWashingSolutionVolume,
 						copiedTertiaryWashingSolutionTemperature, copiedTertiaryWashingSolutionTemperatureEquilibrationTime,
 						copiedCollectTertiaryWashingSolution,
 						copiedTertiaryWashingSolutionPressure, copiedTertiaryWashingSolutionDispenseRate,
-						copiedTertiaryWashingSolutionDrainTime, copiedTertiaryWashingSolutionUntilDrained, copiedMaxTertiaryWashingSolutionDrainTime,
+						copiedTertiaryWashingTime, copiedTertiaryWashingSolutionUntilDrained, copiedMaxTertiaryWashingTime,
 						copiedTertiaryWashingSolutionLabel, resolvedPreparation, resolvedTertiaryWashingSolution
 					];
 
@@ -5696,29 +5842,27 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 					(* we can just use the speSolutionResolver to get theoretical output first *)
 					(* since we put the temperature resolver inside this speSolutionResolver (what a stupid move), so now we have to mapthread the whole thing, then collapse later *)
 					{
-						pooledResolvedLoadingSampleVolume,
-						resolvedLoadingSampleTemperatureEquilibrationTime,
-						(*						pooledResolvedMixLoadingSampleFlowthrough,*)
-						pooledResolvedLoadingSamplePressure,
-						pooledResolvedLoadingSampleDispenseRate,
-						pooledResolvedLoadingSampleDrainTime,
-						pooledResolvedMaxLoadingSampleDrainTime,
-						resolvedLoadingSampleTemperature,
-						ignoredLoadingSampleLabel, (* this is only for solution, not for the actual sample*)
-						poolederrorLoadingSamplePressureTooLow,
-						poolederrorLoadingSamplePressureTooHigh,
-						poolederrorLoadingSampleDispenseRateTooLow,
-						poolederrorLoadingSampleDispenseRateTooHigh,
-						pooledwarningLoadingSamplePressureMustBeBoolean,
-						poolederrorLoadingSampleVolumeInstrument,
-						poolederrorLoadingSampleInstrumentSolutionTemperature
+						(*1*)pooledResolvedLoadingSampleVolume,
+						(*2*)resolvedLoadingSampleTemperatureEquilibrationTime,
+						(*3*)pooledResolvedLoadingSamplePressure,
+						(*4*)pooledResolvedLoadingSampleDispenseRate,
+						(*5*)pooledResolvedLoadingTime,
+						(*6*)pooledResolvedMaxLoadingTime,
+						(*7*)resolvedLoadingSampleTemperature,
+						(*8*)ignoredLoadingSampleLabel, (* this is only for solution, not for the actual sample*)
+						(*9*)poolederrorLoadingSamplePressureTooLow,
+						(*10*)poolederrorLoadingSamplePressureTooHigh,
+						(*11*)poolederrorLoadingSampleDispenseRateTooLow,
+						(*12*)poolederrorLoadingSampleDispenseRateTooHigh,
+						(*13*)poolederrorLoadingSampleVolumeInstrument,
+						(*14*)poolederrorLoadingSampleInstrumentSolutionTemperature
 					} = Transpose[MapThread[
 						speSolutionResolver[simulatedCache, tableExtractionOptions, resolvedExtractionCartridgeModel, resolvedInstrumentModel, resolvedExtractionMethod,
 							True, #1,
 							#2, #3,
 							resolvedCollectLoadingSampleFlowthrough,
 							unresolvedLoadingSamplePressure, unresolvedLoadingSampleDispenseRate,
-							unresolvedLoadingSampleDrainTime, resolvedLoadingSampleUntilDrained, unresolvedMaxLoadingSampleDrainTime,
+							unresolvedLoadingTime, resolvedLoadingSampleUntilDrained, unresolvedMaxLoadingTime,
 							unresolvedSampleLabel, resolvedPreparation, Null]&,
 						{resolvedLoadingSampleVolume, expandedLoadingSampleTemperature, expandedLoadingSampleTemperatureEquilibrationTime}
 					]];
@@ -5727,13 +5871,12 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						(*						resolvedMixLoadingSampleFlowthrough,*)
 						resolvedLoadingSamplePressure,
 						resolvedLoadingSampleDispenseRate,
-						resolvedLoadingSampleDrainTime,
-						resolvedMaxLoadingSampleDrainTime,
+						resolvedLoadingTime,
+						resolvedMaxLoadingTime,
 						errorLoadingSamplePressureTooLow,
 						errorLoadingSamplePressureTooHigh,
 						errorLoadingSampleDispenseRateTooLow,
 						errorLoadingSampleDispenseRateTooHigh,
-						warningLoadingSamplePressureMustBeBoolean,
 						errorLoadingSampleVolumeInstrument,
 						errorLoadingSampleInstrumentSolutionTemperature
 					} = Map[Sequence @@ Union[#]&,
@@ -5741,13 +5884,12 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 							(*							pooledResolvedMixLoadingSampleFlowthrough,*)
 							pooledResolvedLoadingSamplePressure,
 							pooledResolvedLoadingSampleDispenseRate,
-							pooledResolvedLoadingSampleDrainTime,
-							pooledResolvedMaxLoadingSampleDrainTime,
+							pooledResolvedLoadingTime,
+							pooledResolvedMaxLoadingTime,
 							poolederrorLoadingSamplePressureTooLow,
 							poolederrorLoadingSamplePressureTooHigh,
 							poolederrorLoadingSampleDispenseRateTooLow,
 							poolederrorLoadingSampleDispenseRateTooHigh,
-							pooledwarningLoadingSamplePressureMustBeBoolean,
 							poolederrorLoadingSampleVolumeInstrument,
 							poolederrorLoadingSampleInstrumentSolutionTemperature
 						}
@@ -5755,6 +5897,43 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 
 					pooledResolvedQuantitativeLoadingSampleVolume = Total[resolvedQuantitativeLoadingSampleVolume];
 					totalLoadingSampleVolume = Total[Flatten[{resolvedPooledLoadingSampleVolume, pooledResolvedQuantitativeLoadingSampleVolume}]];
+
+					(* -- resolve DrainTime options -- *)
+					resolvedPreFlushingSolutionDrainTime = Which[
+						MatchQ[unresolvedPreFlushingSolutionDrainTime, Except[Automatic]], unresolvedPreFlushingSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedPreFlushingSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedConditioningSolutionDrainTime = Which[
+						MatchQ[unresolvedConditioningSolutionDrainTime, Except[Automatic]], unresolvedConditioningSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedConditioningSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedWashingSolutionDrainTime = Which[
+						MatchQ[unresolvedWashingSolutionDrainTime, Except[Automatic]], unresolvedWashingSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedWashingSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedSecondaryWashingSolutionDrainTime = Which[
+						MatchQ[unresolvedSecondaryWashingSolutionDrainTime, Except[Automatic]], unresolvedSecondaryWashingSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedSecondaryWashingSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedTertiaryWashingSolutionDrainTime = Which[
+						MatchQ[unresolvedTertiaryWashingSolutionDrainTime, Except[Automatic]], unresolvedTertiaryWashingSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedTertiaryWashingSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedElutingSolutionDrainTime = Which[
+						MatchQ[unresolvedElutingSolutionDrainTime, Except[Automatic]], unresolvedElutingSolutionDrainTime,
+						MatchQ[resolvedPreparation, Robotic] && resolvedElutingSwitch, 0 Minute,
+						True, Null
+					];
+					resolvedLoadingSampleDrainTime = Which[
+						MatchQ[unresolvedLoadingSampleDrainTime, Except[Automatic]], unresolvedLoadingSampleDrainTime,
+						MatchQ[resolvedPreparation, Robotic], 0 Minute,
+						True, Null
+					];
 
 					(* --13-- we will resolve for container out for each sample for now, then we will to batch later *)
 					(* TODO there must be a step where we check whether we have to do things in batch or not *)
@@ -6134,18 +6313,18 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						(*60*)resolvedSecondaryWashingSolutionUntilDrained,
 						(*61*)resolvedTertiaryWashingSolutionUntilDrained,
 						(*62*)resolvedElutingSolutionUntilDrained,
-						(*63*)resolvedPreFlushingSolutionDrainTime,
-						(*64*)resolvedConditioningSolutionDrainTime,
-						(*65*)resolvedWashingSolutionDrainTime,
-						(*66*)resolvedSecondaryWashingSolutionDrainTime,
-						(*67*)resolvedTertiaryWashingSolutionDrainTime,
-						(*68*)resolvedElutingSolutionDrainTime,
-						(*69*)resolvedMaxPreFlushingSolutionDrainTime,
-						(*70*)resolvedMaxConditioningSolutionDrainTime,
-						(*71*)resolvedMaxWashingSolutionDrainTime,
-						(*72*)resolvedMaxSecondaryWashingSolutionDrainTime,
-						(*73*)resolvedMaxTertiaryWashingSolutionDrainTime,
-						(*74*)resolvedMaxElutingSolutionDrainTime,
+						(*63*)resolvedPreFlushingTime,
+						(*64*)resolvedConditioningTime,
+						(*65*)resolvedWashingTime,
+						(*66*)resolvedSecondaryWashingTime,
+						(*67*)resolvedTertiaryWashingTime,
+						(*68*)resolvedElutingTime,
+						(*69*)resolvedMaxPreFlushingTime,
+						(*70*)resolvedMaxConditioningTime,
+						(*71*)resolvedMaxWashingTime,
+						(*72*)resolvedMaxSecondaryWashingTime,
+						(*73*)resolvedMaxTertiaryWashingTime,
+						(*74*)resolvedMaxElutingTime,
 						(*75*)resolvedExtractionTemperature,
 						(*76*)resolvedQuantitativeLoadingSample,
 						(*77*)resolvedQuantitativeLoadingSampleSolution,
@@ -6155,8 +6334,8 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						(*81*)resolvedLoadingSampleTemperature,
 						(*82*)resolvedLoadingSamplePressure,
 						(*83*)resolvedLoadingSampleDispenseRate,
-						(*84*)resolvedLoadingSampleDrainTime,
-						(*85*)resolvedMaxLoadingSampleDrainTime,
+						(*84*)resolvedLoadingTime,
+						(*85*)resolvedMaxLoadingTime,
 						(*86*)resolvedPreFlushingSolutionCollectionContainer,
 						(*87*)resolvedConditioningSolutionCollectionContainer,
 						(*88*)resolvedWashingSolutionCollectionContainer,
@@ -6184,153 +6363,208 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						(*110*)resolvedSamplesInStorageCondition,
 						(*111*)resolvedSamplesOutStorageCondition,
 						(*112*)resolvedLoadingSampleUntilDrained,
+						(*113*)resolvedPreFlushingSolutionDrainTime,
+						(*114*)resolvedConditioningSolutionDrainTime,
+						(*115*)resolvedWashingSolutionDrainTime,
+						(*116*)resolvedSecondaryWashingSolutionDrainTime,
+						(*117*)resolvedTertiaryWashingSolutionDrainTime,
+						(*118*)resolvedElutingSolutionDrainTime,
+						(*119*)resolvedLoadingSampleDrainTime,
+						(*120*)resolvedPreFlushingSolutionPipettingMethod,
+						(*121*)resolvedConditioningSolutionPipettingMethod,
+						(*122*)resolvedWashingSolutionPipettingMethod,
+						(*123*)resolvedSecondaryWashingSolutionPipettingMethod,
+						(*124*)resolvedTertiaryWashingSolutionPipettingMethod,
+						(*125*)resolvedElutingSolutionPipettingMethod,
+						(*126*)resolvedLoadingSamplePipettingMethod,
 						(* error and warning *)
-						(*113*)unequalLoadingSampleVolumeLengthError,
-						(*114*)incompatibleInstrumentSampleVolumeError, (**)
-						(*115*)incompatibleCartridgeInstrumentError, (**)
-						(*116*)incompatibleExtractionMethodSampleVolumeError, (**)
-						(*117*)incompatibleExtractionCartridgeError, (**)
-						(*118*)incompatibleInstrumentAndMethodError,
-						(*119*)incompatibleInstrumentAndExtractionCartridgeError,
-						(*120*)incompatibleExtractionMethodAndExtractionCartridgeError,
-						(*121*)incompatibleInstrumentExtractionMethodExtractionCartridgeError,
-						(*122*)warningExtractionStrategyWashingSwitchIncompatible,
-						(*123*)skippedWashingError,
-						(*124*)warningExtractionStrategySecondaryWashingSwitchIncompatible,
-						(*125*)skippedSecondaryWashingError,
-						(*126*)warningExtractionStrategyTertiaryWashingSwitchIncompatible,
-						(*127*)warningPositiveStrategyWithoutEluting,
-						(*128*)warningExtractionStrategyElutingIncompatible,
-						(*129*)errorPreFlushingPressureTooLow,
-						(*130*)errorPreFlushingPressureTooHigh,
-						(*131*)errorPreFlushingDispenseRateTooLow,
-						(*132*)errorPreFlushingDispenseRateTooHigh,
-						(*133*)errorConditioningPressureTooLow,
-						(*134*)errorConditioningPressureTooHigh,
-						(*135*)errorConditioningDispenseRateTooLow,
-						(*136*)errorConditioningDispenseRateTooHigh,
-						(*137*)errorWashingPressureTooLow,
-						(*138*)errorWashingPressureTooHigh,
-						(*139*)errorWashingDispenseRateTooLow,
-						(*140*)errorWashingDispenseRateTooHigh,
-						(*141*)errorElutingPressureTooLow,
-						(*142*)errorElutingPressureTooHigh,
-						(*143*)errorElutingDispenseRateTooLow,
-						(*144*)errorElutingDispenseRateTooHigh,
-						(*145*)errorSecondaryWashingPressureTooLow,
-						(*146*)errorSecondaryWashingPressureTooHigh,
-						(*147*)errorSecondaryWashingDispenseRateTooLow,
-						(*148*)errorSecondaryWashingDispenseRateTooHigh,
-						(*149*)errorTertiaryWashingPressureTooLow,
-						(*150*)errorTertiaryWashingPressureTooHigh,
-						(*151*)errorTertiaryWashingDispenseRateTooLow,
-						(*152*)errorTertiaryWashingDispenseRateTooHigh,
-						(*153*)errorAmbientOnlyInstrument,
-						(*154*)errorExtractionTemperatureTooLow,
-						(*155*)errorExtractionTemperatureTooHigh,
-						(*156*)unequalLengthQuantitativeLoadingSampleError,
-						(*157*)unequalLengthQuantitativeLoadingSampleSolutionError,
-						(*158*)unequalLengthQuantitativeLoadingSampleVolumeError,
-						(*159*)unequalLengthLoadingSampleTemperatureError,
-						(*160*)unequalLengthLoadingSampleTemperatureEquilibrationTimeError,
-						(*161*)errorLoadingSamplePressureTooLow,
-						(*162*)errorLoadingSamplePressureTooHigh,
-						(*163*)errorLoadingSampleDispenseRateTooLow,
-						(*164*)errorLoadingSampleDispenseRateTooHigh,
-						(*165*)warningIncompatiblePreFlushingSolutionCollectionContainer,
-						(*166*)warningIncompatibleConditioningSolutionCollectionContainer,
-						(*167*)warningIncompatibleWashingSolutionCollectionContainer,
-						(*168*)warningIncompatibleSecondaryWashingSolutionCollectionContainer,
-						(*169*)warningIncompatibleTertiaryWashingSolutionCollectionContainer,
-						(*170*)warningIncompatibleElutingSolutionCollectionContainer,
-						(*171*)warningIncompatibleLoadingSampleFlowthroughContainer,
-						(*172*)incompatibleExtractionCartridgeSampleVolumeError,
-						(*173*)warningVolumeTooHigh,
-						(*174*)conflictingCartridgeSorbentWarning,
-						(*175*)warningExtractionStrategyChange,
-						(*176*)warningPreFlushingPressureMustBeBoolean,
-						(*177*)warningConditioningPressureMustBeBoolean,
-						(*178*)warningWashingPressureMustBeBoolean,
-						(*179*)warningElutingPressureMustBeBoolean,
-						(*180*)warningSecondaryWashingPressureMustBeBoolean,
-						(*181*)warningTertiaryWashingPressureMustBeBoolean,
-						(*182*)warningLoadingSamplePressureMustBeBoolean,
-						(*183*)volumeTooLargeWarning,
-						(*184*)conflictingMethodInferringMobilePhaseOptionsError,
-						(*185*)conflictingSuppliedMethodAndImpliedMethodError,
-						(*186*)speCannotSupportVolumeError,
-						(*187*)speCannotSupportCollectionError,
-						(*188*)speCannotSupportCartridgeError,
-						(*189*)speCannotSupportMethodError,
-						(*190*)speCannotSupportCartridgeError,
-						(*191*)speCannotSupportMethodError,
-						(*192*)noCompatibleInstrumentError,
-						(*193*)conflictingCartridgeSorbentWarning,
-						(*194*)conflictingSuppliedMethodAndImpliedMethodErrorOptionName,
-						(*195*)badLoadingSampleVolume,
-						(*196*)noCompatibleInstrumentErrorName,
-						(*197*)tooBigCartridgeError,
-						(*198*)tooManyCollectionPlateOnGX271DeckError,
-						(*199*)tooManyCollectionPlateOnGX271DeckOptionName,
-						(*200*)tooManyTypeOfSolutionOnGX271OptionName,
-						(*201*)tooManyTypeOfSolutionOnGX271Error,
-						(*202*)cannotSupportQuantitativeLoadingError,
-						(*203*)cannotSupportQuantitativeLoadingErrorOptionName,
-						(*204*)quantitativeLoadingSampleSolutionError,
-						(*205*)notSPECartridgeError,
-						(*206*)speCannotSupportPreFlushVolume,
-						(*207*)speCannotSupportConditionVolume,
-						(*208*)speCannotSupportWashVolume,
-						(*209*)speCannotSupportSecondaryWashVolume,
-						(*210*)speCannotSupportTertiaryWashVolume,
-						(*211*)speCannotSupportEluteVolume,
-						(*212*)speCannotSupportQuantVolume,
-						(*213*)speCannotSupportInstrumentError,
-						(*214*)badVolumePreFlushName,
-						(*215*)badVolumeConditionName,
-						(*216*)badVolumeWashName,
-						(*217*)badVolumeSecWashName,
-						(*218*)badVolumeTerWashName,
-						(*219*)badVolumeEluteName,
-						(*220*)badVolumeQuantLoadName,
-						(*221*)badInstrumentName,
-						(*222*)errorPreFlushingVolumeInstrument,
-						(*223*)errorConditioningVolumeInstrument,
-						(*224*)errorWashingVolumeInstrument,
-						(*225*)errorElutingVolumeInstrument,
-						(*226*)errorSecondaryWashingVolumeInstrument,
-						(*227*)errorTertiaryWashingVolumeInstrument,
-						(*228*)errorLoadingSampleVolumeInstrument,
-						(*229*)errorPreFlushingInstrumentSolutionTemperature,
-						(*230*)errorConditioningInstrumentSolutionTemperature,
-						(*231*)errorWashingInstrumentSolutionTemperature,
-						(*232*)errorElutingInstrumentSolutionTemperature,
-						(*233*)errorSecondaryWashingInstrumentSolutionTemperature,
-						(*234*)errorTertiaryWashingInstrumentSolutionTemperature,
-						(*235*)errorLoadingSampleInstrumentSolutionTemperature,
-						(*236*)cannotFindCartridgeWithSuppliedError,
-						(* intermediate variables *)
-						(*237*)numberOfPreFlushingSolutionCollectionContainer,
-						(*238*)numberOfConditioningSolutionCollectionContainer,
-						(*239*)numberOfWashingSolutionCollectionContainer,
-						(*240*)numberOfSecondaryWashingSolutionCollectionContainer,
-						(*241*)numberOfTertiaryWashingSolutionCollectionContainer,
-						(*242*)numberOfElutingSolutionCollectionContainer,
-						(*243*)numberOfLoadingSampleFlowthroughContainer,
-						(*244*)resolvedInstrumentModel,
-						(*245*)pooledSampleVolumes,
-						(*246*)poolsize,
-						(*247*)sampleVolumes,
-						(*248*)conflictingMobilePhaseOptionName,
-						(*249*)numberOfCollection,
-						(*250*)impliedCollectionNameError,
-						(*251*)resolvedExtractionCartridgeStorageCondition
+						(*127*)unequalLoadingSampleVolumeLengthError,
+						(*128*)incompatibleInstrumentSampleVolumeError, (**)
+						(*129*)incompatibleCartridgeInstrumentError, (**)
+						(*130*)incompatibleExtractionMethodSampleVolumeError, (**)
+						(*131*)incompatibleExtractionCartridgeError, (**)
+						(*132*)incompatibleInstrumentAndMethodError,
+						(*133*)incompatibleInstrumentAndExtractionCartridgeError,
+						(*134*)incompatibleExtractionMethodAndExtractionCartridgeError,
+						(*135*)incompatibleInstrumentExtractionMethodExtractionCartridgeError,
+						(*136*)warningExtractionStrategyWashingSwitchIncompatible,
+						(*137*)skippedWashingError,
+						(*138*)warningExtractionStrategySecondaryWashingSwitchIncompatible,
+						(*139*)skippedSecondaryWashingError,
+						(*140*)warningExtractionStrategyTertiaryWashingSwitchIncompatible,
+						(*141*)warningPositiveStrategyWithoutEluting,
+						(*142*)warningExtractionStrategyElutingIncompatible,
+						(*143*)errorPreFlushingPressureTooLow,
+						(*144*)errorPreFlushingPressureTooHigh,
+						(*145*)errorPreFlushingDispenseRateTooLow,
+						(*146*)errorPreFlushingDispenseRateTooHigh,
+						(*147*)errorConditioningPressureTooLow,
+						(*148*)errorConditioningPressureTooHigh,
+						(*149*)errorConditioningDispenseRateTooLow,
+						(*150*)errorConditioningDispenseRateTooHigh,
+						(*151*)errorWashingPressureTooLow,
+						(*152*)errorWashingPressureTooHigh,
+						(*153*)errorWashingDispenseRateTooLow,
+						(*154*)errorWashingDispenseRateTooHigh,
+						(*155*)errorElutingPressureTooLow,
+						(*156*)errorElutingPressureTooHigh,
+						(*157*)errorElutingDispenseRateTooLow,
+						(*158*)errorElutingDispenseRateTooHigh,
+						(*159*)errorSecondaryWashingPressureTooLow,
+						(*160*)errorSecondaryWashingPressureTooHigh,
+						(*161*)errorSecondaryWashingDispenseRateTooLow,
+						(*162*)errorSecondaryWashingDispenseRateTooHigh,
+						(*163*)errorTertiaryWashingPressureTooLow,
+						(*164*)errorTertiaryWashingPressureTooHigh,
+						(*165*)errorTertiaryWashingDispenseRateTooLow,
+						(*166*)errorTertiaryWashingDispenseRateTooHigh,
+						(*167*)errorAmbientOnlyInstrument,
+						(*168*)errorExtractionTemperatureTooLow,
+						(*169*)errorExtractionTemperatureTooHigh,
+						(*170*)unequalLengthQuantitativeLoadingSampleError,
+						(*171*)unequalLengthQuantitativeLoadingSampleSolutionError,
+						(*172*)unequalLengthQuantitativeLoadingSampleVolumeError,
+						(*173*)unequalLengthLoadingSampleTemperatureError,
+						(*174*)unequalLengthLoadingSampleTemperatureEquilibrationTimeError,
+						(*175*)errorLoadingSamplePressureTooLow,
+						(*176*)errorLoadingSamplePressureTooHigh,
+						(*177*)errorLoadingSampleDispenseRateTooLow,
+						(*178*)errorLoadingSampleDispenseRateTooHigh,
+						(*179*)warningIncompatiblePreFlushingSolutionCollectionContainer,
+						(*180*)warningIncompatibleConditioningSolutionCollectionContainer,
+						(*181*)warningIncompatibleWashingSolutionCollectionContainer,
+						(*182*)warningIncompatibleSecondaryWashingSolutionCollectionContainer,
+						(*183*)warningIncompatibleTertiaryWashingSolutionCollectionContainer,
+						(*184*)warningIncompatibleElutingSolutionCollectionContainer,
+						(*185*)warningIncompatibleLoadingSampleFlowthroughContainer,
+						(*186*)incompatibleExtractionCartridgeSampleVolumeError,
+						(*187*)warningVolumeTooHigh,
+						(*188*)conflictingCartridgeSorbentWarning,
+						(*189*)warningExtractionStrategyChange,
+						(*190*)volumeTooLargeWarning,
+						(*191*)conflictingMethodInferringMobilePhaseOptionsError,
+						(*192*)conflictingSuppliedMethodAndImpliedMethodError,
+						(*193*)speCannotSupportVolumeError,
+						(*194*)speCannotSupportCollectionError,
+						(*195*)speCannotSupportCartridgeError,
+						(*196*)speCannotSupportMethodError,
+						(*197*)speCannotSupportCartridgeError,
+						(*198*)speCannotSupportMethodError,
+						(*199*)noCompatibleInstrumentError,
+						(*200*)conflictingCartridgeSorbentWarning,
+						(*201*)conflictingSuppliedMethodAndImpliedMethodErrorOptionName,
+						(*202*)badLoadingSampleVolume,
+						(*203*)noCompatibleInstrumentErrorName,
+						(*204*)tooBigCartridgeError,
+						(*205*)tooManyCollectionPlateOnGX271DeckError,
+						(*206*)tooManyCollectionPlateOnGX271DeckOptionName,
+						(*207*)tooManyTypeOfSolutionOnGX271OptionName,
+						(*208*)tooManyTypeOfSolutionOnGX271Error,
+						(*209*)cannotSupportQuantitativeLoadingError,
+						(*210*)cannotSupportQuantitativeLoadingErrorOptionName,
+						(*211*)quantitativeLoadingSampleSolutionError,
+						(*212*)notSPECartridgeError,
+						(*213*)speCannotSupportPreFlushVolume,
+						(*214*)speCannotSupportConditionVolume,
+						(*215*)speCannotSupportWashVolume,
+						(*216*)speCannotSupportSecondaryWashVolume,
+						(*217*)speCannotSupportTertiaryWashVolume,
+						(*218*)speCannotSupportEluteVolume,
+						(*219*)speCannotSupportQuantVolume,
+						(*220*)speCannotSupportInstrumentError,
+						(*221*)badVolumePreFlushName,
+						(*222*)badVolumeConditionName,
+						(*223*)badVolumeWashName,
+						(*224*)badVolumeSecWashName,
+						(*225*)badVolumeTerWashName,
+						(*226*)badVolumeEluteName,
+						(*227*)badVolumeQuantLoadName,
+						(*228*)badInstrumentName,
+						(*229*)errorPreFlushingVolumeInstrument,
+						(*230*)errorConditioningVolumeInstrument,
+						(*231*)errorWashingVolumeInstrument,
+						(*232*)errorElutingVolumeInstrument,
+						(*233*)errorSecondaryWashingVolumeInstrument,
+						(*234*)errorTertiaryWashingVolumeInstrument,
+						(*235*)errorLoadingSampleVolumeInstrument,
+						(*236*)errorPreFlushingInstrumentSolutionTemperature,
+						(*237*)errorConditioningInstrumentSolutionTemperature,
+						(*238*)errorWashingInstrumentSolutionTemperature,
+						(*239*)errorElutingInstrumentSolutionTemperature,
+						(*240*)errorSecondaryWashingInstrumentSolutionTemperature,
+						(*241*)errorTertiaryWashingInstrumentSolutionTemperature,
+						(*242*)errorLoadingSampleInstrumentSolutionTemperature,
+						(*243*)cannotFindCartridgeWithSuppliedError,
+						(*244*)numberOfPreFlushingSolutionCollectionContainer,
+						(*245*)numberOfConditioningSolutionCollectionContainer,
+						(*246*)numberOfWashingSolutionCollectionContainer,
+						(*247*)numberOfSecondaryWashingSolutionCollectionContainer,
+						(*248*)numberOfTertiaryWashingSolutionCollectionContainer,
+						(*249*)numberOfElutingSolutionCollectionContainer,
+						(*250*)numberOfLoadingSampleFlowthroughContainer,
+						(*251*)resolvedInstrumentModel,
+						(*252*)pooledSampleVolumes,
+						(*253*)poolsize,
+						(*254*)sampleVolumes,
+						(*255*)conflictingMobilePhaseOptionName,
+						(*256*)numberOfCollection,
+						(*257*)impliedCollectionNameError,
+						(*258*)resolvedExtractionCartridgeStorageCondition
 					}
 				](* end module *)
 			], (* end function *)
 			{myPooledSamples, mapThreadFriendlyOptions}
 		](* end mapthread *)
 	]; (* end transpose to get resolved option for each sample *)
+
+	(* resolve CartridgePosition: pair up specified positions with resolved cartridges, then sequentially fill unspecified positions from available positions per cartridge *)
+	specifiedCartridgePositions = Lookup[mapThreadFriendlyOptions, CartridgePosition];
+
+	(* pair the specified positions with the resolved cartridges and get the cartridge models *)
+	alreadyOccupiedPositionsPerCartridge = DeleteDuplicates[MapThread[
+		#2 -> If[MatchQ[#1, ObjectP[Model]],
+			Nothing,
+			cacheLookup[simulatedCache, #1, Contents][[All, 1]]
+		]&,
+		{mtExtractionCartridge, mtCartridgeLabel}
+	]];
+
+	(* get the already-specified positions per cartridge and then merge the unavailable positions per cartridge *)
+	alreadySpecifiedPositionsPerCartridge = MapThread[
+		If[StringQ[#2],
+			#1 -> #2,
+			Nothing
+		]&,
+		{mtCartridgeLabel, specifiedCartridgePositions}
+	];
+
+	(* combine these two together *)
+	unavailablePositions = Merge[Flatten[{alreadyOccupiedPositionsPerCartridge, alreadySpecifiedPositionsPerCartridge}], Join];
+	availablePositionsPerCartridge = Association[MapThread[
+		With[{allPositions = If[MatchQ[#1, ObjectP[Model]], cacheLookup[simulatedCache, #1, Positions], cacheLookup[simulatedCache, #1, {Model, Positions}]]},
+			(* we should have positions defined but in case we don't then at least set it to A1 *)
+			#2 -> DeleteCases[Lookup[allPositions, Name, {"A1"}], Alternatives @@ Lookup[unavailablePositions, #2]]
+		]&,
+		{mtExtractionCartridge, mtCartridgeLabel}
+	]];
+
+	(* every time we pick a position from the list we make sure we don't pick it next time *)
+	mtresolvedCartridgePosition = MapThread[
+		Function[{cartridgeLabel, specifiedPosition},
+			If[!MatchQ[specifiedPosition, Automatic],
+				specifiedPosition,
+				Module[{available, nextPosition},
+					available = availablePositionsPerCartridge[cartridgeLabel];
+					nextPosition = First[available];
+
+					availablePositionsPerCartridge[cartridgeLabel] = Rest[available];
+
+					nextPosition
+				]
+			]
+		],
+		{mtCartridgeLabel, specifiedCartridgePositions}
+	];
 
 	(* CENTRIFUGE related resolver *)
 	(* TODO at first, I want to use Experiment Centrifuge to resolve all centrifuge options, but ran into a problem of haveing to simulate sample that doesn't exist such as
@@ -6588,9 +6822,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		PreFlushingSolutionTemperatureEquilibrationTime -> mtPreFlushingSolutionTemperatureEquilibrationTime,
 		CollectPreFlushingSolution -> mtCollectPreFlushingSolution,
 		PreFlushingSolutionDispenseRate -> mtPreFlushingSolutionDispenseRate,
+		PreFlushingTime -> mtPreFlushingTime,
 		PreFlushingSolutionDrainTime -> mtPreFlushingSolutionDrainTime,
 		PreFlushingSolutionUntilDrained -> mtPreFlushingSolutionUntilDrained,
-		MaxPreFlushingSolutionDrainTime -> mtMaxPreFlushingSolutionDrainTime,
+		MaxPreFlushingTime -> mtMaxPreFlushingTime,
 		PreFlushingSolutionPressure -> mtPreFlushingSolutionPressure,
 		Conditioning -> mtConditioningSwitch,
 		ConditioningSolution -> mtConditioningSolution,
@@ -6599,9 +6834,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		ConditioningSolutionTemperatureEquilibrationTime -> mtConditioningSolutionTemperatureEquilibrationTime,
 		CollectConditioningSolution -> mtCollectConditioningSolution,
 		ConditioningSolutionDispenseRate -> mtConditioningSolutionDispenseRate,
+		ConditioningTime -> mtConditioningTime,
 		ConditioningSolutionDrainTime -> mtConditioningSolutionDrainTime,
 		ConditioningSolutionUntilDrained -> mtConditioningSolutionUntilDrained,
-		MaxConditioningSolutionDrainTime -> mtMaxConditioningSolutionDrainTime,
+		MaxConditioningTime -> mtMaxConditioningTime,
 		ConditioningSolutionPressure -> mtConditioningSolutionPressure,
 		Washing -> mtWashingSwitch,
 		WashingSolution -> mtWashingSolution,
@@ -6610,9 +6846,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		WashingSolutionTemperatureEquilibrationTime -> mtWashingSolutionTemperatureEquilibrationTime,
 		CollectWashingSolution -> mtCollectWashingSolution,
 		WashingSolutionDispenseRate -> mtWashingSolutionDispenseRate,
+		WashingTime -> mtWashingTime,
 		WashingSolutionDrainTime -> mtWashingSolutionDrainTime,
 		WashingSolutionUntilDrained -> mtWashingSolutionUntilDrained,
-		MaxWashingSolutionDrainTime -> mtMaxWashingSolutionDrainTime,
+		MaxWashingTime -> mtMaxWashingTime,
 		WashingSolutionPressure -> mtWashingSolutionPressure,
 		SecondaryWashing -> mtSecondaryWashingSwitch,
 		SecondaryWashingSolution -> mtSecondaryWashingSolution,
@@ -6620,9 +6857,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		SecondaryWashingSolutionTemperature -> mtSecondaryWashingSolutionTemperature,
 		SecondaryWashingSolutionTemperatureEquilibrationTime -> mtSecondaryWashingSolutionTemperatureEquilibrationTime,
 		SecondaryWashingSolutionDispenseRate -> mtSecondaryWashingSolutionDispenseRate,
+		SecondaryWashingTime -> mtSecondaryWashingTime,
 		SecondaryWashingSolutionDrainTime -> mtSecondaryWashingSolutionDrainTime,
 		SecondaryWashingSolutionUntilDrained -> mtSecondaryWashingSolutionUntilDrained,
-		MaxSecondaryWashingSolutionDrainTime -> mtMaxSecondaryWashingSolutionDrainTime,
+		MaxSecondaryWashingTime -> mtMaxSecondaryWashingTime,
 		SecondaryWashingSolutionPressure -> mtSecondaryWashingSolutionPressure,
 		TertiaryWashing -> mtTertiaryWashingSwitch,
 		TertiaryWashingSolution -> mtTertiaryWashingSolution,
@@ -6630,9 +6868,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		TertiaryWashingSolutionTemperature -> mtTertiaryWashingSolutionTemperature,
 		TertiaryWashingSolutionTemperatureEquilibrationTime -> mtTertiaryWashingSolutionTemperatureEquilibrationTime,
 		TertiaryWashingSolutionDispenseRate -> mtTertiaryWashingSolutionDispenseRate,
+		TertiaryWashingTime -> mtTertiaryWashingTime,
 		TertiaryWashingSolutionDrainTime -> mtTertiaryWashingSolutionDrainTime,
 		TertiaryWashingSolutionUntilDrained -> mtTertiaryWashingSolutionUntilDrained,
-		MaxTertiaryWashingSolutionDrainTime -> mtMaxTertiaryWashingSolutionDrainTime,
+		MaxTertiaryWashingTime -> mtMaxTertiaryWashingTime,
 		TertiaryWashingSolutionPressure -> mtTertiaryWashingSolutionPressure,
 		Eluting -> mtElutingSwitch,
 		ElutingSolution -> mtElutingSolution,
@@ -6641,9 +6880,10 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		ElutingSolutionTemperatureEquilibrationTime -> mtElutingSolutionTemperatureEquilibrationTime,
 		CollectElutingSolution -> mtCollectElutingSolution,
 		ElutingSolutionDispenseRate -> mtElutingSolutionDispenseRate,
+		ElutingTime -> mtElutingTime,
 		ElutingSolutionDrainTime -> mtElutingSolutionDrainTime,
 		ElutingSolutionUntilDrained -> mtElutingSolutionUntilDrained,
-		MaxElutingSolutionDrainTime -> mtMaxElutingSolutionDrainTime,
+		MaxElutingTime -> mtMaxElutingTime,
 		ElutingSolutionPressure -> mtElutingSolutionPressure,
 		QuantitativeLoadingSample -> mtQuantitativeLoadingSample,
 		QuantitativeLoadingSampleSolution -> mtQuantitativeLoadingSampleSolution,
@@ -6653,8 +6893,16 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		LoadingSampleTemperature -> mtLoadingSampleTemperature,
 		LoadingSamplePressure -> mtLoadingSamplePressure,
 		LoadingSampleDispenseRate -> mtLoadingSampleDispenseRate,
+		LoadingTime -> mtLoadingTime,
+		MaxLoadingTime -> mtMaxLoadingTime,
 		LoadingSampleDrainTime -> mtLoadingSampleDrainTime,
-		MaxLoadingSampleDrainTime -> mtMaxLoadingSampleDrainTime,
+		PreFlushingSolutionPipettingMethod -> mtPreFlushingSolutionPipettingMethod,
+		ConditioningSolutionPipettingMethod -> mtConditioningSolutionPipettingMethod,
+		WashingSolutionPipettingMethod -> mtWashingSolutionPipettingMethod,
+		SecondaryWashingSolutionPipettingMethod -> mtSecondaryWashingSolutionPipettingMethod,
+		TertiaryWashingSolutionPipettingMethod -> mtTertiaryWashingSolutionPipettingMethod,
+		ElutingSolutionPipettingMethod -> mtElutingSolutionPipettingMethod,
+		LoadingSamplePipettingMethod -> mtLoadingSamplePipettingMethod,
 		PreFlushingSolutionCentrifugeIntensity -> resolvedPreFlushingSolutionCentrifugeIntensity,
 		ConditioningSolutionCentrifugeIntensity -> resolvedConditioningSolutionCentrifugeIntensity,
 		WashingSolutionCentrifugeIntensity -> resolvedWashingSolutionCentrifugeIntensity,
@@ -6698,6 +6946,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		ElutingSolutionLabel -> mtElutingSolutionLabel,
 		LoadingSampleUntilDrained -> mtLoadingSampleUntilDrained,
 		ExtractionCartridgeStorageCondition -> mtresolvedExtractionCartridgeStorageCondition,
+		CartridgePosition -> mtresolvedCartridgePosition,
 		(*Add in the container out labels so that it can be grouped by batch to get resolved later. Note that other container labels for specific stages are hidden options, so no neded to look up their value.*)
 		ContainerOutLabel -> Lookup[myOptions,ContainerOutLabel]
 	}];
@@ -6778,14 +7027,14 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 	originalOrderOfOptions = ToList[Ordering[Lookup[optionsWithBatchList, SamplesIndex]]];
 	reorderOptionsWithBatch = MapThread[#1 -> #2[[originalOrderOfOptions]] &, {Keys[optionsWithBatchList], Values[optionsWithBatchList]}];
 
-	speResolvedOptionsRulesWithBatch = Join[
+	speResolvedOptionsRulesWithBatch = ReplaceRule[
 		speResolvedOptionsRules,
 		{
 			Samples -> simulatedSamples,
 			SamplesIndex -> Table[n, {n, Length[myPooledSamples]}],
 			SPEBatchID -> Lookup[reorderOptionsWithBatch, SPEBatchID, ConstantArray[Null, Length[myPooledSamples]]],
 			AliquotTargets -> Lookup[reorderOptionsWithBatch, AliquotTargets, ConstantArray[Null, Length[myPooledSamples]]],
-			CartridgePlacement -> Lookup[reorderOptionsWithBatch, CartridgePlacement, ConstantArray[Null, Length[myPooledSamples]]]
+			CartridgePosition -> Lookup[reorderOptionsWithBatch, CartridgePosition, Lookup[speResolvedOptionsRules, CartridgePosition]]
 		}
 	];
 
@@ -6820,7 +7069,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 				samplesContainerModel = Map[Experiment`Private`cacheLookup[simulatedCache, #, Model]&, DeleteDuplicates[samplesContainer]];
 				volumeToTransfer = Flatten[Lookup[optionByBatchID[[2]], LoadingSampleVolume]];
 				samplesAliquotTarget = Lookup[optionByBatchID[[2]], AliquotTargets];
-				cartridgePosition = Lookup[optionByBatchID[[2]], CartridgePlacement];
+				cartridgePosition = Lookup[optionByBatchID[[2]], CartridgePosition];
 				samplesIndex = Lookup[optionByBatchID[[2]], SamplesIndex];
 				preFlushCollectContainer = First[Lookup[optionByBatchID[[2]], PreFlushingSolutionCollectionContainer]];
 				conditioningCollectContainer = First[Lookup[optionByBatchID[[2]], ConditioningSolutionCollectionContainer]];
@@ -6903,9 +7152,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 						];
 
 						(* container out wells location *)
-						dwp48AllowedPosition = List @@ Experiment`Private`cacheLookup[cache, Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"], AllowedPositions];
-						cartridgeToWellRule = MapThread[#1 -> #2&, {Table[n, {n, Length[dwp48AllowedPosition]}], dwp48AllowedPosition}];
-						containerOutWell = Lookup[optionByBatchID[[2]], CartridgePlacement] /. cartridgeToWellRule;
+						containerOutWell = Lookup[optionByBatchID[[2]], CartridgePosition];
 						{
 							SampleIndex -> samplesIndex,
 							AliquotTargets -> updatedAliquotTargets,
@@ -6965,7 +7212,7 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 							}
 						];
 
-						containerOutWell = Lookup[optionByBatchID[[2]], CartridgePlacement];
+						containerOutWell = Lookup[optionByBatchID[[2]], CartridgePosition];
 						{
 							SampleIndex -> samplesIndex,
 							(* there is no aliquoting *)
@@ -7228,20 +7475,20 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		RoundOptionPrecision[
 			Association[resolvedOptionsWithoutRounding],
 			{
-				(*1*)PreFlushingSolutionDrainTime,
-				(*2*)MaxPreFlushingSolutionDrainTime,
-				(*3*)ConditioningSolutionDrainTime,
-				(*4*)MaxConditioningSolutionDrainTime,
-				(*5*)LoadingSampleDrainTime,
-				(*6*)MaxLoadingSampleDrainTime,
-				(*7*)WashingSolutionDrainTime,
-				(*8*)MaxWashingSolutionDrainTime,
-				(*9*)SecondaryWashingSolutionDrainTime,
-				(*10*)MaxSecondaryWashingSolutionDrainTime,
-				(*11*)TertiaryWashingSolutionDrainTime,
-				(*12*)MaxTertiaryWashingSolutionDrainTime,
-				(*13*)ElutingSolutionDrainTime,
-				(*14*)MaxElutingSolutionDrainTime,
+				(*1*)PreFlushingTime,
+				(*2*)MaxPreFlushingTime,
+				(*3*)ConditioningTime,
+				(*4*)MaxConditioningTime,
+				(*5*)LoadingTime,
+				(*6*)MaxLoadingTime,
+				(*7*)WashingTime,
+				(*8*)MaxWashingTime,
+				(*9*)SecondaryWashingTime,
+				(*10*)MaxSecondaryWashingTime,
+				(*11*)TertiaryWashingTime,
+				(*12*)MaxTertiaryWashingTime,
+				(*13*)ElutingTime,
+				(*14*)MaxElutingTime,
 				(*15*)PreFlushingSolutionVolume,
 				(*16*)ConditioningSolutionVolume,
 				(*17*)LoadingSampleVolume,
@@ -7308,24 +7555,24 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		]
 	];
 	(* check if the Loading Sample volume is more than what the sammples have or not *)
-	If[MemberQ[Flatten[mtvolumeTooLargeWarning], True] && messages,
+	If[MemberQ[Flatten[mtvolumeTooLargeWarning], True] && messages && Not[MatchQ[$ECLApplication, Engine]],
 		Module[{requestedVolume, volumeTooSmall, sampleTooSmall},
 			requestedVolume = PickList[Flatten[Lookup[resolvedOptions, LoadingSampleVolume]], Flatten[mtvolumeTooLargeWarning]];
 			volumeTooSmall = PickList[Flatten[actualSampleVolumes], Flatten[mtvolumeTooLargeWarning]];
 			sampleTooSmall = PickList[Flatten[myPooledSamples], Flatten[mtvolumeTooLargeWarning]];
-			Message[Error::TooLargeRequestVolume, ToString[requestedVolume], ToString[volumeTooSmall], sampleTooSmall]
+			Message[Warning::TooLargeRequestVolume, ToString[requestedVolume], ToString[volumeTooSmall], sampleTooSmall]
 		]
 	];
 	mtvolumeTooLargeWarningOptionsName = If[MemberQ[Flatten[mtvolumeTooLargeWarning], True], {LoadingSampleVolume}, {}];
 	tooLargeLoadingSampleVolumeTest = If[gatherTests,
 		Module[{failingTest, passingTest},
 			failingTest = If[Length[mtvolumeTooLargeWarningOptionsName] > 0,
-				Test["The requested" <> ToString[mtvolumeTooLargeWarningOptionsName] <> " is more than the volume of SamplesIn", True, False],
+				Warning["The requested" <> ToString[mtvolumeTooLargeWarningOptionsName] <> " is more than the volume of SamplesIn:", True, False],
 				Nothing
 			];
 
 			passingTest = If[Length[mtvolumeTooLargeWarningOptionsName] == 0,
-				Test["There is enough sample for requested LoadingSampleVolume", True, True],
+				Warning["There is enough sample for requested LoadingSampleVolume:", True, True],
 				Nothing
 			];
 			{failingTest, passingTest}
@@ -7988,81 +8235,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		Nothing
 	];
 
-	(* throw error for pressure options *)
-	errorPreFlushingPressureMustBeBooleanOptionName = If[MemberQ[mtwarningPreFlushingPressureMustBeBoolean, True],
-		{PreFlushingSolutionPressure},
-		{}
-	];
-	errorConditioningPressureMustBeBooleanOptionName = If[MemberQ[mtwarningConditioningPressureMustBeBoolean, True],
-		{ConditioningSolutionPressure},
-		{}
-	];
-	errorWashingPressureMustBeBooleanOptionName = If[MemberQ[mtwarningWashingPressureMustBeBoolean, True],
-		{WashingSolutionPressure},
-		{}
-	];
-	errorSecondaryWashingPressureMustBeBooleanOptionName = If[MemberQ[mtwarningSecondaryWashingPressureMustBeBoolean, True],
-		{SecondaryWashingSolutionPressure},
-		{}
-	];
-	errorTertiaryWashingPressureMustBeBooleanOptionName = If[MemberQ[mtwarningTertiaryWashingPressureMustBeBoolean, True],
-		{TertiaryWashingSolutionPressure},
-		{}
-	];
-	errorElutingPressureMustBeBooleanOptionName = If[MemberQ[mtwarningElutingPressureMustBeBoolean, True],
-		{ElutingSolutionPressure},
-		{}
-	];
-	errorLoadingSamplePressureMustBeBooleanOptionName = If[MemberQ[mtwarningLoadingSamplePressureMustBeBoolean, True],
-		{LoadingSamplePressure},
-		{}
-	];
-	allPressureMustBeBooleanOption = {PreFlushingSolutionPressure, ConditioningSolutionPressure, WashingSolutionPressure, SecondaryWashingSolutionPressure, TertiaryWashingSolutionPressure, ElutingSolutionPressure, LoadingSamplePressure};
-	allPressureMustBeBooleanOptionName = {
-		errorPreFlushingPressureMustBeBooleanOptionName,
-		errorConditioningPressureMustBeBooleanOptionName,
-		errorWashingPressureMustBeBooleanOptionName,
-		errorSecondaryWashingPressureMustBeBooleanOptionName,
-		errorTertiaryWashingPressureMustBeBooleanOptionName,
-		errorElutingPressureMustBeBooleanOptionName,
-		errorLoadingSamplePressureMustBeBooleanOptionName};
-	allPressureMustBeBooleanSwitch = {mtwarningPreFlushingPressureMustBeBoolean,
-		mtwarningConditioningPressureMustBeBoolean,
-		mtwarningWashingPressureMustBeBoolean,
-		mtwarningSecondaryWashingPressureMustBeBoolean,
-		mtwarningTertiaryWashingPressureMustBeBoolean,
-		mtwarningElutingPressureMustBeBoolean,
-		mtwarningLoadingSamplePressureMustBeBoolean};
-	allPressureMustBeBooleanQ = MemberQ[Flatten[allPressureMustBeBooleanSwitch], True];
-	If[MatchQ[allPressureMustBeBooleanQ, True] && messages,
-		badPressure = Flatten[Map[MemberQ[#, True]&, Transpose[allPressureMustBeBooleanSwitch]]];
-		badInstrument = DeleteDuplicates[PickList[mtInstrument, badPressure]];
-		badInstrumentModel = Map[
-			If[MatchQ[#, ObjectP[Object]],
-				cacheLookup[simulatedCache, #, Model],
-				#
-			]&,
-			badInstrument
-		];
-		(*issue error*)
-		Message[Warning::PressureMustBeBoolean, badInstrument, Flatten[DeleteDuplicates[allPressureMustBeBooleanOptionName]]]
-	];
-	pressureMustBeBooleanTest = If[gatherTests,
-		Module[{failingTest, passingTest},
-			failingTest = If[Length[badInstrument] > 0,
-				Nothing,
-				Warning["The Pressure supplied for the following Instrument" <> ObjectToString[badInstrument, Cache -> simulatedCache] <>
-					" must be True or False", True, False]
-			];
-			passingTest = If[Length[badInstrument] == 0,
-				Warning["Thre Pressure Options supplied are compatible with the Instrument", True, True],
-				Nothing
-			];
-			{failingTest, passingTest}
-		],
-		Nothing
-	];
-
 	(* throw error for DispenseRate options *)
 	errorPreFlushingDispenseRateOptionName = If[MemberQ[mterrorPreFlushingDispenseRateTooLow, True] || MemberQ[mterrorPreFlushingDispenseRateTooHigh, True],
 		{PreFlushingSolutionDispenseRate},
@@ -8650,7 +8822,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 		ambientOnlyInstrumentErrorOptionName,
 		extractionTemperatureOutOfBoundOptionName,
 		allContainerErrorOptionName,
-		mtvolumeTooLargeWarningOptionsName,
 		mtconflictingMobilePhaseOptionName,
 		mtconflictingSuppliedMethodAndImpliedMethodErrorOptionName,
 		mtspeCannotSupportVolumeErrorOptionName,
@@ -8695,7 +8866,6 @@ resolveExperimentSolidPhaseExtractionOptions[myPooledSamples : ListableP[{Object
 					missingVolumeMobilePhaseTest,
 					nonLiquidMobilePhaseTest,
 					conflictingMobilePhaseTest,
-					pressureMustBeBooleanTest,
 					nameUniquenessTest,
 					precisionTests,
 					tooLargeLoadingSampleVolumeTest,
@@ -8739,7 +8909,7 @@ solidPhaseExtractionResourcePackets[
 	myOptions : OptionsPattern[]] := Module[
 	{
 		safeOps, outputSpecification, output, gatherTests, messages, originalIndex,
-		cache, poolLengths, samplesIn, samplesInResources, simulation, updatedSimulation,
+		cache, poolLengths, samplesIn, samplesInResources, simulation,
 		containersIn, containersInModels, containersInResources,
 		pooledSamplesInResources, pooledContainersInResources, allPackets, oldSampleToLabelRules, oldSampleToModelRules,
 		allResourceBlobs, fulfillable, frqTests, previewRule, optionsRule, testsRule, resultRule, simulationRule,
@@ -8763,9 +8933,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectPreFlushingSolution,
 		resolvedPreFlushingSolutionCollectionContainer,
 		resolvedPreFlushingSolutionDispenseRate,
-		resolvedPreFlushingSolutionDrainTime,
+		resolvedPreFlushingTime,
 		resolvedPreFlushingSolutionUntilDrained,
-		resolvedMaxPreFlushingSolutionDrainTime,
+		resolvedMaxPreFlushingTime,
 		resolvedPreFlushingSolutionCentrifugeIntensity,
 		resolvedPreFlushingSolutionPressure,
 		resolvedPreFlushingSolutionMixVolume,
@@ -8778,9 +8948,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectConditioningSolution,
 		resolvedConditioningSolutionCollectionContainer,
 		resolvedConditioningSolutionDispenseRate,
-		resolvedConditioningSolutionDrainTime,
+		resolvedConditioningTime,
 		resolvedConditioningSolutionUntilDrained,
-		resolvedMaxConditioningSolutionDrainTime,
+		resolvedMaxConditioningTime,
 		resolvedConditioningSolutionCentrifugeIntensity,
 		resolvedConditioningSolutionPressure,
 		resolvedConditioningSolutionMixVolume,
@@ -8794,9 +8964,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectLoadingSampleFlowthrough,
 		resolvedLoadingSampleFlowthroughContainer,
 		resolvedLoadingSampleDispenseRate,
-		resolvedLoadingSampleDrainTime,
+		resolvedLoadingTime,
 		resolvedLoadingSampleUntilDrained,
-		resolvedMaxLoadingSampleDrainTime,
+		resolvedMaxLoadingTime,
 		resolvedLoadingSampleCentrifugeIntensity,
 		resolvedLoadingSamplePressure,
 		resolvedLoadingSampleMixVolume,
@@ -8809,9 +8979,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectWashingSolution,
 		resolvedWashingSolutionCollectionContainer,
 		resolvedWashingSolutionDispenseRate,
-		resolvedWashingSolutionDrainTime,
+		resolvedWashingTime,
 		resolvedWashingSolutionUntilDrained,
-		resolvedMaxWashingSolutionDrainTime,
+		resolvedMaxWashingTime,
 		resolvedWashingSolutionCentrifugeIntensity,
 		resolvedWashingSolutionPressure,
 		resolvedWashingSolutionMixVolume,
@@ -8824,9 +8994,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectSecondaryWashingSolution,
 		resolvedSecondaryWashingSolutionCollectionContainer,
 		resolvedSecondaryWashingSolutionDispenseRate,
-		resolvedSecondaryWashingSolutionDrainTime,
+		resolvedSecondaryWashingTime,
 		resolvedSecondaryWashingSolutionUntilDrained,
-		resolvedMaxSecondaryWashingSolutionDrainTime,
+		resolvedMaxSecondaryWashingTime,
 		resolvedSecondaryWashingSolutionCentrifugeIntensity,
 		resolvedSecondaryWashingSolutionPressure,
 		resolvedSecondaryWashingSolutionMixVolume,
@@ -8839,9 +9009,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectTertiaryWashingSolution,
 		resolvedTertiaryWashingSolutionCollectionContainer,
 		resolvedTertiaryWashingSolutionDispenseRate,
-		resolvedTertiaryWashingSolutionDrainTime,
+		resolvedTertiaryWashingTime,
 		resolvedTertiaryWashingSolutionUntilDrained,
-		resolvedMaxTertiaryWashingSolutionDrainTime,
+		resolvedMaxTertiaryWashingTime,
 		resolvedTertiaryWashingSolutionCentrifugeIntensity,
 		resolvedTertiaryWashingSolutionPressure,
 		resolvedTertiaryWashingSolutionMixVolume,
@@ -8854,9 +9024,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectElutingSolution,
 		resolvedElutingSolutionCollectionContainer,
 		resolvedElutingSolutionDispenseRate,
-		resolvedElutingSolutionDrainTime,
+		resolvedElutingTime,
 		resolvedElutingSolutionUntilDrained,
-		resolvedMaxElutingSolutionDrainTime,
+		resolvedMaxElutingTime,
 		resolvedElutingSolutionCentrifugeIntensity,
 		resolvedElutingSolutionPressure,
 		resolvedElutingSolutionMixVolume,
@@ -8873,9 +9043,9 @@ solidPhaseExtractionResourcePackets[
 		(* unit op *)
 		optionsAndResourceByBatch,
 		unitOperationPackets,
-		roboticFilterUnitOperationPackets,
+		roboticFilterUnitOperationPackets, updatedSimulation,
 		runTime,
-		finalSPEUnitOperationPackets,
+		finalSPEUnitOperationPackets, simulatedObjectsToLabel, simulatedObjectPatternsToLabel,
 		(* local variable *)
 		flatAliquotTarget,
 		flatAliquotTargetNoNulls,
@@ -8926,9 +9096,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectPreFlushingSolution,
 		resolvedPreFlushingSolutionCollectionContainer,
 		resolvedPreFlushingSolutionDispenseRate,
-		resolvedPreFlushingSolutionDrainTime,
+		resolvedPreFlushingTime,
 		resolvedPreFlushingSolutionUntilDrained,
-		resolvedMaxPreFlushingSolutionDrainTime,
+		resolvedMaxPreFlushingTime,
 		resolvedPreFlushingSolutionCentrifugeIntensity,
 		resolvedPreFlushingSolutionPressure,
 		resolvedPreFlushingSolutionMixVolume,
@@ -8941,9 +9111,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectConditioningSolution,
 		resolvedConditioningSolutionCollectionContainer,
 		resolvedConditioningSolutionDispenseRate,
-		resolvedConditioningSolutionDrainTime,
+		resolvedConditioningTime,
 		resolvedConditioningSolutionUntilDrained,
-		resolvedMaxConditioningSolutionDrainTime,
+		resolvedMaxConditioningTime,
 		resolvedConditioningSolutionCentrifugeIntensity,
 		resolvedConditioningSolutionPressure,
 		resolvedConditioningSolutionMixVolume,
@@ -8957,9 +9127,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectLoadingSampleFlowthrough,
 		resolvedLoadingSampleFlowthroughContainer,
 		resolvedLoadingSampleDispenseRate,
-		resolvedLoadingSampleDrainTime,
+		resolvedLoadingTime,
 		resolvedLoadingSampleUntilDrained,
-		resolvedMaxLoadingSampleDrainTime,
+		resolvedMaxLoadingTime,
 		resolvedLoadingSampleCentrifugeIntensity,
 		resolvedLoadingSamplePressure,
 		resolvedLoadingSampleMixVolume,
@@ -8972,9 +9142,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectWashingSolution,
 		resolvedWashingSolutionCollectionContainer,
 		resolvedWashingSolutionDispenseRate,
-		resolvedWashingSolutionDrainTime,
+		resolvedWashingTime,
 		resolvedWashingSolutionUntilDrained,
-		resolvedMaxWashingSolutionDrainTime,
+		resolvedMaxWashingTime,
 		resolvedWashingSolutionCentrifugeIntensity,
 		resolvedWashingSolutionPressure,
 		resolvedWashingSolutionMixVolume,
@@ -8987,9 +9157,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectSecondaryWashingSolution,
 		resolvedSecondaryWashingSolutionCollectionContainer,
 		resolvedSecondaryWashingSolutionDispenseRate,
-		resolvedSecondaryWashingSolutionDrainTime,
+		resolvedSecondaryWashingTime,
 		resolvedSecondaryWashingSolutionUntilDrained,
-		resolvedMaxSecondaryWashingSolutionDrainTime,
+		resolvedMaxSecondaryWashingTime,
 		resolvedSecondaryWashingSolutionCentrifugeIntensity,
 		resolvedSecondaryWashingSolutionPressure,
 		resolvedSecondaryWashingSolutionMixVolume,
@@ -9002,9 +9172,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectTertiaryWashingSolution,
 		resolvedTertiaryWashingSolutionCollectionContainer,
 		resolvedTertiaryWashingSolutionDispenseRate,
-		resolvedTertiaryWashingSolutionDrainTime,
+		resolvedTertiaryWashingTime,
 		resolvedTertiaryWashingSolutionUntilDrained,
-		resolvedMaxTertiaryWashingSolutionDrainTime,
+		resolvedMaxTertiaryWashingTime,
 		resolvedTertiaryWashingSolutionCentrifugeIntensity,
 		resolvedTertiaryWashingSolutionPressure,
 		resolvedTertiaryWashingSolutionMixVolume,
@@ -9017,9 +9187,9 @@ solidPhaseExtractionResourcePackets[
 		resolvedCollectElutingSolution,
 		resolvedElutingSolutionCollectionContainer,
 		resolvedElutingSolutionDispenseRate,
-		resolvedElutingSolutionDrainTime,
+		resolvedElutingTime,
 		resolvedElutingSolutionUntilDrained,
-		resolvedMaxElutingSolutionDrainTime,
+		resolvedMaxElutingTime,
 		resolvedElutingSolutionCentrifugeIntensity,
 		resolvedElutingSolutionPressure,
 		resolvedElutingSolutionMixVolume,
@@ -9045,9 +9215,9 @@ solidPhaseExtractionResourcePackets[
 			CollectPreFlushingSolution,
 			PreFlushingSolutionCollectionContainer,
 			PreFlushingSolutionDispenseRate,
-			PreFlushingSolutionDrainTime,
+			PreFlushingTime,
 			PreFlushingSolutionUntilDrained,
-			MaxPreFlushingSolutionDrainTime,
+			MaxPreFlushingTime,
 			PreFlushingSolutionCentrifugeIntensity,
 			PreFlushingSolutionPressure,
 			PreFlushingSolutionMixVolume,
@@ -9060,9 +9230,9 @@ solidPhaseExtractionResourcePackets[
 			CollectConditioningSolution,
 			ConditioningSolutionCollectionContainer,
 			ConditioningSolutionDispenseRate,
-			ConditioningSolutionDrainTime,
+			ConditioningTime,
 			ConditioningSolutionUntilDrained,
-			MaxConditioningSolutionDrainTime,
+			MaxConditioningTime,
 			ConditioningSolutionCentrifugeIntensity,
 			ConditioningSolutionPressure,
 			ConditioningSolutionMixVolume,
@@ -9076,9 +9246,9 @@ solidPhaseExtractionResourcePackets[
 			CollectLoadingSampleFlowthrough,
 			LoadingSampleFlowthroughContainer,
 			LoadingSampleDispenseRate,
-			LoadingSampleDrainTime,
+			LoadingTime,
 			LoadingSampleUntilDrained,
-			MaxLoadingSampleDrainTime,
+			MaxLoadingTime,
 			LoadingSampleCentrifugeIntensity,
 			LoadingSamplePressure,
 			LoadingSampleMixVolume,
@@ -9091,9 +9261,9 @@ solidPhaseExtractionResourcePackets[
 			CollectWashingSolution,
 			WashingSolutionCollectionContainer,
 			WashingSolutionDispenseRate,
-			WashingSolutionDrainTime,
+			WashingTime,
 			WashingSolutionUntilDrained,
-			MaxWashingSolutionDrainTime,
+			MaxWashingTime,
 			WashingSolutionCentrifugeIntensity,
 			WashingSolutionPressure,
 			WashingSolutionMixVolume,
@@ -9106,9 +9276,9 @@ solidPhaseExtractionResourcePackets[
 			CollectSecondaryWashingSolution,
 			SecondaryWashingSolutionCollectionContainer,
 			SecondaryWashingSolutionDispenseRate,
-			SecondaryWashingSolutionDrainTime,
+			SecondaryWashingTime,
 			SecondaryWashingSolutionUntilDrained,
-			MaxSecondaryWashingSolutionDrainTime,
+			MaxSecondaryWashingTime,
 			SecondaryWashingSolutionCentrifugeIntensity,
 			SecondaryWashingSolutionPressure,
 			SecondaryWashingSolutionMixVolume,
@@ -9121,9 +9291,9 @@ solidPhaseExtractionResourcePackets[
 			CollectTertiaryWashingSolution,
 			TertiaryWashingSolutionCollectionContainer,
 			TertiaryWashingSolutionDispenseRate,
-			TertiaryWashingSolutionDrainTime,
+			TertiaryWashingTime,
 			TertiaryWashingSolutionUntilDrained,
-			MaxTertiaryWashingSolutionDrainTime,
+			MaxTertiaryWashingTime,
 			TertiaryWashingSolutionCentrifugeIntensity,
 			TertiaryWashingSolutionPressure,
 			TertiaryWashingSolutionMixVolume,
@@ -9136,9 +9306,9 @@ solidPhaseExtractionResourcePackets[
 			CollectElutingSolution,
 			ElutingSolutionCollectionContainer,
 			ElutingSolutionDispenseRate,
-			ElutingSolutionDrainTime,
+			ElutingTime,
 			ElutingSolutionUntilDrained,
-			MaxElutingSolutionDrainTime,
+			MaxElutingTime,
 			ElutingSolutionCentrifugeIntensity,
 			ElutingSolutionPressure,
 			ElutingSolutionMixVolume,
@@ -9311,23 +9481,26 @@ solidPhaseExtractionResourcePackets[
 					instrument
 				];
 
-				batchID = Lookup[options[[1]], If[MatchQ[resolvedPreparation, Robotic], Preparation, SPEBatchID]];
+				batchID = If[MatchQ[resolvedPreparation, Robotic],
+					resolvedPreparation,
+					Lookup[options[[1]], SPEBatchID]
+				];
 				timeRelatedKeys = {
-					PreFlushingSolutionDrainTime,
-					MaxPreFlushingSolutionDrainTime,
+					PreFlushingTime,
+					MaxPreFlushingTime,
 					ConditioningSolutionTemperatureEquilibrationTime,
-					ConditioningSolutionDrainTime,
-					MaxConditioningSolutionDrainTime,
-					LoadingSampleDrainTime,
-					MaxLoadingSampleDrainTime,
-					WashingSolutionDrainTime,
-					MaxWashingSolutionDrainTime,
-					SecondaryWashingSolutionDrainTime,
-					MaxSecondaryWashingSolutionDrainTime,
-					TertiaryWashingSolutionDrainTime,
-					MaxTertiaryWashingSolutionDrainTime,
-					ElutingSolutionDrainTime,
-					MaxElutingSolutionDrainTime};
+					ConditioningTime,
+					MaxConditioningTime,
+					LoadingTime,
+					MaxLoadingTime,
+					WashingTime,
+					MaxWashingTime,
+					SecondaryWashingTime,
+					MaxSecondaryWashingTime,
+					TertiaryWashingTime,
+					MaxTertiaryWashingTime,
+					ElutingTime,
+					MaxElutingTime};
 				solutionRelatedKeys = {
 					PreFlushingSolution,
 					ConditioningSolution,
@@ -9413,7 +9586,7 @@ solidPhaseExtractionResourcePackets[
 					SolutionTemperature -> PickList[uniqueBufferTemperature, Map[!MatchQ[#, Null | {Null..}]&, uniqueBuffer]]
 				};
 				(* set up cartridge placement *)
-				cartridgePlacement = Lookup[options[[2]], CartridgePlacement];
+				cartridgePlacement = Lookup[options[[2]], CartridgePosition];
 
 				(* BUFFER MODIFIERs and create resource, base on each instrument constrains *)
 				{
@@ -9426,9 +9599,9 @@ solidPhaseExtractionResourcePackets[
 							elutingResource, elutingPlacement, expandedElutingResource, expandedElutingPlacement, washingResource, washingPlacement, expandedWashingResource, expandedWashingPlacement, secondaryWashingResource,
 							expandedSecondaryWashingResource, expandedSecondaryWashingPlacement, secondaryWashingPlacement, tertiaryWashingResource, tertiaryWashingPlacement, expandedTertiaryWashingResource, expandedTertiaryWashingPlacement,
 							allOfWashVolume, semiWashingResource, expandedPrimingResource, expandedPrimingPlacement, typeQuantitativeLoadingSampleSolution,
-							preFlushSampleContainer, preFlushSampleContainerModel, conditioningSampleContainer, conditioningSampleContainerModel,
-							elutingSampleContainer, elutingSampleContainerModel, washingSampleContainer, washingSampleContainerModel, secWashSampleContainer,
-							secWashSampleContainerModel, terWashSampleContainer, terWashSampleContainerModel},
+							preFlushSampleContainerModel, conditioningSampleContainerModel,
+							elutingSampleContainerModel, washingSampleContainerModel,
+							secWashSampleContainerModel, terWashSampleContainerModel},
 						(* this is special for GX 271 where bottle is fixed, so we have to resolve it step by step *)
 						{
 							TotalPreFlushingSolutionVolume,
@@ -9621,27 +9794,29 @@ solidPhaseExtractionResourcePackets[
 							},
 
 							ObjectP[Object[Sample]],
-							washingSampleContainerModel = typeWashingSolution[Container][Object][Model][Object];
-							If[MatchQ[washingSampleContainerModel, Model[Container, Vessel, "10L Polypropylene Carboy"]],
-								{
-									Resource[
-										Name -> "Washing Solution" <> ToString[batchID],
-										Sample -> typeWashingSolution,
-										RentContainer -> True
-									],
-									"Reservoir"
-								},
-								{
-									Resource[
-										Name -> "Washing Solution" <> ToString[batchID],
-										Sample -> typeWashingSolution,
-										Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
-										Amount -> typeWashingSolution[Volume],
-										RentContainer -> True
-									],
-									"Reservoir"
-								}
-							]
+								(
+									washingSampleContainerModel = typeWashingSolution[Container][Object][Model][Object];
+									If[MatchQ[washingSampleContainerModel, Model[Container, Vessel, "10L Polypropylene Carboy"]],
+										{
+											Resource[
+												Name -> "Washing Solution" <> ToString[batchID],
+												Sample -> typeWashingSolution,
+												RentContainer -> True
+											],
+											"Reservoir"
+										},
+										{
+											Resource[
+												Name -> "Washing Solution" <> ToString[batchID],
+												Sample -> typeWashingSolution,
+												Container -> Model[Container, Vessel, "10L Polypropylene Carboy"],
+												Amount -> typeWashingSolution[Volume],
+												RentContainer -> True
+											],
+											"Reservoir"
+										}
+									]
+								)
 						];
 
 						expandedPrimingResource = ConstantArray[semiWashingResource, nPool];
@@ -10341,15 +10516,44 @@ solidPhaseExtractionResourcePackets[
 	};
 	mySharedOptionsKeys = ToExpression /@ Keys[Flatten[Options /@ mySharedOptions]];
 
+	(* determine which objects in the simulation are simulated and make replace rules for those *)
+	(* note that this is important because if you are using RoboticUnitOperations, we can't be using the same resource in the parent (i.e., SPE) and child (Filter) UOs *)
+	(* therefore, above, we removed the resources from the SPE packet *)
+	(* HOWEVER, RequireResources is the thing that saves us from accidentally uploading simulated IDs, and so since we're removing it from the equation having removed the resources, we need an alternative way (these replace rules) *)
+	simulatedObjectsToLabel = If[NullQ[simulation],
+		{},
+		Module[{allObjectsInSimulation, simulatedQ},
+			(* Get all objects out of our simulation. *)
+			allObjectsInSimulation = Download[Lookup[simulation[[1]], Labels][[All, 2]], Object];
+
+			(* Figure out which objects are simulated. *)
+			simulatedQ = simulatedObjectQs[allObjectsInSimulation, simulation];
+
+			Map[
+				#[[2]] -> #[[1]]&,
+				PickList[Lookup[simulation[[1]], Labels], simulatedQ] /. {link_Link :> Download[link, Object]}
+			]
+		]
+	];
+
+	(* also need the pattern form of this where we have ObjectReferenceP/LinkP (don't want PacketP because converting a packet to a string is likely not what we want to do and we shouldn't have a packet at this point anyway *)
+	(* doing these shenanigans or else we'll end up with Link[string] if we just do ObjectReferenceP (which we obviously don't want); we just want string *)
+	simulatedObjectPatternsToLabel = Map[
+		ObjectReferenceP[#[[1]]] | LinkP[#[[1]]] -> #[[2]]&,
+		simulatedObjectsToLabel
+	];
+
 	(* Prepare unit operation*)
 
 	unitOperationPackets = Module[
-		{speUnitOp, speUnitOpNoResourcesIfRobotic},
+		{speUnitOp},
 		speUnitOp = Map[
 			Function[{batchedResourceOptions},
 				(* Only include non-hidden options from SPE. *)
-				Module[{nonHiddenOptions, speOptions, optionsWithoutShared, instrument, instrumentModel, cartridgeModel,
-					cartridge, cartridgeSize, speSharedOptions, valuesToBeFedIntoSPEUnitOpNoResources,	valuesToBeFedIntoSPEUnitOp},
+				Module[
+					{nonHiddenOptions, speOptions, optionsWithoutShared, instrument, instrumentModel, cartridgeModel,
+						cartridge, cartridgeSize, speSharedOptions, valuesToBeFedIntoSPEUnitOpNoResources,
+						containerOutPlacementsFieldValue, valuesToBeFedIntoSPEUnitOp, containerPlacementsFieldValue},
 					nonHiddenOptions = allowedKeysForUnitOperationType[Object[UnitOperation, SolidPhaseExtraction]];
 					(* I have to get rid of shared options here *)
 					optionsWithoutShared = KeyDrop[batchedResourceOptions[[2]], mySharedOptionsKeys];
@@ -10366,6 +10570,29 @@ solidPhaseExtractionResourcePackets[
 						cartridge
 					];
 					cartridgeSize = Experiment`Private`cacheLookup[cache, cartridgeModel, MaxVolume];
+
+					(* two little helper functions for generating the Placements fields because there's a lot of redundancy below *)
+					(* this is only relevant for the GX-271 and I feel pretty confident that this would otherwise mess up robotic *)
+					(* because in Robotic we can't have duplicate resources to the RoboticUnitOperations (i.e., the Filter below), so we convert to Strings *)
+					(* but we can't store strings in these fields because they're not the normal split fields *)
+					containerOutPlacementsFieldValue[myResourceField_Symbol, myPlacementField_Symbol]:=If[MatchQ[resolvedPreparation, Robotic],
+						{},
+						MapThread[
+							{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
+							{
+								Lookup[speOptions, myResourceField],
+								Lookup[speOptions, myPlacementField]
+							}
+						]
+					];
+					containerPlacementsFieldValue[myResourceField_Symbol, myPlacementField_Symbol]:=If[MatchQ[resolvedPreparation, Robotic],
+						{},
+						Transpose[{
+							Link /@ Lookup[speOptions, myResourceField],
+							Lookup[speOptions, myPlacementField]
+						}]
+					];
+
 					valuesToBeFedIntoSPEUnitOp = ReplaceRule[
 						Cases[speOptions, Verbatim[Rule][Alternatives @@ nonHiddenOptions, _]],
 						(* TODO - add back all the quantitaative loading stuff *)
@@ -10385,12 +10612,13 @@ solidPhaseExtractionResourcePackets[
 							ExtractionCartridge -> Link /@ Lookup[speOptions, ExtractionCartridgeResource],
 							ExtractionCartridgeCaps -> Link /@ Lookup[speOptions, ExtractionCartridgeCapResource],
 							LoadingSampleVolume -> Lookup[speOptions, LoadingSampleVolume],
-							ExtractionCartridgePositions -> Lookup[speOptions, CartridgePlacement],
+							ExtractionCartridgePositions -> Lookup[speOptions, CartridgePosition],
+							CartridgePosition -> Lookup[speOptions, CartridgePosition],
 							ExtractionCartridgePlacements -> MapThread[
 								{Link[#1], Flatten[{#2}] /. {{Null} -> Null}}&,
 								{
 									Lookup[speOptions, ExtractionCartridgeResource],
-									Lookup[speOptions, CartridgePlacement]
+									Lookup[speOptions, CartridgePosition]
 								}
 							],
 							PurgePressure -> If[
@@ -10408,13 +10636,13 @@ solidPhaseExtractionResourcePackets[
 							ElutingSolution -> Link /@ Lookup[speOptions, ElutingResource],
 							PrimingSolution -> Link /@ Lookup[speOptions, PrimingResource],
 							(* container placement *)
-							PreFlushingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, PreFlushingResource], Lookup[speOptions, PreFlushingPlacement]}],
-							ConditioningSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, ConditioningResource], Lookup[speOptions, ConditioningPlacement]}],
-							WashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, WashingResource], Lookup[speOptions, WashingPlacement]}],
-							SecondaryWashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, SecondaryWashingResource], Lookup[speOptions, SecondaryWashingPlacement]}],
-							TertiaryWashingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, TertiaryWashingResource], Lookup[speOptions, TertiaryWashingPlacement]}],
-							ElutingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, ElutingResource], Lookup[speOptions, ElutingPlacement]}],
-							PrimingSolutionContainerPlacements -> Transpose[{Link /@ Lookup[speOptions, PrimingResource], Lookup[speOptions, PrimingPlacement]}],
+							PreFlushingSolutionContainerPlacements -> containerPlacementsFieldValue[PreFlushingResource, PreFlushingPlacement],
+							ConditioningSolutionContainerPlacements -> containerPlacementsFieldValue[ConditioningResource, ConditioningPlacement],
+							WashingSolutionContainerPlacements -> containerPlacementsFieldValue[WashingResource, WashingPlacement],
+							SecondaryWashingSolutionContainerPlacements -> containerPlacementsFieldValue[SecondaryWashingResource, SecondaryWashingPlacement],
+							TertiaryWashingSolutionContainerPlacements -> containerPlacementsFieldValue[TertiaryWashingResource, TertiaryWashingPlacement],
+							ElutingSolutionContainerPlacements -> containerPlacementsFieldValue[ElutingResource, ElutingPlacement],
+							PrimingSolutionContainerPlacements -> containerPlacementsFieldValue[PrimingResource, PrimingPlacement],
 							(* buffer label *)
 							PreFlushingSolutionLabel -> Lookup[speOptions, PreFlushingSolutionLabel],
 							ConditioningSolutionLabel -> Lookup[speOptions, ConditioningSolutionLabel],
@@ -10437,65 +10665,31 @@ solidPhaseExtractionResourcePackets[
 							TertiaryWashingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, TertiaryWashingContainerOutResource]],
 							ElutingSolutionCollectionContainer -> Flatten[Link /@ Lookup[speOptions, ElutingContainerOutResource]],
 							LoadingSampleFlowthroughContainer -> Flatten[Link /@ Lookup[speOptions, LoadingSampleContainerOutResource]],
-							ContainerOut -> Link /@ Flatten[{
-								Lookup[speOptions, PreFlushingContainerOutResource],
-								Lookup[speOptions, ConditioningContainerOutResource],
-								Lookup[speOptions, WashingContainerOutResource],
-								Lookup[speOptions, SecondaryWashingContainerOutResource],
-								Lookup[speOptions, TertiaryWashingContainerOutResource],
-								Lookup[speOptions, ElutingContainerOutResource],
-								Lookup[speOptions, LoadingSampleContainerOutResource]
-							}],
-							(* container out placement *)
-							PreFlushingContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
+
+							(* This is a laundry list field that just contains all of the different container out resource fields that we already have otherwise in the above CollectionContainer fields *)
+							(* Since it's not a split field it does mess up Robotic so we're going to exclude it and only put it for Manual *)
+							(* we could _make it_ a split field too.  I'm on the fence on if that is actually a useful thing to do or just being too cute and just adding more complexity for no gain *)
+							(* for now, we're going to leave it as a non-split-field *)
+							ContainerOut -> If[MatchQ[resolvedPreparation, Robotic],
+								{},
+								Link /@ Flatten[{
 									Lookup[speOptions, PreFlushingContainerOutResource],
-									Lookup[speOptions, PreFlushingContainerOutPlacement]
-								}
-							],
-							ConditioningContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
 									Lookup[speOptions, ConditioningContainerOutResource],
-									Lookup[speOptions, ConditioningContainerOutPlacement]
-								}
-							],
-							LoadingSampleFlowthroughContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
-									Lookup[speOptions, LoadingSampleContainerOutResource],
-									Lookup[speOptions, LoadingSampleContainerOutPlacement]
-								}
-							],
-							WashingContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
 									Lookup[speOptions, WashingContainerOutResource],
-									Lookup[speOptions, WashingContainerOutPlacement]
-								}
-							],
-							SecondaryWashingContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
 									Lookup[speOptions, SecondaryWashingContainerOutResource],
-									Lookup[speOptions, SecondaryWashingContainerOutPlacement]
-								}
-							],
-							TertiaryWashingContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
 									Lookup[speOptions, TertiaryWashingContainerOutResource],
-									Lookup[speOptions, TertiaryWashingContainerOutPlacement]
-								}
-							],
-							ElutingContainerOutPlacements -> MapThread[
-								{Link[#1], Flatten[{#2}] /. {Null} -> Null}&,
-								{
 									Lookup[speOptions, ElutingContainerOutResource],
-									Lookup[speOptions, ElutingContainerOutPlacement]
-								}
+									Lookup[speOptions, LoadingSampleContainerOutResource]
+								}]
 							],
+							(* container out placement *)
+							PreFlushingContainerOutPlacements -> containerOutPlacementsFieldValue[PreFlushingContainerOutResource, PreFlushingContainerOutPlacement],
+							ConditioningContainerOutPlacements -> containerOutPlacementsFieldValue[ConditioningContainerOutResource, ConditioningContainerOutPlacement],
+							LoadingSampleFlowthroughContainerOutPlacements -> containerOutPlacementsFieldValue[LoadingSampleContainerOutResource, LoadingSampleContainerOutPlacement],
+							WashingContainerOutPlacements -> containerOutPlacementsFieldValue[WashingContainerOutResource, WashingContainerOutPlacement],
+							SecondaryWashingContainerOutPlacements -> containerOutPlacementsFieldValue[SecondaryWashingContainerOutResource, SecondaryWashingContainerOutPlacement],
+							TertiaryWashingContainerOutPlacements -> containerOutPlacementsFieldValue[TertiaryWashingContainerOutResource, TertiaryWashingContainerOutPlacement],
+							ElutingContainerOutPlacements -> containerOutPlacementsFieldValue[ElutingContainerOutResource, ElutingContainerOutPlacement],
 							(* sample out *)
 							ContainerOutWellAssignment -> Lookup[speOptions, ContainerOutWellAssignment],
 							PreFlushingSampleOutLabel -> Lookup[speOptions, PreFlushingSampleOutLabel],
@@ -10514,34 +10708,34 @@ solidPhaseExtractionResourcePackets[
 							ElutingSolutionCentrifugeIntensity -> Lookup[speOptions, ElutingSolutionCentrifugeIntensity],
 							LoadingSampleCentrifugeIntensity -> Lookup[speOptions, LoadingSampleCentrifugeIntensity],
 							(* time stuff *)
-							PreFlushingSolutionDrainTime -> Lookup[speOptions, PreFlushingSolutionDrainTime],
-							ConditioningSolutionDrainTime -> Lookup[speOptions, ConditioningSolutionDrainTime],
-							WashingSolutionDrainTime -> Lookup[speOptions, WashingSolutionDrainTime],
-							SecondaryWashingSolutionDrainTime -> Lookup[speOptions, SecondaryWashingSolutionDrainTime],
-							TertiaryWashingSolutionDrainTime -> Lookup[speOptions, TertiaryWashingSolutionDrainTime],
-							ElutingSolutionDrainTime -> Lookup[speOptions, ElutingSolutionDrainTime],
-							LoadingSampleDrainTime -> Lookup[speOptions, LoadingSampleDrainTime],
-							PreFlushingSolutionDrainTimeSingle -> Lookup[speOptions, PreFlushingSolutionDrainTime][[1]],
-							ConditioningSolutionDrainTimeSingle -> Lookup[speOptions, ConditioningSolutionDrainTime][[1]],
-							WashingSolutionDrainTimeSingle -> Lookup[speOptions, WashingSolutionDrainTime][[1]],
-							SecondaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, SecondaryWashingSolutionDrainTime][[1]],
-							TertiaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, TertiaryWashingSolutionDrainTime][[1]],
-							ElutingSolutionDrainTimeSingle -> Lookup[speOptions, ElutingSolutionDrainTime][[1]],
-							LoadingSampleDrainTimeSingle -> Lookup[speOptions, LoadingSampleDrainTime][[1]],
-							MaxPreFlushingSolutionDrainTimeSingle -> Lookup[speOptions, MaxPreFlushingSolutionDrainTime][[1]],
-							MaxConditioningSolutionDrainTimeSingle -> Lookup[speOptions, MaxConditioningSolutionDrainTime][[1]],
-							MaxWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxWashingSolutionDrainTime][[1]],
-							MaxSecondaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxSecondaryWashingSolutionDrainTime][[1]],
-							MaxTertiaryWashingSolutionDrainTimeSingle -> Lookup[speOptions, MaxTertiaryWashingSolutionDrainTime][[1]],
-							MaxElutingSolutionDrainTimeSingle -> Lookup[speOptions, MaxElutingSolutionDrainTime][[1]],
-							MaxLoadingSampleDrainTimeSingle -> Lookup[speOptions, MaxLoadingSampleDrainTime][[1]],
+							PreFlushingTime -> Lookup[speOptions, PreFlushingTime],
+							ConditioningTime -> Lookup[speOptions, ConditioningTime],
+							WashingTime -> Lookup[speOptions, WashingTime],
+							SecondaryWashingTime -> Lookup[speOptions, SecondaryWashingTime],
+							TertiaryWashingTime -> Lookup[speOptions, TertiaryWashingTime],
+							ElutingTime -> Lookup[speOptions, ElutingTime],
+							LoadingTime -> Lookup[speOptions, LoadingTime],
+							PreFlushingTimeSingle -> Lookup[speOptions, PreFlushingTime][[1]],
+							ConditioningTimeSingle -> Lookup[speOptions, ConditioningTime][[1]],
+							WashingTimeSingle -> Lookup[speOptions, WashingTime][[1]],
+							SecondaryWashingTimeSingle -> Lookup[speOptions, SecondaryWashingTime][[1]],
+							TertiaryWashingTimeSingle -> Lookup[speOptions, TertiaryWashingTime][[1]],
+							ElutingTimeSingle -> Lookup[speOptions, ElutingTime][[1]],
+							LoadingTimeSingle -> Lookup[speOptions, LoadingTime][[1]],
+							MaxPreFlushingTimeSingle -> Lookup[speOptions, MaxPreFlushingTime][[1]],
+							MaxConditioningTimeSingle -> Lookup[speOptions, MaxConditioningTime][[1]],
+							MaxWashingTimeSingle -> Lookup[speOptions, MaxWashingTime][[1]],
+							MaxSecondaryWashingTimeSingle -> Lookup[speOptions, MaxSecondaryWashingTime][[1]],
+							MaxTertiaryWashingTimeSingle -> Lookup[speOptions, MaxTertiaryWashingTime][[1]],
+							MaxElutingTimeSingle -> Lookup[speOptions, MaxElutingTime][[1]],
+							MaxLoadingTimeSingle -> Lookup[speOptions, MaxLoadingTime][[1]],
 							(* solution incubation temperature *)
-							PreFlushingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, PreFlushingSolutionTemperature]],
-							ConditioningSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, ConditioningSolutionTemperature]],
-							WashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, WashingSolutionTemperature]],
-							SecondaryWashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, SecondaryWashingSolutionTemperature]],
-							TertiaryWashingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, TertiaryWashingSolutionTemperature]],
-							ElutingSolutionTemperature -> Sequence @@ Flatten[Lookup[speOptions, ElutingSolutionTemperature]],
+							PreFlushingSolutionTemperature -> Flatten[Lookup[speOptions, PreFlushingSolutionTemperature]],
+							ConditioningSolutionTemperature -> Flatten[Lookup[speOptions, ConditioningSolutionTemperature]],
+							WashingSolutionTemperature -> Flatten[Lookup[speOptions, WashingSolutionTemperature]],
+							SecondaryWashingSolutionTemperature -> Flatten[Lookup[speOptions, SecondaryWashingSolutionTemperature]],
+							TertiaryWashingSolutionTemperature -> Flatten[Lookup[speOptions, TertiaryWashingSolutionTemperature]],
+							ElutingSolutionTemperature -> Flatten[Lookup[speOptions, ElutingSolutionTemperature]],
 							LoadingSampleTemperature -> TakeList[Flatten[Lookup[speOptions, LoadingSampleTemperature]], Flatten[Length /@ Lookup[speOptions, Sample]]],
 							(* solution incubation temperature time *)
 							PreFlushingSolutionTemperatureEquilibrationTime -> Lookup[speOptions, PreFlushingSolutionTemperatureEquilibrationTime],
@@ -10686,28 +10880,24 @@ solidPhaseExtractionResourcePackets[
 					];
 
 					(* remove the resources if we're doing robotic because we don't make any ourselves here *)
+					(* note that we ALSO need to convert simulated objects into their corresponding label at this stage so that we don't try to upload things incorrectly; this we do later on right before upload *)
 					valuesToBeFedIntoSPEUnitOpNoResources = valuesToBeFedIntoSPEUnitOp /. {x_Resource :> Lookup[First[x], Sample, Lookup[First[x], Instrument]]};
 
 					SolidPhaseExtraction @@ If[MatchQ[resolvedPreparation, Robotic],
-						valuesToBeFedIntoSPEUnitOpNoResources,
+						(* we don't have resources here anymore and thus need to make sure we're not uploading simulated objects *)
+						valuesToBeFedIntoSPEUnitOpNoResources /. simulatedObjectPatternsToLabel,
 						valuesToBeFedIntoSPEUnitOp
 					]
 				]
 			],
 			optionsAndResourceByBatch
 		];
-		(*TODO this is not correcty right now*)
-		speUnitOpNoResourcesIfRobotic = If[MatchQ[resolvedPreparation, Robotic],
-			(* convert to the sample or instrument objects that go in the resource *)
-			speUnitOp /. {x_Resource :> Lookup[First[x], Sample, Lookup[First[x], Instrument]]},
-			speUnitOp
-		];
 
 		(* upload unit operation *)
 		UploadUnitOperation[
-			speUnitOpNoResourcesIfRobotic,
-			UnitOperationType -> Batched,
-			Preparation -> Manual,
+			speUnitOp,
+			UnitOperationType -> If[MatchQ[resolvedPreparation, Robotic], Output, Batched],
+			Preparation -> resolvedPreparation,
 			FastTrack -> True,
 			Upload -> False
 		]
@@ -10766,37 +10956,57 @@ solidPhaseExtractionResourcePackets[
 				secondaryWashingSolutionVolume, tertiaryWashingSolutionVolume, elutingSolutionVolume, loadingSampleVolume,
 				cartridge, aliquotLength, instrument, preFlushingSolutionCentrifugeIntensity, conditioningSolutionCentrifugeIntensity, washingSolutionCentrifugeIntensity,
 				secondaryWashingSolutionCentrifugeIntensity, tertiaryWashingSolutionCentrifugeIntensity, elutingSolutionCentrifugeIntensity, loadingSampleCentrifugeIntensity,
+				preFlushingTime, conditioningTime, washingTime, secondaryWashingTime, tertiaryWashingTime,
+				elutingTime, loadingTime,
 				preFlushingSolutionDrainTime, conditioningSolutionDrainTime, washingSolutionDrainTime, secondaryWashingSolutionDrainTime, tertiaryWashingSolutionDrainTime,
-				elutingSolutionDrainTime, loadingSampleDrainTime, preFlushingSolutionCollectionContainer, conditioningSolutionCollectionContainer, loadingSampleFlowthroughContainer,
+				elutingSolutionDrainTime, loadingSampleDrainTime,
+				preFlushingSolutionPipettingMethod, conditioningSolutionPipettingMethod, washingSolutionPipettingMethod, secondaryWashingSolutionPipettingMethod, tertiaryWashingSolutionPipettingMethod,
+				elutingSolutionPipettingMethod, loadingSamplePipettingMethod,
+				preFlushingSolutionCollectionContainer, conditioningSolutionCollectionContainer, loadingSampleFlowthroughContainer,
 				washingSolutionCollectionContainer, secondaryWashingSolutionCollectionContainer, tertiaryWashingSolutionCollectionContainer, elutingSolutionCollectionContainer,
-				extractionTemperature, indexStepToUse, filterReadyIntensityFlatIndexMatch, filterReadyTimeFlatIndexMatch, filterReadyContainerFlatIndexMatch,
-				firstInFilterSamples, restInFilterSamples, firstInFilterIntensity, restInFilterIntensity, firstInFilterTime, restInFilterTime,
+				extractionTemperature, indexStepToUse, filterReadyIntensityFlatIndexMatch, filterReadyTimeFlatIndexMatch, filterReadyDrainTimeFlatIndexMatch, filterReadyPipettingMethodFlatIndexMatch, filterReadyContainerFlatIndexMatch,
+				firstInFilterSamples, restInFilterSamples, firstInFilterIntensity, restInFilterIntensity, firstInFilterTime, restInFilterTime, firstInFilterDrainTime, restInFilterDrainTime, firstInFilterPipettingMethod, restInFilterPipettingMethod,
 				firstInFilterContainer, restInFilterContainer, firstInFilterVolume, restInFilterVolume, filterUnitOp, initPressure, restPressure,
 				pooledSamples, nPooled, preFlushingSolutionPressure, conditioningSolutionPressure, loadingSamplePressure, firstInFilterPressure, restInFilterPressure,
-				washingSolutionPressure, secondaryWashingSolutionPressure, tertiaryWashingSolutionPressure, elutingSolutionPressure, sampleToFilter, intensityToFilter,
-				pressureToFilter, timeToFilter, containerToFilter, volumeToFilter, initSample, restSample, initIntensity, restIntensity, initTime, restTime, initCont, restCont,
-				initVol, restVol, filterReadySampleFlat, filterReadyIntensityFlat, filterReadyTimeFlat, filterReadyContainerFlat, filterReadyVolumeFlat,
+				washingSolutionPressure, secondaryWashingSolutionPressure, tertiaryWashingSolutionPressure, elutingSolutionPressure, sampleToFilter, sampleToFilterMaybeLinks, intensityToFilter,
+				pressureToFilter, timeToFilter, drainTimeToFilter, pipettingMethodToFilter, containerToFilter, volumeToFilter, initSample, restSample, initIntensity, restIntensity, initTime, restTime, initDrainTime, restDrainTime, initPipettingMethod, restPipettingMethod, initCont, restCont,
+				initVol, restVol, filterReadySampleFlat, filterReadyIntensityFlat, filterReadyTimeFlat, filterReadyDrainTimeFlat, filterReadyPipettingMethodFlat, filterReadyContainerFlat, filterReadyVolumeFlat,
 				filterReadyPressureFlatIndexMatch, filterReadyPressureFlat, preFlushLabel, conditionLabel, pooledSampleLabel,
 				washLabel, secondaryWashLabel, tertiaryWashLabel, elutionLabel, labelsToFilter, initLabel, restLabel, sampleRules,
 				filterReadyLabelFlat, firstInLabel, restInLabel, filterReadySamplesOutLabelFlat, mergedSampleRules,
-				experimentFunction,
+				experimentFunction, speFlatWashToIndexMatchSample, combineLinkAndStringFields,
 				labelSampleUnitOp, preFlushContainerOutLabel, conditionContainerOutLabel, sampleContainerOutLabel, labelContainerContainerRules,
 				washContainerOutLabel, secondaryWashContainerOutLabel, tertiaryWashContainerOutLabel, elutionContainerOutLabel,
 				containerOutLabelsToFilter, initContainerLabel, restContainerLabel, filterReadyContainerLabelFlat, sampleOutLabelsToFilter,
 				filterReadyContainerLabelFlatIndexMatch, firstInContainerLabel, restInContainerLabel, filterReadySamplesOutLabelFlatIndexMatch,
 				sampleAndLabelsWithDupes, samplesAndLabels, extractionCartridgeLabel, preFlushSampleOutLabel, labelSampleAmount,
 				conditionSampleOutLabel, initSampleOutLabel, restSampleOutLabel, loadingSampleOutLabel, washSampleOutLabel, secondarySampleOutLabel,
-				tertiarySampleOutLabel, elutionSampleOutLabel, firstInSamplesOutLabel, restInSamplesOutLabel},
+				tertiarySampleOutLabel, elutionSampleOutLabel, firstInSamplesOutLabel, restInSamplesOutLabel, preFlushLink,
+				preFlushString, conditionLink, conditionString, washLink, washString, secWashLink, secWashString, terWashLink, terWashString, eluteLink, eluteString,
+				preFlushingSolutionCollectionContainerLink, preFlushingSolutionCollectionContainerExpression,
+				conditioningSolutionCollectionContainerLink, conditioningSolutionCollectionContainerExpression,
+				loadingSampleFlowthroughContainerLink, loadingSampleFlowthroughContainerExpression,
+				washingSolutionCollectionContainerLink, washingSolutionCollectionContainerExpression,
+				secondaryWashingSolutionCollectionContainerLink, secondaryWashingSolutionCollectionContainerExpression,
+				tertiaryWashingSolutionCollectionContainerLink, tertiaryWashingSolutionCollectionContainerExpression,
+				elutingSolutionCollectionContainerLink, elutingSolutionCollectionContainerExpression,
+				cartridgePositionForFilter},
 
 			(* retreive all information that we need from the our packets *)
 			{
-				(*1*)preFlush,
-				(*2*)condition,
+				(*1*)preFlushLink,
+				(*1b*)preFlushString,
+				(*2*)conditionLink,
+				(*2b*)conditionString,
 				(*3*)pooledSamples,
-				(*4*)wash,
-				(*5*)secWash,
-				(*6*)terWash,
-				(*7*)elute,
+				(*4*)washLink,
+				(*4b*)washString,
+				(*5*)secWashLink,
+				(*5b*)secWashString,
+				(*6*)terWashLink,
+				(*6b*)terWashString,
+				(*7*)eluteLink,
+				(*7b*)eluteString,
 				(*8*)poolLength,
 				(*9*)preFlushingSolutionVolume,
 				(*10*)conditioningSolutionVolume,
@@ -10815,60 +11025,88 @@ solidPhaseExtractionResourcePackets[
 				(*23*)tertiaryWashingSolutionCentrifugeIntensity,
 				(*24*)elutingSolutionCentrifugeIntensity,
 				(*25*)loadingSampleCentrifugeIntensity,
-				(*26*)preFlushingSolutionDrainTime,
-				(*27*)conditioningSolutionDrainTime,
-				(*28*)washingSolutionDrainTime,
-				(*29*)secondaryWashingSolutionDrainTime,
-				(*30*)tertiaryWashingSolutionDrainTime,
-				(*31*)elutingSolutionDrainTime,
-				(*32*)loadingSampleDrainTime,
-				(*33*)preFlushingSolutionCollectionContainer,
-				(*34*)conditioningSolutionCollectionContainer,
-				(*35*)loadingSampleFlowthroughContainer,
-				(*36*)washingSolutionCollectionContainer,
-				(*37*)secondaryWashingSolutionCollectionContainer,
-				(*38*)tertiaryWashingSolutionCollectionContainer,
-				(*39*)elutingSolutionCollectionContainer,
-				(*40*)extractionTemperature,
-				(*41*)preFlushingSolutionPressure,
-				(*42*)conditioningSolutionPressure,
-				(*43*)loadingSamplePressure,
-				(*44*)washingSolutionPressure,
-				(*45*)secondaryWashingSolutionPressure,
-				(*46*)tertiaryWashingSolutionPressure,
-				(*47*)elutingSolutionPressure,
-				(*48*)preFlushLabel,
-				(*49*)conditionLabel,
-				(*50*)pooledSampleLabel,
-				(*51*)washLabel,
-				(*52*)secondaryWashLabel,
-				(*53*)tertiaryWashLabel,
-				(*54*)elutionLabel,
-				(*55*)preFlushContainerOutLabel,
-				(*56*)conditionContainerOutLabel,
-				(*57*)sampleContainerOutLabel,
-				(*58*)washContainerOutLabel,
-				(*59*)secondaryWashContainerOutLabel,
-				(*60*)tertiaryWashContainerOutLabel,
-				(*61*)elutionContainerOutLabel,
-				(*62*)extractionCartridgeLabel,
-				(*63*)preFlushSampleOutLabel,
-				(*64*)conditionSampleOutLabel,
-				(*65*)loadingSampleOutLabel,
-				(*66*)washSampleOutLabel,
-				(*67*)secondarySampleOutLabel,
-				(*68*)tertiarySampleOutLabel,
-				(*69*)elutionSampleOutLabel
+				(*26*)preFlushingTime,
+				(*27*)conditioningTime,
+				(*28*)washingTime,
+				(*29*)secondaryWashingTime,
+				(*30*)tertiaryWashingTime,
+				(*31*)elutingTime,
+				(*32*)loadingTime,
+				(*33*)preFlushingSolutionDrainTime,
+				(*34*)conditioningSolutionDrainTime,
+				(*35*)washingSolutionDrainTime,
+				(*36*)secondaryWashingSolutionDrainTime,
+				(*37*)tertiaryWashingSolutionDrainTime,
+				(*38*)elutingSolutionDrainTime,
+				(*39*)loadingSampleDrainTime,
+				(*40*)preFlushingSolutionPipettingMethod,
+				(*41*)conditioningSolutionPipettingMethod,
+				(*42*)washingSolutionPipettingMethod,
+				(*43*)secondaryWashingSolutionPipettingMethod,
+				(*44*)tertiaryWashingSolutionPipettingMethod,
+				(*45*)elutingSolutionPipettingMethod,
+				(*46*)loadingSamplePipettingMethod,
+				(*47*)preFlushingSolutionCollectionContainerLink,
+				(*47b*)preFlushingSolutionCollectionContainerExpression,
+				(*48*)conditioningSolutionCollectionContainerLink,
+				(*48b*)conditioningSolutionCollectionContainerExpression,
+				(*49*)loadingSampleFlowthroughContainerLink,
+				(*49b*)loadingSampleFlowthroughContainerExpression,
+				(*50*)washingSolutionCollectionContainerLink,
+				(*50b*)washingSolutionCollectionContainerExpression,
+				(*51*)secondaryWashingSolutionCollectionContainerLink,
+				(*51b*)secondaryWashingSolutionCollectionContainerExpression,
+				(*52*)tertiaryWashingSolutionCollectionContainerLink,
+				(*52b*)tertiaryWashingSolutionCollectionContainerExpression,
+				(*53*)elutingSolutionCollectionContainerLink,
+				(*53b*)elutingSolutionCollectionContainerExpression,
+				(*54*)extractionTemperature,
+				(*55*)preFlushingSolutionPressure,
+				(*56*)conditioningSolutionPressure,
+				(*57*)loadingSamplePressure,
+				(*58*)washingSolutionPressure,
+				(*59*)secondaryWashingSolutionPressure,
+				(*60*)tertiaryWashingSolutionPressure,
+				(*61*)elutingSolutionPressure,
+				(*62*)preFlushLabel,
+				(*63*)conditionLabel,
+				(*64*)pooledSampleLabel,
+				(*65*)washLabel,
+				(*66*)secondaryWashLabel,
+				(*67*)tertiaryWashLabel,
+				(*68*)elutionLabel,
+				(*69*)preFlushContainerOutLabel,
+				(*70*)conditionContainerOutLabel,
+				(*71*)sampleContainerOutLabel,
+				(*72*)washContainerOutLabel,
+				(*73*)secondaryWashContainerOutLabel,
+				(*74*)tertiaryWashContainerOutLabel,
+				(*75*)elutionContainerOutLabel,
+				(*76*)extractionCartridgeLabel,
+				(*77*)preFlushSampleOutLabel,
+				(*78*)conditionSampleOutLabel,
+				(*79*)loadingSampleOutLabel,
+				(*80*)washSampleOutLabel,
+				(*81*)secondarySampleOutLabel,
+				(*82*)tertiarySampleOutLabel,
+				(*83*)elutionSampleOutLabel,
+				(*84*)cartridgePositionForFilter
 			} = Map[
 				Lookup[First[unitOperationPackets], #]&,
 				{
 					(*1*)Replace[PreFlushingSolutionLink],
+					(*1b*)Replace[PreFlushingSolutionString],
 					(*2*)Replace[ConditioningSolutionLink],
+					(*2b*)Replace[ConditioningSolutionString],
 					(*3*)Replace[SampleExpression],
 					(*4*)Replace[WashingSolutionLink],
+					(*4b*)Replace[WashingSolutionString],
 					(*5*)Replace[SecondaryWashingSolutionLink],
+					(*5b*)Replace[SecondaryWashingSolutionString],
 					(*6*)Replace[TertiaryWashingSolutionLink],
+					(*6b*)Replace[TertiaryWashingSolutionString],
 					(*7*)Replace[ElutingSolutionLink],
+					(*7b*)Replace[ElutingSolutionString],
 					(*8*)Replace[PoolLengths],
 					(*9*)Replace[PreFlushingSolutionVolume],
 					(*10*)Replace[ConditioningSolutionVolume],
@@ -10887,52 +11125,94 @@ solidPhaseExtractionResourcePackets[
 					(*23*)Replace[TertiaryWashingSolutionCentrifugeIntensity],
 					(*24*)Replace[ElutingSolutionCentrifugeIntensity],
 					(*25*)Replace[LoadingSampleCentrifugeIntensity],
-					(*26*)Replace[PreFlushingSolutionDrainTime],
-					(*27*)Replace[ConditioningSolutionDrainTime],
-					(*28*)Replace[WashingSolutionDrainTime],
-					(*29*)Replace[SecondaryWashingSolutionDrainTime],
-					(*30*)Replace[TertiaryWashingSolutionDrainTime],
-					(*31*)Replace[ElutingSolutionDrainTime],
-					(*32*)Replace[LoadingSampleDrainTime],
-					(*33*)Replace[PreFlushingSolutionCollectionContainerLink],
-					(*34*)Replace[ConditioningSolutionCollectionContainerLink],
-					(*35*)Replace[LoadingSampleFlowthroughContainerLink],
-					(*36*)Replace[WashingSolutionCollectionContainerLink],
-					(*37*)Replace[SecondaryWashingSolutionCollectionContainerLink],
-					(*38*)Replace[TertiaryWashingSolutionCollectionContainerLink],
-					(*39*)Replace[ElutingSolutionCollectionContainerLink],
-					(*40*)Replace[ExtractionTemperatureReal],
-					(*41*)Replace[PreFlushingSolutionPressureReal],
-					(*42*)Replace[ConditioningSolutionPressureReal],
-					(*43*)Replace[LoadingSamplePressureReal],
-					(*44*)Replace[WashingSolutionPressureReal],
-					(*45*)Replace[SecondaryWashingSolutionPressureReal],
-					(*46*)Replace[TertiaryWashingSolutionPressureReal],
-					(*47*)Replace[ElutingSolutionPressureReal],
-					(*48*)Replace[PreFlushingSolutionLabel],
-					(*49*)Replace[ConditioningSolutionLabel],
-					(*50*)Replace[SampleLabel],
-					(*51*)Replace[WashingSolutionLabel],
-					(*52*)Replace[SecondaryWashingSolutionLabel],
-					(*53*)Replace[TertiaryWashingSolutionLabel],
-					(*54*)Replace[ElutingSolutionLabel],
-					(*55*)Replace[PreFlushingCollectionContainerOutLabel],
-					(*56*)Replace[ConditioningCollectionContainerOutLabel],
-					(*57*)Replace[LoadingSampleFlowthroughCollectionContainerOutLabel],
-					(*58*)Replace[WashingCollectionContainerOutLabel],
-					(*59*)Replace[SecondaryWashingCollectionContainerOutLabel],
-					(*60*)Replace[TertiaryWashingCollectionContainerOutLabel],
-					(*61*)Replace[ElutingCollectionContainerOutLabel],
-					(*62*)Replace[ExtractionCartridgeLabel],
-					(*63*)Replace[PreFlushingSampleOutLabel],
-					(*64*)Replace[ConditioningSampleOutLabel],
-					(*65*)Replace[LoadingSampleFlowthroughSampleOutLabel],
-					(*66*)Replace[WashingSampleOutLabel],
-					(*67*)Replace[SecondaryWashingSampleOutLabel],
-					(*68*)Replace[TertiaryWashingSampleOutLabel],
-					(*69*)Replace[ElutingSampleOutLabel]
+					(*26*)Replace[PreFlushingTime],
+					(*27*)Replace[ConditioningTime],
+					(*28*)Replace[WashingTime],
+					(*29*)Replace[SecondaryWashingTime],
+					(*30*)Replace[TertiaryWashingTime],
+					(*31*)Replace[ElutingTime],
+					(*32*)Replace[LoadingTime],
+					(*33*)Replace[PreFlushingSolutionDrainTime],
+					(*34*)Replace[ConditioningSolutionDrainTime],
+					(*35*)Replace[WashingSolutionDrainTime],
+					(*36*)Replace[SecondaryWashingSolutionDrainTime],
+					(*37*)Replace[TertiaryWashingSolutionDrainTime],
+					(*38*)Replace[ElutingSolutionDrainTime],
+					(*39*)Replace[LoadingSampleDrainTime],
+					(*40*)Replace[PreFlushingSolutionPipettingMethod],
+					(*41*)Replace[ConditioningSolutionPipettingMethod],
+					(*42*)Replace[WashingSolutionPipettingMethod],
+					(*43*)Replace[SecondaryWashingSolutionPipettingMethod],
+					(*44*)Replace[TertiaryWashingSolutionPipettingMethod],
+					(*45*)Replace[ElutingSolutionPipettingMethod],
+					(*46*)Replace[LoadingSamplePipettingMethod],
+					(*47*)Replace[PreFlushingSolutionCollectionContainerLink],
+					(*47b*)Replace[PreFlushingSolutionCollectionContainerExpression],
+					(*48*)Replace[ConditioningSolutionCollectionContainerLink],
+					(*48b*)Replace[ConditioningSolutionCollectionContainerExpression],
+					(*49*)Replace[LoadingSampleFlowthroughContainerLink],
+					(*49b*)Replace[LoadingSampleFlowthroughContainerExpression],
+					(*50*)Replace[WashingSolutionCollectionContainerLink],
+					(*50b*)Replace[WashingSolutionCollectionContainerExpression],
+					(*51*)Replace[SecondaryWashingSolutionCollectionContainerLink],
+					(*51b*)Replace[SecondaryWashingSolutionCollectionContainerExpression],
+					(*52*)Replace[TertiaryWashingSolutionCollectionContainerLink],
+					(*52b*)Replace[TertiaryWashingSolutionCollectionContainerExpression],
+					(*53*)Replace[ElutingSolutionCollectionContainerLink],
+					(*53b*)Replace[ElutingSolutionCollectionContainerExpression],
+					(*54*)Replace[ExtractionTemperatureReal],
+					(*55*)Replace[PreFlushingSolutionPressureReal],
+					(*56*)Replace[ConditioningSolutionPressureReal],
+					(*57*)Replace[LoadingSamplePressureReal],
+					(*58*)Replace[WashingSolutionPressureReal],
+					(*59*)Replace[SecondaryWashingSolutionPressureReal],
+					(*60*)Replace[TertiaryWashingSolutionPressureReal],
+					(*61*)Replace[ElutingSolutionPressureReal],
+					(*62*)Replace[PreFlushingSolutionLabel],
+					(*63*)Replace[ConditioningSolutionLabel],
+					(*64*)Replace[SampleLabel],
+					(*65*)Replace[WashingSolutionLabel],
+					(*66*)Replace[SecondaryWashingSolutionLabel],
+					(*67*)Replace[TertiaryWashingSolutionLabel],
+					(*68*)Replace[ElutingSolutionLabel],
+					(*69*)Replace[PreFlushingCollectionContainerOutLabel],
+					(*70*)Replace[ConditioningCollectionContainerOutLabel],
+					(*71*)Replace[LoadingSampleFlowthroughCollectionContainerOutLabel],
+					(*72*)Replace[WashingCollectionContainerOutLabel],
+					(*73*)Replace[SecondaryWashingCollectionContainerOutLabel],
+					(*74*)Replace[TertiaryWashingCollectionContainerOutLabel],
+					(*75*)Replace[ElutingCollectionContainerOutLabel],
+					(*76*)Replace[ExtractionCartridgeLabel],
+					(*77*)Replace[PreFlushingSampleOutLabel],
+					(*78*)Replace[ConditioningSampleOutLabel],
+					(*79*)Replace[LoadingSampleFlowthroughSampleOutLabel],
+					(*80*)Replace[WashingSampleOutLabel],
+					(*81*)Replace[SecondaryWashingSampleOutLabel],
+					(*82*)Replace[TertiaryWashingSampleOutLabel],
+					(*83*)Replace[ElutingSampleOutLabel],
+					(*84*)Replace[CartridgePosition]
 				}
 			];
+
+			(* disentangle the String vs Link thing above. Need to do this for solutions and collection containers *)
+			combineLinkAndStringFields[myLinkField_List, myStringField_List]:=MapThread[
+				If[NullQ[#1], #2, #1]&,
+				{myLinkField, myStringField}
+			];
+			preFlush = combineLinkAndStringFields[preFlushLink, preFlushString];
+			condition = combineLinkAndStringFields[conditionLink, conditionString];
+			wash = combineLinkAndStringFields[washLink, washString];
+			secWash = combineLinkAndStringFields[secWashLink, secWashString];
+			terWash = combineLinkAndStringFields[terWashLink, terWashString];
+			elute = combineLinkAndStringFields[eluteLink, eluteString];
+
+			preFlushingSolutionCollectionContainer = combineLinkAndStringFields[preFlushingSolutionCollectionContainerLink, preFlushingSolutionCollectionContainerExpression];
+			conditioningSolutionCollectionContainer = combineLinkAndStringFields[conditioningSolutionCollectionContainerLink, conditioningSolutionCollectionContainerExpression];
+			loadingSampleFlowthroughContainer = combineLinkAndStringFields[loadingSampleFlowthroughContainerLink, loadingSampleFlowthroughContainerExpression];
+			washingSolutionCollectionContainer = combineLinkAndStringFields[washingSolutionCollectionContainerLink, washingSolutionCollectionContainerExpression];
+			secondaryWashingSolutionCollectionContainer = combineLinkAndStringFields[secondaryWashingSolutionCollectionContainerLink, secondaryWashingSolutionCollectionContainerExpression];
+			tertiaryWashingSolutionCollectionContainer = combineLinkAndStringFields[tertiaryWashingSolutionCollectionContainerLink, tertiaryWashingSolutionCollectionContainerExpression];
+			elutingSolutionCollectionContainer = combineLinkAndStringFields[elutingSolutionCollectionContainerLink, elutingSolutionCollectionContainerExpression];
 
 			nPooled = Length[pooledSamples];
 
@@ -10948,10 +11228,12 @@ solidPhaseExtractionResourcePackets[
 			}];
 
 			{
-				sampleToFilter,
+				sampleToFilterMaybeLinks,
 				intensityToFilter,
 				pressureToFilter,
 				timeToFilter,
+				drainTimeToFilter,
+				pipettingMethodToFilter,
 				containerToFilter,
 				volumeToFilter,
 				labelsToFilter,
@@ -10989,6 +11271,15 @@ solidPhaseExtractionResourcePackets[
 						elutingSolutionPressure
 					},
 					{
+						preFlushingTime,
+						conditioningTime,
+						loadingTime,
+						washingTime,
+						secondaryWashingTime,
+						tertiaryWashingTime,
+						elutingTime
+					},
+					{
 						preFlushingSolutionDrainTime,
 						conditioningSolutionDrainTime,
 						loadingSampleDrainTime,
@@ -10996,6 +11287,15 @@ solidPhaseExtractionResourcePackets[
 						secondaryWashingSolutionDrainTime,
 						tertiaryWashingSolutionDrainTime,
 						elutingSolutionDrainTime
+					},
+					{
+						preFlushingSolutionPipettingMethod,
+						conditioningSolutionPipettingMethod,
+						loadingSamplePipettingMethod,
+						washingSolutionPipettingMethod,
+						secondaryWashingSolutionPipettingMethod,
+						tertiaryWashingSolutionPipettingMethod,
+						elutingSolutionPipettingMethod
 					},
 					{
 						preFlushingSolutionCollectionContainer,
@@ -11045,11 +11345,17 @@ solidPhaseExtractionResourcePackets[
 				}
 			];
 
+			(* make sure sampleToFilter doesn't have any Links/packets any more at this point *)
+			(* note that some of the values here might be strings at this point; those can obviously stay *)
+			sampleToFilter = sampleToFilterMaybeLinks /. {packet:PacketP[] :> Lookup[packet, Object], link_Link :> Download[link, Object]};
+
 			{
 				{initSample, restSample},
 				{initIntensity, restIntensity},
 				{initPressure, restPressure},
 				{initTime, restTime},
+				{initDrainTime, restDrainTime},
+				{initPipettingMethod, restPipettingMethod},
 				{initCont, restCont},
 				{initVol, restVol},
 				{initLabel, restLabel},
@@ -11062,6 +11368,8 @@ solidPhaseExtractionResourcePackets[
 					intensityToFilter,
 					pressureToFilter,
 					timeToFilter,
+					drainTimeToFilter,
+					pipettingMethodToFilter,
 					containerToFilter,
 					volumeToFilter,
 					labelsToFilter,
@@ -11075,6 +11383,8 @@ solidPhaseExtractionResourcePackets[
 			filterReadyIntensityFlat = Flatten[{initIntensity, restIntensity}, 1];
 			filterReadyPressureFlat = Flatten[{initPressure, restPressure}, 1];
 			filterReadyTimeFlat = Flatten[{initTime, restTime}, 1];
+			filterReadyDrainTimeFlat = Flatten[{initDrainTime, restDrainTime}, 1];
+			filterReadyPipettingMethodFlat = Flatten[{initPipettingMethod, restPipettingMethod}, 1];
 			filterReadyContainerFlat = Flatten[{initCont, restCont}, 1];
 			filterReadyVolumeFlat = Flatten[{initVol, restVol}, 1];
 			filterReadyLabelFlat = Flatten[{initLabel, restLabel}, 1];
@@ -11087,11 +11397,9 @@ solidPhaseExtractionResourcePackets[
 				MapThread[
 					(
 						Which[
-							MatchQ[#1, ObjectP[]],
-							#2,
+							MatchQ[#1, ObjectP[]|_String], #2,
 
-							Length[#1] >= 1,
-							ConstantArray[#2, Length[#1]]
+							Length[#1] >= 1, ConstantArray[#2, Length[#1]]
 						]
 					)&,
 					{
@@ -11105,6 +11413,8 @@ solidPhaseExtractionResourcePackets[
 			filterReadyIntensityFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyIntensityFlat]], nPooled];
 			filterReadyPressureFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyPressureFlat]], nPooled];
 			filterReadyTimeFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyTimeFlat]], nPooled];
+			filterReadyDrainTimeFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyDrainTimeFlat]], nPooled];
+			filterReadyPipettingMethodFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyPipettingMethodFlat]], nPooled];
 			filterReadyContainerFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyContainerFlat]], nPooled];
 			filterReadyContainerLabelFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadyContainerLabelFlat]], nPooled];
 			filterReadySamplesOutLabelFlatIndexMatch = Partition[speFlatWashToIndexMatchSample[Flatten[filterReadySamplesOutLabelFlat]], nPooled];
@@ -11136,6 +11446,8 @@ solidPhaseExtractionResourcePackets[
 				{firstInFilterIntensity, restInFilterIntensity},
 				{firstInFilterPressure, restInFilterPressure},
 				{firstInFilterTime, restInFilterTime},
+				{firstInFilterDrainTime, restInFilterDrainTime},
+				{firstInFilterPipettingMethod, restInFilterPipettingMethod},
 				{firstInFilterContainer, restInFilterContainer},
 				{firstInFilterVolume, restInFilterVolume},
 				{firstInLabel, restInLabel},
@@ -11148,6 +11460,8 @@ solidPhaseExtractionResourcePackets[
 					filterReadyIntensityFlatIndexMatch,
 					filterReadyPressureFlatIndexMatch,
 					filterReadyTimeFlatIndexMatch,
+					filterReadyDrainTimeFlatIndexMatch,
+					filterReadyPipettingMethodFlatIndexMatch,
 					filterReadyContainerFlatIndexMatch,
 					filterReadyVolumeFlat,
 					filterReadyLabelFlat,
@@ -11158,7 +11472,7 @@ solidPhaseExtractionResourcePackets[
 
 			(* get all the samples/volumes we need as inputs *)
 			sampleRules = MapThread[
-				{Download[#1, Object], #2} -> #3&,
+				{#1, #2} -> #3&,
 				{Flatten[filterReadySampleFlat], Flatten[filterReadyLabelFlat], Flatten[filterReadyVolumeFlat]}
 			];
 			mergedSampleRules = Merge[
@@ -11168,23 +11482,38 @@ solidPhaseExtractionResourcePackets[
 
 			(* get the preferred container for each combination of samples *)
 			labelContainerContainerRules = KeyValueMap[
-				If[MatchQ[#1[[1]], ObjectP[Model[Sample]]],
-					#1 -> PreferredContainer[#2],
-					#1 -> cacheLookup[cache, First[#1], Container]
+				Switch[#1[[1]],
+					ObjectP[Model[Sample]],
+						#1 -> PreferredContainer[#2],
+					ObjectP[Object[Sample]],
+						#1 -> cacheLookup[cache, First[#1], Container],
+					(* if we are in a string, then we have a simulated object *)
+					(* first convert back into an Object from a string, then cacheLookup the container, and then convert back to a string if the container is also simulated *)
+					_String,
+						Module[
+							{simulatedObject, simulatedObjectContainer, containerObjOrString},
+							simulatedObject = #1[[1]] /. (Reverse /@ simulatedObjectsToLabel);
+							simulatedObjectContainer = cacheLookup[cache, simulatedObject, Container];
+							containerObjOrString = simulatedObjectContainer /. simulatedObjectPatternsToLabel;
+
+							#1 -> containerObjOrString
+						]
 				]&,
 				mergedSampleRules
 			];
 
 			(* get the samples and the like we need to DeleteDuplicates on before sending into LabelSample *)
 			sampleAndLabelsWithDupes = MapThread[
-				{
-					#1,
-					Lookup[mergedSampleRules, Key[{#1, #2}], #3],
-					#2,
-					Lookup[labelContainerContainerRules, Key[{#1, #2}], PreferredContainer[#3]],
-					"Container for " <> ToString[#2]
-				}&,
-				{Download[Flatten[filterReadySampleFlat], Object], Flatten[filterReadyLabelFlat], Flatten[filterReadyVolumeFlat]}
+				Function[{filterReadySample, filterReadyLabel, filterReadyVolume},
+					{
+						filterReadySample,
+						Lookup[mergedSampleRules, Key[{filterReadySample, filterReadyLabel}], filterReadyVolume],
+						filterReadyLabel,
+						Lookup[labelContainerContainerRules, Key[{filterReadySample, filterReadyLabel}], PreferredContainer[filterReadyVolume]],
+						"Container for " <> ToString[filterReadyLabel]
+					}
+				],
+				{Flatten[filterReadySampleFlat], Flatten[filterReadyLabelFlat], Flatten[filterReadyVolumeFlat]}
 			];
 			samplesAndLabels = DeleteDuplicates[sampleAndLabelsWithDupes];
 
@@ -11212,9 +11541,11 @@ solidPhaseExtractionResourcePackets[
 				Instrument -> instrument,
 				Filter -> cartridge,
 				FilterLabel -> extractionCartridgeLabel,
+				FilterPosition -> cartridgePositionForFilter,
 				Intensity -> First[firstInFilterIntensity],
 				Pressure -> First[firstInFilterPressure],
 				Time -> First[firstInFilterTime],
+				SampleLoadingDrainTime -> First[firstInFilterDrainTime],
 				Volume -> Flatten[firstInFilterVolume],
 				CollectionContainerLabel -> (If[NullQ[#], Automatic, StringJoin["Collection container for " <> #]]& /@ Flatten[firstInContainerLabel]), (* TODO change this back once I get CollectionContianer/FiltrateContainerOut/WashFlowThroughContainer to not go into CollectionContainer at every step *)
 				FiltrateContainerLabel -> (Flatten[firstInContainerLabel] /. Null -> Automatic),
@@ -11224,7 +11555,10 @@ solidPhaseExtractionResourcePackets[
 				RetentateWashBuffer -> Map[Flatten[#]&, restInLabel]/.{}->Null,
 				RetentateWashCentrifugeIntensity -> Map[Flatten[#]&, restInFilterIntensity]/.{}->Null,
 				RetentateWashPressure -> Map[Flatten[#]&, restInFilterPressure]/.{}->Null,
-				RetentateWashDrainTime -> Map[Flatten[#]&, restInFilterTime]/.{}->Null,
+				RetentateWashTime -> Map[Flatten[#]&, restInFilterTime]/.{}->Null,
+				RetentateWashDrainTime -> Map[Flatten[#]&, restInFilterDrainTime]/.{}->Null,
+				PipettingMethod -> First[firstInFilterPipettingMethod],
+				RetentateWashPipettingMethod -> Map[Flatten[#]&, restInFilterPipettingMethod]/.{}->Null,
 				RetentateWashVolume -> Map[Flatten[#]&, restInFilterVolume]/.{}->Null,
 				WashFlowThroughContainer -> ((Map[Flatten[#]&, restInFilterContainer]) /.({}|Null) -> Automatic),
 				WashFlowThroughContainerLabel -> (Map[Flatten[#]&, restInContainerLabel] /. Null :> CreateUniqueLabel["Wash Flow Through Container"])/.{}->Null,
@@ -11268,7 +11602,8 @@ solidPhaseExtractionResourcePackets[
 	(* make our final SPE unit operation packets *)
 	finalSPEUnitOperationPackets = ToList[If[MatchQ[resolvedPreparation, Robotic],
 		Join[
-			First[unitOperationPackets] /. oldSampleToModelRules,
+			(* make sure we convert simulated objects into their label so that we don't try to actually Upload IDs *)
+			First[unitOperationPackets] /. Join[oldSampleToModelRules, simulatedObjectsToLabel],
 			<|
 				Replace[RoboticUnitOperations] -> Link[Lookup[roboticFilterUnitOperationPackets, Object]]
 			|>
@@ -11324,44 +11659,44 @@ solidPhaseExtractionResourcePackets[
 		Replace[PreFlushingSolution] -> Map[Link[#]&, Lookup[orderedResource, PreFlushingResource]];
 		Replace[PreFlushingSolutionVolume] -> Lookup[myResolvedOptions, PreFlushingSolutionVolume],
 		Replace[PreFlushingSolutionDispenseRate] -> Lookup[myResolvedOptions, PreFlushingSolutionDispenseRate],
-		Replace[PreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, PreFlushingSolutionDrainTime],
+		Replace[PreFlushingTime] -> Lookup[myResolvedOptions, PreFlushingTime],
 		Replace[PreFlushingSolutionUntilDrained] -> Lookup[myResolvedOptions, PreFlushingSolutionUntilDrained],
-		Replace[MaxPreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxPreFlushingSolutionDrainTime],
+		Replace[MaxPreFlushingTime] -> Lookup[myResolvedOptions, MaxPreFlushingTime],
 
 		Replace[ConditioningSolution] -> Map[Link[#]&, Lookup[orderedResource, ConditioningResource]];
 		Replace[ConditioningSolutionVolume] -> Lookup[myResolvedOptions, ConditioningSolutionVolume],
 		Replace[ConditioningSolutionDispenseRate] -> Lookup[myResolvedOptions, ConditioningSolutionDispenseRate],
-		Replace[ConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, ConditioningSolutionDrainTime],
+		Replace[ConditioningTime] -> Lookup[myResolvedOptions, ConditioningTime],
 		Replace[ConditioningSolutionUntilDrained] -> Lookup[myResolvedOptions, ConditioningSolutionUntilDrained],
-		Replace[MaxConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, MaxConditioningSolutionDrainTime],
+		Replace[MaxConditioningTime] -> Lookup[myResolvedOptions, MaxConditioningTime],
 
 		Replace[WashingSolution] -> Map[Link[#]&, Lookup[orderedResource, WashingResource]];
 		Replace[WashingSolutionVolume] -> Lookup[myResolvedOptions, WashingSolutionVolume],
 		Replace[WashingSolutionDispenseRate] -> Lookup[myResolvedOptions, WashingSolutionDispenseRate],
-		Replace[WashingSolutionDrainTime] -> Lookup[myResolvedOptions, WashingSolutionDrainTime],
+		Replace[WashingTime] -> Lookup[myResolvedOptions, WashingTime],
 		Replace[WashingSolutionUntilDrained] -> Lookup[myResolvedOptions, WashingSolutionUntilDrained],
-		Replace[MaxWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxWashingSolutionDrainTime],
+		Replace[MaxWashingTime] -> Lookup[myResolvedOptions, MaxWashingTime],
 
 		Replace[SecondaryWashingSolution] -> Map[Link[#]&, Lookup[orderedResource, SecondaryWashingResource]];
 		Replace[SecondaryWashingSolutionVolume] -> Lookup[myResolvedOptions, SecondaryWashingSolutionVolume],
 		Replace[SecondaryWashingSolutionDispenseRate] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDispenseRate],
-		Replace[SecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDrainTime],
+		Replace[SecondaryWashingTime] -> Lookup[myResolvedOptions, SecondaryWashingTime],
 		Replace[SecondaryWashingSolutionUntilDrained] -> Lookup[myResolvedOptions, SecondaryWashingSolutionUntilDrained],
-		Replace[MaxSecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxSecondaryWashingSolutionDrainTime],
+		Replace[MaxSecondaryWashingTime] -> Lookup[myResolvedOptions, MaxSecondaryWashingTime],
 
 		Replace[TertiaryWashingSolution] -> Map[Link[#]&, Lookup[orderedResource, TertiaryWashingResource]];
 		Replace[TertiaryWashingSolutionVolume] -> Lookup[myResolvedOptions, TertiaryWashingSolutionVolume],
 		Replace[TertiaryWashingSolutionDispenseRate] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDispenseRate],
-		Replace[TertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDrainTime],
+		Replace[TertiaryWashingTime] -> Lookup[myResolvedOptions, TertiaryWashingTime],
 		Replace[TertiaryWashingSolutionUntilDrained] -> Lookup[myResolvedOptions, TertiaryWashingSolutionUntilDrained],
-		Replace[MaxTertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxTertiaryWashingSolutionDrainTime],
+		Replace[MaxTertiaryWashingTime] -> Lookup[myResolvedOptions, MaxTertiaryWashingTime],
 
 		Replace[ElutingSolution] -> Map[Link[#]&, Lookup[orderedResource, ElutingResource]];
 		Replace[ElutingSolutionVolume] -> Lookup[myResolvedOptions, ElutingSolutionVolume],
 		Replace[ElutingSolutionDispenseRate] -> Lookup[myResolvedOptions, ElutingSolutionDispenseRate],
-		Replace[ElutingSolutionDrainTime] -> Lookup[myResolvedOptions, ElutingSolutionDrainTime],
+		Replace[ElutingTime] -> Lookup[myResolvedOptions, ElutingTime],
 		Replace[ElutingSolutionUntilDrained] -> Lookup[myResolvedOptions, ElutingSolutionUntilDrained],
-		Replace[MaxElutingSolutionDrainTime] -> Lookup[myResolvedOptions, MaxElutingSolutionDrainTime],
+		Replace[MaxElutingTime] -> Lookup[myResolvedOptions, MaxElutingTime],
 
 		(* solution incubation temperature *)
 		Replace[PreFlushingSolutionTemperature] -> Lookup[myResolvedOptions, PreFlushingSolutionTemperature],
@@ -11422,8 +11757,9 @@ solidPhaseExtractionResourcePackets[
 		],
 		Replace[ExtractionCartridgePlacements] -> MapThread[
 			{Link[#1], #2}&,
-			{Lookup[orderedResource, ExtractionCartridgeResource], Lookup[myResolvedOptions, CartridgePlacement]}
+			{Lookup[orderedResource, ExtractionCartridgeResource], Lookup[myResolvedOptions, CartridgePosition]}
 		],
+		Replace[CartridgePosition] -> Lookup[myResolvedOptions, CartridgePosition],
 		Replace[PreFlushingContainerOutPlacements] -> Map[
 			{Link[#[[1]]], #[[2]]}&,
 			Transpose[Lookup[orderedResource, {PreFlushingContainerOutResource, PreFlushingContainerOutPlacement}]]
@@ -11462,13 +11798,13 @@ solidPhaseExtractionResourcePackets[
 		Replace[LoadingSampleCentrifugeIntensity] -> Lookup[myResolvedOptions, LoadingSampleCentrifugeIntensity],
 
 		(* time stuff *)
-		Replace[PreFlushingSolutionDrainTime] -> Lookup[myResolvedOptions, PreFlushingSolutionDrainTime],
-		Replace[ConditioningSolutionDrainTime] -> Lookup[myResolvedOptions, ConditioningSolutionDrainTime],
-		Replace[WashingSolutionDrainTime] -> Lookup[myResolvedOptions, WashingSolutionDrainTime],
-		Replace[SecondaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, SecondaryWashingSolutionDrainTime],
-		Replace[TertiaryWashingSolutionDrainTime] -> Lookup[myResolvedOptions, TertiaryWashingSolutionDrainTime],
-		Replace[ElutingSolutionDrainTime] -> Lookup[myResolvedOptions, ElutingSolutionDrainTime],
-		Replace[LoadingSampleDrainTime] -> Lookup[myResolvedOptions, LoadingSampleDrainTime],
+		Replace[PreFlushingTime] -> Lookup[myResolvedOptions, PreFlushingTime],
+		Replace[ConditioningTime] -> Lookup[myResolvedOptions, ConditioningTime],
+		Replace[WashingTime] -> Lookup[myResolvedOptions, WashingTime],
+		Replace[SecondaryWashingTime] -> Lookup[myResolvedOptions, SecondaryWashingTime],
+		Replace[TertiaryWashingTime] -> Lookup[myResolvedOptions, TertiaryWashingTime],
+		Replace[ElutingTime] -> Lookup[myResolvedOptions, ElutingTime],
+		Replace[LoadingTime] -> Lookup[myResolvedOptions, LoadingTime],
 
 		(* dealing with sample loading *)
 		Replace[LoadingSampleVolume] -> Lookup[myResolvedOptions, LoadingSampleVolume],
@@ -11540,15 +11876,15 @@ solidPhaseExtractionResourcePackets[
 
 		Replace[Checkpoints] -> {
 			{"Picking Resources", 60 Minute, "Samples required to execute this protocol are gathered from storage.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 60 Minute]]},
+				Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 60 Minute]]},
 			{"Preparing Instrumentation", 40 Minute, "The solid phase extractor is configured for the protocol and all required materials are placed on deck.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 40 Minute]]},
+				Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 40 Minute]]},
 			{"Processing Materials", totalEstimatedRunTime, "Solid phase extraction is performed on the samples.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> totalEstimatedRunTime]]},
+				Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> totalEstimatedRunTime]]},
 			{"Returning Materials", 10 Minute, "Samples are returned to storage.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 10 Minute]]},
+				Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 10 Minute]]},
 			{"Sample Post-Processing", 100 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.",
-				Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 100 Minute]]}
+				Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 100 Minute]]}
 		},
 
 		Replace[SamplesInStorage] -> Flatten[Lookup[myResolvedOptions, SamplesInStorageCondition]],
@@ -12323,7 +12659,7 @@ speTableFunction[output_String] := Module[
 				{0 Milliliter, 2 Milliliter},
 				Robotic,
 				Model[Container, Plate, "id:L8kPEjkmLbvW"], (*Model[Container, Plate, "96-well 2mL Deep Well Plate"],*)
-				4,
+				7,
 				{0 Milliliter, 2 Milliliter}
 			},
 			{
@@ -12334,7 +12670,7 @@ speTableFunction[output_String] := Module[
 				{0 Milliliter, 2 Milliliter},
 				Robotic,
 				Model[Container, Plate, "id:n0k9mGkwbvG4"], (*Model[Container, Plate, "96-well 2mL Deep Well Plate, Sterile"],*)
-				4,
+				7,
 				{0 Milliliter, 2 Milliliter}
 			},
 			{
@@ -12357,7 +12693,7 @@ speTableFunction[output_String] := Module[
 				{0 Milliliter, 0.3 Milliliter},
 				Robotic,
 				Model[Container, Plate, "id:n0k9mGzRaaBn"], (*Model[Container, Plate, "96-well UV-Star Plate"],*)
-				4,
+				7,
 				{0 Milliliter, 0.3 Milliliter}
 			},
 			{
@@ -12369,7 +12705,7 @@ speTableFunction[output_String] := Module[
 				{0 Milliliter, 0.3 Milliliter},
 				Robotic,
 				Model[Container, Plate, "id:4pO6dMOqKBaX"],(*Model[Container, Plate, "96-well flat bottom plate, Sterile, Nuclease-Free"]*)
-				4,
+				7,
 				{0 Milliliter, 0.3 Milliliter}
 			},
 			(*			{*)
@@ -12414,7 +12750,7 @@ speTableFunction[output_String] := Module[
 			(*			},*)
 			{
 				Model[Instrument, FilterBlock, "id:rea9jl1orrGr"], (* Model[Instrument, FilterBlock, "Filter Block"] *)
-				Pressure,
+				Vacuum,
 				Model[Container, Plate, Filter],
 				{1, Infinity},
 				{0 Milliliter, 1.1 Milliliter},
@@ -12587,9 +12923,9 @@ speSolutionResolver[
 	collectSolution_,
 	solutionPressure_,
 	solutionDispenseRate_,
-	solutionDrainTime_,
+	solutionTime_,
 	solutionUntilDrained_,
-	solutionMaxDrainTime_,
+	solutionMaxTime_,
 	suppliedSolutionLabel_,
 	resolvedPreparation_,
 	resolvedSolution_
@@ -12597,9 +12933,9 @@ speSolutionResolver[
 	(* interval variable for generic Solution Resolver*)
 	{
 		resolvedVolume, resolvedTemperatureEquilibrationTime, maxContainerVolume, instrumentContainerOut,
-		resolvedSolutionDispenseRate, resolvedSolutionPressure, semiResolvedDrainTime, semiResolvedMaxDrainTime, resolvedSolutionTemperature, resolvedSolutionLabel,
+		resolvedSolutionDispenseRate, resolvedSolutionPressure, semiResolvedTime, semiResolvedMaxTime, resolvedSolutionTemperature, resolvedSolutionLabel,
 		(* error and warning *)
-		warningPressureTooLow, warningPressureTooHigh, warningDispenseRateTooLow, warningDispenseRateToHigh, warningPressureMustBeBoolean,
+		warningPressureTooLow, warningPressureTooHigh, warningDispenseRateTooLow, warningDispenseRateToHigh,
 		(* intermediate variables *)
 		cartridgeBedWeight,
 		semiResolvedSolutionPressure, minPressure, maxPressure, maxPressureWithFlowControl, semiResolvedSolutionDispenseRate, minRate, maxRate,
@@ -12613,10 +12949,9 @@ speSolutionResolver[
 		warningPressureTooHigh,
 		warningDispenseRateTooLow,
 		warningDispenseRateToHigh,
-		warningPressureMustBeBoolean,
 		volumeInstrumentError,
 		errorInstrumentSolutionTemperature
-	} = ConstantArray[False, 7];
+	} = ConstantArray[False, 6];
 
 	(* determine if we're in the gilson or biotage or mpe2 (or others I guess) *)
 	biotageQ = MatchQ[instrumentModel, Model[Instrument, PressureManifold, "id:zGj91a7mElrL"]];
@@ -12638,7 +12973,7 @@ speSolutionResolver[
 	(* if the master switch is true, then resolve it, otherwise set them all to null *)
 	If[MatchQ[solutionSwitch, False],
 		(* in case the master switch is False, leave everything as Null*)
-		Join[ConstantArray[Null, 8], ConstantArray[False, 7]],
+		Join[ConstantArray[Null, 8], ConstantArray[False, 6]],
 		(* if that step is used we have to actually resolve it *)
 		(
 			(* --1-- resolve theoretical volume first *)
@@ -12718,13 +13053,7 @@ speSolutionResolver[
 					],
 
 				BooleanP,
-					If[MatchQ[solutionPressure, GreaterP[0 PSI]],
-						(
-							warningPressureMustBeBoolean = True;
-							semiResolvedSolutionPressure
-						),
-						semiResolvedSolutionPressure
-					],
+					semiResolvedSolutionPressure,
 
 				_,
 					semiResolvedSolutionPressure /. {Automatic -> Null}
@@ -12780,7 +13109,7 @@ speSolutionResolver[
 
 			(* --6-- resolve for drain time *)
 			(* can only be semi resolved, because we have to check equipment limit again *)
-			semiResolvedDrainTime = Switch[{resolvedSolutionDispenseRate, solutionDrainTime},
+			semiResolvedTime = Switch[{resolvedSolutionDispenseRate, solutionTime},
 				(* for equipment that cannot control rate *)
 				{Null, Automatic},
 					2 Minute,
@@ -12798,19 +13127,19 @@ speSolutionResolver[
 
 				(*if its not automatic, leave it as is*)
 				{_, Except[Automatic]},
-					solutionDrainTime
+					solutionTime
 			];
-			(* now we can deal with the MaxDrainTime *)
-			semiResolvedMaxDrainTime = Switch[{semiResolvedDrainTime, solutionMaxDrainTime},
+			(* now we can deal with the MaxTime *)
+			semiResolvedMaxTime = Switch[{semiResolvedTime, solutionMaxTime},
 
 				{Except[Null], Automatic},
-					3 * semiResolvedDrainTime,
+					3 * semiResolvedTime,
 
 				{Null, _},
 					Null,
 
 				{Except[Null], Except[Automatic]},
-					solutionMaxDrainTime
+					solutionMaxTime
 
 			];
 
@@ -12838,24 +13167,21 @@ speSolutionResolver[
 			(* summarize the resolved output *)
 			{
 				(* resolved *)
-				resolvedVolume,
-				resolvedTemperatureEquilibrationTime,
-				(*				resolvedMixCollectedSolution,*)
-				resolvedSolutionPressure,
-				resolvedSolutionDispenseRate,
-				semiResolvedDrainTime,
-				semiResolvedMaxDrainTime,
-				resolvedSolutionTemperature,
-				(*				resolvedSolutionEquilibrationTime,*)
-				resolvedSolutionLabel,
+				(*1*)resolvedVolume,
+				(*2*)resolvedTemperatureEquilibrationTime,
+				(*3*)resolvedSolutionPressure,
+				(*4*)resolvedSolutionDispenseRate,
+				(*5*)semiResolvedTime,
+				(*6*)semiResolvedMaxTime,
+				(*7*)resolvedSolutionTemperature,
+				(*8*)resolvedSolutionLabel,
 				(* warning and error *)
-				warningPressureTooLow,
-				warningPressureTooHigh,
-				warningDispenseRateTooLow,
-				warningDispenseRateToHigh,
-				warningPressureMustBeBoolean,
-				volumeInstrumentError,
-				errorInstrumentSolutionTemperature
+				(*9*)warningPressureTooLow,
+				(*10*)warningPressureTooHigh,
+				(*11*)warningDispenseRateTooLow,
+				(*12*)warningDispenseRateToHigh,
+				(*13*)volumeInstrumentError,
+				(*14*)errorInstrumentSolutionTemperature
 			}
 		)
 	]
@@ -13150,7 +13476,8 @@ speIndexMatchResource[resource_List, matchingKey_, valueToMatch_List, batchSize_
 (* Subfunction to calculate batch for GX271 *)
 speBatchCalculatorForGX271[myOptionsUsingGX271_List, cache_] := Module[
 	{groupingParameters, cartridgeSize, quantitativeLoadingSampleSingle, optionsToBatch,
-		groupedByGX271PhysicalProperties, updatedGX271Options, loadingSampleTemperatureSingle},
+		groupedByGX271PhysicalProperties, updatedGX271Options, loadingSampleTemperatureSingle,
+		dwp48AllowedPosition, cartridgeToWellRule},
 
 	cartridgeSize = Map[Experiment`Private`cacheLookup[cache, #, MaxVolume]&, Lookup[myOptionsUsingGX271, ExtractionCartridge]];
 	(* we have to collapse pool options to single other wise, all pooled options will be group as different *)
@@ -13204,17 +13531,26 @@ speBatchCalculatorForGX271[myOptionsUsingGX271_List, cache_] := Module[
 
 	groupedByGX271PhysicalProperties = Experiment`Private`groupByKey[optionsToBatch, groupingParameters];
 
+	(* container out wells location *)
+	(* need to be able to convert the integer form of the CartridgePosition to the well form *)
+	(* this is admittedly a little bit an abuse of the CartridgePosition option, which is supposed to mean "what position in the cartridge/filter/whatever are we putting samples?" *)
+	(* but for the GX271s, it de facto deals with what positions in the _collection container_ we'll have *)
+	(* in robotic SPE this is the same thing because a plate is on a plate, but for the GX271s it's a little more complicated *)
+	dwp48AllowedPosition = List @@ Experiment`Private`cacheLookup[cache, Model[Container, Plate, "48-well Pyramid Bottom Deep Well Plate"], AllowedPositions];
+	cartridgeToWellRule = MapThread[#1 -> #2&, {Table[n, {n, Length[dwp48AllowedPosition]}], dwp48AllowedPosition}];
+
 	updatedGX271Options = Map[
 		Module[
 			{batchID, cartridgeLocation, aliquotTargets, updatedOptions},
 
 			{batchID, cartridgeLocation, aliquotTargets} = speSubBatchCalculatorForGX271[#, cache];
 			(* return structure like group by key*)
-			updatedOptions = Join[
+			(* using ReplaceRule here because CartridgePosition is intrinsically already resolved above, but for the GX271s we want to use the numbers from this helper function*)
+			updatedOptions = ReplaceRule[
 				#[[2]],
 				{
 					SPEBatchID -> batchID,
-					CartridgePlacement -> cartridgeLocation,
+					CartridgePosition -> cartridgeLocation /. cartridgeToWellRule,
 					AliquotTargets -> aliquotTargets
 				}
 			]
@@ -13454,13 +13790,13 @@ speBatchCalculatorCentrifugePlateManual[myOptionForPlateCentrifuge_List, cache_]
 		TertiaryWashingSolutionCentrifugeIntensity,
 		ElutingSolutionCentrifugeIntensity,
 		LoadingSampleCentrifugeIntensity,
-		PreFlushingSolutionDrainTime,
-		ConditioningSolutionDrainTime,
-		WashingSolutionDrainTime,
-		SecondaryWashingSolutionDrainTime,
-		TertiaryWashingSolutionDrainTime,
-		ElutingSolutionDrainTime,
-		LoadingSampleDrainTime,
+		PreFlushingTime,
+		ConditioningTime,
+		WashingTime,
+		SecondaryWashingTime,
+		TertiaryWashingTime,
+		ElutingTime,
+		LoadingTime,
 		PreFlushingSolution,
 		ConditioningSolution,
 		WashingSolution,
@@ -13513,7 +13849,7 @@ speBatchCalculatorCentrifugePlateManual[myOptionForPlateCentrifuge_List, cache_]
 					indexMatchedOptions,
 					{
 						SPEBatchID -> batchID,
-						CartridgePlacement -> sampleMatchedWellPositionOfPlates,
+						CartridgePosition -> sampleMatchedWellPositionOfPlates,
 						(* this follow aliquot for GX271 *)
 						AliquotTargets -> aliquotTargetsPooled
 					}
@@ -13582,13 +13918,13 @@ speBatchCalculatorFilterBlockManual[myOptionForPlateCentrifuge_List, cache_] := 
 		TertiaryWashingSolutionPressure,
 		ElutingSolutionPressure,
 		LoadingSamplePressure,
-		PreFlushingSolutionDrainTime,
-		ConditioningSolutionDrainTime,
-		WashingSolutionDrainTime,
-		SecondaryWashingSolutionDrainTime,
-		TertiaryWashingSolutionDrainTime,
-		ElutingSolutionDrainTime,
-		LoadingSampleDrainTime,
+		PreFlushingTime,
+		ConditioningTime,
+		WashingTime,
+		SecondaryWashingTime,
+		TertiaryWashingTime,
+		ElutingTime,
+		LoadingTime,
 		PreFlushingSolution,
 		ConditioningSolution,
 		WashingSolution,
@@ -13641,7 +13977,7 @@ speBatchCalculatorFilterBlockManual[myOptionForPlateCentrifuge_List, cache_] := 
 					indexMatchedOptions,
 					{
 						SPEBatchID -> batchID,
-						CartridgePlacement -> sampleMatchedWellPositionOfPlates,
+						CartridgePosition -> sampleMatchedWellPositionOfPlates,
 						(* this follow aliquot for GX271 *)
 						AliquotTargets -> aliquotTargetsPooled
 					}
@@ -13674,7 +14010,7 @@ speBatchCalculatorSyringePumpOne[myOptionForSyringePump_List, cache_] := Module[
 		myOptionForSyringePump,
 		{
 			SPEBatchID -> batchID,
-			CartridgePlacement -> ConstantArray["A1", Length[samples]],
+			CartridgePosition -> ConstantArray["A1", Length[samples]],
 			(* this follow aliquot for GX271, there is no aliquot for anything manual *)
 			AliquotTargets -> aliquotTargetsPooled,
 			CartridgeSize -> Table[Null, Length[batchID]]
@@ -13739,21 +14075,21 @@ speBatchCalculatorForBiotage48[myOptionsUsingBiotage48_List, cache_] := Module[
 		ElutingSolutionPressure,
 		LoadingSamplePressure,
 
-		PreFlushingSolutionDrainTime,
-		ConditioningSolutionDrainTime,
-		WashingSolutionDrainTime,
-		SecondaryWashingSolutionDrainTime,
-		TertiaryWashingSolutionDrainTime,
-		ElutingSolutionDrainTime,
-		LoadingSampleDrainTime,
+		PreFlushingTime,
+		ConditioningTime,
+		WashingTime,
+		SecondaryWashingTime,
+		TertiaryWashingTime,
+		ElutingTime,
+		LoadingTime,
 
-		MaxPreFlushingSolutionDrainTime,
-		MaxConditioningSolutionDrainTime,
-		MaxWashingSolutionDrainTime,
-		MaxSecondaryWashingSolutionDrainTime,
-		MaxTertiaryWashingSolutionDrainTime,
-		MaxElutingSolutionDrainTime,
-		MaxLoadingSampleDrainTime,
+		MaxPreFlushingTime,
+		MaxConditioningTime,
+		MaxWashingTime,
+		MaxSecondaryWashingTime,
+		MaxTertiaryWashingTime,
+		MaxElutingTime,
+		MaxLoadingTime,
 
 		PreFlushingSolutionUntilDrained,
 		ConditioningSolutionUntilDrained,
@@ -13867,7 +14203,7 @@ speBatchCalculatorForBiotage48[myOptionsUsingBiotage48_List, cache_] := Module[
 				indexMatchedOptions,
 				{
 					SPEBatchID -> Flatten[compileBatchLabel],
-					CartridgePlacement -> Flatten[compileCartridgePosition],
+					CartridgePosition -> Flatten[compileCartridgePosition],
 					AliquotTargets -> aliquotTargetsPooled
 				}
 			];

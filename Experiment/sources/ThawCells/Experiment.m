@@ -708,6 +708,10 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
         Nothing
       ]
     ],
+    If[MatchQ[Lookup[safeOptions, WorkCell], Null],
+      "The WorkCell option is set to Null",
+      Nothing
+    ],
     If[MatchQ[Lookup[safeOptions, Preparation], Manual],
       "the Preparation option is set to Manual by the user",
       Nothing
@@ -716,6 +720,10 @@ resolveThawCellsMethod[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]...}, 
 
   (* Create a list of reasons why we need Preparation->Robotic. *)
   roboticRequirementStrings={
+    If[MatchQ[Lookup[safeOptions, WorkCell], WorkCellP],
+      "The WorkCell option is specified (only robotic preparation supports using a work cell)",
+      Nothing
+    ],
     If[MatchQ[Lookup[safeOptions, Preparation], Robotic],
       "the Preparation option is set to Robotic by the user",
       Nothing

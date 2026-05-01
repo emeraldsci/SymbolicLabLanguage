@@ -37,9 +37,29 @@ DefineObjectType[Object[Protocol, Autoclave], {
 				Object[Container],
 				Object[Item]
 			],
-			Description->"The containers and the self-contained samples that are placed into the autoclave and sterilized.",
+			Description->"The containers and the self-contained samples that are placed into the autoclave and sterilize. They are subject to post-autoclave cooling.",
 			Category->"Sterilizing",
 			Developer->True
+		},
+		AutoclavedSkipCoolingInputs->{
+			Format->Multiple,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[
+				Object[Container],
+				Object[Item]
+			],
+			Description->"The containers and the self-contained samples that are placed into the autoclave and sterilize. They are resource picked into transporters to skip post-autoclave cooling.",
+			Category->"Sterilizing",
+			Developer->True
+		},
+		AutoclaveSkipCoolings -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the autoclaved sample gets resource picked into a transporter right after the completion of the autoclave program, instead of doing a post-autoclave cooling.",
+			Category -> "Autoclaving",
+			Developer -> True
 		},
 		SterilizationBagPlacements->{
 			Format->Multiple,
@@ -161,6 +181,32 @@ DefineObjectType[Object[Protocol, Autoclave], {
 			Relation -> Object[Container],
 			Description -> "The containers that started the protocol without a cover that are covered with aluminum foil prior to autoclaving.",
 			Category -> "Autoclave Setup",
+			Developer -> True
+		},
+		Transporters -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Instrument, PortableHeater], Model[Instrument, PortableHeater]],
+			Description -> "The portable heater(s) prepared for resource picking sample that has a TransportTemperature beyond $AmbientTemperature after autoclaving.",
+			Category -> "Autoclaving"
+		},
+		Temperatures -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> TemperatureP,
+			Units -> Celsius,
+			Description -> "For each member of Transporters, the temperature to which it is set. Note that this field name is kept the same to use the procedure \"PrepareTransporter Loop to Configure Transporters\".",
+			Category -> "Method Information",
+			IndexMatching -> Transporters,
+			Developer -> True
+		},
+		AutoclaveUnloaded -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether samples have already been removed from the autoclave.",
+			Category -> "Autoclaving",
 			Developer -> True
 		}
 	}

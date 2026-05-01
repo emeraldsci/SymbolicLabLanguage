@@ -5567,6 +5567,7 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		methodObjects, modelLinerObjects,linerObjects, runningCache,
 		oRingObjects, modelORingObjects, septumObjects, modelSeptumObjects, containerObjects, sampleFields, modelSampleFields, containerFields,
 		modelContainerFields, fieldsToDownload, objsToDownloadFrom, downloadedStuff,samplePreparationSimulation, modelCaps, modelCapObjects,
+		resolvedOptionsNoStandardNoBlankCaps,
 		(* timeTableQ*)
 		timeTable, status, rawTimes,
 		tick,
@@ -5943,10 +5944,16 @@ ExperimentGasChromatography[mySamples:ListableP[ObjectP[Object[Sample]]],myOptio
 		]
 	];
 
+	(* We pass an InjectionTable with BlankCap and StandardCap key to the resource packets function via the resolved options. Remove that here for collapsing and returning. *)
+	resolvedOptionsNoStandardNoBlankCaps =  ReplaceRule[
+		resolvedOptions,
+		{InjectionTable -> (ReplacePart[#, 4 -> FilterRules[Part[#, 4], Except[StandardCap|BlankCap]]]& /@ Lookup[resolvedOptions, InjectionTable])}
+	];
+
 	(* Collapse the resolved options *)
 	collapsedResolvedOptions = CollapseIndexMatchedOptions[
 		ExperimentGasChromatography,
-		resolvedOptions,
+		resolvedOptionsNoStandardNoBlankCaps,
 		Ignore -> listedOptions,
 		Messages -> False
 	];
@@ -8262,7 +8269,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		]
 	];
 
-	resolvedStandards = ToList[expandedStandards];
+	resolvedStandards = ToList[expandedStandards] /. {} -> {Null};
 
 	injectionTableStandardInjectionVolumes = If[injectionTableSpecifiedQ,
 		Cases[specifiedFakeInjectionTable, {Standard, _, injectionVolume_, _, _} :> injectionVolume],
@@ -8500,8 +8507,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 					StandardInjectionInletPenetrationRate,
 					StandardInjectionSignalMode,
 					StandardPreInjectionTimeDelay,
-					StandardPostInjectionTimeDelay,
-					StandardSeparationMethod
+					StandardPostInjectionTimeDelay
 				},
 				{
 					BlankSPMEDerivatizingAgent,
@@ -8511,8 +8517,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 					BlankInjectionInletPenetrationRate,
 					BlankInjectionSignalMode,
 					BlankPreInjectionTimeDelay,
-					BlankPostInjectionTimeDelay,
-					BlankSeparationMethod
+					BlankPostInjectionTimeDelay
 				}
 			},
 			{
@@ -8524,7 +8529,6 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 					75 * Millimeter / Second,
 					PlungerDown,
 					Null,
-					Null,
 					Null
 				},
 				{
@@ -8534,7 +8538,6 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 					40 * Millimeter,
 					75 * Millimeter / Second,
 					PlungerDown,
-					Null,
 					Null,
 					Null
 				}
@@ -11164,9 +11167,33 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 	(* Currently the compiler has the operator places the vials onto the sample rack. *)
 	(* If the user requests to agitate or vortex the sample will be moved to a new rack with the magnetic mover. *)
 	(* HeadspaceInjection (currently) requires agitation so we can check resolved Agitate as a proxy. *)
-	magneticCapRequiredQ = MapThread[Or, {resolvedAgitates, resolvedVortexs}];
-	standardMagneticCapRequiredQ = MapThread[Or, {resolvedStandardAgitates /. Null -> False, resolvedStandardVortexs /. Null -> False}];
-	blankMagneticCapRequiredQ = MapThread[Or, {resolvedBlankAgitates /. Null -> False, resolvedBlankVortexs /. Null -> False}];
+
+	(* Determine if any samples will require a magnetic cap at anytime when they are to be injected. *)
+	(* The sample can be injected multiple times and might require a magnetic cap for a later or earlier injection, so check each index where it is injected *)
+	magneticCapRequiredQ = Map[Function[{sample}, MemberQ[Join[
+			PickList[ToList[resolvedAgitates], simulatedSamples, ObjectP[sample]],
+			PickList[ToList[resolvedVortexs], simulatedSamples, ObjectP[sample]]
+	], True]],
+		simulatedSamples
+	];
+
+	(* Determine if any standards will require a magnetic cap at anytime when they are to be injected. *)
+	(* The standard can be injected multiple times and might require a magnetic cap for a later or earlier injection, so check each index where it is injected *)
+	standardMagneticCapRequiredQ = Map[Function[{standard}, MemberQ[Join[
+		PickList[resolvedStandardAgitates, resolvedStandards, ObjectP[standard]],
+		PickList[resolvedStandardVortexs, resolvedStandards, ObjectP[standard]]
+	], True]],
+		resolvedStandards
+	];
+
+	(* Determine if any blanks will require a magnetic cap at anytime when they are to be injected. *)
+	(* The blank can be injected multiple times and might require a magnetic cap for a later or earlier injection, so check each index where it is injected *)
+	blankMagneticCapRequiredQ = Map[Function[{blank}, MemberQ[Join[
+		PickList[resolvedBlankAgitates, resolvedBlanks, ObjectP[blank]],
+		PickList[resolvedBlankVortexs, resolvedBlanks, ObjectP[blank]]
+	], True]],
+		resolvedBlanks
+	];
 
 	(* resolve whether we need to move specified standards and blanks around if they aren't already in compatible vials *)
 	{aliquotStandardQ, aliquotBlankQ} = MapThread[
@@ -11852,10 +11879,10 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			];
 
 			(* Determine what is failing or passing. *)
-			failingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
-			failingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
-			passingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
-			passingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
+			failingMagneticContainers = PickList[containers, Transpose[{resolvedStandardCaps, standardMagneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
+			failingPierceableContainers = PickList[containers, Transpose[{resolvedStandardCaps, standardMagneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
+			passingMagneticContainers = PickList[containers, Transpose[{resolvedStandardCaps, standardMagneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
+			passingPierceableContainers = PickList[containers, Transpose[{resolvedStandardCaps, standardMagneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
 
 			(* Construct failing tests. *)
 			failingMagneticTest = If[failingMagneticContainers == {},
@@ -11894,10 +11921,10 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 			];
 
 			(* Determine what is failing or passing. *)
-			failingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
-			failingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
-			passingMagneticContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
-			passingPierceableContainers = PickList[containers, Transpose[{resolvedSampleCaps, magneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
+			failingMagneticContainers = PickList[containers, Transpose[{resolvedBlankCaps, blankMagneticCapRequiredQ}], {$Failed|Missing["NotFound"], True}];
+			failingPierceableContainers = PickList[containers, Transpose[{resolvedBlankCaps, blankMagneticCapRequiredQ}], {$Failed|Missing["NotFound"], False}];
+			passingMagneticContainers = PickList[containers, Transpose[{resolvedBlankCaps, blankMagneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], True}];
+			passingPierceableContainers = PickList[containers, Transpose[{resolvedBlankCaps, blankMagneticCapRequiredQ}], {Except[$Failed|Missing["NotFound"]], False}];
 
 			(* Construct failing tests. *)
 			failingMagneticTest = If[failingMagneticContainers == {},
@@ -15984,45 +16011,47 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 				{resolvedInitialAverageVelocities, resolvedInitialFlowRates, resolvedInitialPressures, resolvedInitialResidenceTimes} = Transpose@MapThread[
 					Function[{velocity, flowRate, pressure, residenceTime, temperature},
 						Switch[
-							{velocity, flowRate, pressure, residenceTime},
-							{Automatic, Automatic, Automatic, Automatic},
+							{velocity, flowRate, pressure, residenceTime, First[columnFilmThickness]},
+							{_, _, _, _, Null},
+							{Null,Null,Null,Null},
+							{Automatic, Automatic, Automatic, Automatic, _},
 							{
 								convertColumnFlowRateToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								defaultFlowRate,
 								convertColumnFlowRateToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnFlowRateToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, defaultFlowRate, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null]},
+							{Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], Except[Automatic | Null], _},
 							{velocity, flowRate, pressure, residenceTime},
-							{Null, Null, Null, Null},
+							{Null, Null, Null, Null, _},
 							{
 								Null,
 								Null,
 								Null,
 								Null
 							},
-							{Except[Automatic | Null], _, _, _},
+							{Except[Automatic | Null], _, _, _, _},
 							{
 								velocity,
 								convertColumnVelocityToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, velocity, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnVelocityToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, velocity, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnVelocityToResidenceTime[First@columnLength, velocity]
 							},
-							{_, Except[Automatic | Null], _, _},
+							{_, Except[Automatic | Null], _, _, _},
 							{
 								convertColumnFlowRateToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								flowRate,
 								convertColumnFlowRateToPressure[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnFlowRateToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, flowRate, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{_, _, Except[Automatic | Null], _},
+							{_, _, Except[Automatic | Null], _, _},
 							{
 								convertColumnPressureToVelocity[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature],
 								convertColumnPressureToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature],
 								pressure,
 								convertColumnPressureToResidenceTime[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, pressure, temperature, outletPressure, referencePressure, referenceTemperature]
 							},
-							{_, _, _, Except[Automatic | Null]},
+							{_, _, _, Except[Automatic | Null], _},
 							{
 								convertColumnResidenceTimeToVelocity[First@columnLength, residenceTime],
 								convertColumnResidenceTimeToFlowRate[specifiedCarrierGas, First@columnDiameter - 2 * First@columnFilmThickness, First@columnLength, residenceTime, temperature, outletPressure, referencePressure, referenceTemperature],
@@ -17690,7 +17719,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		resolvedLiquidPostInjectionNumberOfSolventWashes, resolvedLiquidPostInjectionNumberOfSecondarySolventWashes, resolvedLiquidPostInjectionNumberOfTertiarySolventWashes,
 		resolvedLiquidPostInjectionNumberOfQuaternarySolventWashes, resolvedPostInjectionNextSamplePreparationSteps, resolvedHeadspacePostInjectionFlushTimes, resolvedSPMEPostInjectionConditioningTimes};
 
-	standardPreparationOptionsInternal = {StandardVial, StandardAmount, StandardDilute, StandardDilutionSolventVolume, StandardSecondaryDilutionSolventVolume,
+	standardPreparationOptionsInternal = {StandardVial, StandardCap, StandardAmount, StandardDilute, StandardDilutionSolventVolume, StandardSecondaryDilutionSolventVolume,
 		StandardTertiaryDilutionSolventVolume, StandardAgitate, StandardAgitationTime, StandardAgitationTemperature, StandardAgitationMixRate, StandardAgitationOnTime,
 		StandardAgitationOffTime, StandardVortex, StandardVortexMixRate, StandardVortexTime, StandardHeadspaceSyringeTemperature,
 		StandardLiquidPreInjectionSyringeWash, StandardLiquidPreInjectionSyringeWashVolume, StandardLiquidPreInjectionSyringeWashRate,
@@ -17708,7 +17737,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		StandardLiquidPostInjectionNumberOfQuaternarySolventWashes, StandardPostInjectionNextSamplePreparationSteps, StandardHeadspacePostInjectionFlushTime,
 		StandardSPMEPostInjectionConditioningTime};
 
-	resolvedStandardPreparationOptionsInternal = Transpose@{resolvedStandardVials, resolvedStandardAmounts, resolvedStandardDilutes, resolvedStandardDilutionSolventVolumes, resolvedStandardSecondaryDilutionSolventVolumes,
+	resolvedStandardPreparationOptionsInternal = Transpose@{resolvedStandardVials, resolvedStandardCaps, resolvedStandardAmounts, resolvedStandardDilutes, resolvedStandardDilutionSolventVolumes, resolvedStandardSecondaryDilutionSolventVolumes,
 		resolvedStandardTertiaryDilutionSolventVolumes, resolvedStandardAgitates, resolvedStandardAgitationTimes, resolvedStandardAgitationTemperatures, resolvedStandardAgitationMixRates, resolvedStandardAgitationOnTimes,
 		resolvedStandardAgitationOffTimes, resolvedStandardVortexs, resolvedStandardVortexMixRates, resolvedStandardVortexTimes, resolvedStandardHeadspaceSyringeTemperatures,
 		resolvedStandardLiquidPreInjectionSyringeWashes, resolvedStandardLiquidPreInjectionSyringeWashVolumes, resolvedStandardLiquidPreInjectionSyringeWashRates,
@@ -17726,7 +17755,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		resolvedStandardLiquidPostInjectionNumberOfQuaternarySolventWashes, resolvedStandardPostInjectionNextSamplePreparationSteps, resolvedStandardHeadspacePostInjectionFlushTimes,
 		resolvedStandardSPMEPostInjectionConditioningTimes};
 
-	blankPreparationOptionsInternal = {BlankVial, BlankAmount, BlankDilute, BlankDilutionSolventVolume, BlankSecondaryDilutionSolventVolume,
+	blankPreparationOptionsInternal = {BlankVial, BlankCap, BlankAmount, BlankDilute, BlankDilutionSolventVolume, BlankSecondaryDilutionSolventVolume,
 		BlankTertiaryDilutionSolventVolume, BlankAgitate, BlankAgitationTime, BlankAgitationTemperature, BlankAgitationMixRate, BlankAgitationOnTime,
 		BlankAgitationOffTime, BlankVortex, BlankVortexMixRate, BlankVortexTime, BlankHeadspaceSyringeTemperature,
 		BlankLiquidPreInjectionSyringeWash, BlankLiquidPreInjectionSyringeWashVolume, BlankLiquidPreInjectionSyringeWashRate,
@@ -17744,7 +17773,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 		BlankLiquidPostInjectionNumberOfQuaternarySolventWashes, BlankPostInjectionNextSamplePreparationSteps, BlankHeadspacePostInjectionFlushTime,
 		BlankSPMEPostInjectionConditioningTime};
 
-	resolvedBlankPreparationOptionsInternal = Transpose@{resolvedBlankVials, resolvedBlankAmounts, resolvedBlankDilutes, resolvedBlankDilutionSolventVolumes, resolvedBlankSecondaryDilutionSolventVolumes,
+	resolvedBlankPreparationOptionsInternal = Transpose@{resolvedBlankVials, resolvedBlankCaps, resolvedBlankAmounts, resolvedBlankDilutes, resolvedBlankDilutionSolventVolumes, resolvedBlankSecondaryDilutionSolventVolumes,
 		resolvedBlankTertiaryDilutionSolventVolumes, resolvedBlankAgitates, resolvedBlankAgitationTimes, resolvedBlankAgitationTemperatures, resolvedBlankAgitationMixRates, resolvedBlankAgitationOnTimes,
 		resolvedBlankAgitationOffTimes, resolvedBlankVortexs, resolvedBlankVortexMixRates, resolvedBlankVortexTimes, resolvedBlankHeadspaceSyringeTemperatures,
 		resolvedBlankLiquidPreInjectionSyringeWashes, resolvedBlankLiquidPreInjectionSyringeWashVolumes, resolvedBlankLiquidPreInjectionSyringeWashRates,
@@ -18167,7 +18196,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 						If[NullQ[optionValue],
 							Nothing,
 							(* remove prefixes, and exclude standard-specific options *)
-							If[!MatchQ[optionName, (StandardVial | StandardAmount)],
+							If[!MatchQ[optionName, (StandardVial | StandardAmount | StandardCap)],
 								ToExpression[StringReplace[ToString[optionName], "Standard" -> ""]],
 								optionName
 							] -> optionValue
@@ -18190,7 +18219,7 @@ resolveExperimentGasChromatographyOptions[mySamples : {ObjectP[Object[Sample]]..
 							If[NullQ[optionValue],
 								Nothing,
 								(* remove prefixes, and exclude blank-specific options *)
-								If[!MatchQ[optionName, (BlankVial | BlankAmount)],
+								If[!MatchQ[optionName, (BlankVial | BlankAmount | BlankCap)],
 									ToExpression[StringReplace[ToString[optionName], "Blank" -> ""]],
 									optionName
 								] -> If[MatchQ[optionValue, BlankNoVolume], Null, optionValue]
@@ -19155,16 +19184,23 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		detector, columnModels, columnDiameters, guardColumns, columnsWithGuardColumns, installedColumnSegments, columnAssembly, linerAndSeptumInstallation,
 		attachColumnFrontEnd, columnConditioningTime, attachColumnBackEnd, dilutionTime, agitationTime, vortexTime, syringePrepTime, sampleWashTime, separationTime,
 		instrumentTimeTentative, columnNutResources, columnFerruleResources, trimColumnLengths, installedColumnFittings, requiredColumnJoins, swagingToolResource,
-		columnWaferResource, columnsRequested, resolvedSampleCaps, resolvedStandardCaps, resolvedSolventContainerCaps, uniqueAliquotAmounts, specifiedAliquotContainer,
+		columnWaferResource, columnsRequested, resolvedSolventContainerCaps, uniqueAliquotAmounts, specifiedAliquotContainer,
 		uniqueAliquotContainers, sampleContainerModelFootprints, uniqueAliquotContainerFootprints, uniqueStandardVialFootprints, simulation,
 		allStandards, allTargetStandardVials, allResolvedStandardAmounts, columnAssemblySimplified, injectionTime, swagingToolResourceMSD, allBlanks,
 		allTargetBlankVials, allResolvedBlankAmounts, targetBlankVials, resolvedBlankAmounts, uniqueBlankVialFootprints, blankTuples, assignedBlankTuples,
-		groupedBlanksTuples, groupedBlanksPositionVolumes, blankVialAssociation, blankAmountAssociation, groupedBlank, uniqueBlanks, flatBlankResources, linkedBlankResources,
-		resolvedBlankCaps, columnGreenSeptaResource, columnRedSeptaResource, resolvedDilutionSolventVolumes, finalPrepTime, sampleCapResources, standardCapResources, blankCapResources,
-		makeReverseAssociation
+		groupedBlanksTuples, groupedBlanksPositionVolumes, blankVialAssociation, blankAmountAssociation, groupedBlank, uniqueBlanks, flatBlankResources, linkedBlankResources, columnGreenSeptaResource, columnRedSeptaResource, resolvedDilutionSolventVolumes, finalPrepTime, sampleCapResources, standardCapResources, blankCapResources,
+		makeReverseAssociation, allResolvedStandardCaps, allResolvedBlankCaps, resolvedStandardCaps, resolvedBlankCaps, uniqueSampleCaps,
+		resolvedOptionsNoStandardCapNoBlankCap
 	},
+
+	(* Drop the StandardCap and BlankCap keys from the injection table to match the expected pattern for expanding. *)
+	resolvedOptionsNoStandardCapNoBlankCap = ReplaceRule[
+		myResolvedOptions,
+		{InjectionTable -> (ReplacePart[#, 4 -> FilterRules[Part[#, 4], Except[StandardCap|BlankCap]]]& /@ Lookup[myResolvedOptions, InjectionTable])}
+	];
+
 	(* expand the resolved options if they weren't expanded already *)
-	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentGasChromatography, {mySamples}, myResolvedOptions];
+	{expandedInputs, expandedResolvedOptions} = ExpandIndexMatchedInputs[ExperimentGasChromatography, {mySamples}, resolvedOptionsNoStandardCapNoBlankCap];
 
 	(* Get the resolved collapsed index matching options that don't include hidden options *)
 	resolvedOptionsNoHidden = CollapseIndexMatchedOptions[
@@ -19196,7 +19232,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	{specifiedAliquotAmount, specifiedAliquotContainer} = Lookup[expandedResolvedOptions, {AliquotAmount, AliquotContainer}];
 
 	(* Delete any duplicate input samples to create a single resource per unique sample *)
-	{uniqueSamples, uniqueAliquotAmounts, uniqueAliquotContainers} = Transpose@DeleteDuplicates[Transpose@{mySamples, specifiedAliquotAmount, specifiedAliquotContainer}];
+	{uniqueSamples, uniqueAliquotAmounts, uniqueAliquotContainers, uniqueSampleCaps} = Transpose@DeleteDuplicates[Transpose@{mySamples, specifiedAliquotAmount, specifiedAliquotContainer, Lookup[expandedResolvedOptions, SampleCaps]}];
 
 	(* Extract packets for sample objects *)
 	uniqueSamplePackets = fetchPacketFromCache[#, inheritedCache]& /@ Download[uniqueSamples, Object, Cache -> inheritedCache, Simulation -> simulation, Date -> Now];
@@ -19205,7 +19241,8 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	sampleContainers = Download[Lookup[uniqueSamplePackets, Container], Object, Cache -> inheritedCache, Simulation -> simulation, Date -> Now];
 
 	(* get the resolved injection table *)
-	injectionTable = Lookup[expandedOptionsWithNumReplicates, InjectionTable];
+	(* NOTE: We're using the injection table with the StandardCap and BlankCap keys here. *)
+	injectionTable = Lookup[myResolvedOptions, InjectionTable];
 
 	(* do we need to expand the injection table with number of replicates as well? TODO figure out, probably yes *)
 
@@ -19302,27 +19339,27 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	(* Get all the standards from the injection table *)
 	{allStandards, allBlanks} = {injectionTableStandards[[All, 2]], injectionTableBlanks[[All, 2]]};
 
-	{allTargetStandardVials, allResolvedStandardAmounts} = If[Length[injectionTableStandards] > 0,
-		Transpose@Lookup[injectionTableStandards[[All, 4]], {StandardVial, StandardAmount}]/. {_Missing -> Null},
-		{{}, {}}
+	{allTargetStandardVials, allResolvedStandardCaps, allResolvedStandardAmounts} = If[Length[injectionTableStandards] > 0,
+		Transpose@Lookup[injectionTableStandards[[All, 4]], {StandardVial, StandardCap, StandardAmount}]/. {_Missing -> Null},
+		{{}, {}, {}}
 	];
 
-	{allTargetBlankVials, allResolvedBlankAmounts} = If[Length[injectionTableBlanks] > 0,
+	{allTargetBlankVials, allResolvedBlankCaps, allResolvedBlankAmounts} = If[Length[injectionTableBlanks] > 0,
 		(* we might have a case where a NoInjection means that these keys aren't found in the prep options. for now we just convert missing to Null so they can be downloaded*)
-		Transpose@Lookup[injectionTableBlanks[[All, 4]], {BlankVial, BlankAmount}] /. {_Missing -> Null},
-		{{}, {}}
+		Transpose@Lookup[injectionTableBlanks[[All, 4]], {BlankVial, BlankCap, BlankAmount}] /. {_Missing -> Null},
+		{{}, {}, {}}
 	];
 
 	(* All the standard amounts and vials were resolved in the resolver using the same automatic logic as the samples. they can also be specified as options *)
-	{resolvedStandards, targetStandardVials, resolvedStandardAmounts} = If[Length[injectionTableStandards] > 0,
-		Transpose@DeleteDuplicates[Transpose@{allStandards, allTargetStandardVials, allResolvedStandardAmounts}],
-		{{}, {}, {}}
+	{resolvedStandards, targetStandardVials, resolvedStandardAmounts, resolvedStandardCaps} = If[Length[injectionTableStandards] > 0,
+		Transpose@DeleteDuplicates[Transpose@{allStandards, allTargetStandardVials, allResolvedStandardAmounts, allResolvedStandardCaps}],
+		{{}, {}, {}, {}}
 	];
 
 	(* same for blanks *)
-	{resolvedBlanks, targetBlankVials, resolvedBlankAmounts} = If[Length[injectionTableBlanks] > 0,
-		Transpose@DeleteDuplicates[Transpose@{allBlanks, allTargetBlankVials, allResolvedBlankAmounts}],
-		{{}, {}, {}}
+	{resolvedBlanks, targetBlankVials, resolvedBlankAmounts, resolvedBlankCaps} = If[Length[injectionTableBlanks] > 0,
+		Transpose@DeleteDuplicates[Transpose@{allBlanks, allTargetBlankVials, allResolvedBlankAmounts, allResolvedBlankCaps}],
+		{{}, {}, {}, {}}
 	];
 
 	(* also generate footprints for the standard/blank vial targets: *)
@@ -19446,7 +19483,6 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 
 	(* also get the unique standard resources *)
 	uniqueStandards = Values[groupedStandard];
-
 	uniqueBlanks = Values[groupedBlank];
 
 	(*now we can flatten this list to our standards, index matched to the samples {1->Resource1, 2->Resource1, ... }*)
@@ -19491,7 +19527,8 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	linkedSampleResources = Link /@ sampleResources;
 
 	(*initialize our injectionTable with links*)
-	injectionTableWithLinks = injectionTable;
+	(* Use the InjectionTable without StandardCap/BlankCap keys. *)
+	injectionTableWithLinks = Lookup[expandedResolvedOptions, InjectionTable];
 
 	(*update all of the samples+standards*)
 	injectionTableWithLinks[[samplePositions, 2]] = linkedSampleResources;
@@ -20215,9 +20252,6 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 	];
 
 	(* create cap resources for picking. WE MUST USE THESE CAPS *)
-
-	{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps} = Lookup[expandedOptionsWithNumReplicates, {SampleCaps, StandardCaps, BlankCaps}];
-
 	(* Convert any required caps to resources. *)
 	{sampleCapResources, standardCapResources, blankCapResources} = Map[
 		If[NullQ[#],
@@ -20225,7 +20259,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 			Link[Resource[Sample -> #]]
 		]&,
 		(* Map over the second level of: *)
-		{resolvedSampleCaps, resolvedStandardCaps, resolvedBlankCaps} , {2}];
+		{uniqueSampleCaps, resolvedStandardCaps, resolvedBlankCaps} , {2}];
 
 	(* todo spme caps? *)
 	resolvedSolventContainerCaps = ConstantArray[Link@Resource[Sample -> Model[Item, Cap, "id:n0k9mG8Ln5G4"]], Length[Flatten[{dilutionSolventResources, syringeWashSolventResources}] /. {Null -> Nothing}]];
@@ -20255,7 +20289,7 @@ experimentGasChromatographyResourcePackets[mySamples : {ObjectP[Object[Sample]].
 		Replace[SamplesIn] -> (Link[#, Protocols]& /@ sampleResources),
 		Replace[ContainersIn] -> (Link[Resource[Sample -> #], Protocols]&) /@ DeleteDuplicates[sampleContainers],
 		UnresolvedOptions -> myUnresolvedOptions,
-		ResolvedOptions -> myResolvedOptions,
+		ResolvedOptions -> resolvedOptionsNoStandardCapNoBlankCap,
 		NumberOfReplicates -> numReplicates,
 		Replace[Instrument] -> Link[
 			Resource[

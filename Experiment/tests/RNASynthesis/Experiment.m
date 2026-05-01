@@ -2702,8 +2702,8 @@ DefineTests[
 				"polyAUCy3Test"<>$SessionUUID
 			};
 			sampleModelsPacket=Flatten[MapThread[Function[{name,oligomer},
-				UploadSampleModel[name,
-					Composition->{{100 MassPercent,Link[oligomer]}},
+				UploadSampleModel[{{100 MassPercent,Link[oligomer]}},
+					Name->name,
 					Expires->False,
 					DefaultStorageCondition->Link[Model[StorageCondition,"Refrigerator"]],
 					State->Solid,

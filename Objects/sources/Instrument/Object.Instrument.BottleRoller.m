@@ -44,6 +44,14 @@ DefineObjectType[Object[Instrument, BottleRoller], {
 			Pattern :> GreaterP[0*Centi*Meter],
 			Description -> "The center-to-center distance between adjacent rolling pins of the instrument.",
 			Category -> "Dimensions & Positions"
+		},
+		Wrench -> {
+			Format->Single,
+			Class->Link,
+			Pattern:>_Link,
+			Relation->Alternatives[Model[Item,Wrench],Object[Item,Wrench]],
+			Description->"The wrench used to loosen and tighten the rolling pins of the instrument.",
+			Category->"General"
 		}
 	}
 }];

@@ -506,7 +506,7 @@ DefineTests[ExperimentMeasureContactAngle,
 				ExperimentMeasureContactAngle[
 					Object[Sample,"Test fiber object 1 for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
 					Object[Sample,"Test wetting liquid object for ExperimentMeasureContactAngle unit test "<>$SessionUUID],
-					Operator->Model[User,Emerald,Operator,"Level 1"],
+					Operator->Model[User,Emerald,Operator,"Baseline"],
 					Upload->False
 				]],
 				ResolvedOptions

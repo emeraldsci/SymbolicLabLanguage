@@ -38,6 +38,30 @@ DefineTests[ExperimentQuantifyCells,
 			],
 			ObjectP[Object[Protocol, RoboticCellPreparation]]
 		],
+		Example[{Additional, "The robotic cell preparation protocol to quantify the cell concentration has resources correctly populated in the QuantifyCells unit operation:"},
+			protocol = ExperimentQuantifyCells[
+				Object[Sample, "test sample 3 for ExperimentQuantifyCells " <> $SessionUUID],
+				Wavelength -> 600*Nanometer,
+				AbsorbanceBlank -> Object[Sample, "test sample 9 for ExperimentQuantifyCells " <> $SessionUUID],
+				Preparation -> Robotic
+			];
+			{protocolResources, qcUOResources} = Download[
+				protocol,
+				{
+					RequiredResources,
+					OutputUnitOperations[[1]][RequiredResources]
+				}
+			];
+			{
+				(* Does qcUO has correctly requested both sample and instrument resources and back link to the correct fields *)
+				MemberQ[qcUOResources, {LinkP[Object[Resource, Instrument]], Instruments, _, _}],
+				MemberQ[qcUOResources, {LinkP[Object[Resource, Sample]], SampleLink, _, _}],
+				(* Are resources in the qcUO also listed under the root RCP's resources, so that we don't have duplicated resource for one thing *)
+				MemberQ[protocolResources, {ObjectP[#], _, _, _}]& /@ qcUOResources[[All, 1]]
+			},
+			{True, True, {True..}},
+			Variables :> {protocol, protocolResources, qcUOResources}
+		],
 		Example[{Additional, "Correctly assign the sample labels to be the aliquot labels from previous experiment if MultiMethodAliquots is set to Shared:"},
 			prot = ExperimentQuantifyCells[
 				{
@@ -149,9 +173,16 @@ DefineTests[ExperimentQuantifyCells,
 				Simulation -> simulation
 			];
 			(* sample 1 and sample 2 gets updated accordingly, sample 7 does not b/c it has more than 1 components *)
-			{simulatedComp[[1, 1, 1]], simulatedComp[[2, 1, 1]], simulatedComp[[3, All, 1]]},
-			{10000 * EmeraldCell / Milliliter, 0.8 * OD600, oldComp[[3, All, 1]]},
-			EquivalenceFunction -> Equal,
+			{
+				simulatedComp[[1, 1, 1]],
+				simulatedComp[[2, 1, 1]],
+				simulatedComp[[3, All, 1]] == oldComp[[3, All, 1]]
+			},
+			{
+				EqualP[10000 * EmeraldCell / Milliliter],
+				EqualP[0.8 * OD600],
+				True
+			},
 			Variables :> {simulation, oldComp, simulatedComp},
 			Messages :> {Warning::AmbiguousAnalyte}
 		],
@@ -1148,7 +1179,9 @@ DefineTests[ExperimentQuantifyCells,
 	},
 	SymbolTearDown :> {
 		experimentQuantifyCellsTestCleanup[];
-	}
+	},
+	HardwareConfiguration -> HighRAM,
+	Parallel -> True
 ];
 
 

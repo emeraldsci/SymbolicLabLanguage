@@ -172,16 +172,16 @@ validModelSensorTemperatureQTests[packet:PacketP[Model[Sensor,Temperature]]]:={
 (*validModelSensorFlowRateQTests*)
 
 
-validModelSensorFlowRateQTests[packet:PacketP[Model[Sensor,FlowRate]]]:={
+validModelSensorVolumetricFlowRateQTests[packet:PacketP[Model[Sensor,VolumetricFlowMeter]]]:={
 
 	(* not null unique fields *)
-	NotNullFieldTest[packet,MaxFlowRate],
-	NotNullFieldTest[packet,MinFlowRate],
+	NotNullFieldTest[packet,MaxVolumetricFlowRate],
+	NotNullFieldTest[packet,MinVolumetricFlowRate],
 	NotNullFieldTest[packet,Resolution],
 	NotNullFieldTest[packet,ManufacturerUncertainty],
 
 	(* min/max comparison *)
-	FieldComparisonTest[packet,{MinFlowRate,MaxFlowRate},LessEqual]
+	FieldComparisonTest[packet,{MinVolumetricFlowRate,MaxVolumetricFlowRate},LessEqual]
 };
 
 
@@ -299,7 +299,7 @@ registerValidQTestFunction[Model[Sensor, pH],validModelSensorpHQTests];
 registerValidQTestFunction[Model[Sensor, Pressure],validModelSensorPressureQTests];
 registerValidQTestFunction[Model[Sensor, RelativeHumidity],validModelSensorRelativeHumidityQTests];
 registerValidQTestFunction[Model[Sensor, Temperature],validModelSensorTemperatureQTests];
-registerValidQTestFunction[Model[Sensor, FlowRate],validModelSensorFlowRateQTests];
+registerValidQTestFunction[Model[Sensor, VolumetricFlowMeter],validModelSensorVolumetricFlowRateQTests];
 registerValidQTestFunction[Model[Sensor, Volume],validModelSensorVolumeQTests];
 registerValidQTestFunction[Model[Sensor, Distance],validModelSensorDistanceSensorQTests];
 registerValidQTestFunction[Model[Sensor, Weight],validModelSensorWeightQTests];
