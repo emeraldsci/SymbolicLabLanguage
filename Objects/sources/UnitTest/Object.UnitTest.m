@@ -47,7 +47,7 @@ DefineObjectType[Object[UnitTest], {
       Format -> Single,
       Class -> String,
       Pattern :> _String,
-      Description -> "The version of Mathematica to load for this Manifold job. If Null, version will default to 13.3.1.",
+      Description -> "The version of Mathematica to load for this Manifold job. If Null, version will default to 14.2.0.",
       Category -> "Organizational Information"
     },
     RunAsUser -> {

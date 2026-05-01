@@ -308,6 +308,9 @@ Upload[packets:{__Association}, ops:OptionsPattern[]]:=TraceExpression["Upload",
 	ClearDownload[objectReferenceUnresolvedToObject /@ Lookup[response, "modified_references", {}]];
 
 	(* Add the new objects to the list of objects that were created in this cell evaluation *)
+	setCreatedObjects[newObjects];
+
+	(* Maintain backwards compatibility for the moment *)
 	If[ListQ[$CreatedObjects],
 		$CreatedObjects=Union[$CreatedObjects, newObjects]
 	];

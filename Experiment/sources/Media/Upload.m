@@ -1223,7 +1223,13 @@ UploadMedia[
 	mySolvents:{ObjectP[{Model[Sample]}]..},
 	myFinalVolumes:{VolumeP..},
 	myOptions:OptionsPattern[UploadMedia]
-]:=Module[{outputSpecification,listedOutput,gatherTests,formulaSpecsWithoutTemporalLinks,solventsWithoutTemporalLinks,optionsWithoutTemporalLinks,safeOptionsUploadMediaWithNames,safeOptionsUploadMediaTests,safeOptionsUploadMedia,fastTrack,cache,upload,uploadStockSolutionOptions,myTemplateMediaModels,resolvedUploadMediaOptionsResult,resolvedUploadMediaTests,collapsedResolvedUploadMediaOptions,unexpandedUploadStockSolutionOptions,expandedUploadStockSolutionOptions,resolvedUploadMediaInputs,resolvedUploadMediaOptions,preliminaryUploadMediaPackets,uploadMediaOptions,finalUploadMediaPackets, additionalPackets, allTests,result,options,tests, mediaNewObjectIDs, liquidMediaNewObjectIDs},
+]:=Module[{outputSpecification, listedOutput, gatherTests, formulaSpecsWithoutTemporalLinks, solventsWithoutTemporalLinks,
+	optionsWithoutTemporalLinks, safeOptionsUploadMediaWithNames, safeOptionsUploadMediaTests, safeOptionsUploadMedia,
+	fastTrack, allDownloads, cacheBall, cache, upload, uploadStockSolutionOptions, myTemplateMediaModels,
+	resolvedUploadMediaOptionsResult, resolvedUploadMediaTests, collapsedResolvedUploadMediaOptions,
+	unexpandedUploadStockSolutionOptions, expandedUploadStockSolutionOptions, resolvedUploadMediaInputs,
+	resolvedUploadMediaOptions, preliminaryUploadMediaPackets, uploadMediaOptions, finalUploadMediaPackets,
+	additionalPackets, allTests, result, options, tests, mediaNewObjectIDs, liquidMediaNewObjectIDs},
 
 	(* Determine the requested return value from the function *)
 	outputSpecification = Quiet[OptionDefault[OptionValue[Output]],OptionValue::nodef];
@@ -1243,6 +1249,13 @@ UploadMedia[
 	(* Replace the objects referenced by name to IDs, and expand the index-matched options *)
 	safeOptionsUploadMedia = sanitizeInputs[safeOptionsUploadMediaWithNames];
 	{fastTrack,cache,upload} = Lookup[safeOptionsUploadMedia,{FastTrack,Cache,Upload}];
+	allDownloads = Quiet[Download[
+		Flatten[myFormulaSpecs[[All,All,2]]],
+		{
+			Packet[MeltingPoint, Composition]
+		}
+	], {Download::FieldDoesntExist, Download::NotLinkField}];
+	cacheBall = Cases[Flatten[allDownloads],PacketP[]];
 
 	(* Trim down listedOptions such that only the UploadStockSolution options get passed to UploadStockSolution, which is used to generate the initial upload packet with the SS-relevant rules. *)
 	uploadStockSolutionOptions = Normal[KeyTake[safeOptionsUploadMedia,Keys[SafeOptions[UploadStockSolution]]]];
@@ -1251,8 +1264,8 @@ UploadMedia[
 	(* Build the resolved options *)
 	resolvedUploadMediaOptionsResult = Check[
 		{{resolvedUploadMediaInputs,resolvedUploadMediaOptions}, resolvedUploadMediaTests} = If[gatherTests,
-			resolveUploadMediaOptions[{myTemplateMediaModels, myFormulaSpecs, mySolvents, myFinalVolumes},ReplaceRule[safeOptionsUploadMedia,{Output->{Result,Tests}}]],
-			{resolveUploadMediaOptions[{myTemplateMediaModels, myFormulaSpecs, mySolvents, myFinalVolumes},ReplaceRule[safeOptionsUploadMedia,{Output->Result}]], {}}
+			resolveUploadMediaOptions[{myTemplateMediaModels, myFormulaSpecs, mySolvents, myFinalVolumes},ReplaceRule[safeOptionsUploadMedia,{Cache->cacheBall, Output->{Result,Tests}}]],
+			{resolveUploadMediaOptions[{myTemplateMediaModels, myFormulaSpecs, mySolvents, myFinalVolumes},ReplaceRule[safeOptionsUploadMedia,{Cache->cacheBall, Output->Result}]], {}}
 		],
 		$Failed,
 		{Error::InvalidOption}
@@ -1339,9 +1352,9 @@ UploadMedia[
 	(* Garnishing the packets for UploadMedia with the field values for Supplements,DropOuts,GellingAgents,PlateMedia *)
 	{finalUploadMediaPackets, additionalPackets} = Transpose@MapThread[
 		Function[{packet,options, mediaNewObjectID, liquidMediaNewObjectID},
-			Module[{name,plateMedia,mediaPhase,gellingAgents,baseMedia,packetWithNewObject},
-				{name,plateMedia,mediaPhase} = Lookup[options,{MediaName,PlateMedia,MediaPhase}];
-				gellingAgents = Map[convertCompositionToAmount[#,Lookup[packet,TotalVolume]]&,Lookup[options,GellingAgents]];
+			Module[{name,plateMedia,mediaPhase,optionGellingAgents, gellingAgents,baseMedia,packetWithNewObject, heatSensitiveReagents},
+				{name,plateMedia,mediaPhase, optionGellingAgents, heatSensitiveReagents} = Lookup[options,{MediaName,PlateMedia,MediaPhase, GellingAgents, HeatSensitiveReagents}];
+				gellingAgents = Map[convertCompositionToAmount[#,Lookup[packet,TotalVolume]]&, optionGellingAgents];
 				baseMedia = Which[
 					MatchQ[Lookup[options,Supplements],{}] && MatchQ[Lookup[options,DropOuts],{ObjectP[Model[Molecule]]..}],
 					Link[Lookup[packet,Object],DropOutMedia],
@@ -1358,7 +1371,31 @@ UploadMedia[
 
 				(* If this is an upload of a solid media for plating, we need to also upload a liquid form of it with everything the same only State->Liquid, for use in ExperimentPlateMedia samplesInResource. Because out of the StockSolution protocol that prepares the resource, the state is liquid. *)
 				If[MatchQ[mediaPhase, Solid],
-					Module[{liquidFormPacket, solidFormPacket},
+					Module[{gellingAgentsPresent, gellingAgentsMeltingPoints, gellingAgentsMaxMeltingPoints,
+						liquidTransportTemperature, liquidFormPacket, solidFormPacket},
+						(* Since USS can come back either with a whole new Media packet or with just an existing Media object, we need to count on the resolved options for the gelling agents *)
+						(* calculations to acquire an appropriate transport temperature, mirroring PlateMedia's current PlatingTemperature resolver *)
+						gellingAgentsPresent = gellingAgents[[All, 2]];
+						gellingAgentsMeltingPoints = Map[
+							Function[{gellingAgent},
+								N[Convert[
+									Lookup[fetchPacketFromCache[gellingAgent,cacheBall], MeltingPoint, Null],
+									Celsius
+								]]
+							],
+							gellingAgentsPresent
+						];
+						(* Find the largest melting point but no larger than 90 Celsius. No need to keep the liquid boiling *)
+						(* Note that this weird "Append" calculation is to deal with the cases when gelling agents could be empty, and then Max[{}] is negative infinite. e.g. when we get a pre-mixed powder from manufacturer *)
+						gellingAgentsMaxMeltingPoints = Max[Cases[Append[gellingAgentsMeltingPoints, 90 Celsius], TemperatureP]];
+						(* Calculate the transport temperature for the liquid form model. *)
+						(* Note that this is independent from that of the solidified form, which can be ambient or 4C. This is the temperature to set the portable transporter immediately after autoclaving and skip cooling until it gets used. *)
+						liquidTransportTemperature = If[MatchQ[heatSensitiveReagents, ListableP[ObjectP[]]],
+							(* If there is heat sensitive reagents, set it to 55 Celsius. This is based on ampicillin. Subject to change in case the heater is not as effective at keeping the agar stay melt, i.e. the temperature gets way below the set temperature *)
+							55 Celsius,
+							(* Otherwise set it to 90 *)
+							gellingAgentsMaxMeltingPoints
+						];
 						(* Create its packet *)
 						liquidFormPacket = Association[
 							Normal[
@@ -1367,7 +1404,8 @@ UploadMedia[
 									{
 										Object -> liquidMediaNewObjectID,
 										State -> Liquid,
-										Name -> Null
+										Name -> Null,
+										TransportTemperature -> liquidTransportTemperature
 									}
 								],
 								Association
@@ -1478,13 +1516,14 @@ UploadMedia[
 	safeOptionsUploadMedia = sanitizeInputs[safeOptionsUploadMediaWithNames];
 	{fastTrack,cache,upload} = Lookup[safeOptionsUploadMedia,{FastTrack,Cache,Upload}];
 
-	allDownloads = Download[myMediaModels,
+	allDownloads = Quiet[Download[myMediaModels,
 		{
 			Packet[Name,Deprecated,Composition,Formula,Solvent,TotalVolume,FillToVolumeSolvent,HeatSensitiveReagents],
 			Packet[MediaPhase,GellingAgents,PlateMedia],
-			Packet[Formula[[All,2]]]
+			Packet[Formula[[All,2]]],
+			Packet[GellingAgents[[All,2]][{MeltingPoint, Composition}]]
 		}
-	];
+	],  {Download::FieldDoesntExist, Download::NotLinkField}];
 
 	(* This satisfies the overload for the options resolver, which needs (1) media models, (2) formula, (3) solvent, and (4) total volume. *)
 	mediaSets = Join[
@@ -1585,8 +1624,8 @@ UploadMedia[
 
 	(* Garnishing the packets for UploadMedia with the field values for Supplements,DropOuts,PlateMedia *)
 	{finalUploadMediaPackets, additionalPackets} = Transpose@MapThread[Function[{templateModel,packet,options, mediaNewObjectID, liquidMediaNewObjectID},
-		Module[{name,plateMedia,mediaPhase,baseMedia,packetWithNewObject},
-			{name,plateMedia,mediaPhase} = Lookup[options,{MediaName,PlateMedia,MediaPhase}];
+		Module[{name,plateMedia,mediaPhase,baseMedia,packetWithNewObject, gellingAgents, heatSensitiveReagents},
+			{name,plateMedia,mediaPhase, gellingAgents, heatSensitiveReagents} = Lookup[options,{MediaName,PlateMedia,MediaPhase, GellingAgents, HeatSensitiveReagents}];
 			baseMedia = Which[
 				MatchQ[Lookup[options,Supplements],None] && MatchQ[Lookup[options,DropOuts],{ObjectP[Model[Molecule]]..}],
 				Link[templateModel,DropOutMedia],
@@ -1603,7 +1642,31 @@ UploadMedia[
 
 			(* If this is an upload of a solid media for plating, we need to also upload a liquid form of it with everything the same only State->Liquid, for use in ExperimentPlateMedia samplesInResource. Because out of the StockSolution protocol that prepares the resource, the state is liquid. *)
 			If[MatchQ[mediaPhase, Solid],
-				Module[{liquidFormPacket, solidFormPacket},
+				Module[{gellingAgentsPresent, gellingAgentsMeltingPoints, gellingAgentsMaxMeltingPoints,
+					liquidTransportTemperature, liquidFormPacket, solidFormPacket},
+					(* Since USS can come back either with a whole new Media packet or with just an existing Media object, we need to count on the resolved options for the gelling agents *)
+					(* calculations to acquire an appropriate transport temperature, mirroring PlateMedia's current PlatingTemperature resolver *)
+					gellingAgentsPresent = gellingAgents[[All, 2]];
+					gellingAgentsMeltingPoints = Map[
+						Function[{gellingAgent},
+							N[Convert[
+								Lookup[fetchPacketFromCache[gellingAgent,cacheBall], MeltingPoint, Null],
+								Celsius
+							]]
+						],
+						gellingAgentsPresent
+					];
+					(* Find the largest melting point but no larger than 90 Celsius. No need to keep the liquid boiling *)
+					(* Note that this weird "Append" calculation is to deal with the cases when gelling agents could be empty, and then Max[{}] is negative infinite. e.g. when we get a pre-mixed powder from manufacturer *)
+					gellingAgentsMaxMeltingPoints = Max[Cases[Append[gellingAgentsMeltingPoints, 90 Celsius], TemperatureP]];
+					(* Calculate the transport temperature for the liquid form model. *)
+					(* Note that this is independent from that of the solidified form, which can be ambient or 4C. This is the temperature to set the portable transporter immediately after autoclaving and skip cooling until it gets used. *)
+					liquidTransportTemperature = If[MatchQ[heatSensitiveReagents, ListableP[ObjectP[]]],
+						(* If there is heat sensitive reagents, set it to 55 Celsius. This is based on ampicillin. Subject to change in case the heater is not as effective at keeping the agar stay melt, i.e. the temperature gets way below the set temperature *)
+						55 Celsius,
+						(* Otherwise set it to 90 *)
+						gellingAgentsMaxMeltingPoints
+					];
 					(* Create its packet *)
 					liquidFormPacket = Association[
 						Normal[
@@ -1612,7 +1675,8 @@ UploadMedia[
 								{
 									Object -> liquidMediaNewObjectID,
 									State -> Liquid,
-									Name -> Null
+									Name -> Null,
+									TransportTemperature -> liquidTransportTemperature
 								}
 							],
 							Association

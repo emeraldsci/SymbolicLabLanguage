@@ -65,6 +65,23 @@ DefineObjectType[Object[Instrument, HeatBlock], {
 			Relation -> Object[Instrument, LiquidHandler][IntegratedHeatBlocks],
 			Description -> "The liquid handler that is connected to this heat block.",
 			Category -> "Integrations"
+		},
+		RackHandle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Item, Handle],
+			Description -> "The handler that is connected to this heat block and will be used to move its compatible racks.",
+			Category -> "Integrations"
+		},
+		pHMeter -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Instrument, pHMeter][TemperatureControlInstrument],
+			Description -> "The pHMeter assigned to this heat block for controlling temperature of sample, verification or calibration buffer during pH measurement.",
+			Category -> "Instrument Specifications",
+			Developer -> True
 		}
 	}
 }];

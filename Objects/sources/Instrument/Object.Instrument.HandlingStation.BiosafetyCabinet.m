@@ -56,6 +56,17 @@ DefineObjectType[Object[Instrument, HandlingStation, BiosafetyCabinet], {
 			Relation -> Object[Container,WasteBin],
 			Description -> "The waste bin that is kept under this biosafety cabinet for exclusive use while working in this BSC.",
 			Category -> "General"
+		},
+		ThermalGripMat -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item]
+			],
+			Description -> "The thermal-resistant silicone mat stored in the underhang of the BiosafetyCabinet, used to protect hands from hot or cold surfaces and liquids.",
+			Category -> "Instrument Specifications",
+			Developer->True
 		}
 	}
 }];

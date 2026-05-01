@@ -363,6 +363,37 @@ DefineObjectType[Object[Instrument, PlateReader], {
 			Pattern :> GreaterEqualP[0, 1],
 			Description -> "The number of times the integrated ExcitationSource lamp has been used.",
 			Category -> "Optical Information"
+		},
+		LoadingRetryLog -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				Protocol -> Link,
+				LiquidHandler -> Link,
+				NumberOfSuccessfulLoadings -> Integer,
+				NumberOfFailedLoadings -> Integer,
+				FractionFailed -> Real
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				Protocol -> ObjectP[Object[Protocol]],
+				LiquidHandler -> ObjectP[Object[Instrument, LiquidHandler]],
+				NumberOfSuccessfulLoadings -> GreaterEqualP[0, 1],
+				NumberOfFailedLoadings -> GreaterEqualP[0, 1],
+				FractionFailed -> GreaterEqualP[0]
+			},
+			Relation -> {
+				Date -> Null,
+				Protocol -> Object[Protocol],
+				LiquidHandler -> Object[Instrument, LiquidHandler],
+				NumberOfSuccessfulLoadings -> Null,
+				NumberOfFailedLoadings -> Null,
+				FractionFailed -> Null
+			},
+			(* No units for anything *)
+			Description -> "Performance tracking of the success rate for microfluidic chip sample loading and detection on this instrument. This applies only to the \"Lunatic\" plate reader model.",
+			Category -> "Experimental Results",
+			Developer -> True
 		}
 	}
 }];

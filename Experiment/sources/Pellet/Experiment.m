@@ -821,7 +821,7 @@ ExperimentPellet[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:OptionsP
 
 		(* Actually upload our protocol object. We are being called as a subprotcol in ExperimentManualSamplePreparation. *)
 		True,
-			(* NOTE: If Preparation->Manual, we don't have auxillary unit operation packets since there aren't batches. *)
+			(* NOTE: If Preparation->Manual, we don't have auxiliary unit operation packets since there aren't batches. *)
 			(* We only have unit operation packets when doing robotic. *)
 			UploadProtocol[
 				resourceResult[[1]],
@@ -869,7 +869,8 @@ resolvePelletMethod[
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
-		safeOptions, simulation, outputSpecification, output, gatherTests, centrifugeMethods, mapThreadFriendlyOptions, transferMethods,
+		safeOptions, simulation, outputSpecification, output, gatherTests, centrifugeMethods, mapThreadFriendlyOptions,
+		transferMethods, transferTuples,
 		preResolvedMixOptions, resuspensionMixSamples, mixMethods, manualRequirementStrings, roboticRequirementStrings,
 		expandedOptions, result, tests
 	},
@@ -904,42 +905,48 @@ resolvePelletMethod[
 	(* NOTE: The two transfers we can do are the supernatant transfer and resuspension transfer. Assume that resuspension *)
 	(* is 1 Microliter of Milli-Q water since this is robotic compatible. Doesn't really matter if we resolve the resuspenion *)
 	(* to False later, we just want to pass down the resuspension tip options to make sure they're not robot incompatible. *)
-	transferMethods=resolveTransferMethod[
-		Sequence@@Join@@@Transpose@MapThread[
-			Function[{sample, options},
+	(* We split the transfer here so that it does not trigger the manual requirement just becuase of a volume >970uL, we are going to split the transfers anyway if running robotic. *)
+	transferTuples = Join@@@Transpose@MapThread[
+		Function[{sample, options},
+			{
 				{
-					{
-						sample,
-						If[MatchQ[Lookup[options, ResuspensionSource], Automatic],
-							Model[Sample, "Milli-Q water"],
-							Lookup[options, ResuspensionSource]
-						]
-					},
-					{
-						Lookup[options, SupernatantDestination],
-						sample
-					},
-					{
-						Lookup[options, SupernatantVolume],
-						If[MatchQ[Lookup[options, ResuspensionVolume], Automatic],
-							1 Microliter,
-							Lookup[options, ResuspensionVolume]
-						]
-					}
+					sample,
+					If[MatchQ[Lookup[options, ResuspensionSource], Automatic],
+						Model[Sample, "Milli-Q water"],
+						Lookup[options, ResuspensionSource]
+					]
+				},
+				{
+					Lookup[options, SupernatantDestination],
+					sample
+				},
+				{
+					Lookup[options, SupernatantVolume],
+					If[MatchQ[Lookup[options, ResuspensionVolume], Automatic],
+						1 Microliter,
+						Lookup[options, ResuspensionVolume]
+					]
 				}
-			],
-			{mySamples, mapThreadFriendlyOptions}
+			}
 		],
-		{
-			Instrument->Riffle[Lookup[expandedOptions, SupernatantTransferInstrument], Lookup[expandedOptions, ResuspensionInstrument]],
-			Sequence@@(
-				ToExpression[#]->Riffle[Lookup[expandedOptions, ToExpression["SupernatantTransfer"<>#]], Lookup[expandedOptions, ToExpression["Resuspension"<>#]]]
-			&)/@Options[TransferTipOptions][[All, 1]],
-			Sequence@@(
-				ToExpression[#]->Riffle[Lookup[expandedOptions, ToExpression["SupernatantTransfer"<>#]], Lookup[expandedOptions, ToExpression["Resuspension"<>#]]]
-			&)/@Options[TransferRoboticTipOptions][[All, 1]],
-			Simulation->Lookup[safeOptions, Simulation]
-		}
+		{mySamples, mapThreadFriendlyOptions}
+	];
+	(*Sequence converts the output of splitTransferBy970 into input format of resolveTransferMethod: split sources, destinations, amounts, and options*)
+	transferMethods = resolveTransferMethod[
+		Sequence @@ splitTransfersBy970[
+			(*Sequence converts the tuples and options list into input format of splitTransferBy970: split sources, destinations, amounts, and options*)
+			Sequence @@ transferTuples,
+			(*Riffle nicely reconstruct the option lists of supernatantXX and resuspensionXX into a combined list corresponding to the order of the transferTuples:  supernatantXX, resuspensionXX, supernatantXX, resuspensionXX, ...*)
+			Instrument -> Riffle[Lookup[expandedOptions, SupernatantTransferInstrument], Lookup[expandedOptions, ResuspensionInstrument]],
+			Sequence @@ (
+				ToExpression[#] -> Riffle[Lookup[expandedOptions, ToExpression["SupernatantTransfer" <> #]], Lookup[expandedOptions, ToExpression["Resuspension" <> #]]]
+					&) /@ Options[TransferTipOptions][[All, 1]],
+			Sequence @@ (
+				ToExpression[#] -> Riffle[Lookup[expandedOptions, ToExpression["SupernatantTransfer" <> #]], Lookup[expandedOptions, ToExpression["Resuspension" <> #]]]
+					&) /@ Options[TransferRoboticTipOptions][[All, 1]],
+			Simulation -> Lookup[safeOptions, Simulation],
+			Preparation -> Lookup[safeOptions, Preparation]
+		]
 	];
 
 	(* Do some pre-resolving of ResuspensionMix and ResuspensionMixType. *)
@@ -1016,6 +1023,10 @@ resolvePelletMethod[
 			"the Aliquot Sample Preparation stage is set to True (Sample Preparation is only supported Manually)",
 			Nothing
 		],
+		If[MatchQ[Lookup[safeOptions, WorkCell], Null],
+			"The WorkCell option is set to Null",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Manual],
 			"the Preparation option is set to Manual by the user",
 			Nothing
@@ -1040,11 +1051,27 @@ resolvePelletMethod[
 			"the resuspension mix options dictate that the mixing has to occur Robotically",
 			Nothing
 		],
+		If[MatchQ[Lookup[safeOptions, WorkCell], WorkCellP],
+			"The WorkCell option is specified (only robotic preparation supports using a work cell)",
+			Nothing
+		],
 		If[MatchQ[Lookup[safeOptions, Preparation], Robotic],
 			"the Preparation option is set to Robotic by the user",
 			Nothing
 		]
 	};
+
+	(* Throw an error if the user has already specified the Preparation option and it's in conflict with our requirements. *)
+	If[Length[manualRequirementStrings]>0 && Length[roboticRequirementStrings]>0 && !gatherTests,
+		(* NOTE: Blocking $MessagePrePrint stops our error message from being truncated with ... if it gets too long. *)
+		Block[{$MessagePrePrint},
+			Message[
+				Error::ConflictingUnitOperationMethodRequirements,
+				listToString[manualRequirementStrings],
+				listToString[roboticRequirementStrings]
+			]
+		]
+	];
 	
 	(* Return our result and tests. *)
 	result=Which[
@@ -1272,8 +1299,9 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 		email, resolvedOptions, pelletToMixOptions, preResolvedMixOptions, rawResolvedMixOptions, mixTests,
 		resolvedMixOptions, invalidMixOptions, incubateResult, resolvedResuspensionBooleans, rawResolvedCentrifugeOptions,
 		currentSimulation,resolvedSupernatantDestination, resolvedSampleLabel, resolvedSampleContainerLabel,
-		resolvedSampleOutLabel, resolvedContainerOutLabel, resolvedSupernatantVolumes, resolvedResuspensionSources,
-		resolvedResuspensionSourceLabels,resolvedResuspensionSourceContainerLabels, resolvedResuspensionVolumes, resolvedSterileTechniqueBooleans,
+		resolvedSampleOutLabel, resolvedContainerOutLabel, resolvedSupernatantVolumes, resolvedSupernatantTransferAspirationMix,
+    resolvedSupernatantTransferSlurryTransfer, resolvedResuspensionSources, resolvedResuspensionSourceLabels,
+    resolvedResuspensionSourceContainerLabels, resolvedResuspensionVolumes, resolvedSterileTechniqueBooleans,
 		resolvedPreparation, preparationTests, allowedPreparation,resolvedWorkCell,allowedWorkCells
 	},
 
@@ -1519,6 +1547,8 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 		resolvedSampleOutLabel,
 		resolvedContainerOutLabel,
 		resolvedSupernatantVolumes,
+    resolvedSupernatantTransferAspirationMix,
+    resolvedSupernatantTransferSlurryTransfer, 
 		resolvedResuspensionBooleans,
 		resolvedResuspensionSources,
 		resolvedResuspensionSourceLabels,
@@ -1530,8 +1560,10 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 			Module[
 				{
 					sampleLabel, containerLabel, supernatantDestination, sampleOutLabel, containerOutLabel, resuspensionBoolean,
-					resuspensionSource, resuspensionVolume, resuspensionSourceLabel, simulatedResuspensionSourceContainerLabel, resuspensionSourceContainerLabel, supernatantTransferAspirationPosition,
-					supernatantTransferAspirationPositionOffset, resolvedSupernatantVolume, sterileTechniqueBoolean
+					resuspensionSource, resuspensionVolume, resuspensionSourceLabel, simulatedResuspensionSourceContainerLabel,
+          resuspensionSourceContainerLabel, supernatantTransferAspirationPosition, supernatantTransferAspirationPositionOffset,
+          resolvedSupernatantVolume, resolvedSupernatantTransferAspirationMix, resolvedSupernatantTransferSlurryTransfer,
+          sterileTechniqueBoolean
 				},
 
 				(* Resolve sample label. *)
@@ -1685,6 +1717,16 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 				
 				];
 
+        (* Set mixing aspiration and slurry transfer to False (if hidden options not specified) since we don't want to *)
+        (* resuspend our pellet before removing supernatant. *)
+        {
+          resolvedSupernatantTransferAspirationMix,
+          resolvedSupernatantTransferSlurryTransfer
+        } = Map[
+          If[MatchQ[Lookup[options, #], Automatic], False, #]&,
+          {SupernatantTransferAspirationMix, SupernatantTransferSlurryTransfer}
+        ];
+
 				(* -- Resolve the SterileTechnique for the supernatant transfer. -- *)
 				sterileTechniqueBoolean = Which[
 					(* Use what the user specified. *)
@@ -1708,6 +1750,8 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 					sampleOutLabel,
 					containerOutLabel,
 					resolvedSupernatantVolume,
+          resolvedSupernatantTransferAspirationMix,
+          resolvedSupernatantTransferSlurryTransfer,
 					resuspensionBoolean,
 					resuspensionSource,
 					resuspensionSourceLabel,
@@ -1809,7 +1853,9 @@ resolveExperimentPelletOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:
 	supernatantTransferOptions = ReplaceRule[
 		Normal[KeyTake[myOptions, supernatantTransferOptionKeys], Association],
 		{
-			SterileTechnique -> resolvedSterileTechniqueBooleans,
+      SupernatantTransferAspirationMix -> resolvedSupernatantTransferAspirationMix,
+      SupernatantTransferSlurryTransfer -> resolvedSupernatantTransferSlurryTransfer,
+      SterileTechnique -> resolvedSterileTechniqueBooleans,
 			(*Also give Transfer the labels so that we can extract the packets for next resuspension's call*)
 			SampleLabel -> resolvedSampleLabel,
 			SampleContainerLabel -> resolvedSampleContainerLabel,

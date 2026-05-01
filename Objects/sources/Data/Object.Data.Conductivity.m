@@ -32,7 +32,7 @@ DefineObjectType[Object[Data, Conductivity], {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> TemperatureCorrectionP,
-			Description -> "The temperature correction algorithm which defines the relationship between temperature and conductivity. Linear: Use for the temperature correction of medium and highly conductive solutions. Non-linear: Use for natural water (only for temperature between 0…36 ºC). Off: The conductivity value at the current temperature is displayed. PureWater: An optimized type of temperature algorithm is used.",
+			Description -> "The temperature correction algorithm which defines the relationship between temperature and conductivity. Linear: Use for the temperature correction of medium and highly conductive solutions. Non-linear: Use for natural water (only for temperature between 0 and 36 Celsius). Off: The conductivity value at the current temperature is displayed. PureWater: An optimized type of temperature algorithm is used.",
 			Category -> "General",
 			Abstract -> True
 		},
@@ -98,7 +98,7 @@ DefineObjectType[Object[Data, Conductivity], {
 				Object[Data, RelativeHumidity][CorrelatedData],
 				Object[Data, Temperature][CorrelatedData],
 				Object[Data, Volume][CorrelatedData],
-				Object[Data, FlowRate][CorrelatedData]
+				Object[Data, VolumetricFlowRate][CorrelatedData]
 			],
 			Description -> "Other sensor data objects that were created concurrently to this data object in the same function call.",
 			Category -> "Experimental Results"

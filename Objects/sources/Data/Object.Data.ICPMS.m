@@ -186,7 +186,7 @@ DefineObjectType[Object[Data, ICPMS], {
 			Class -> Real,
 			Pattern:>GreaterP[0 Liter/Minute],
 			Units->Liter/Minute,
-			Description->"Rate at which the Ar gas flows into the injector to deliver and aerosolize the input sample before the sample praticle encounters the auxillary argon gas.",
+			Description->"Rate at which the Ar gas flows into the injector to deliver and aerosolize the input sample before the sample praticle encounters the auxiliary argon gas.",
 			Category -> "Method Information"
 		},
 		NebulizerGasPressure -> {
@@ -197,7 +197,7 @@ DefineObjectType[Object[Data, ICPMS], {
 			Description->"Instrument reading of nebulizer argon gas pressure during injection.",
 			Category -> "Method Information"
 		},
-		AuxillaryGasFlowRate -> {
+		AuxiliaryGasFlowRate -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern:>GreaterP[0 Liter/Minute],
@@ -559,7 +559,7 @@ DefineObjectType[Object[Data, ICPMS], {
 			Class -> QuantityArray,
 			Pattern :> QuantityCoordinatesP[{Gram/Mole,ArbitraryUnit}],
 			Units -> {Gram/Mole, ArbitraryUnit},
-			Description -> "Spectrum of observed mass-to-charge (m/z) ratio vs peak intensity for the input sample.",
+			Description -> "Centroid data of the observed mass-to-charge (m/z) ratio vs peak intensity for the input sample.",
 			Category -> "Experimental Results",
 			Abstract -> True
 		},

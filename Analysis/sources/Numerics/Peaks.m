@@ -1987,7 +1987,7 @@ optionsFromReferencePeaks[ref_,pks:ObjectP[Object[Analysis,Peaks]]]:=Module[
 
 	(* Get the Peak Units *)
 	pkUnits=Computables`Private`peakUnits[
-		Sequence@@Lookup[pkPacket,{Reference,ReferenceField,ReferenceDataSliceDimension},Null]
+		Sequence@@Lookup[pkPacket,{Reference,ReferenceField,ReferenceDataSliceDimension, IsoelectricPointMarkers},Null]
 	];
 
 	(* Units of peak position *)
@@ -4581,10 +4581,13 @@ computeRelativePeaksFields[peakFields_, templateRules_, resolvedOps_] := Module[
 	];
 
 	(* labels from aligned peaks *)
-	alignedTemplateLabels = Values[ReplaceRule[
-		Thread[centers->ToString/@Range[n]],
-		Map[#[[1]]->Replace[#[[2]],First[templateRules]]&,alignmentTemplateRules] (* only replace correct spot... /. breaks things *)
-	][[;;n]]];
+	alignedTemplateLabels = If[Length[alignmentTemplateRules]>0, 
+		Values[ReplaceRule[
+			Thread[centers->ToString/@Range[n]],
+			Map[#[[1]]->Replace[#[[2]],First[templateRules]]&,alignmentTemplateRules] (* only replace correct spot... /. breaks things *)
+		][[;;n]]],
+		ToString/@Range[n]
+	];
 
 
 	(*
@@ -7523,6 +7526,55 @@ PeakEpilog[plotData:peakDataP,peakData:ListableP[PacketP[Object[Analysis,Peaks]]
 	]
 ];
 
+reconstructBaselines[
+	peakRangeStart_List,
+	peakRangeEnd_List,
+	peakBaselineIntercept_List,
+	peakBaselineSlopes_List
+] := Module[
+	{n, sortedIndices, starts, ends, intercepts, slopes, pieces, i,
+		leftY, rightY, gapSlope, gapIntercept},
+
+	n = Length[peakRangeStart];
+
+	(* Sort by start positions *)
+	sortedIndices = Ordering[peakRangeStart];
+	starts = peakRangeStart[[sortedIndices]];
+	ends = peakRangeEnd[[sortedIndices]];
+	intercepts = peakBaselineIntercept[[sortedIndices]];
+	slopes = peakBaselineSlopes[[sortedIndices]];
+
+	(* Build pieces *)
+	pieces = {};
+
+	(* First peak range *)
+	AppendTo[pieces, {intercepts[[1]] + slopes[[1]] * #1,
+		starts[[1]] <= #1 <= ends[[1]]}];
+
+	(* Gaps and subsequent peak ranges *)
+	For[i = 2, i <= n, i++,
+		(* Gap interpolation - only if there's actually a gap *)
+		If[starts[[i]] > ends[[i-1]],
+			leftY = intercepts[[i-1]] + slopes[[i-1]] * ends[[i-1]];
+			rightY = intercepts[[i]] + slopes[[i]] * starts[[i]];
+			gapSlope = (rightY - leftY)/(starts[[i]] - ends[[i-1]]);
+			gapIntercept = leftY - gapSlope * ends[[i-1]];
+
+			AppendTo[pieces, {gapIntercept + gapSlope * #1,
+				ends[[i-1]] < #1 < starts[[i]]}];
+		];
+
+		(* Peak range *)
+		AppendTo[pieces, {intercepts[[i]] + slopes[[i]] * #1,
+			starts[[i]] <= #1 <= ends[[i]]}];
+	];
+
+	(* Catch-all for outside the defined range *)
+	AppendTo[pieces, {Indeterminate, True}];
+
+	Function[Evaluate[Piecewise[pieces]]]
+];
+
 (* Case where all information is null *)
 PeakEpilog[plotData:peakDataP,<||>,ops:OptionsPattern[PeakEpilog]]:={};
 
@@ -7544,10 +7596,20 @@ PeakEpilog[
 	ops:OptionsPattern[PeakEpilog]
 ]:=Module[
 	{
+		peakBaselineFunction2,
 		xmin,xmax,ymin,ymax,xrange,yrange,peakPoints,peakCenters,peakIntegrals,absoluteHeights,
 		peakWidths,peakPointGraphic,peakLabelGraphic,peakIntegralGraphic,peakWidthGraphic,plotData,
 		peakIntegralBaslineGraphic, safeOps
 	},
+
+	(*The new AdvancedAnalyzePeaks does not populate the BaselineFunction field.  Therefore, we must construct it from the peak properties*)
+	peakBaselineFunction2 = Replace[peakBaselineFunction, Null :>
+     reconstructBaselines[
+		 peakRangeStart,
+		 peakRangeEnd,
+		 peakBaselineIntercept,
+		 peakBaselineSlopes
+	 ]];
 
 	If[MatchQ[peakPositions,{}],
 		Return[{}]
@@ -7563,7 +7625,7 @@ PeakEpilog[
 	(* --- Numeric Information --- *)
 
 	(* Determine the absolute height in Units of the y axis rather than distance above the baseline *)
-	absoluteHeights=MapThread[#2+peakBaselineFunction[#1]&,{peakPositions,peakHeights}];
+	absoluteHeights=MapThread[#2+peakBaselineFunction2[#1]&,{peakPositions,peakHeights}];
 
 	(* Peak Points are at {Position,Height} *)
 	peakPoints=Transpose[{If[OptionValue[Reflected],-1,1](peakPositions),absoluteHeights}];
@@ -7574,7 +7636,7 @@ PeakEpilog[
 	(* Peak Integrals are the data within the peak range, with the baseline fused in to connect the bottoms of the peaks *)
 	peakIntegrals=Module[{peakDomains,peakBaselineFunctions},
 		peakDomains=Domains[plotData,If[OptionValue[Reflected],Transpose[{-1(peakRangeEnd),-1(peakRangeStart)}],Transpose[{(peakRangeStart),(peakRangeEnd)}]]];
-		peakBaselineFunctions=If[OptionValue[Reflected],Function[arg,peakBaselineFunction[-arg]],peakBaselineFunction];
+		peakBaselineFunctions=If[OptionValue[Reflected],Function[arg,peakBaselineFunction2[-arg]],peakBaselineFunction2];
 		includeBaseline[peakDomains,peakBaselineFunctions,plotData]
 	];
 
@@ -7754,8 +7816,8 @@ PeakEpilog[
 	peakIntegralBaslineGraphic = Module[
 		{drawLine,ys},
 		drawLine[x1_, x2_, yf_] := {Opacity[0.2], Dashed, Blue, Line[Transpose[{plotData[[;;,1]],yf[plotData[[;;,1]]]}]]};
-		(*MapThread[drawLine[#1, #2, peakBaselineFunction] &, {peakRangeStart, peakRangeEnd}]*)
-		{Opacity[0.2], Dashed, Blue, Line[Transpose[{plotData[[;;,1]],peakBaselineFunction/@plotData[[;;,1]]}]]}
+		(*MapThread[drawLine[#1, #2, peakBaselineFunction2] &, {peakRangeStart, peakRangeEnd}]*)
+		{Opacity[0.2], Dashed, Blue, Line[Transpose[{plotData[[;;,1]],peakBaselineFunction2/@plotData[[;;,1]]}]]}
 	];
 
 	(* Return a list of each type of graphic. *)

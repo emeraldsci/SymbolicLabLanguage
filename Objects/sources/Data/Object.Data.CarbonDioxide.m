@@ -91,7 +91,7 @@ DefineObjectType[Object[Data, CarbonDioxide], {
 				Object[Data, RelativeHumidity][CorrelatedData],
 				Object[Data, Temperature][CorrelatedData],
 				Object[Data, Volume][CorrelatedData],
-				Object[Data, FlowRate][CorrelatedData]
+				Object[Data, VolumetricFlowRate][CorrelatedData]
 			],
 			Description -> "Other sensor data objects that were created concurrently to this data object in the same function call.",
 			Category -> "Experimental Results"

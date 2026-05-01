@@ -930,14 +930,6 @@ DefineObjectType[Object[Instrument, HPLC], {
 			Description -> "Indicates if the system should be kept under a continual flush while not actively running a protocol.",
 			Category -> "Cleaning"
 		},
-		(*IdleFlushGradient -> {
-			Format -> Single,
-			Class -> Link,
-			Pattern :> _Link,
-			Relation -> Object[MetRehod, Gradient],
-			Description -> "If IdleFlush is True, the gradient run while the instrument is not InUse. The duration of this gradient may be amended to not let the idle flush bottles run dry.",
-			Category -> "Cleaning"
-		},*)
 		StorageBufferA -> {
 			Format -> Single,
 			Class -> Link,

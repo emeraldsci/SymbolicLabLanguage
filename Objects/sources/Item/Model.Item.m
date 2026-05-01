@@ -493,14 +493,6 @@ DefineObjectType[Model[Item], {
 			Description -> "Service companies that provide synthesis of this model as a service.",
 			Category -> "Inventory"
 		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
-		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,
 			Class -> Expression,
@@ -775,6 +767,31 @@ DefineObjectType[Model[Item], {
 			Class -> Expression,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this model has been validated for use with TransferDevices.",
+			Category -> "Compatibility",
+			Developer -> True
+		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any portions of the exterior surfaces of this item are sensitive and prone to contamination.",
+			Category -> "Compatibility"
+		},
+        ExposedInterior -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicates if any sensitive portions of the interior surfaces of this item are open to the external environment and prone to contamination.",
+            Category -> "Compatibility"
+        },
+		CompatibleHandle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Handle][CompatibleComponents]
+			],
+			Description -> "The handle that is appropriate for moving this item around the lab.",
 			Category -> "Compatibility",
 			Developer -> True
 		},

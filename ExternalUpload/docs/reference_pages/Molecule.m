@@ -53,50 +53,62 @@ Module[
 	inputAtomicStructureDescription = "The molecular structure of the substance describing the atoms and their connectivity, either drawn or explicitly given using the Molecule[\"..\"] function.";
 	inputPubChemDescription = "The record number of the substance in the PubChem database, wrapped in a PubChem[...] head. (e.g. PubChem[679] is the ID of DMSO). PubChem is maintained by the National Center for Biotechnology Information (NCBI) which is part of the United States National Institutes of Health (NIH) and can be accessed at https://pubchem.ncbi.nlm.nih.gov/.";
 	inputInChIDescription = "The IUPAC International Chemical Identifier (InChI) of the molecule. InChIs are a unique non-proprietary identifier derived from the structural information of a molecule. The standard is described at https://www.inchi-trust.org/.";
-	inputInChIKeyDescription = "The IUPAC International Chemical Identifier Key (InChIKey) of the molecule. InChIKeys are a 27 character fixed-length identifier derived from the InChI using a hash algorithm. InChIKeys are optimized for database searching and are almost certainly unique, however this is not guaranteed. The InChI standard is described at https://www.inchi-trust.org/.";
+	inputInChIKeyDescription = "The IUPAC International Chemical Identifier Key (InChIKey) of the molecule. InChIKeys are a 27 character fixed-length identifier derived from the InChI using a hash algorithm. InChIKeys are optimized for database searching and are almost certainly unique; however, this is not guaranteed. The InChI standard is described at https://www.inchi-trust.org/.";
 	inputCASDescription = "The record number of the substance in the Chemical Abstracts Service (CAS) database, maintained by the American Chemical Society (ACS). The CAS registry is described at https://www.cas.org/cas-data/cas-registry.";
-	inputThermoDescription = "The URL of the ThermoFisher product page for a product of the required molecule type.";
+	inputThermoDescription = "The URL of the Thermo Fisher product page for a product of the required molecule type.";
 	inputSigmaDescription = "The URL of the Millipore Sigma product page for a product of the required molecule type.";
 
 
 	With[
 		{
 			(* Input widgets - must be := to generate a unique identifier each time it's inserted *)
-			moleculeNameWidget := Widget[Type -> String, Pattern :> _String, Size -> Line, PatternTooltip -> "The common or internal name of this chemical."],
+			moleculeNameWidget := Widget[
+				Type -> String,
+				Pattern :> _String,
+				Size -> Line,
+				BoxText -> "e.g. acetone, caffeine",
+				PatternTooltip -> "The common or internal name of this chemical."
+			],
 			pubChemWidget := Widget[
 				Type -> Expression,
 				Pattern :> Alternatives[GreaterEqualP[1, 1], _PubChem],
 				Size -> Line,
-				PatternTooltip -> "Enter the PubChem ID of the chemical to upload, as an integer or wrapped in a PubChem[...] head. (e.g. PubChem[679] is the ID of DMSO)."
+				BoxText -> "e.g. 679 or PubChem[679]",
+				PatternTooltip -> "Enter the PubChem ID as an integer (e.g. 679) or wrapped in PubChem[...] head (e.g. PubChem[679])."
 			],
 			inchiWidget := Widget[
 				Type -> String,
 				Pattern :> InChIP,
 				Size -> Paragraph,
+				BoxText -> "e.g. InChI=1S/H2O/h1H2",
 				PatternTooltip -> "The InChI of a molecule is a string that begins with InChI=."
 			],
 			inchiKeyWidget := Widget[
 				Type -> String,
 				Pattern :> InChIKeyP,
 				Size -> Line,
+				BoxText -> "e.g. XLYOFNOQVPJJNP-UHFFFAOYSA-N",
 				PatternTooltip -> "The InChIKey of this molecule, which is in the format of **************-**********-N where * is any uppercase letter."
 			],
 			casWidget := Widget[
 				Type -> String,
 				Pattern :> CASNumberP,
 				Size -> Line,
-				PatternTooltip -> "The CAS registry number of a molecule is a unique identifier specified by the American Chemical Society (ACS). CAS Numbers consist of 3 groups of digits, the first containing 2-7 digits, the second containing 2 digits and the final containing 1 digit, separated by hyphens. CAS numbers therefore range from **-**-* to *******-**-* where * is a digit character."
+				BoxText -> "e.g. 58-08-2",
+				PatternTooltip -> "The CAS registry number of a molecule is a unique identifier specified by the American Chemical Society (ACS). CAS Numbers consist of 3 groups of digits, the first containing 2-7 digits, the second containing 2 digits and the final containing 1 digit, separated by hyphens. CAS numbers therefore range from ##-##-# to #######-##-#."
 			],
 			thermoWidget := Widget[
 				Type -> String,
 				Pattern :> ThermoFisherURLP,
 				Size -> Paragraph,
-				PatternTooltip -> "The URL of the ThermoFisher product page for a product of the required molecule type."
+				BoxText -> "Thermo Fisher product page URL",
+				PatternTooltip -> "The URL of the Thermo Fisher product page for a product of the required molecule type."
 			],
 			sigmaWidget := Widget[
 				Type -> String,
 				Pattern :> MilliporeSigmaURLP,
 				Size -> Paragraph,
+				BoxText -> "MilliporeSigma product page URL",
 				PatternTooltip -> "The URL of the Millipore Sigma product page for a product of the required molecule type."
 			],
 			moleculeObjectWidget := Widget[
@@ -317,17 +329,17 @@ Module[
 									InputName -> "ListOfInputs",
 									Description -> "A list of inputs to base the creation of new molecule models on.",
 									Widget -> Alternatives[
-										moleculeNameWidget,
-										pubChemWidget,
-										inchiWidget,
-										inchiKeyWidget,
-										casWidget,
-										thermoWidget,
-										sigmaWidget,
-										moleculeObjectWidget,
-										moleculeFunctionWidget,
+										"Molecule Name" -> moleculeNameWidget,
+										"PubChem ID" -> pubChemWidget,
+										"InChI" -> inchiWidget,
+										"InChIKey" -> inchiKeyWidget,
+										"CAS Number" -> casWidget,
+										"Thermo Fisher URL" -> thermoWidget,
+										"Millipore Sigma URL" -> sigmaWidget,
+										"Existing Molecule" -> moleculeObjectWidget,
+										"Atomic Structure" -> moleculeFunctionWidget,
 										(* Allow null inputs so that all information can be specified by options *)
-										Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
+										"Options Only" -> Widget[Type -> Enumeration, Pattern :> Alternatives[Null]]
 									],
 									Expandable -> True
 								},

@@ -139,6 +139,19 @@ DefineObjectType[Object[Instrument, PortableCooler], {
 			Relation -> Object[Sensor][DevicesMonitored],
 			Description -> "Temperature sensor which records the internal temperature of the portable cooler.",
 			Category -> "Sensor Information"
+		},
+		CurrentTransporterProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Protocol][CurrentTransporters],
+				Object[Maintenance][CurrentTransporters],
+				Object[Qualification][CurrentTransporters]
+			],
+			Description -> "Indicates the root protocol this instrument is used under as a transporter to contain samples requiring special transport conditions.",
+			Category -> "Sample Storage",
+			Developer -> True
 		}
 	}
 }];

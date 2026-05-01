@@ -58,7 +58,7 @@ DefineObjectType[Object[Protocol, PrepareReferenceElectrode], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Model[Instrument, FumeHood], Object[Instrument, FumeHood]],
+			Relation -> Alternatives[Model[Instrument, FumeHood], Object[Instrument, FumeHood], Model[Instrument, HandlingStation, FumeHood], Object[Instrument, HandlingStation, FumeHood]],
 			Description -> "Indicates the fume hood where the reference electrode preparation is performed.",
 			Category -> "General",
 			Developer -> True

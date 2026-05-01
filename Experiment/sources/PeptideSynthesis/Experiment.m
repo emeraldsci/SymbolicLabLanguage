@@ -790,8 +790,8 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 			If[!DatabaseMemberQ[Model[Sample,newName]],
 
 				First@UploadSampleModel[
-					newName,
-					Composition->{{100 MassPercent,newIdentityModel}},
+					{{100 MassPercent,newIdentityModel}},
+					Name -> newName,
 					DefaultStorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"],
 					Expires->False,
 					ShelfLife->Null,
@@ -820,8 +820,8 @@ ExperimentPeptideSynthesis[myInputs:ListableP[Alternatives[ObjectP[{Model[Sample
 			(* TODO this should be a Search? *)
 			If[!DatabaseMemberQ[Model[Sample,newName]],
 				First@UploadSampleModel[
-					newName,
-					Composition->{{100 MassPercent,newIdentityModel}},
+					{{100 MassPercent,newIdentityModel}},
+					Name -> newName,
 					DefaultStorageCondition -> Model[StorageCondition,"id:N80DNj1r04jW"],
 					Expires->False,
 					ShelfLife->Null,
@@ -1247,9 +1247,6 @@ resolveExperimentPeptideSynthesisOptions[myPolymer:(PNA|Peptide),myInputs:{Objec
 	tooManyInputsPackets = If[neededPositions > maxNumberOfStrands, oligomerModelPackets, {}];
 	tooManyInputs = If[Length[tooManyInputsPackets] > 0, Lookup[tooManyInputsPackets, Object], {}];
 
-	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
-	If[Length[tooManyInputs] > 0 && !gatherTests, Message[Error::NumberOfInputs, maxNumberOfStrands, neededPositions]];
-
 	(* If we are gathering tests, create a passing and/or failing test with the appropriate result. *)
 	tooManyInputsTest = If[gatherTests,
 		{
@@ -1260,6 +1257,27 @@ resolveExperimentPeptideSynthesisOptions[myPolymer:(PNA|Peptide),myInputs:{Objec
 		},
 		{}
 	];
+
+	(* If there are invalid inputs and we are throwing messages, throw an error message and keep track of the invalid inputs.*)
+	(* if there are too many inputs, we're just going to short circuit here and leave *)
+	(* the reason here is that if you have too many inputs you are also likely to take a very long time *)
+	(* but we already know now that we don't need to do anything more anyway so just stop here *)
+	If[Length[tooManyInputs] > 0 && !gatherTests,
+		(
+			Message[Error::NumberOfInputs, maxNumberOfStrands, neededPositions];
+			Message[Error::InvalidInput, ObjectToString[DeleteDuplicates@tooManyInputs, Cache->cache]];
+			Return[
+				outputSpecification /. {
+					Result -> myOptions,
+					Tests -> Flatten[{
+						tooManyInputsTest
+					}]
+				},
+				Module
+			]
+		)
+	];
+
 
 	(* NOTE: wrong polymer type check *)
 	(* Get the samples from mySamples that have the wrong PolymerType, PeptideSynthesis can only make Peptide, PNASynthesis can only make PNA *)
@@ -2518,7 +2536,7 @@ resolveExperimentPeptideSynthesisOptions[myPolymer:(PNA|Peptide),myInputs:{Objec
 			defaultBulkMonomers = DeleteCases[Flatten[Physics`Private`lookupModelOligomer[allowedSyntheticMonomerTypes,SyntheticMonomers,Head->True, SynthesisStrategy->synthesisStrategy]], $Failed];
 
 			(* for each unique monomer either take the user provided option, or grab something from the default list *)
-			providedMonomersOption = Rule @@@ ToList[Lookup[myMapThreadOptions, Monomers]];
+			providedMonomersOption = Rule @@@ (ToList[Lookup[myMapThreadOptions, Monomers]]/.{Automatic->Nothing});
 			resolvedMonomers = Map[
 				If[KeyExistsQ[providedMonomersOption, #],
 					{#, Lookup[providedMonomersOption, #]},
@@ -4019,7 +4037,7 @@ peptideSynthesisResourcePackets[
 	
 	
 	(* find all the non-deprecated fume hood models *)
-	fumeHoodModels=Search[Model[Instrument,FumeHood],Deprecated != True];
+	fumeHoodModels=commonFumeHoodHandlingStationModels["Memoization"];
 	
 	synthesizerResource=Link[Resource[Name->ToString[Unique[]],Instrument->Lookup[myResolvedOptions,Instrument],Time->synthesisTimeEstimate]];
 	fumeHoodResource=Link[Resource[Name->ToString[Unique[]],Instrument->fumeHoodModels,Time->2 Hour]];

@@ -12,7 +12,22 @@ DefineUsage[ExperimentPrepareTransporter,
 							Description->"The samples to be transported under non-ambient temperature.",
 							Widget->Widget[
 								Type->Object,
-								Pattern:>ObjectP[{Object[Sample], Object[Container], Object[Item], Model[Container], Model[Item], Model[Sample]}]
+								Pattern:>ObjectP[{
+                                    Object[Sample],
+                                    Object[Container],
+                                    Object[Item],
+                                    Model[Container],
+                                    Model[Item],
+                                    Model[Sample],
+                                    Object[Part],
+                                    Model[Part],
+                                    Model[Plumbing],
+                                    Object[Plumbing],
+                                    Model[Sensor],
+                                    Object[Sensor],
+                                    Model[Wiring],
+                                    Object[Wiring]
+                                }]
 							],
 							Expandable->False
 						},

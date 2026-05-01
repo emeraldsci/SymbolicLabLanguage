@@ -135,7 +135,7 @@ DefineTests[EmeraldBarChart,
 		],
 
 		Example[{Options,Prolog,"Use Prolog to render other graphics primitives prior to BarChart graphics, such that these graphics appear behind the bars:"},
-			EmeraldBarChart[{{5,1,2,1,5}},ImageSize->400,Prolog->Inset[Import["ExampleData/spikey.tiff"]]],
+			EmeraldBarChart[{{5,1,2,1,5}},ImageSize->400,Prolog->Inset[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard7/776716d2dde1d5bbf93007ed8954b452.jpg", ""]]]],
 			ValidGraphicsP[]
 		],
 		Example[{Options,Epilog,"Explicitly specified epilogs are joined onto any epilogs created by EmeraldBarChart:"},

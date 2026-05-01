@@ -433,6 +433,15 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Category -> "Filtration",
 			IndexMatching -> SampleLink
 		},
+		SampleLoadingDrainTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleLink, the amount of time to wait after the sample has been loaded into the filter plate before applying pressure to filter, in order to capture any gravity-drainage from the top filter plate to the bottom collection container.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
 		MembraneMaterial -> {
 			Format -> Multiple,
 			Class -> Expression,
@@ -786,8 +795,16 @@ DefineObjectType[Object[UnitOperation, Filter], {
 		RetentateWashDrainTime -> {
 			Format -> Multiple,
 			Class -> Expression,
+			Pattern :> {(GreaterEqualP[0 Minute] | Null)..} | GreaterEqualP[0 Minute],
+			Description -> "For each member of RetentateWashBuffer, the amount of time to wait after the retentate wash buffer has been added to the filter before applying force, in order to allow gravity drainage.",
+			Category -> "Filtration",
+			IndexMatching -> RetentateWashBuffer
+		},
+		RetentateWashTime -> {
+			Format -> Multiple,
+			Class -> Expression,
 			Pattern :> {(GreaterP[0 Minute] | Null)..} | GreaterP[0 Minute],
-			Description -> "For each member of RetentateWashBuffer, the amount of time for which the samples will be washed with RetentateWashBuffer after initial filtration and prior to retentate collection.",
+			Description -> "For each member of RetentateWashBuffer, the amount of time for which force is applied to move the retentate wash buffer through the filter after initial filtration and prior to retentate collection.",
 			Category -> "Filtration",
 			IndexMatching -> RetentateWashBuffer
 		},
@@ -820,6 +837,14 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Class -> Expression,
 			Pattern :> {(GreaterP[0 * PSI] | Null)..},
 			Description -> "For each member of RetentateWashBuffer, the target pressure applied to the retentate that has been washed with RetentateWashBuffer after initial filtration and prior to retentate collection.",
+			Category -> "Filtration",
+			IndexMatching -> RetentateWashBuffer
+		},
+		RetentateWashPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {(ObjectP[Model[Method, Pipetting]] | Null)..} | ObjectP[Model[Method, Pipetting]],
+			Description -> "For each member of RetentateWashBuffer, the set of pipetting parameters used to manipulate the RetentateWashBuffer when transferring it into the filter plate.",
 			Category -> "Filtration",
 			IndexMatching -> RetentateWashBuffer
 		},
@@ -1047,6 +1072,112 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Category -> "Filtration"
 		},
 
+		(* initial filtrate options *)
+		InitialFiltrateSample -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Sample],
+				Model[Sample]
+			],
+			Description -> "For each member of SampleLink, the sample collected during the initial filtration step.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		InitialFiltrate -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates if a portion of the sample is filtered before retentate collection to prime the filter with the sample.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateVolume -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Milliliter],
+			Units -> Milliliter,
+			Description -> "For each member of SampleLink, the volume of sample to filter before retentate collection to prime the filter.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateContainerOutLink -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "For each member of SampleLink, the container used to collect the initial filtrate.",
+			IndexMatching -> SampleLink,
+			Migration -> SplitField,
+			Category -> "Filtration"
+		},
+		InitialFiltrateContainerOutString -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the container used to collect the initial filtrate.",
+			IndexMatching -> SampleLink,
+			Migration -> SplitField,
+			Category -> "Filtration"
+		},
+		InitialFiltrateLabel -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the label of the sample collected during the initial filtration step.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateContainerLabel -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the label of the container used to collect the initial filtrate.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateDestinationWell -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> WellP,
+			Description -> "For each member of SampleLink, the position in the InitialFiltrateContainerOut in which the initial filtrate sample is placed.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateDestinationRack -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container, Rack],
+				Object[Container, Rack]
+			],
+			Description -> "For each member of SampleLink, the rack used to hold the InitialFiltrateContainerOut during syringe filtration if the container is not self-standing.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SampleLink, the estimated time required to push the InitialFiltrateVolume through the filter at the specified flow rate.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+		InitialFiltrateStorageCondition -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> (SampleStorageTypeP | Disposal | ObjectP[Model[StorageCondition]]),
+			Description -> "For each member of SampleLink, the conditions under which the initial filtrate is stored after the protocol is completed.",
+			IndexMatching -> SampleLink,
+			Category -> "Filtration"
+		},
+
 		(* TODO might need some weird tip stuff for doing the retentate wash/transfer stuff but not going to worry about that until I get to the procedure *)
 		BuchnerFunnel -> {
 			Format -> Multiple,
@@ -1122,6 +1253,35 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Description -> "For each member of SampleLink, the conditions under which any filters used by this experiment should be stored after the protocol is completed.",
 			Category -> "Filtration",
 			IndexMatching -> SampleLink
+		},
+
+		(* Oven drying fields *)
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are oven dried before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SampleLink, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are depyrogenated in an oven before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink
+		},
+		OvenGlassware -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container, Vessel],
+				Object[Part, Funnel]
+			],
+			Description -> "The glassware that is oven dried or depyrogenated before filtration.",
+			Category -> "Filtration"
 		},
 
 		(* pipetting fields *)
@@ -1636,6 +1796,47 @@ DefineObjectType[Object[UnitOperation, Filter], {
 			Units -> Microliter,
 			Description->"The estimated amount of liquid before the dispense of the resuspension solution occurred, as calculated from the detected liquid level height and container geometry. This can only be estimated if DispensePosition is set to LiquidLevel and is a very coarse estimate that should only be used qualitatively.",
 			Category->"Pipetting Parameters"
+		},
+
+		(* Syringe Pump python control *)
+		SyringePumpMethod -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the text string passed to the python script through snaptext that indicates the method file to run. Includes the protocol folder and iteration number separated by a ;.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
+		},
+		SyringePumpMethodFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each member of SampleLink, the path to the location of the method text that is read by the python script.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
+		},
+
+		(* Initial filtrate syringe pump method files *)
+		InitialFiltrateSyringePumpMethod -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of SampleLink, the text string passed to the python script through snaptext that indicates the initial filtrate method file to run. Includes the protocol folder and iteration number separated by a ;.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
+		},
+		InitialFiltrateSyringePumpMethodFilePath -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> FilePathP,
+			Description -> "For each member of SampleLink, the path to the location of the initial filtrate method text that is read by the python script.",
+			Category -> "Filtration",
+			IndexMatching -> SampleLink,
+			Developer -> True
 		}
+
 	}
 }];

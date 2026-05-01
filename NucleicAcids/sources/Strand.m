@@ -234,7 +234,7 @@ SequenceQ[Except[_List], ops:OptionsPattern[]]:= False;
 DefineOptions[SameSequenceQ,
 	Options :> {
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that defines the potnetial alphabaet a valid sequence should be composed of.  Automatic will attempt to match all known polymer types."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
 	}
 ];
@@ -301,7 +301,7 @@ SameSequenceQ[seqA: SequenceP, seqB: SequenceP, ops:OptionsPattern[]]:= SameSequ
 DefineOptions[DNAQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -335,7 +335,7 @@ DNAQ[input:Except[_List]]:= False;
 DefineOptions[RNAQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -369,7 +369,7 @@ RNAQ[input:Except[_List]]:=False;
 DefineOptions[PNAQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -403,7 +403,7 @@ PNAQ[input:Except[_List]]:=False;
 DefineOptions[GammaRightPNAQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -437,7 +437,7 @@ GammaRightPNAQ[input:Except[_List]]:=False;
 DefineOptions[GammaLeftPNAQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.",Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -470,7 +470,7 @@ GammaLeftPNAQ[input:Except[_List]]:=False;
 DefineOptions[PeptideQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{AlternativeEncodings -> False, BooleanP, "If set to True, the function will allow the alternative coding alphabets specified in the Parameters.  If False, alternative coding alphabets will not be allowed."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden}
@@ -503,7 +503,7 @@ PeptideQ[input:Except[_List]]:=False;
 DefineOptions[LNAChimeraQ,
 	Options :> {
 		{Exclude -> Modification, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},
@@ -538,7 +538,7 @@ LNAChimeraQ[input:Except[_List]]:=False;
 DefineOptions[ModificationQ,
 	Options :> {
 		{Exclude -> {}, PolymerP | {SequenceP...}, "When examining sequences, will exclude the provided Monomers from the valid set of Monomers; When examining strands, will count the provided polymer types as valid."},
-		{Degeneracy -> True, BooleanP, "If set to true, the degenrate alphabet will be considered valid."},
+		{Degeneracy -> True, BooleanP, "If set to true, the degenerate alphabet will be considered valid."},
 		{CheckMotifs -> False, BooleanP, "If on, checks to see that all motifs are uniquely named and sequences properly match as reverse complements."},
 		{FastTrack -> False, BooleanP, "Skip strict checks.", Category->Hidden},
 		{Polymer -> Automatic, PolymerP | Automatic, "The polymer type that each sequence in the strand must be composed of to return True.  Automatic will accept any polymer type."},

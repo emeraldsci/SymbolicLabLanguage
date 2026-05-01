@@ -308,10 +308,10 @@ DefineTests[ExperimentUncover,
 			],
 			{ObjectP[Model[Part, Decrimper]]}
 		],
-		(* this test assumes we don't have a 20mm manual decrimper (which at the time of writing was True; if this changes the test will have to change) *)
+		(* this test assumes we don't have a 11mm manual decrimper (which at the time of writing was True; if this changes the test will have to change) *)
 		Test["If uncovering a container that is crimped and we do not have a matching decrimper for that cap type, then just use the pneumatic one:",
 			Download[
-				ExperimentUncover[Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID]],
+				ExperimentUncover[Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID]],
 				Instruments
 			],
 			{ObjectP[Model[Instrument, Crimper]]}
@@ -322,6 +322,17 @@ DefineTests[ExperimentUncover,
 				Instruments
 			],
 			{ObjectP[Model[Part, AmpouleOpener]]}
+		],
+		Test["If uncovering using a decrimper and we already have a decrimper of that model InUse by the root protocol, then resolve the decrimper to that object:",
+			Lookup[
+				ExperimentUncover[
+					Object[Container, Vessel, "Uncovered 6 mL aspiration vial for hand-crimping in ExperimentUncover testing" <> $SessionUUID],
+					ParentProtocol -> Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Decrimpers still InUse for ExperimentUncover testing" <> $SessionUUID],
+					Output -> Options
+				],
+				Instrument
+			],
+			ObjectP[Object[Part, Decrimper, "Decrimper for ExperimentUncover Testing" <> $SessionUUID]]
 		]
 	},
 
@@ -362,12 +373,16 @@ DefineTests[ExperimentUncover,
 				Object[Item, Lid, "Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Item, Cap, "20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Ampoule for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Item, Cap, "Ampoule cover for ExperimentUncover Testing" <> $SessionUUID]
+				Object[Item, Cap, "Ampoule cover for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Uncovered 6 mL aspiration vial for hand-crimping in ExperimentUncover testing" <> $SessionUUID],
+				Object[Item, Cap, "20mm vial aspiration cap for ExperimentUncover testing" <> $SessionUUID],
+				Object[Part, Decrimper, "Decrimper for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test MSP parent protocol with Decrimpers still InUse for ExperimentUncover testing" <> $SessionUUID]
 			};
 
 			(*Check whether the names we want to give below already exist in the database*)
@@ -407,152 +422,173 @@ DefineTests[ExperimentUncover,
 			newObjects = UploadSample[
 				{
 					(* Extra covers *)
-					Model[Item, Cap, "id:L8kPEjn4DkZw"],
-					Model[Item, Cap, "Bottle Cap, 46x23mm"],
+					(*1*)Model[Item, Cap, "id:L8kPEjn4DkZw"],
+					(*2*)Model[Item, Cap, "Bottle Cap, 46x23mm"],
 
 					(* For crimp test *)
-					Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"],
-					Model[Item, Cap, "VWR Flip Off 13mm Cap"],
+					(*3*)Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"],
+					(*4*)Model[Item, Cap, "VWR Flip Off 13mm Cap"],
 
 					(* For lid test *)
-					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-					Model[Item, Lid, "Universal Black Lid"],
+					(*5*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					(*6*)Model[Item, Lid, "Universal Black Lid"],
 
 					(* For plate seal test *)
-					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
-					Model[Item, PlateSeal, "Plate Seal, 96-Well Square"],
+					(*7*)Model[Container, Plate, "96-well 2mL Deep Well Plate"],
+					(*8*)Model[Item, PlateSeal, "Plate Seal, 96-Well Square"],
 
 					(* For Barcode test *)
-					Model[Container, Vessel, "100g opaque white plastic rectangular solid bottle"],
-					Model[Item, Cap, "Bottle Cap, 46x23mm"],
+					(*9*)Model[Container, Vessel, "100g opaque white plastic rectangular solid bottle"],
+					(*10*)Model[Item, Cap, "Bottle Cap, 46x23mm"],
 
 					(* For no Products test *)
-					Model[Container, Vessel, "25mL narrow amber glass bottle"],
-					Model[Item, Cap, "Bottle Cap, 38x20mm"],
+					(*11*)Model[Container, Vessel, "25mL narrow amber glass bottle"],
+					(*12*)Model[Item, Cap, "Bottle Cap, 38x20mm"],
 
 					(* For with Products test *)
-					Model[Container, Vessel, "2mL Tube"],
-					Model[Item, Cap, "2 mL tube cap, standard"],
+					(*13*)Model[Container, Vessel, "2mL Tube"],
+					(*14*)Model[Item, Cap, "2 mL tube cap, standard"],
 
 					(* For discard cover test *)
-					Model[Container, Vessel, "2mL Tube"],
-					Model[Item, Cap, "2 mL tube cap, standard"],
+					(*15*)Model[Container, Vessel, "2mL Tube"],
+					(*16*)Model[Item, Cap, "2 mL tube cap, standard"],
 
-					Model[Container, Vessel, "2mL Tube"],
-					Model[Item, Cap, "2 mL tube cap, standard"],
+					(*17*)Model[Container, Vessel, "2mL Tube"],
+					(*18*)Model[Item, Cap, "2 mL tube cap, standard"],
 
-					Model[Container, Vessel, "2mL Tube"],
-					Model[Item, Cap, "2 mL tube cap, standard"],
+					(*19*)Model[Container, Vessel, "2mL Tube"],
+					(*21*)Model[Item, Cap, "2 mL tube cap, standard"],
 
-					Model[Container, Vessel, "50mL Tube"],
-					Model[Item, Cap, "50mL tube degas cap"],
+					(*22*)Model[Container, Vessel, "50mL Tube"],
+					(*23*)Model[Item, Cap, "50mL tube degas cap"],
 
-					Model[Container, Vessel, "id:3em6Zv9Njjbv"], (*"2L Glass Bottle"*)
-					Model[Item, Cap, "id:jLq9jXvMkYPE"], (*"GL45 Bottle Cap"*)
+					(*24*)Model[Container, Vessel, "id:3em6Zv9Njjbv"], (*"2L Glass Bottle"*)
+					(*25*)Model[Item, Cap, "id:jLq9jXvMkYPE"], (*"GL45 Bottle Cap"*)
 
 					(* for multiple entries testing *)
-					Model[Container, Cuvette, "Micro Scale Black Walled UV Quartz Cuvette"],
-					Model[Item, Cap, "Cuvette Cap, 18x17mm"],
-					Model[Container, Cuvette, "Micro Scale Black Walled UV Quartz Cuvette"],
-					Model[Item, Cap, "Cuvette Cap, 18x17mm"],
+					(*26*)Model[Container, Cuvette, "Micro Scale Black Walled UV Quartz Cuvette"],
+					(*27*)Model[Item, Cap, "Cuvette Cap, 18x17mm"],
+					(*28*)Model[Container, Cuvette, "Micro Scale Black Walled UV Quartz Cuvette"],
+					(*29*)Model[Item, Cap, "Cuvette Cap, 18x17mm"],
 
 					(* for foil covering *)
-					Model[Container, Vessel, "id:jLq9jXY4kkXE"], (*Model[Container, Vessel, "250mL Erlenmeyer Flask"]*)
-					Model[Item, Lid, "id:7X104v1N35pw"], (*Model[Item, Lid, "Aluminum Foil Cover"]*)
+					(*30*)Model[Container, Vessel, "id:jLq9jXY4kkXE"], (*Model[Container, Vessel, "250mL Erlenmeyer Flask"]*)
+					(*31*)Model[Item, Lid, "id:7X104v1N35pw"], (*Model[Item, Lid, "Aluminum Foil Cover"]*)
 
 					(* for decrimping *)
-					Model[Container, Vessel, "id:6V0npvmW99k1"], (*Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"]*)
-					Model[Item, Cap, "id:9RdZXv17GGDj"], (*Model[Item, Cap, "14 millimeter aluminum crimp cap with septum for 2 mL glass vial"]*)
-					Model[Container, Vessel, "id:J8AY5jAxB8Ex"], (*Model[Container, Vessel, "50 mL glass serum bottle with crimp seal"]*)
-					Model[Item, Cap, "id:pZx9jo8M5L1E"], (*Model[Item, Cap, "VWR Flip Off 20mm Cap"]*)
+					(*32*)Model[Container, Vessel, "id:6V0npvmW99k1"], (*Model[Container, Vessel, "2 mL clear glass vial, sterile with septum and aluminum crimp top"]*)
+          (*33*)Model[Item, Cap, "id:9RdZXv17GGDj"], (*Model[Item, Cap, "14 millimeter aluminum crimp cap with septum for 2 mL glass vial"]*)
+          (*34*)Model[Container, Vessel, "id:XnlV5jNXm8oP"], (*Model[Container, Vessel, "Thermo Scientific SureSTART 2 mL Glass Crimp Top Vials, Level 2 High-Throughput Applications"]*)
+          (*35*)Model[Item, Cap, "id:jLq9jXOmYw5q"], (*Model[Item, Cap, "Thermo Scientific SureSTART 11 mm Crimp Caps, White Silicone/Red PTFE"]*)
 
 					(* for ampoule opener*)
-					Model[Container, Vessel, "id:zGj91aR3dddn"], (*Model[Container, Vessel, "1mL amber glass ampule"]*)
-					Model[Item, Cap, "id:P5ZnEjZ3oBWr"] (*Model[Item, Cap, "Amber Ampule Cover 1mL"]*)
+					(*36*)Model[Container, Vessel, "id:zGj91aR3dddn"], (*Model[Container, Vessel, "1mL amber glass ampule"]*)
+					(*37*)Model[Item, Cap, "id:P5ZnEjZ3oBWr"], (*Model[Item, Cap, "Amber Ampule Cover 1mL"]*)
+
+					(* for crimp uncovering *)
+					(*38*)Model[Container, Vessel, "Headspace vial, 6 mL, crimp clear flat bottom"],
+					(*39*)Model[Item, Cap, "Aluminum septum caps for Metrohm Karl Fischer oven vials"]
 				},
 				{
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"A1", unitTestBag},
-					{"Work Surface", unitTestBench},
-					{"A1", unitTestBag},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Working Zone Slot", unitTestHandlingStation},
-					{"Working Zone Slot", unitTestHandlingStation},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench},
-					{"Work Surface", unitTestBench}
+					(*1*){"Work Surface", unitTestBench},
+					(*2*){"Work Surface", unitTestBench},
+					(*3*){"Work Surface", unitTestBench},
+					(*4*){"Work Surface", unitTestBench},
+					(*5*){"Work Surface", unitTestBench},
+					(*6*){"Work Surface", unitTestBench},
+					(*7*){"Work Surface", unitTestBench},
+					(*8*){"Work Surface", unitTestBench},
+					(*9*){"A1", unitTestBag},
+					(*10*){"Work Surface", unitTestBench},
+					(*11*){"A1", unitTestBag},
+					(*12*){"Work Surface", unitTestBench},
+					(*13*){"Work Surface", unitTestBench},
+					(*14*){"Work Surface", unitTestBench},
+					(*15*){"Work Surface", unitTestBench},
+					(*16*){"Work Surface", unitTestBench},
+					(*17*){"Work Surface", unitTestBench},
+					(*18*){"Work Surface", unitTestBench},
+					(*19*){"Working Zone Slot", unitTestHandlingStation},
+					(*21*){"Working Zone Slot", unitTestHandlingStation},
+					(*22*){"Work Surface", unitTestBench},
+					(*23*){"Work Surface", unitTestBench},
+					(*24*){"Work Surface", unitTestBench},
+					(*25*){"Work Surface", unitTestBench},
+					(*26*){"Work Surface", unitTestBench},
+					(*27*){"Work Surface", unitTestBench},
+					(*28*){"Work Surface", unitTestBench},
+					(*29*){"Work Surface", unitTestBench},
+					(*30*){"Work Surface", unitTestBench},
+					(*31*){"Work Surface", unitTestBench},
+					(*32*){"Work Surface", unitTestBench},
+					(*33*){"Work Surface", unitTestBench},
+					(*34*){"Work Surface", unitTestBench},
+					(*35*){"Work Surface", unitTestBench},
+					(*36*){"Work Surface", unitTestBench},
+					(*37*){"Work Surface", unitTestBench},
+					(*38*){"Work Surface", unitTestBench},
+					(*39*){"Work Surface", unitTestBench}
 				},
 				Name->{
-					Null,
-					Null,
-					"Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered Flip Off 13mm Cap on Vial for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered DWP for ExperimentUncover Testing"<>$SessionUUID,
-					"Universal Black Lid for ExperimentUncover Testing"<>$SessionUUID,
-					"Container with PlateSeal for ExperimentUncover Testing"<>$SessionUUID,
-					Null,
-					"Container with barcoded cap for ExperimentUncover Testing"<>$SessionUUID,
-					Null,
-					"Container with productless cap for ExperimentUncover Testing"<>$SessionUUID,
-					Null,
-					"Covered 2mL Tube 1 for ExperimentUncover Testing"<>$SessionUUID,
-					"2mL Tube Cap 1 for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered 2mL Tube 2 for ExperimentUncover Testing"<>$SessionUUID,
-					"2mL Tube Cap 2 for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered 2mL Tube 3 for ExperimentUncover Testing"<>$SessionUUID,
-					"2mL Tube Cap 3 for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered 2mL Tube 4 for ExperimentUncover Testing"<>$SessionUUID,
-					"2mL Tube Cap 4 for ExperimentUncover Testing"<>$SessionUUID,
-					"50mL Tube Covered with Barcoded Cap for ExperimentUncover Testing"<>$SessionUUID,
-					"50mL Tube Degas Cap with Barcode for ExperimentUncover Testing"<>$SessionUUID,
-					"Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID,
-					"GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID,
-					"Cuvette 1 for ExperimentUncover Testing"<>$SessionUUID,
-					Null,
-					"Cuvette 2 for ExperimentUncover Testing"<>$SessionUUID,
-					Null,
-					"Erlenmeyer flask covered with aluminum foil for ExperimentUncover Testing" <> $SessionUUID,
-					"Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID,
-					"Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID,
-					"13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
-					"Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID,
-					"20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
-					"Ampoule for ExperimentUncover Testing" <> $SessionUUID,
-					"Ampoule cover for ExperimentUncover Testing" <> $SessionUUID
+					(*1*)Null,
+					(*2*)Null,
+					(*3*)"Covered 0.3mL High-Recovery Crimp Top Vial (13mm) for ExperimentUncover Testing"<>$SessionUUID,
+					(*4*)"Covered Flip Off 13mm Cap on Vial for ExperimentUncover Testing"<>$SessionUUID,
+					(*5*)"Covered DWP for ExperimentUncover Testing"<>$SessionUUID,
+					(*6*)"Universal Black Lid for ExperimentUncover Testing"<>$SessionUUID,
+					(*7*)"Container with PlateSeal for ExperimentUncover Testing"<>$SessionUUID,
+					(*8*)Null,
+					(*9*)"Container with barcoded cap for ExperimentUncover Testing"<>$SessionUUID,
+					(*10*)Null,
+					(*11*)"Container with productless cap for ExperimentUncover Testing"<>$SessionUUID,
+					(*12*)Null,
+					(*13*)"Covered 2mL Tube 1 for ExperimentUncover Testing"<>$SessionUUID,
+					(*14*)"2mL Tube Cap 1 for ExperimentUncover Testing"<>$SessionUUID,
+					(*15*)"Covered 2mL Tube 2 for ExperimentUncover Testing"<>$SessionUUID,
+					(*16*)"2mL Tube Cap 2 for ExperimentUncover Testing"<>$SessionUUID,
+					(*17*)"Covered 2mL Tube 3 for ExperimentUncover Testing"<>$SessionUUID,
+					(*18*)"2mL Tube Cap 3 for ExperimentUncover Testing"<>$SessionUUID,
+					(*19*)"Covered 2mL Tube 4 for ExperimentUncover Testing"<>$SessionUUID,
+					(*21*)"2mL Tube Cap 4 for ExperimentUncover Testing"<>$SessionUUID,
+					(*22*)"50mL Tube Covered with Barcoded Cap for ExperimentUncover Testing"<>$SessionUUID,
+					(*23*)"50mL Tube Degas Cap with Barcode for ExperimentUncover Testing"<>$SessionUUID,
+					(*24*)"Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID,
+					(*25*)"GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID,
+					(*26*)"Cuvette 1 for ExperimentUncover Testing"<>$SessionUUID,
+					(*27*)Null,
+					(*28*)"Cuvette 2 for ExperimentUncover Testing"<>$SessionUUID,
+					(*29*)Null,
+					(*30*)"Erlenmeyer flask covered with aluminum foil for ExperimentUncover Testing" <> $SessionUUID,
+					(*31*)"Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID,
+					(*32*)"Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID,
+					(*33*)"13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
+					(*34*)"Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID,
+					(*35*)"11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID,
+					(*36*)"Ampoule for ExperimentUncover Testing" <> $SessionUUID,
+					(*37*)"Ampoule cover for ExperimentUncover Testing" <> $SessionUUID,
+					(*38*)"Uncovered 6 mL aspiration vial for hand-crimping in ExperimentUncover testing" <> $SessionUUID,
+					(*39*)"20mm vial aspiration cap for ExperimentUncover testing" <> $SessionUUID
 				}
 			];
 
 
 			(* Add a ventilated sample to one of our container to make sure we resolve fumehood without issue *)
-			ventilatedSample = UploadSample[
-				Model[Sample, "id:8qZ1VW0JqeED"],
-				{"A1", Object[Container, Vessel, "Container with productless cap for ExperimentUncover Testing"<>$SessionUUID]}
+			{
+				ventilatedSample,
+				decrimper
+			} = UploadSample[
+				{
+					Model[Sample, "id:8qZ1VW0JqeED"],
+					Model[Part, Decrimper, "Manual Decrimper, 20 mm"]
+				},
+				{
+					{"A1", Object[Container, Vessel, "Container with productless cap for ExperimentUncover Testing" <> $SessionUUID]},
+					{"Work Surface", unitTestBench}
+				},
+				Name -> {
+					Null,
+					"Decrimper for ExperimentUncover Testing" <> $SessionUUID
+				}
 			];
 
 			(* Split our list into the extra covers and the cover-container pair list *)
@@ -568,6 +604,16 @@ DefineTests[ExperimentUncover,
 				Cover->covers
 			];
 
+			mspProt = CreateID[Object[Protocol, ManualSamplePreparation]];
+			Upload[{
+				<|
+					Object -> mspProt,
+					Name -> "Test MSP parent protocol with Decrimpers still InUse for ExperimentUncover testing" <> $SessionUUID,
+					RootProtocol -> Link[mspProt],
+					DeveloperObject -> True
+				|>
+			}];
+			UploadSampleStatus[decrimper, InUse, UpdatedBy -> mspProt];
 			(* Make all the test objects and models developer objects - except extra covers which we want to show up in Search *)
 			Upload[<|Object->#, DeveloperObject->True|>&/@Join[containersAndCovers, {ventilatedSample}]]
 		];
@@ -606,8 +652,9 @@ DefineTests[ExperimentUncover,
 				Object[Item, Lid, "Aluminum foil cover 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Crimped 13mm vial for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "13mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Container, Vessel, "Crimped 20mm vial for ExperimentUncover Testing" <> $SessionUUID],
-				Object[Item, Cap, "20mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Crimped 11mm vial for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Item, Cap, "11mm Crimped cover for ExperimentUncover Testing" <> $SessionUUID],
+				Object[Container, Vessel, "Covered 2L Glass Bottle 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "GL45 Bottle Cap 1 for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Container, Vessel, "Ampoule for ExperimentUncover Testing" <> $SessionUUID],
 				Object[Item, Cap, "Ampoule cover for ExperimentUncover Testing" <> $SessionUUID]

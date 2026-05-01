@@ -232,6 +232,7 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Model[Item, TransferTube],
 				Model[Item, ChippingHammer],
 				Model[Item, Scissors],
+				Model[Container, Vessel],
 
 				Object[Container, Syringe],
 				Object[Container, GraduatedCylinder],
@@ -241,12 +242,20 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 				Object[Item, Tweezer],
 				Object[Item, TransferTube],
 				Object[Item, ChippingHammer],
-				Object[Item, Scissors]
+				Object[Item, Scissors],
+				Object[Container, Vessel]
 			],
 			Description -> "For each member of SolventLink, the instrument used to move the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
 			Category -> "General",
 			Abstract -> True,
 			IndexMatching -> SolventLink
+		},
+		TransferTechnique ->{
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> TransferTechniqueP,
+			Description -> "Indicates the type of instrument used to transfer the sample from the source container (or from the intermediate container if IntermediateDecant->True) to the destination container.",
+			Category -> "General"
 		},
 		TransferEnvironment -> {
 			Format -> Multiple,
@@ -596,6 +605,50 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Category -> "General",
 			Developer -> True
 		},
+		PreRinseLabware->{
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if labware used to transfer the Solvent sample is rinsed with PreRinseSolution, NumberOfPreRinses times, prior to use.",
+			Category->"PreRinse Labware"
+		},
+		NumberOfPreRinses->{
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Units -> None,
+			Description -> "The number of times labware used to transfer the Solvent sample is rinsed with PreRinseSolution before FillToVolume transfer occurs.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseVolume->{
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Liter],
+			Units -> Milliliter,
+			Description -> "The total volume of the PreRinseSolution that is used to rinse labware (IntermediateContainer, Instrument (graduated cylinder, beaker), Funnel, Tips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category->"PreRinse Labware"
+		},
+		PreRinseSolutionLink->{
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The solution that is used to rinse labware (IntermediateContainer, Instrument (graduated cylinder, beaker), Funnel, Tips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "General",
+			Migration->SplitField
+		},
+		PreRinseSolutionString->{
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Relation -> Null,
+			Description -> "The solution that is used to rinse labware (IntermediateContainer, Instrument (graduated cylinder, beaker), Funnel, Tips), NumberOfPreRinses times, to rinse off possible contaminants and prepare the labware for use.",
+			Category -> "General",
+			Migration->SplitField
+		},
 		SourceTemperatureReal -> {
 			Format -> Multiple,
 			Class -> Real,
@@ -699,6 +752,22 @@ DefineObjectType[Object[UnitOperation, FillToVolume], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "For each member of SolventLink, indicates that RNase free technique should be followed when performing the transfer (spraying RNase away on surfaces, using RNaseFree tips, etc).",
+			Category -> "General",
+			IndexMatching -> SolventLink
+		},
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SolventLink, indicates whether any glassware introduced in this unit operation (including, if relevant, any funnels or intermediate containers) are oven dried before use.",
+			Category -> "General",
+			IndexMatching -> SolventLink
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SolventLink, indicates whether any glassware introduced in this unit operation (including, if relevant, any solvent preparatory containers, funnels, or intermediate containers) are oven dried before use.",
 			Category -> "General",
 			IndexMatching -> SolventLink
 		},

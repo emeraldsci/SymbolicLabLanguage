@@ -509,7 +509,7 @@ DefineOptions[ExperimentHPLC,
 						],
 						Widget[
 							Type -> Enumeration,
-							Pattern :> Alternatives[Automatic, Null]
+							Pattern :> Alternatives[Automatic, NoInjection, Null]
 						]
 					],
 					"InjectionVolume" -> Alternatives[
@@ -940,23 +940,15 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Detection"
 			},
 			{
-				OptionName -> SmoothingTimeConstant,
+				OptionName -> HammingWindowWidth,
 				Default -> Null,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Enumeration,
-						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
-						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
-						Pattern :> HPLCSmoothingTimeConstantP
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
-						Units -> {Second, {Second, Millisecond}}
-					]
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.0125 Second, 60 Second],
+					Units -> {Second, {Second, Millisecond}}
 				],
-				Description -> "The time window used on the instrument software for data filtering in absorbance collection, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
+				Description -> "The time window that defines how absorbance data are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects. The specified HammingWindowWidth must be at least 2/AbsorbanceSamplingRate, ensuring that a minimum of two data points are included in the averaging window.",
 				Category -> "Detection"
 			},
 			{
@@ -1024,7 +1016,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -1036,7 +1028,7 @@ DefineOptions[ExperimentHPLC,
 					]
 				],
 				Description -> "For each ExcitationWavelength/EmissionWavelength pair, the signal amplification factor which modulates the percentage of maximum voltage that can be applied to the Photomultiplier Tube of the Fluorescence Detector. Linear increase in voltage applied to the Photomultiplier tube leads to an exponential change in RFU signal. Variable Fluorescence Sensitivity implies a different fluorescence sensitivity for each Excitation/Emission Wavelength pair.",
-				ResolutionDescription -> "If the \"Ultimate 3000 with FLR Detector\" or \"Waters Acquity UPLC H-Class FLR\" instrument is selected, automatically set to 100 Percent. If the \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\" instrument is selected, automatically set to 60 Percent.",
+				ResolutionDescription -> "If the \"Ultimate 3000 with FLR Detector\" instrument is selected, automatically set to 100 Percent. If the \"Waters Acquity UPLC H-Class FLR\" instrument is selected, automatically set to 100 Percent (corresponding to the recommended Gain value of 1 on the Waters MassLynx software). If the \"Agilent 1260 Infinity II Semi-Preparative HPLC with UV/Vis Diode Array and Fluorescence Detectors\" instrument is selected, automatically set to 60 Percent.",
 				Category -> "Detection"
 			},
 			{
@@ -1964,24 +1956,16 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Standards"
 			},
 			{
-				OptionName -> StandardSmoothingTimeConstant,
+				OptionName -> StandardHammingWindowWidth,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Enumeration,
-						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
-						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
-						Pattern :> HPLCSmoothingTimeConstantP
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
-						Units -> {Second, {Second, Millisecond}}
-					]
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.01 Second, 300 Second],
+					Units -> {Second, {Second, Millisecond}}
 				],
-				Description -> "The time window used on the instrument software for data filtering in absorbance collection of Standard sample, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Description -> "The time window that defines how absorbance data for the standard samples are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects. The specified StandardHammingWindowWidth must be at least 2/StandardAbsorbanceSamplingRate, ensuring that a minimum of two data points are included in the averaging window.",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested, automatically set to the greater of the first entry in HammingWindowWidth or 2/StandardAbsorbanceSamplingRate.",
 				Category -> "Standards"
 			},
 			{
@@ -2049,7 +2033,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -2257,24 +2241,30 @@ DefineOptions[ExperimentHPLC,
 				ResolutionDescription -> "If any other Blank option is specified or RefractiveIndex Detector is selected, automatically set to the specified BufferA or Model[Sample, \"Milli-Q water\"].",
 				AllowNull -> True,
 				Category -> "Blanks",
-				Widget -> Widget[
-					Type -> Object,
-					Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
-					OpenPaths -> {
-						{
-							Object[Catalog, "Root"],
-							"Materials",
-							"Reagents",
-							"Buffers",
-							"HPLC Buffers"
-						},
-						{
-							Object[Catalog, "Root"],
-							"Materials",
-							"Reagents",
-							"Water"
+				Widget -> Alternatives[
+					"Sample" -> Widget[
+						Type -> Object,
+						Pattern :> ObjectP[{Model[Sample], Object[Sample]}],
+						OpenPaths -> {
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Buffers",
+								"HPLC Buffers"
+							},
+							{
+								Object[Catalog, "Root"],
+								"Materials",
+								"Reagents",
+								"Water"
+							}
 						}
-					}
+					],
+					"No Injection" -> Widget[
+						Type -> Enumeration,
+						Pattern :> Alternatives[NoInjection]
+					]
 				]
 			},
 			{
@@ -2621,24 +2611,16 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Blanks"
 			},
 			{
-				OptionName -> BlankSmoothingTimeConstant,
+				OptionName -> BlankHammingWindowWidth,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Enumeration,
-						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
-						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
-						Pattern :> HPLCSmoothingTimeConstantP
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
-						Units -> {Second, {Second, Millisecond}}
-					]
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.01 Second, 300 Second],
+					Units -> {Second, {Second, Millisecond}}
 				],
-				Description -> "The time window used on the instrument software for data filtering in absorbance collection of Blank sample, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Description -> "The time window that defines how absorbance data for the blank samples are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects. The specified BlankHammingWindowWidth must be at least 2/BlankAbsorbanceSamplingRate, ensuring that a minimum of two data points are included in the averaging window.",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested, automatically set to the greater of the first entry in HammingWindowWidth or 2/BlankAbsorbanceSamplingRate.",
 				Category -> "Blanks"
 			},
 			{
@@ -2706,7 +2688,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -2899,7 +2881,7 @@ DefineOptions[ExperimentHPLC,
 				AllowNull -> True,
 				Category -> "Blanks",
 				Widget -> Alternatives[
-					Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP | Disposal]
+					Widget[Type -> Enumeration, Pattern :> SampleStorageTypeP | Disposal | Null]
 				]
 			}
 		],
@@ -3224,24 +3206,16 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Column Prime"
 			},
 			{
-				OptionName -> ColumnPrimeSmoothingTimeConstant,
+				OptionName -> ColumnPrimeHammingWindowWidth,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Enumeration,
-						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
-						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
-						Pattern :> HPLCSmoothingTimeConstantP
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
-						Units -> {Second, {Second, Millisecond}}
-					]
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.01 Second, 300 Second],
+					Units -> {Second, {Second, Millisecond}}
 				],
-				Description -> "The time window used on the instrument software for data filtering in absorbance collection of column prime, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Description -> "The time window that defines how absorbance data of column prime are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects. The specified ColumnPrimeHammingWindowWidth must be at least 2/ColumnPrimeAbsorbanceSamplingRate, ensuring that a minimum of two data points are included in the averaging window.",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested, automatically set to the greater of the first entry in HammingWindowWidth or 2/ColumnPrimeAbsorbanceSamplingRate.",
 				Category -> "Column Prime"
 			},
 			{
@@ -3309,7 +3283,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -3794,24 +3768,16 @@ DefineOptions[ExperimentHPLC,
 				Category -> "Column Flush"
 			},
 			{
-				OptionName -> ColumnFlushSmoothingTimeConstant,
+				OptionName -> ColumnFlushHammingWindowWidth,
 				Default -> Automatic,
 				AllowNull -> True,
-				Widget -> Alternatives[
-					Widget[
-						Type -> Enumeration,
-						(* HPLCSmoothingTimeConstantP = Small, Medium, Large. When no SmoothingTimeConstant is used, this option is set to Null*)
-						(* The enumeration will be converted to value at upload time. The value is dependent on AbsorbanceSamplingRate *)
-						Pattern :> HPLCSmoothingTimeConstantP
-					],
-					Widget[
-						Type -> Quantity,
-						Pattern :> RangeP[0.0125 Second, 5 Second], (*can be only specific values. related to AbsorbanceSamplingRate setting *)
-						Units -> {Second, {Second, Millisecond}}
-					]
+				Widget -> Widget[
+					Type -> Quantity,
+					Pattern :> RangeP[0.01 Second, 300 Second],
+					Units -> {Second, {Second, Millisecond}}
 				],
-				Description -> "The time window used on the instrument software for data filtering in absorbance collection of column flush, affecting baseline smoothing and peak height degradation. Raw absorbance signals within the time window are smoothed using a weighted moving average, with the result applied to the leftmost point of the window to effectively suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: shorter time constants give faster response and sharper peaks, while longer ones enhance sensitivity by reducing noise. For Waters instruments, the setting can be a numeric value or an enumeration - Small, Medium, or Large - corresponding to 1, 2, or 4 divided by AbsorbanceSamplingRate. Dionex instruments require a numeric value between 0.01 and 4.55 Second. Agilent instruments accept only specific values based on AbsorbanceSamplingRate. For details, please refer to Figure 3.1 in the ExperimentHPLC help file, and the SmoothingTimeConstants field in Model[Instrument, HPLC].",
-				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested on a Waters HPLC instrument, automatically set to the first entry in SmoothingTimeConstant.",
+				Description -> "The time window that defines how absorbance data of column flush are filtered after collection, influencing both baseline smoothness and peak height degradation. Within this window, raw absorbance signals are processed using a weighted moving average, and the resulting value is assigned to the window's leftmost point to suppress high-frequency noise. Optimizing this parameter improves signal-to-noise ratio: smaller window widths give faster response and sharper peaks, while larger ones enhance sensitivity by reducing noise. This data processing occurs after raw data collection, and the filtered results are stored in the SmoothedAbsorbance field of the data objects. The specified ColumnFlushHammingWindowWidth must be at least 2/ColumnFlushAbsorbanceSamplingRate, ensuring that a minimum of two data points are included in the averaging window.",
+				ResolutionDescription -> "If a UVVis Detector or PhotoDiodeArray Detector is requested, automatically set to the greater of the first entry in HammingWindowWidth or 2/ColumnFlushAbsorbanceSamplingRate.",
 				Category -> "Column Flush"
 			},
 			{
@@ -3879,7 +3845,7 @@ DefineOptions[ExperimentHPLC,
 				Widget -> Alternatives[
 					"Constant" -> Widget[
 						Type -> Quantity,
-						Pattern :> RangeP[0 Percent, 100 Percent],
+						Pattern :> RangeP[0 Percent, 100000 Percent],
 						Units -> Percent
 					],
 					"Variable Fluorescence Sensitivity" -> Adder[
@@ -4115,10 +4081,12 @@ Error::InvalidHPLCAlternateInstruments = "The specified Instrument option cannot
 Error::HPLCIncompatibleAliquotContainer = "The specified AliquotContainer is not compatible with an instrument's autosampler. Please use a compatible container type: `1`.";
 Error::HPLCTooManySamples = "The number of samples and/or aliquots are in too many containers and cannot fit on one of the required instrument's autosampler.";
 Error::SamplesOutStorageConditionRequired = "The input samples for which fraction collection is specified have multiple distinct storage conditions. Please specify SamplesOutStorageCondition to disambiguate fraction sample storage.";
+Error::StorageConditionForNoInjection = "For Blanks without samples (i.e. NoInjection), BlankStorageCondition must be Null.";
 Warning::ConflictingInjectionSampleVolumeMeasurementOption = "The InjectionSampleVolumeMeasurement option was specified True, but PreparatoryUnitOperations option were not specified. InjectionSampleVolumeMeasurement option will be ignored.";
 
 Error::StandardOptionsButNoStandard = "Standard cannot be Null, if other Standard options `1` are set. Please specify a Standard or allow the other Standard options to be automatically resolved.";
 Error::BlankOptionsButNoBlank = "Blank cannot be Null, if other Blank options `1` are set. Please specify a Blank or allow the other Blank options to be automatically resolved.";
+Error::BlankNoInjectionVolumeConflict = "Blank samples must have an injection volume. A NoInjection blank must have a BlankInjectionVolume of Null.";
 Error::ColumnOptionsButNoColumn = "ColumnSelector and Column options cannot be Null, if other Column options `1` are set. Please allow ColumnSelector and Column options to resolve automatically or set it to the desired columns.";
 
 Error::RedundantGuardColumn = "The specified column `1` is a guard column, and GuardColumn option `2` is also specified. When the main column is a guard column, an additional guard column must not be set. Please either set GuardColumn to Null, or set Column to a non-guard type column.";
@@ -4168,6 +4136,7 @@ Error::NoSuitableHPLCInstrument = "There is no HPLC instrument that can match al
 Error::NonSupportedHPLCInstrument = "Waters Acquity UPLC I-Class instruments are currently supported only in ExperimentLCMS and cannot be used in ExperimentHPLC.";
 Error::NoSuitableInstrumentForDetection = "The specified detectors `1` are not available in any instrument compatible with other options. Please change the detector specified in `2` or allow them to resolve automatically.";
 Error::HPLCIncompatibleInjectionVolume = "The following InjectionVolume/StandardInjectionVolume/BlankInjectionVolume values: `1` are not within the acceptable injection volume range for `2`. The range is `3` to `4`. Please specify lower or higher volumes, or select a different instrument that supports different injection volume ranges.";
+Error::HPLCIncompatableNoInjectionBlank = "Please specify a BlankInjectionVolume, or select a different instrument that supports NoInjection blanks.";
 Warning::HPLCSmallInjectionVolume = "The following InjectionVolume/StandardInjectionVolume/BlankInjectionVolume values: `1` are smaller than the recommended injection volume `2`. The minimum recommended volume is `3`. Please consider increasing the injection volume for better results.";
 
 Error::InvalidFractionCollectionContainer = "The selected FractionCollectionContainer `1` is not supported with the selected scale `2`. Please use `3` instead.";
@@ -4209,9 +4178,7 @@ Error::UnsupportedGradientDAndDetectors = "The detector related options `1` requ
 Error::WavelengthResolutionConflict = "The specified options for AbsorbanceWavelength and WavelengthResolution conflict. When AbsorbanceWavelength is a single value, the corresponding WavelengthResolution option must be left unspecified. Please allow WavelengthResolution to be automatically resolved or provide a wavelength range in AbsorbanceWavelength option.";
 (* Argument 2 is to say if it is a requirement list of specific value or rounding *)
 Warning::AbsorbanceRateAdjusted = "The following absorbance sampling rate options, `1`, `2` and were set to the closest allowed value.";
-Error::InvalidAbsorbanceSmoothingTimeConstant = "The following absorbance filter time constant options, `1`, have been set to Small/Medium/Large values but this enumeration value is not valid for the selected instrument `2`. Please refer to the ExperimentHPLC help file for the valid SmoothingTimeConstant values.";
-(* Argument 2 is to say if it is a requirement list of specific value or rounding *)
-Warning::AbsorbanceSmoothingTimeConstantAdjusted = "The following absorbance smoothing time constant options, `1`, `2` and were set to the closest allowed value. Please refer to the ExperimentHPLC help file for the valid SmoothingTimeConstant values for different absorbance sampling rate.";
+Error::InvalidAbsorbanceHammingWindowWidth = "The following absorbance Hamming window width options, `1`, with values (`2`) is not valid. A valid HammingWindowWidth must be at least 2/AbsorbanceSamplingRate (`3`) and shorter than the full gradient time (`4`).";
 Warning::WavelengthResolutionAdjusted = "The following wavelength resolution options, `1`, can only be specific values and were set to the closest one.";
 Warning::UVVisOptionsNotApplicable = "The following options `1` are not available for the UVVis detector on the instrument best suited to meet all options. These options will be ignored.";
 Error::FractionCollectionWavelengthConflict = "CollectFractions is set to True for `1` but the AbsorbanceWavelength is not a single wavelength value. Please provide a single AbsorbanceWavelength for fraction collection.";
@@ -4232,6 +4199,7 @@ Error::HPLCFluorescenceWavelengthLimit = "The following options `1` have specifi
 Error::InvalidHPLCEmissionCutOffFilter = "The fluorescence emission cut-off filter is not available on `1`. Please set the option `2` to Null or select a different instrument (like `3`).";
 Error::TooLargeHPLCEmissionCutOffFilter = "For `1` `2`, the selected `3` `4` should not be larger than `5` `6` so that the emission light can pass through the cut-off filter and reach the emission monochromator for final wavelength selection. Please specify a larger emission cut-off filter value or set it to Open to allow lights of all wavelengths to pass through.";
 Error::InvalidWatersHPLCFluorescenceGain="When `1` is used, the fluorescence gain option `2` can only be set to a constant value for multi-channel fluorescence measurement. Please correct the option values to continue.";
+Error::HPLCFluorescenceGainOverMaximum="When a non-Waters HPLC `1` is used, the fluorescence gain option `2` can only be set to a maximum of 100%. Please correct the option values to continue.";
 Error::InvalidHPLCFluorescenceFlowCellTemperature = "The fluorescence flow cell temperature control is not available on `1`. Please set the option `2` to Null or select a different instrument (like `3`).";
 Error::ConflictRefractiveIndexMethod = "For `3` `4`, when DifferentialRefractiveIndex method is selected in `1`, the gradient in `2` should have the differential refractive index reference loading closed. Please select RefractiveIndex instead or choose a different gradient.";
 Warning::RepeatedDetectors = "The specified Detector option `1` has repeated entries. The repeat entries have been removed.";
@@ -4260,36 +4228,6 @@ $DefaultIonExchangePreparativeColumn=Model[Item, Column, "id:rea9jl1or6Np"];
 $DefaultIonExchangeAnalyticalColumn=Model[Item, Column, "id:zGj91aR3d6GL"];
 $DefaultHPLCColumns=List[$DefaultLCMSColumn,$DefaultSizeExclusionColumn,$DefaultReversePhasePreparativeColumn,$DefaultReversePhaseAnalyticalColumn,$DefaultIonExchangePreparativeColumn,$DefaultIonExchangeAnalyticalColumn];
 
-(* HPLC Vials *)
-$ChromatographyLCCompatibleVials = {
-	(* "HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
-	(* "1mL HPLC Vial (total recovery)" *)
-	Model[Container, Vessel, "id:1ZA60vL48X85"],
-	(* "Amber HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:GmzlKjznOxmE"],
-	(* "HPLC vial (high recovery), LCMS Certified" *)
-	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
-	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
-	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
-	(* "Polypropylene HPLC vial (high recovery)" *)
-	Model[Container, Vessel, "id:qdkmxz0A884Y"],
-	(* "PFAS Testing Vials, Agilent" *)
-	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
-	(* "2mL HPLC clear vial, flat bottom" *)
-	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
-};
-
-$ChromatographyLCCompatibleVialsNamed = {
-	Model[Container, Vessel, "HPLC vial (high recovery)"],
-	Model[Container, Vessel, "1mL HPLC Vial (total recovery)"],
-	Model[Container, Vessel, "Amber HPLC vial (high recovery)"],
-	Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"],
-	Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],
-	Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"],
-	Model[Container, Vessel, "PFAS Testing Vials, Agilent"]
-};
-
 (* ::Subsection:: *)
 (* ExperimentHPLC *)
 
@@ -4306,7 +4244,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		modelColumnFields, gradientFields, fractionCollectionFields, sampleFields, modelContainerFields, optionsWithObjects,
 		availableInstruments, availableInstrumentObjects, allObjects, sampleObjects, modelSampleObjects, modelContainerObjects,
 		instrumentObjects, objectSampleFields, modelSampleFields, modelSampleFieldsPacket, objectContainerFields, modelContainerFieldsPacket, analyteFields,
-		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache,
+		modelContainerSyringeFields, syringeContainerFieldsPacket, authorPacket, inheritedCache, lcVialModels,
 		modelInstrumentObjects, columnObjects, modelColumnObjects, gradientObjects, fractionCollectionObjects, syringeObject, authorObject, cacheBall,
 		resolvedOptionsResult, resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, protocolObject, resourcePackets,
 		resourcePacketTests, cartridgeObjects, modelCartridgeObjects, cartridgeFields, modelCartridgeFields,
@@ -4445,9 +4383,6 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			MinAbsorbanceSamplingRate,
 			MaxAbsorbanceSamplingRate,
 			AbsorbanceSamplingRates,
-			MinSmoothingTimeConstant,
-			MaxSmoothingTimeConstant,
-			SmoothingTimeConstants,
 			WashSolution,
 			SampleLoop,
 			Detectors,
@@ -4497,9 +4432,6 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 			MinAbsorbanceSamplingRate,
 			MaxAbsorbanceSamplingRate,
 			AbsorbanceSamplingRates,
-			MinSmoothingTimeConstant,
-			MaxSmoothingTimeConstant,
-			SmoothingTimeConstants,
 			WashSolution,
 			SampleLoop,
 			Detectors,
@@ -4611,6 +4543,9 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 		allECLCMUHPLCInstrumentObjectsSearch["Memoization"]
 	];
 
+	(* Find all compatible LC vials prior to downloading. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+
 	(* Flatten and merge all possible objects needed into a list *)
 	allObjects = DeleteDuplicates@Download[
 		Cases[
@@ -4622,7 +4557,7 @@ ExperimentHPLC[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Optio
 					(* Plate for samples *)
 					Model[Container, Plate, "96-well 2mL Deep Well Plate"],
 					(* Vials used for standards/blanks *)
-					$ChromatographyLCCompatibleVials,
+					lcVialModels,
 					(* Preparatory HPLC *)
 					Model[Container, Vessel, "15mL Tube"],
 					Model[Container, Vessel, "50mL Tube"],
@@ -5072,7 +5007,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		gasPressureAsList,
 		gasHeatingAsList, gasOptionAsList, powerOptionAsList,
 		columnGapOptions, columnGapTest, overallColumnGapQ,
-		absorbanceSamplingRateOptions, absorbanceSmoothingTimeConstantOptions, watersSmoothingTimeConstantBool,
+		absorbanceSamplingRateOptions,
 		bufferAClashQ, bufferBClashQ, bufferCClashQ,
 		bufferDClashQ, allInstrumentPositions, instrumentMaxColumnLength, columnPosition,
 		columnPositionWidth, columnPositionDepth, columnPositionHeight,
@@ -5275,7 +5210,10 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		injectionVolumeRoundedAssociation, injectionVolumeRoundedTests,
 		roundedInjectionTable, instrumentMaxColumnOD,
 		absorbanceWavelengthInstruments, excitationWavelengthInstruments, emissionWavelengthInstruments,
-		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions
+		specifiedInjectionSampleCentrifugeOptions, resolvedInjectionSampleCentrifugeOptions,
+		lcVialModels, lcVialModelsNamed,
+		invalidBlankInjectionVolumeTuples, invalidBlankInjectionVolumeOptions, invalidBlankInjectionVolumeTest,
+		noInjectionNullStorageConditionQ, validBlankStorageConditionNoInjectionTest, validBlankStorageConditionNoInjectionInvalidOptions
 	},
 
 	(* Determine the requested return value from the function *)
@@ -6487,10 +6425,8 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	];
 
 	(* If we have the singleton blank/standard, we need to wrap with a list for the rest of the experiment function *)
-	{resolvedBlank, expandedBlankOptions} = If[And[
-		Depth[Lookup[preexpandedBlankOptions, Blank]] <= 2,
-		MatchQ[Lookup[preexpandedBlankOptions, Blank], Except[{} | {Null}]]
-	],
+	{resolvedBlank, expandedBlankOptions} = If[
+		!MatchQ[Lookup[preexpandedBlankOptions, Blank], {Alternatives[ObjectP[], NoInjection]...}],
 		{
 			ToList[Lookup[preexpandedBlankOptions, Blank]],
 			Map[(First[#] -> List[Last[#]]) &, preexpandedBlankOptions]
@@ -6529,15 +6465,12 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	};
 	(* SamplingRate is available on all instruments *)
 	absorbanceSamplingRateOptions = {AbsorbanceSamplingRate, StandardAbsorbanceSamplingRate, BlankAbsorbanceSamplingRate, ColumnPrimeAbsorbanceSamplingRate, ColumnFlushAbsorbanceSamplingRate};
-	absorbanceSmoothingTimeConstantOptions = {SmoothingTimeConstant, StandardSmoothingTimeConstant, BlankSmoothingTimeConstant, ColumnPrimeSmoothingTimeConstant, ColumnFlushSmoothingTimeConstant};
-	watersSmoothingTimeConstantBool = MemberQ[ToList[#], HPLCSmoothingTimeConstantP]& /@ Lookup[roundedOptionsAssociation, absorbanceSmoothingTimeConstantOptions];
 
 	(* We need to figure out if any of the absorbanceWavelength options are TUV or PDA related *)
 	tuvAbsorbanceWavelengthBool = MatchQ[#, ListableP[GreaterP[0 * Nanometer]]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
 	pdaAbsorbanceWavelengthBool = MatchQ[#, ListableP[(_Span)|All]]& /@ Lookup[roundedOptionsAssociation, absorbanceWavelengthOptions];
 	(*compile a list of the TUV related options. Some of these are shared with the PDA*)
-	uvOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, absorbanceSmoothingTimeConstantOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
-	(* SmoothingTimeConstant option can be Null *)
+	uvOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
 	uvRequiredOptions = Join[watersAbsorbanceOptions, absorbanceSamplingRateOptions, PickList[absorbanceWavelengthOptions, tuvAbsorbanceWavelengthBool]];
 
 	(* Compile a list of the FLR related options and FLR related options specifically for Ultimate 3000 FLD-3000 Detector *)
@@ -6808,10 +6741,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* ELSD *)
 	elsdOptionSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, elsdOptions];
 	(* Waters specified *)
-	watersSpecifiedBool = Join[
-		MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions],
-		watersSmoothingTimeConstantBool
-	];
+	watersSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, watersAbsorbanceOptions];
 	(* Light Scattering (MALS/DLS) *)
 	lightScatteringSpecifiedBool = MatchQ[#, Except[ListableP[Null | Automatic]]]& /@ Lookup[roundedOptionsAssociation, lightScatteringOptions];
 	(* pH *)
@@ -7493,17 +7423,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	(* Resolve ColumnPosition *)
 	(* We need to make sure that if the injection table is specified that the samples and the input are compatible *)
 	injectionTableSampleConflictQ = If[injectionTableSpecifiedQ,
-		!MatchQ[Download[Cases[injectionTableLookup, {Sample, ___}] /. {Sample, x_, ___} :> x, Object, Cache -> cache], Download[mySamples, Object, Cache -> cache]],
+		!MatchQ[Cases[injectionTableLookup, {Sample, sample_, ___} :> If[MatchQ[sample, ObjectP[]], Download[sample, Object, Cache -> cache], sample]], Download[mySamples, Object, Cache -> cache]],
 		(* Valid if there is no InjectionTable *)
 		False
 	];
 	injectionTableStandardConflictQ = If[injectionTableSpecifiedQ,
-		!MatchQ[Download[Cases[injectionTableLookup, {Standard, ___}] /. {Standard, x_, ___} :> x, Object, Cache -> cache], Download[Lookup[expandedStandardOptions,Standard,{}], Object, Cache -> cache]],
+		!MatchQ[Cases[injectionTableLookup, {Standard, standard_, ___} :> If[MatchQ[standard, ObjectP[]], Download[standard, Object, Cache -> cache], standard]], Download[Lookup[expandedStandardOptions, Standard, {}], Object, Cache -> cache]],
 		(* Valid if there is no InjectionTable *)
 		False
 	];
 	injectionTableBlankConflictQ = If[injectionTableSpecifiedQ,
-		!MatchQ[Download[Cases[injectionTableLookup, {Blank, ___}] /. {Blank, x_, ___} :> x, Object, Cache -> cache], Download[Lookup[expandedBlankOptions,Blank], Object, Cache -> cache]],
+		!MatchQ[Cases[injectionTableLookup, {Blank, blank_, ___} :> If[MatchQ[blank, ObjectP[]], Download[blank, Object, Cache -> cache], blank]], If[MatchQ[#, ObjectP[]], Download[#, Object, Cache -> cache], #]& /@ Lookup[expandedBlankOptions, Blank, {}]],
 		(* Valid if there is no InjectionTable *)
 		False
 	];
@@ -10568,24 +10498,52 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		ConstantArray[Automatic, Length[ToList@resolvedBlank]]
 	];
 
+	injectionTableBlankSamples = If[injectionTableSpecifiedQ,
+		PadRight[Cases[injectionTableLookup, {Blank, ___}][[All, 2]], Length[ToList@resolvedBlank], Automatic],
+		(* Otherwise pad Automatic *)
+		ConstantArray[Automatic, Length[ToList@resolvedBlank]]
+	];
+
 	resolvedBlankInjectionVolumes = If[blankExistsQ,
 		MapThread[
-			Function[{injectionVolumeValue, injectionTableValue},
+			Function[{blank, injectionTableBlank, injectionVolumeValue, injectionTableValue},
 				Which[
 					(*user specified*)
 					MatchQ[injectionVolumeValue, VolumeP], injectionVolumeValue,
 					(*injectionTable specified*)
 					MatchQ[injectionTableValue, VolumeP], injectionTableValue,
+					(* If there is to be no aspiration during the blank 'injection' set it to Null. *)
+					MatchQ[blank, NoInjection], Null,
+					MatchQ[injectionTableBlank, NoInjection], Null,
 					(*otherwise default to the first resolution*)
 					True, First@resolvedInjectionVolumes
 				]
 			],
 			{
+				Lookup[expandedBlankOptions, Blank],
+				injectionTableBlankSamples,
 				Lookup[expandedBlankOptions, BlankInjectionVolume],
 				injectionTableBlankInjectionVolumes
 			}
 		],
 		Null
+	];
+
+	invalidBlankInjectionVolumeTuples = If[blankExistsQ,
+		Cases[Transpose[{resolvedBlank, resolvedBlankInjectionVolumes}], Alternatives[{NoInjection, Except[Null]}, {ObjectP[], Null}]],
+		{}
+	];
+
+	{invalidBlankInjectionVolumeOptions, invalidBlankInjectionVolumeTest} = If[Length[invalidBlankInjectionVolumeTuples] > 0,
+		If[messagesQ, Message[Error::BlankNoInjectionVolumeConflict]];
+		{
+			{Blank, BlankInjectionVolume},
+			testOrNull["Blank samples have an injection volume and injectionless blanks do not:", False]
+		},
+		{
+			{},
+			testOrNull["Blank samples have an injection volume and injectionless blanks do not:", True]
+		}
 	];
 
 	(* Group injection volumes for each unique sample *)
@@ -10767,12 +10725,17 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		PickList[simulatedSampleContainers, specifiedAliquotBools, False],
 		ObjectP[Object[Container, Plate]]
 	];
+
+	(* Pull the memoized LC vials and their names. *)
+	lcVialModels = allLCCompatibleVialSearch["Memoization"];
+	lcVialModelsNamed = NamedObject[lcVialModels, Cache -> cache];
+
 	(* Vessels are for Dionex and Waters instruments *)
 	uniqueNonAliquotableVessels = DeleteDuplicates@PickList[
 		simulatedSampleContainers,
 		Transpose[{specifiedAliquotBools, simulatedSampleContainerModels}],
 		(* {Model[Container, Vessel, "HPLC vial (high recovery)"], Model[Container, Vessel, "1mL HPLC Vial (total recovery)"], Model[Container, Vessel, "Amber HPLC vial (high recovery)"], Model[Container, Vessel, "HPLC vial (high recovery), LCMS Certified"], Model[Container, Vessel, "HPLC vial (high recovery) - Deactivated Clear Glass"],Model[Container, Vessel, "Polypropylene HPLC vial (high recovery)"], Model[Container, Vessel, "PFAS Testing Vials, Agilent"]} *)
-		{False, ObjectP[$ChromatographyLCCompatibleVials]}
+		{False, ObjectP[lcVialModels]}
 	];
 
 	(* Need anything that is aliquotable too *)
@@ -10835,7 +10798,11 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 		}],
 		Transpose[{
 			If[MatchQ[resolvedBlank, Null], {}, resolvedBlank],
-			If[MatchQ[resolvedBlankInjectionVolumes, {Null} | Null], {}, resolvedBlankInjectionVolumes]
+			Which[
+				MatchQ[{resolvedBlank, resolvedBlankInjectionVolumes}, {Null, {Null}}], {},
+				MatchQ[resolvedBlankInjectionVolumes, Null], {},
+				True, resolvedBlankInjectionVolumes
+			]
 		}]
 	};
 
@@ -10873,7 +10840,7 @@ resolveExperimentHPLCOptions[mySamples : {ObjectP[Object[Sample]]...}, myOptions
 	];
 
 	(* The number of standard containers we'll require is the number of partitions *)
-	numberOfStandardBlankContainersRequired = Length[Join[standardPartitions, blankPartitions]];
+	numberOfStandardBlankContainersRequired = Length[Join[standardPartitions, blankPartitions] /. {0 Microliter} -> Nothing];
 
 	(* Now we figure out what instruments are able to accommodate the samples. This is hard-coded because implementing the footprint system would be difficult. *)
 
@@ -11329,7 +11296,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 
 	(* Get the relations between the detectors and the specified options list *)
 	detectorSpecifiedOpsListLookupTable = {
-		{UVVis, PhotoDiodeArray} -> PickList[Join[uvOptions, watersAbsorbanceOptions, absorbanceSmoothingTimeConstantOptions], Join[uvOptionSpecifiedBool, watersSpecifiedBool]],
+		{UVVis, PhotoDiodeArray} -> PickList[Join[uvOptions, watersAbsorbanceOptions], Join[uvOptionSpecifiedBool, watersSpecifiedBool]],
 		PhotoDiodeArray -> PickList[moreSpecificPDAOptions, pdaOptionSpecifiedBool],
 		Fluorescence -> PickList[Join[flrOptions, dionexFlrOptions], Join[flrOptionSpecifiedBool, dionexFlrOptionSpecifiedBool]],
 		EvaporativeLightScattering -> PickList[elsdOptions, elsdOptionSpecifiedBool],
@@ -13915,11 +13882,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 					injectionTableEntries=resolvedInjectionTable[[pos]];
 					(* Create a relationship from the sample to the gradient *)
 					sampleGradientRule=MapThread[
-						(Download[#1,Object]->#2)&,
+						(downloadObjectOrNoInjection[#1]->#2)&,
 						{samples,gradients}
 					];
 					(* Replace the samples inside injection table with corresponding gradients *)
-					Download[injectionTableEntries[[All,2]],Object]/.sampleGradientRule
+					downloadObjectOrNoInjection[injectionTableEntries[[All,2]]]/.sampleGradientRule
 				]
 			]
 		],
@@ -14422,12 +14389,28 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 		{}
 	];
 
+	(* Check that NoInjection Blanks which will not have a sample have no BlankStorageCondition. *)
+	noInjectionNullStorageConditionQ = If[blankExistsQ, MatchQ[Cases[Transpose[{resolvedBlank, blankStorage}], {NoInjection, Except[Null]}], {}], True];
+
+	(* If necessary, note that BlankStorageCondition is invalid. *)
+	validBlankStorageConditionNoInjectionInvalidOptions = If[!noInjectionNullStorageConditionQ, {BlankStorageCondition}, {}];
+
+	(* If NoInjection Blanks have a storage condition and we're throwing messages, surface a message. *)
+	If[messagesQ && !noInjectionNullStorageConditionQ,
+		Message[Error::StorageConditionForNoInjection]
+	];
+
+	(* If there are NoInjection Blanks with a storage condition and we're throwing messages, do so. *)
+	validBlankStorageConditionNoInjectionTest = If[gatherTestsQ, {Test["Indices where Blank is NoInjection, BlankStorageCondition is Null:", noInjectionNullStorageConditionQ, True]}, {}];
+
+
 	(* Check whether the blanks are ok *)
 	{validBlankStorageConditionBool, validBlankStorageConditionTests} = Which[
 		MatchQ[blanksNoModels, {}], {{}, {}},
 		Not[messagesQ], ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> {Result, Tests}, Cache -> cache, Simulation -> updatedSimulation],
 		True, {ValidContainerStorageConditionQ[blanksNoModels, blankStorageNoModels, Output -> Result, Cache -> cache, Simulation -> updatedSimulation], {}}
 	];
+
 	validBlankStorageConditionInvalidOptions = If[MemberQ[validBlankStorageConditionBool, False], BlankStorageCondition, Nothing];
 
 	(* Get the standards with models removed *)
@@ -14622,7 +14605,7 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 	(* Only prep HPLC uses different containers *)
 	{compatibleContainers, namedCompatibleContainers} = If[MatchQ[instrumentModel, prepAgilentHPLCPattern],
 		{{Model[Container, Vessel, "id:bq9LA0dBGGR6"], Model[Container, Vessel, "id:xRO9n3vk11pw"], Model[Container, Vessel, "id:bq9LA0dBGGrd"], Model[Container, Vessel, "id:rea9jl1orrMp"]}, {Model[Container, Vessel, "50mL Tube"], Model[Container, Vessel, "15mL Tube"], Model[Container, Vessel, "50mL Light Sensitive Centrifuge Tube"], Model[Container, Vessel, "15mL Light Sensitive Centrifuge Tube"]}},
-		{$ChromatographyLCCompatibleVials, $ChromatographyLCCompatibleVialsNamed}
+		{lcVialModels, lcVialModelsNamed}
 	];
 
 	(* If the sample's container model is not compatible with the instrument, it will not be possible to run the samples. *)
@@ -14889,10 +14872,10 @@ tightly as possible, put them all in a single target grouping *)
 			fractionCollectionContainerTest,
 			conflictDetectorTests,
 			missingpHCalibrationTests, invalidpHCalibrationTests, swappedpHCalibrationTargetTests, missingConductivityCalibrationTests, invalidConductivityCalibrationTests,
-			validContainerStorageConditionTests, validBlankStorageConditionTests, validStandardStorageConditionTests,
+			validContainerStorageConditionTests, validBlankStorageConditionNoInjectionTest, validBlankStorageConditionTests, validStandardStorageConditionTests,
 			nonBinaryGradientTest, compatibleMaterialsTests, anySingletonGradientTest,
 			standardFrequencyStandardOptionsConflictTests, blankFrequencyBlankOptionsConflictTests,
-			standardNullOptionsConflictTests, blankNullOptionsConflictTests, invalidStandardBlankTests, columnNullOptionsConflictTests,
+			standardNullOptionsConflictTests, blankNullOptionsConflictTests, invalidStandardBlankTests, invalidBlankInjectionVolumeTest, columnNullOptionsConflictTests,
 			validFlowRateTest, validBlankFlowRateTest, validStandardFlowRateTest, validColumnPrimeFlowRateTest, validColumnFlushFlowRateTest,
 			removedExtraTest, gradientReequilibratedWarning, gradientAmbiguityTest, incorrectGradientOrderOverallTest,
 			injectionTableTests, nonFitColumnTest, conflictColumnOvenTest, conflictColumnOutsideInstrumentTest,
@@ -15017,6 +15000,7 @@ tightly as possible, put them all in a single target grouping *)
 		{
 			invalidOptionsMap,
 			invalidStandardBlankOptions,
+			invalidBlankInjectionVolumeOptions,
 			guardColumnSelectorConflictOptions,
 			redundantGuardColumnOptions,
 			columnOrientationSelectorConflictOptions,
@@ -15042,6 +15026,7 @@ tightly as possible, put them all in a single target grouping *)
 			invalidConductivityCalibrationOptions,
 			detectorInstrumentConflictOptions,
 			validContainerStorageConditionInvalidOptions,
+			validBlankStorageConditionNoInjectionInvalidOptions,
 			validBlankStorageConditionInvalidOptions,
 			validStandardStorageConditionInvalidOptions,
 			instrumentSpecificOptionInvalidOptions,
@@ -15112,13 +15097,13 @@ resolveHPLCInstrumentOptions[
 		absorbanceRequiredOptions, pHRequiredOptions, conductivityRequiredOptions, fluorescenceRequiredOptions, dionexFluorescenceRequiredOptions, lightScatteringRequiredOptions, refractiveIndexRequiredOptions, finalFluorescenceRequiredOptions,
 		missingOptionsDetectorPairs, missingOptionDetectors, missingDetectionOptions, missingDetectionOptionsTests,
 		resolvedpHTemperatureCompensation, resolvedConductivityTemperatureCompensation,
-		resolvedInstrumentSpecificOptions, resultRule, testsRule, outputSpecification, resolvedDetector, resolvedMaxAcceleration, resolvedSampleTemperature, resolvedAbsorbanceWavelengths, missingFractionCollectionDetectorOption, resolvedAbsorbanceSamplingRates, resolvedSmoothingTimeConstants,resolvedUVFilters,
+		resolvedInstrumentSpecificOptions, resultRule, testsRule, outputSpecification, resolvedDetector, resolvedMaxAcceleration, resolvedSampleTemperature, resolvedAbsorbanceWavelengths, missingFractionCollectionDetectorOption, resolvedAbsorbanceSamplingRates, resolvedHammingWindowWidths,resolvedUVFilters,gradientDurations,
 		fluorescenceWavelengthLimit, tooNarrowFluorescenceRange,
-		resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
-		resolvedStandardExcitationWavelength, resolvedStandardEmissionWavelength, resolvedStandardEmissionCutOffFilter, resolvedStandardFluorescenceGain, resolvedStandardFluorescenceFlowCellTemperature, standardWavelengthSwappedErrors, standardTooNarrowFluorescenceRangeErrors, standardConflictFluorescenceLengthErrors, standardTooManyFluorescenceWavelengthsErrors, standardInvalidEmissionCutOffFilterErrors, standardTooLargeEmissionCutOffFilterErrors, standardInvalidWatersFluorescenceGainErrors, standardInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedBlankExcitationWavelength, resolvedBlankEmissionWavelength, resolvedBlankEmissionCutOffFilter, resolvedBlankFluorescenceGain, resolvedBlankFluorescenceFlowCellTemperature, blankWavelengthSwappedErrors, blankTooNarrowFluorescenceRangeErrors, blankConflictFluorescenceLengthErrors, blankTooManyFluorescenceWavelengthsErrors, blankInvalidEmissionCutOffFilterErrors, blankTooLargeEmissionCutOffFilterErrors, blankInvalidWatersFluorescenceGainErrors, blankInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedColumnPrimeExcitationWavelength, resolvedColumnPrimeEmissionWavelength, resolvedColumnPrimeEmissionCutOffFilter, resolvedColumnPrimeFluorescenceGain, resolvedColumnPrimeFluorescenceFlowCellTemperature, columnPrimeWavelengthSwappedErrors, columnPrimeTooNarrowFluorescenceRangeErrors, columnPrimeConflictFluorescenceLengthErrors, columnPrimeTooManyFluorescenceWavelengthsErrors, columnPrimeInvalidEmissionCutOffFilterErrors, columnPrimeTooLargeEmissionCutOffFilterErrors, columnPrimeInvalidWatersFluorescenceGainErrors, columnPrimeInvalidFluorescenceFlowCellTemperatureErrors,
-		resolvedColumnFlushExcitationWavelength, resolvedColumnFlushEmissionWavelength, resolvedColumnFlushEmissionCutOffFilter, resolvedColumnFlushFluorescenceGain,  resolvedColumnFlushFluorescenceFlowCellTemperature, columnFlushWavelengthSwappedErrors, columnFlushTooNarrowFluorescenceRangeErrors, columnFlushConflictFluorescenceLengthErrors, columnFlushTooManyFluorescenceWavelengthsErrors, columnFlushInvalidEmissionCutOffFilterErrors, columnFlushTooLargeEmissionCutOffFilterErrors, columnFlushInvalidWatersFluorescenceGainErrors, columnFlushInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedExcitationWavelength, resolvedEmissionWavelength, resolvedEmissionCutOffFilter, resolvedFluorescenceGain, resolvedFluorescenceFlowCellTemperature, wavelengthSwappedErrors, conflictFluorescenceLengthErrors, tooNarrowFluorescenceRangeErrors, tooManyFluorescenceWavelengthsErrors, invalidEmissionCutOffFilterErrors, tooLargeEmissionCutOffFilterErrors, invalidWatersFluorescenceGainErrors, invalidNonWatersFluorescenceGainErrors, invalidFluorescenceFlowCellTemperatureErrors,
+		resolvedStandardExcitationWavelength, resolvedStandardEmissionWavelength, resolvedStandardEmissionCutOffFilter, resolvedStandardFluorescenceGain, resolvedStandardFluorescenceFlowCellTemperature, standardWavelengthSwappedErrors, standardTooNarrowFluorescenceRangeErrors, standardConflictFluorescenceLengthErrors, standardTooManyFluorescenceWavelengthsErrors, standardInvalidEmissionCutOffFilterErrors, standardTooLargeEmissionCutOffFilterErrors, standardInvalidWatersFluorescenceGainErrors, standardInvalidNonWatersFluorescenceGainErrors, standardInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedBlankExcitationWavelength, resolvedBlankEmissionWavelength, resolvedBlankEmissionCutOffFilter, resolvedBlankFluorescenceGain, resolvedBlankFluorescenceFlowCellTemperature, blankWavelengthSwappedErrors, blankTooNarrowFluorescenceRangeErrors, blankConflictFluorescenceLengthErrors, blankTooManyFluorescenceWavelengthsErrors, blankInvalidEmissionCutOffFilterErrors, blankTooLargeEmissionCutOffFilterErrors, blankInvalidWatersFluorescenceGainErrors, blankInvalidNonWatersFluorescenceGainErrors, blankInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedColumnPrimeExcitationWavelength, resolvedColumnPrimeEmissionWavelength, resolvedColumnPrimeEmissionCutOffFilter, resolvedColumnPrimeFluorescenceGain, resolvedColumnPrimeFluorescenceFlowCellTemperature, columnPrimeWavelengthSwappedErrors, columnPrimeTooNarrowFluorescenceRangeErrors, columnPrimeConflictFluorescenceLengthErrors, columnPrimeTooManyFluorescenceWavelengthsErrors, columnPrimeInvalidEmissionCutOffFilterErrors, columnPrimeTooLargeEmissionCutOffFilterErrors, columnPrimeInvalidWatersFluorescenceGainErrors, columnPrimeInvalidNonWatersFluorescenceGainErrors, columnPrimeInvalidFluorescenceFlowCellTemperatureErrors,
+		resolvedColumnFlushExcitationWavelength, resolvedColumnFlushEmissionWavelength, resolvedColumnFlushEmissionCutOffFilter, resolvedColumnFlushFluorescenceGain,  resolvedColumnFlushFluorescenceFlowCellTemperature, columnFlushWavelengthSwappedErrors, columnFlushTooNarrowFluorescenceRangeErrors, columnFlushConflictFluorescenceLengthErrors, columnFlushTooManyFluorescenceWavelengthsErrors, columnFlushInvalidEmissionCutOffFilterErrors, columnFlushTooLargeEmissionCutOffFilterErrors, columnFlushInvalidWatersFluorescenceGainErrors, columnFlushInvalidNonWatersFluorescenceGainErrors, columnFlushInvalidFluorescenceFlowCellTemperatureErrors,
 		resolvedLightScatteringLaserPower, resolvedLightScatteringFlowCellTemperature, resolvedStandardLightScatteringLaserPower, resolvedStandardLightScatteringFlowCellTemperature, resolvedBlankLightScatteringLaserPower, resolvedBlankLightScatteringFlowCellTemperature, resolvedColumnPrimeLightScatteringLaserPower, resolvedColumnPrimeLightScatteringFlowCellTemperature, resolvedColumnFlushLightScatteringLaserPower, resolvedColumnFlushLightScatteringFlowCellTemperature,
 		resolvedRefractiveIndexMethod, resolvedRefractiveIndexFlowCellTemperature, refractiveIndexMethodConflictErrors, resolvedStandardRefractiveIndexMethod, resolvedStandardRefractiveIndexFlowCellTemperature, standardRefractiveIndexMethodConflictErrors, resolvedBlankRefractiveIndexMethod, resolvedBlankRefractiveIndexFlowCellTemperature, blankRefractiveIndexMethodConflictErrors, resolvedColumnPrimeRefractiveIndexMethod, resolvedColumnPrimeRefractiveIndexFlowCellTemperature, columnPrimeRefractiveIndexMethodConflictErrors, resolvedColumnFlushRefractiveIndexMethod, resolvedColumnFlushRefractiveIndexFlowCellTemperature, columnFlushRefractiveIndexMethodConflictErrors,
 		resolvedNebulizerGas, resolvedNebulizerGasHeating, resolvedNebulizerHeatingPower, resolvedNebulizerGasPressure, resolvedDriftTubeTemperatures, resolvedELSDGains, resolvedELSDSamplingRates, standardNebulizerGas, standardNebulizerGasHeating, invalidOptions, gasPressureAsList,
@@ -15132,23 +15117,23 @@ resolveHPLCInstrumentOptions[
 		columnFlushNebulizerGasHeating, columnFlushNebulizerHeatingPower, columnFlushNebulizerGasPressure, columnFlushDriftTubeTemperature, columnFlushELSDGain, columnFlushELSDSamplingRate,
 		currentInstrumentModelPacket, currentInstrumentModel, alternateInstrumentsOption, alternativeInstrumentModelPackets, allInstrumentDetectors,
 		invalidMaxAccerationOption, maxAccelerationTest, instrumentManufacturer,
-		watersManufacturedQ, agilentManufacturedQ, collectFractionsQ, detectorOption, possibleAbsorbanceRateValues, minPossibleAbsorbanceRate, maxPossibleAbsorbanceRate, possibleSmoothingTimeConstants, minPossibleSmoothingTimeConstant, maxPossibleSmoothingTimeConstant,
+		watersManufacturedQ, agilentManufacturedQ, collectFractionsQ, detectorOption, possibleAbsorbanceRateValues, minPossibleAbsorbanceRate, maxPossibleAbsorbanceRate,
 		possibleWavelengthResolutions, samplePackets, possibleAnalytes, analyteTypes,
-		resolvedWavelengthResolutions, wavelengthResolutionSampleConflictBool, roundedSamplingSampleRateBool, invalidSmoothingTimeConstantBool, roundedSmoothingTimeConstantBool, roundedWavelengthSampleResolutionBool, wavelengthFractionCollectionConflictBool,
-		resolvedStandardAbsorbanceWavelengths, resolvedStandardWavelengthResolutions, resolvedStandardUVFilters, resolvedStandardAbsorbanceSamplingRates, resolvedStandardSmoothingTimeConstants,
-		wavelengthResolutionStandardConflictBool, roundedSamplingStandardRateBool, invalidStandardSmoothingTimeConstantBool, roundedStandardSmoothingTimeConstantBool,roundedWavelengthStandardResolutionBool, roundedWavelengthColumnPrimeResolutionBool,
-		resolvedBlankAbsorbanceWavelengths, resolvedBlankWavelengthResolutions, resolvedBlankUVFilters, resolvedBlankAbsorbanceSamplingRates, resolvedBlankSmoothingTimeConstants,
-		wavelengthResolutionBlankConflictBool, roundedSamplingBlankRateBool, invalidBlankSmoothingTimeConstantBool, roundedBlankSmoothingTimeConstantBool,roundedWavelengthBlankResolutionBool, resolvedColumnPrimeAbsorbanceWavelengths,
-		resolvedColumnPrimeWavelengthResolutions, resolvedColumnPrimeUVFilters, resolvedColumnPrimeAbsorbanceSamplingRates,resolvedColumnPrimeSmoothingTimeConstants,
-		wavelengthResolutionColumnPrimeConflictBool, invalidColumnPrimeSmoothingTimeConstantBool, roundedColumnPrimeSmoothingTimeConstantBool,
-		roundedSamplingColumnPrimeRateBool, resolvedColumnFlushAbsorbanceWavelengths, resolvedColumnFlushSmoothingTimeConstants, resolvedColumnFlushWavelengthResolutions, resolvedColumnFlushUVFilters,
-		resolvedColumnFlushAbsorbanceSamplingRates, wavelengthResolutionColumnFlushConflictBool, roundedSamplingColumnFlushRateBool, roundedWavelengthColumnFlushResolutionBool, invalidColumnFlushSmoothingTimeConstantBool, roundedColumnFlushSmoothingTimeConstantBool,
+		resolvedWavelengthResolutions, wavelengthResolutionSampleConflictBool, roundedSamplingSampleRateBool, invalidHammingWindowWidthBool, roundedWavelengthSampleResolutionBool, wavelengthFractionCollectionConflictBool,
+		resolvedStandardAbsorbanceWavelengths, resolvedStandardWavelengthResolutions, resolvedStandardUVFilters, resolvedStandardAbsorbanceSamplingRates, resolvedStandardHammingWindowWidths, standardGradientDurations,
+		wavelengthResolutionStandardConflictBool, roundedSamplingStandardRateBool, invalidStandardHammingWindowWidthBool, roundedStandardHammingWindowWidthBool,roundedWavelengthStandardResolutionBool, roundedWavelengthColumnPrimeResolutionBool,
+		resolvedBlankAbsorbanceWavelengths, resolvedBlankWavelengthResolutions, resolvedBlankUVFilters, resolvedBlankAbsorbanceSamplingRates, resolvedBlankHammingWindowWidths, blankGradientDurations,
+		wavelengthResolutionBlankConflictBool, roundedSamplingBlankRateBool, invalidBlankHammingWindowWidthBool, roundedBlankHammingWindowWidthBool,roundedWavelengthBlankResolutionBool, resolvedColumnPrimeAbsorbanceWavelengths,
+		resolvedColumnPrimeWavelengthResolutions, resolvedColumnPrimeUVFilters, resolvedColumnPrimeAbsorbanceSamplingRates,resolvedColumnPrimeHammingWindowWidths,columnPrimeGradientDurations,
+		wavelengthResolutionColumnPrimeConflictBool, invalidColumnPrimeHammingWindowWidthBool, roundedColumnPrimeHammingWindowWidthBool,
+		roundedSamplingColumnPrimeRateBool, resolvedColumnFlushAbsorbanceWavelengths, resolvedColumnFlushHammingWindowWidths, columnFlushGradientDurations, resolvedColumnFlushWavelengthResolutions, resolvedColumnFlushUVFilters,
+		resolvedColumnFlushAbsorbanceSamplingRates, wavelengthResolutionColumnFlushConflictBool, roundedSamplingColumnFlushRateBool, roundedWavelengthColumnFlushResolutionBool, invalidColumnFlushHammingWindowWidthBool, roundedColumnFlushHammingWindowWidthBool,
 		absorbanceRateOptions, roundedSamplingRateRoundingBool, roundedSamplingRateRoundingOptions, roundedSamplingRateRoundingTests,
-		smoothingTimeConstantOptions, invalidSmoothingTimeConstantInvalidBool, invalidSmoothingTimeConstantInvalidOptions, invalidSmoothingTimeConstantTests, roundedSmoothingTimeConstantRoundingBool, roundedSmoothingTimeConstantRoundingOptions, roundedSmoothingTimeConstantRoundingTests,
+		hammingWindowWidthOptions, invalidHammingWindowWidthInvalidBool, invalidHammingWindowWidthInvalidOptions, invalidHammingWindowWidthInvalidValues, invalidHammingWindowWidthLowerLimits, invalidHammingWindowWidthUpperLimits, invalidHammingWindowWidthTests,
 		roundedWavelengthResolutionBool, roundedWavelengthResolutionBoolOptions,
 		wavelengthResolutionConflictBool, wavelengthResolutionConflictOptions, wavelengthResolutionConflictTests, wavelengthFractionCollectionConflictOptions, wavelengthFractionCollectionConflictTests,
 		innerResult, innerNebulizerGas, innerNebulizerGasHeating, innerNebulizerHeatingPower, innerNebulizerGasPressure, innerDriftTubeTemperature, innerELSDGain, innerELSDSamplingRate,
-		fluorescenceGreaterEmissionInvalidOptions, fluorescenceGreaterEmissionInvalidTests, fluorescenceRangeTooNarrowInvalidOptions, fluorescenceRangeTooNarrowInvalidTests, conflictFluorescenceLengthOptions, conflictFluorescenceLengthTests, tooManyFluorescenceChannelsOptions, tooManyFluorescenceChannelsTests, invalidEmissionCutOffFilterOptions, invalidEmissionCutOffFilterTests, tooLargeEmissionCutOffFilterOptions, tooLargeEmissionCutOffFilterTests, invalidDionexFluorescenceGainOptions, invalidWatersFluorescenceGainOptions, invalidWatersFluorescenceGainTests, invalidFluorescenceFlowCellTemperatureOptions, invalidFluorescenceFlowCellTemperatureTests, conflictRefractiveIndexMethodOptions, conflictRefractiveIndexMethodTests,
+		fluorescenceGreaterEmissionInvalidOptions, fluorescenceGreaterEmissionInvalidTests, fluorescenceRangeTooNarrowInvalidOptions, fluorescenceRangeTooNarrowInvalidTests, conflictFluorescenceLengthOptions, conflictFluorescenceLengthTests, tooManyFluorescenceChannelsOptions, tooManyFluorescenceChannelsTests, invalidEmissionCutOffFilterOptions, invalidEmissionCutOffFilterTests, tooLargeEmissionCutOffFilterOptions, tooLargeEmissionCutOffFilterTests, invalidDionexFluorescenceGainOptions, invalidWatersFluorescenceGainOptions, invalidWatersFluorescenceGainTests, invalidNonWatersFluorescenceGainOptions, invalidNonWatersFluorescenceGainTests, invalidFluorescenceFlowCellTemperatureOptions, invalidFluorescenceFlowCellTemperatureTests, conflictRefractiveIndexMethodOptions, conflictRefractiveIndexMethodTests,
 		gasPressureOptions, nebulizerGasOptions, gasPressureConflictBool, gasPressureConflictOptions, gasPressureConflictTest, nebulizerGasHeatingOptions, gasHeatingConflictBool, gasHeatingConflictOptions, gasHeatingConflictTest, nebulizerHeatingPowerOptions,
 		heatingPowerConflictGasBool, heatingPowerConflictHeatingBool, gasHeatingPowerConflictOptions, gasHeatingPowerConflictTest, uvFilterOptions, samplingRateOptions, tuvOptionsNotNeededQ,
 		tuvNotNeededOptions, tuvOptionsNotNeededTest, resolvedInjectionTable, columnPrimeQ, columnFlushQ, columnPrimeOptions, columnFlushOptions,
@@ -15911,21 +15896,21 @@ resolveHPLCInstrumentOptions[
 
 	(* Define all of the options that we need *)
 	standardOptions = {Standard, StandardGradient,
-		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant,
+		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardHammingWindowWidth,
 		StandardExcitationWavelength, StandardEmissionWavelength, StandardEmissionCutOffFilter, StandardFluorescenceGain, StandardFluorescenceFlowCellTemperature,
 		StandardLightScatteringLaserPower, StandardLightScatteringFlowCellTemperature, StandardRefractiveIndexMethod, StandardRefractiveIndexFlowCellTemperature,
 		StandardNebulizerGas, StandardNebulizerGasHeating, StandardNebulizerHeatingPower, StandardNebulizerGasPressure, StandardDriftTubeTemperature, StandardELSDGain, StandardELSDSamplingRate};
 	blankOptions = {Blank, BlankGradient,
-		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant,
+		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankHammingWindowWidth,
 		BlankExcitationWavelength, BlankEmissionWavelength, BlankEmissionCutOffFilter, BlankFluorescenceGain, BlankFluorescenceFlowCellTemperature,
 		BlankLightScatteringLaserPower, BlankLightScatteringFlowCellTemperature, BlankRefractiveIndexMethod, BlankRefractiveIndexFlowCellTemperature,
 		BlankNebulizerGas, BlankNebulizerGasHeating, BlankNebulizerHeatingPower, BlankNebulizerGasPressure, BlankDriftTubeTemperature, BlankELSDGain, BlankELSDSamplingRate};
 	columnOptions = {ColumnSelector, ColumnPrimeGradient, ColumnFlushGradient,
-		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant,
+		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeHammingWindowWidth,
 		ColumnPrimeExcitationWavelength, ColumnPrimeEmissionWavelength, ColumnPrimeEmissionCutOffFilter, ColumnPrimeFluorescenceGain, ColumnPrimeFluorescenceFlowCellTemperature,
 		ColumnPrimeLightScatteringLaserPower, ColumnPrimeLightScatteringFlowCellTemperature, ColumnPrimeRefractiveIndexMethod, ColumnPrimeRefractiveIndexFlowCellTemperature,
 		ColumnPrimeNebulizerGas, ColumnPrimeNebulizerGasHeating, ColumnPrimeNebulizerHeatingPower, ColumnPrimeNebulizerGasPressure, ColumnPrimeDriftTubeTemperature, ColumnPrimeELSDGain, ColumnPrimeELSDSamplingRate,
-		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant,
+		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushHammingWindowWidth,
 		ColumnFlushExcitationWavelength, ColumnFlushEmissionWavelength, ColumnFlushEmissionCutOffFilter, ColumnFlushFluorescenceGain, ColumnFlushFluorescenceFlowCellTemperature,
 		ColumnFlushLightScatteringLaserPower, ColumnFlushLightScatteringFlowCellTemperature, ColumnFlushRefractiveIndexMethod, ColumnFlushRefractiveIndexFlowCellTemperature,
 		ColumnFlushNebulizerGas, ColumnFlushNebulizerGasHeating, ColumnFlushNebulizerHeatingPower, ColumnFlushNebulizerGasPressure, ColumnFlushDriftTubeTemperature, ColumnFlushELSDGain, ColumnFlushELSDSamplingRate
@@ -15941,7 +15926,7 @@ resolveHPLCInstrumentOptions[
 			{mySamples},
 			Normal@Append[
 				KeyTake[partiallyResolvedOptions, standardOptions],
-				Standard -> resolvedStandard
+				Standard -> resolvedStandard /. {NoInjection -> Automatic}
 			],
 			Messages -> False
 		]]
@@ -15995,38 +15980,6 @@ resolveHPLCInstrumentOptions[
 	minPossibleAbsorbanceRate = Lookup[currentInstrumentModelPacket,MinAbsorbanceSamplingRate,{}];
 	maxPossibleAbsorbanceRate = Lookup[currentInstrumentModelPacket,MaxAbsorbanceSamplingRate,{}];
 
-	(* Define the possible SmoothingTimeConstants we may have *)
-	possibleSmoothingTimeConstants = Which[
-		MatchQ[Lookup[currentInstrumentModelPacket,SmoothingTimeConstants],{}],
-		{},
-		(* Agilent - No Range *)
-		MatchQ[Flatten[Lookup[currentInstrumentModelPacket,SmoothingTimeConstants][[All,-3;;]]],{}],
-		ReverseSort[
-			MapThread[
-				(* Pick the enumeration values that are supported *)
-				{#1,Cases[#2[[;;3]],Except[Null]]}&,
-				(* These are index matching fields and we expect them to be the same length *)
-				{possibleAbsorbanceRateValues,Lookup[currentInstrumentModelPacket,SmoothingTimeConstants]}
-			]
-		],
-		(* Waters *)
-		True,
-		ReverseSort[
-			MapThread[
-				Module[
-					{min,max,increment},
-					{min,max,increment}=#2[[-3;;]];
-					{#1,Range[min,max,increment]}
-				]&,
-				(* These are index matching fields and we expect them to be the same length *)
-				{possibleAbsorbanceRateValues,Lookup[currentInstrumentModelPacket,SmoothingTimeConstants]}
-			]
-		]
-	];
-
-	minPossibleSmoothingTimeConstant = Lookup[currentInstrumentModelPacket,MinSmoothingTimeConstant,{}];
-	maxPossibleSmoothingTimeConstant = Lookup[currentInstrumentModelPacket,MaxSmoothingTimeConstant,{}];
-
 	(* Define the possible resolutions for Waters instrument *)
 	(* Agilent resolution can be any value *)
 	possibleWavelengthResolutions = {1.2 * Nanometer, 2.4 * Nanometer, 3.6 * Nanometer, 4.8 * Nanometer, 6.0 * Nanometer, 7.2 * Nanometer, 8.4 * Nanometer, 9.6 * Nanometer, 10.8 * Nanometer, 12.0 * Nanometer};
@@ -16037,18 +15990,34 @@ resolveHPLCInstrumentOptions[
 		resolvedWavelengthResolutions,
 		resolvedUVFilters,
 		resolvedAbsorbanceSamplingRates,
-		resolvedSmoothingTimeConstants,
+		resolvedHammingWindowWidths,
+		gradientDurations,
 		wavelengthResolutionSampleConflictBool,
 		roundedSamplingSampleRateBool,
-		invalidSmoothingTimeConstantBool,
-		roundedSmoothingTimeConstantBool,
+		invalidHammingWindowWidthBool,
 		roundedWavelengthSampleResolutionBool,
 		wavelengthFractionCollectionConflictBool
 	} = Transpose@MapThread[
 		Function[
-			{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, smoothingTimeConstant, fractionQ, analyteType, extinctionCoefficientWavelength},
+			{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, hammingWindowWidth, fractionQ, gradient, analyteType, extinctionCoefficientWavelength},
 			Module[
-				{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, wavelengthFractionCollectionConflictQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, allowedSmoothingTimeConstants, resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ},
+				{gradientPacket, gradientTuples, gradientDuration, wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, wavelengthFractionCollectionConflictQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, resolvedHammingWindowWidth, invalidHammingWindowWidthQ},
+
+				(* Get our gradient tuple as this is needed for HammingWindowWidth error check *)
+				gradientPacket = If[MatchQ[gradient, ObjectP[Object[Method, Gradient]]],
+					fetchPacketFromCacheHPLC[gradient, cache],
+					<||>
+				];
+
+				(* Get the gradient tuples *)
+				gradientTuples = If[MatchQ[gradientPacket, <||>],
+					(* If Gradient is not a Method, then it must be tuples already *)
+					gradient,
+					Lookup[gradientPacket, Gradient]
+				];
+
+				(* Get the length of gradient *)
+				gradientDuration = gradientTuples[[-1, 1]];
 
 				(* The absorbanceWavelength and UV filter just comes from the input options *)
 				resolvedUVFilter = If[MatchQ[uvFilter, Except[Automatic]],
@@ -16111,35 +16080,21 @@ resolveHPLCInstrumentOptions[
 					True,
 					{
 						Which[
-							(* Consider to make smoothing time constant valid. Pick the smallest absorbance sampling rate that can fulfill the requirement of time constant option (if specified). Select the exact match first, and then possible range (we allow rounding) *)
-							(* This only applies to Waters and Agilent where only certain values of smoothing time constants are allowed per absorbance sampling rate. On Dionex, these two options can be freely set as long as in range *)
-							MatchQ[smoothingTimeConstant,GreaterP[0Second]]&&!MatchQ[possibleSmoothingTimeConstants,{}],
-							Module[
-								{exactValueMatchPosition,rangeMatchPosition},
-								(* Find the first SmoothingTimeConstants entry that has the exact specified option *)
-								exactValueMatchPosition=FirstOrDefault[
-									FirstPosition[
-										possibleSmoothingTimeConstants[[All,2]],
-										{___, EqualP[smoothingTimeConstant], ___},
-										{}
-									]
-								];
-								(* Find the first SmoothingTimeConstants entry with the option in the range *)
-								rangeMatchPosition=FirstOrDefault[
-									FirstPosition[
-										possibleSmoothingTimeConstants[[All,2]],
-										{LessEqualP[smoothingTimeConstant],___,GreaterEqualP[smoothingTimeConstant]},
-										{}
-									]
-								];
-								(* Use the resolved possible AbsorbanceSamplingRate, or just do default and error later *)
-								Which[
-									!NullQ[exactValueMatchPosition],possibleSmoothingTimeConstants[[exactValueMatchPosition,1]],
-									!NullQ[rangeMatchPosition],possibleSmoothingTimeConstants[[rangeMatchPosition,1]],
-									Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
+							(* Consider to make hamming window width valid. Pick the absorbance sampling rate that can fulfill the requirement of hamming window width option (if specified), or 20/Second, whichever larger *)
+							MatchQ[hammingWindowWidth,GreaterP[0Second]],
+							Min[
+								Max[
 									20 / Second,
+									2 / hammingWindowWidth
+								],
+								(* Limit of instrument and option *)
+								Which[
+									MatchQ[possibleAbsorbanceRateValues, Except[{}]],
+									Max[possibleAbsorbanceRateValues],
+									!NullQ[maxPossibleAbsorbanceRate],
+									maxPossibleAbsorbanceRate,
 									True,
-									Null
+									120 / Second
 								]
 							],
 							Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
@@ -16151,41 +16106,15 @@ resolveHPLCInstrumentOptions[
 					}
 				];
 
-				allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[resolvedAbsorbanceSamplingRate],___},{Null,{}}][[2]];
-
-				(* SmoothingTimeConstant is not indeed an automatic option. It is defaulted to Null (not used). Only put it here so that we can do rounding and error checking *)
-				{resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ} = If[watersManufacturedQ,
-					(* For Waters instrument, we can allow the enumeration value or the numeric value *)
-					Switch[smoothingTimeConstant,
-						HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,False},
-						GreaterP[0Second],
-						(* Round the value to the nearest possible value *)
-						If[Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0,
-							{smoothingTimeConstant, False, False},
-							(* Otherwise, we need to find the closest value in our array *)
-							{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False}
-						],
-						(* Default to Null *)
-						_,{smoothingTimeConstant,False,False}
-					],
-					(* For Agilent instrument and Dionex instrument, check if the value is valid *)
-					Switch[smoothingTimeConstant,
-						(* Enumeration value is not allowed *)
-						HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,True},
-						GreaterP[0Second],
-						(* Round the value to the nearest possible value *)
-						Which[
-							!MatchQ[allowedSmoothingTimeConstants,{}] && (Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0),
-							{smoothingTimeConstant, False, False},
-							(* Otherwise, we need to find the closest value in our array *)
-							!MatchQ[allowedSmoothingTimeConstants,{}],
-							{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False},
-							MatchQ[smoothingTimeConstant,GreaterP[maxPossibleSmoothingTimeConstant]],{maxPossibleSmoothingTimeConstant,True,False},
-							MatchQ[smoothingTimeConstant,LessP[minPossibleSmoothingTimeConstant]],{minPossibleSmoothingTimeConstant,True,False},
-							True,{SafeRound[smoothingTimeConstant,0.01Second],!EqualQ[smoothingTimeConstant,SafeRound[smoothingTimeConstant,0.01Second]],False}
-						],
-						(* Default to Null *)
-						_,{smoothingTimeConstant,False,False}
+				(* HammingWindowWidth is not an automatic option. It is defaulted to Null (not used). Only put it here so that we can do error checking *)
+				invalidHammingWindowWidthQ = If[NullQ[hammingWindowWidth],
+					(* It is always fine to not do Hamming Filter *)
+					False,
+					(* HammingWindowWidth must be between 2/AbsorbanceSamplingRate (to have 2 points in the window) and gradient length *)
+					(* Usually gradient length is longer than  *)
+					!MatchQ[
+						hammingWindowWidth,
+						RangeP[2/resolvedAbsorbanceSamplingRate, gradientDuration]
 					]
 				];
 
@@ -16219,17 +16148,17 @@ resolveHPLCInstrumentOptions[
 					resolvedWavelengthResolution,
 					resolvedUVFilter,
 					resolvedAbsorbanceSamplingRate,
-					resolvedSmoothingTimeConstant,
+					hammingWindowWidth,
+					gradientDuration,
 					wavelengthResolutionConflictQ,
 					roundedSamplingRateQ,
-					invalidEnumerationSmoothingConstantQ,
-					roundedSmoothingTimeConstantQ,
+					invalidHammingWindowWidthQ,
 					roundedResolutionQ,
 					wavelengthFractionCollectionConflictQ
 				}
 			]
 		],
-		Join[Lookup[partiallyResolvedOptions, {AbsorbanceWavelength, WavelengthResolution, UVFilter, AbsorbanceSamplingRate, SmoothingTimeConstant, CollectFractions}], {analyteTypes, extinctionCoefficientWavelengths}]
+		Join[Lookup[partiallyResolvedOptions, {AbsorbanceWavelength, WavelengthResolution, UVFilter, AbsorbanceSamplingRate, HammingWindowWidth, CollectFractions, Gradient}], {analyteTypes, extinctionCoefficientWavelengths}]
 	];
 
 	(* Now do all of the other options simultaneously *)
@@ -16239,11 +16168,11 @@ resolveHPLCInstrumentOptions[
 			resolvedStandardWavelengthResolutions,
 			resolvedStandardUVFilters,
 			resolvedStandardAbsorbanceSamplingRates,
-			resolvedStandardSmoothingTimeConstants,
+			resolvedStandardHammingWindowWidths,
+			standardGradientDurations,
 			wavelengthResolutionStandardConflictBool,
 			roundedSamplingStandardRateBool,
-			invalidStandardSmoothingTimeConstantBool,
-			roundedStandardSmoothingTimeConstantBool,
+			invalidStandardHammingWindowWidthBool,
 			roundedWavelengthStandardResolutionBool
 		},
 		{
@@ -16251,11 +16180,11 @@ resolveHPLCInstrumentOptions[
 			resolvedBlankWavelengthResolutions,
 			resolvedBlankUVFilters,
 			resolvedBlankAbsorbanceSamplingRates,
-			resolvedBlankSmoothingTimeConstants,
+			resolvedBlankHammingWindowWidths,
+			blankGradientDurations,
 			wavelengthResolutionBlankConflictBool,
 			roundedSamplingBlankRateBool,
-			invalidBlankSmoothingTimeConstantBool,
-			roundedBlankSmoothingTimeConstantBool,
+			invalidBlankHammingWindowWidthBool,
 			roundedWavelengthBlankResolutionBool
 		},
 		{
@@ -16263,11 +16192,11 @@ resolveHPLCInstrumentOptions[
 			resolvedColumnPrimeWavelengthResolutions,
 			resolvedColumnPrimeUVFilters,
 			resolvedColumnPrimeAbsorbanceSamplingRates,
-			resolvedColumnPrimeSmoothingTimeConstants,
+			resolvedColumnPrimeHammingWindowWidths,
+			columnPrimeGradientDurations,
 			wavelengthResolutionColumnPrimeConflictBool,
 			roundedSamplingColumnPrimeRateBool,
-			invalidColumnPrimeSmoothingTimeConstantBool,
-			roundedColumnPrimeSmoothingTimeConstantBool,
+			invalidColumnPrimeHammingWindowWidthBool,
 			roundedWavelengthColumnPrimeResolutionBool
 		},
 		{
@@ -16275,32 +16204,47 @@ resolveHPLCInstrumentOptions[
 			resolvedColumnFlushWavelengthResolutions,
 			resolvedColumnFlushUVFilters,
 			resolvedColumnFlushAbsorbanceSamplingRates,
-			resolvedColumnFlushSmoothingTimeConstants,
+			resolvedColumnFlushHammingWindowWidths,
+			columnFlushGradientDurations,
 			wavelengthResolutionColumnFlushConflictBool,
 			roundedSamplingColumnFlushRateBool,
-			invalidColumnFlushSmoothingTimeConstantBool,
-			roundedColumnFlushSmoothingTimeConstantBool,
+			invalidColumnFlushHammingWindowWidthBool,
 			roundedWavelengthColumnFlushResolutionBool
 		}
-	} = Map[
-		Function[
-			{entry},
+	} = MapThread[
+		Function[{entry, bool},
 			Module[
-				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants},
+				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, hammingWindowWidths, gradients},
 
 				(* Split the entry variable *)
-				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants} = entry;
+				{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, hammingWindowWidths, gradients} = entry;
 
 				(* First we check whether there is actually anything (i.e. no standards) *)
-				If[MatchQ[{absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants}, {(Null | {})..}],
+				If[!bool,
 					(* In which case, we return all Null and empties *)
 					{Sequence @@ ConstantArray[Null, 5], {}, {}, {}, {}, {}},
 					(* Otherwise, we'll resolve the detector options and map through *)
 					Transpose@MapThread[
 						Function[
-							{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, smoothingTimeConstant},
+							{absorbanceWavelength, wavelengthResolution, uvFilter, absorbanceSampleRate, hammingWindowWidth, gradient},
 							Module[
-								{wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, allowedSmoothingTimeConstants, resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ},
+								{gradientPacket, gradientTuples, gradientDuration, wavelengthResolutionConflictQ, roundedSamplingRateQ, roundedResolutionQ, resolvedAbsorbanceWavelength, resolvedWavelengthResolution, resolvedUVFilter, resolvedAbsorbanceSamplingRate, resolvedHammingWindowWidth, invalidHammingWindowWidthQ},
+
+								(* Get our gradient tuple as this is needed for HammingWindowWidth error check *)
+								gradientPacket = If[MatchQ[gradient, ObjectP[Object[Method, Gradient]]],
+									fetchPacketFromCacheHPLC[gradient, cache],
+									<||>
+								];
+
+								(* Get the gradient tuples *)
+								gradientTuples = If[MatchQ[gradientPacket, <||>],
+									(* If Gradient is not a Method, then it must be tuples already *)
+									gradient,
+									Lookup[gradientPacket, Gradient]
+								];
+
+								(* Get the length of gradient *)
+								gradientDuration = gradientTuples[[-1, 1]];
 
 								(* For most of these options we can just take it if specified, otherwise we default to the first resolution *)
 								{
@@ -16344,35 +16288,21 @@ resolveHPLCInstrumentOptions[
 									True,
 									{
 										Which[
-											(* Consider to make smoothing time constant valid. Pick the smallest absorbance sampling rate that can fulfill the requirement of time constant option (if specified). Select the exact match first, and then possible range (we allow rounding) *)
-											(* This only applies to Waters and Agilent where only certain values of smoothing time constants are allowed per absorbance sampling rate. On Dionex, these two options can be freely set as long as in range *)
-											MatchQ[smoothingTimeConstant,GreaterP[0Second]]&&!MatchQ[possibleSmoothingTimeConstants,{}],
-											Module[
-												{exactValueMatchPosition,rangeMatchPosition},
-												(* Find the first SmoothingTimeConstants entry that has the exact specified option *)
-												exactValueMatchPosition=FirstOrDefault[
-													FirstPosition[
-														possibleSmoothingTimeConstants[[All,2]],
-														{___, EqualP[smoothingTimeConstant], ___},
-														{}
-													]
-												];
-												(* Find the first SmoothingTimeConstants entry with the option in the range *)
-												rangeMatchPosition=FirstOrDefault[
-													FirstPosition[
-														possibleSmoothingTimeConstants[[All,2]],
-														{LessEqualP[smoothingTimeConstant],___,GreaterEqualP[smoothingTimeConstant]},
-														{}
-													]
-												];
-												(* Use the resolved possible AbsorbanceSamplingRate, or just do default and error later *)
+											(* Consider to make hamming window width valid. Pick the absorbance sampling rate that can fulfill the requirement of hamming window width option (if specified), or 20/Second, whichever larger *)
+											MatchQ[hammingWindowWidth,GreaterP[0Second]],
+											Min[
+												Max[
+													20 / Second,
+													2 / hammingWindowWidth
+												],
+												(* Limit of instrument and option *)
 												Which[
-													!NullQ[exactValueMatchPosition],possibleSmoothingTimeConstants[[exactValueMatchPosition,1]],
-													!NullQ[rangeMatchPosition],possibleSmoothingTimeConstants[[rangeMatchPosition,1]],
-													Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
-													FirstOrDefault[resolvedAbsorbanceSamplingRates],
+													MatchQ[possibleAbsorbanceRateValues, Except[{}]],
+													Max[possibleAbsorbanceRateValues],
+													!NullQ[maxPossibleAbsorbanceRate],
+													maxPossibleAbsorbanceRate,
 													True,
-													Null
+													120 / Second
 												]
 											],
 											Or[MemberQ[resolvedDetector, UVVis], MemberQ[resolvedDetector, PhotoDiodeArray]],
@@ -16384,48 +16314,30 @@ resolveHPLCInstrumentOptions[
 									}
 								];
 
-								allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[resolvedAbsorbanceSamplingRate],___},{Null,{}}][[2]];
-
-								(* Resolve SmoothingTimeConstant and round values if needed *)
-								{resolvedSmoothingTimeConstant, roundedSmoothingTimeConstantQ, invalidEnumerationSmoothingConstantQ} = If[watersManufacturedQ,
-									(* For Waters instrument, we can allow the enumeration value or the numeric value *)
-									Switch[smoothingTimeConstant,
-										HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,False},
-										GreaterP[0Second],
-										(* Round the value to the nearest possible value *)
-										If[Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0Second]] > 0,
-											{smoothingTimeConstant, False, False},
-											(* Otherwise, we need to find the closest value in our array *)
-											{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False}
-										],
-										(* Keep Null *)
-										Except[Automatic],
-										{smoothingTimeConstant,False,False},
-										(* Default to first entry of sample option *)
-										_,{FirstOrDefault[resolvedSmoothingTimeConstants],False,False}
+								(* Resolve HammingWindowWidth and do error checking *)
+								resolvedHammingWindowWidth = Which[
+									(* Respect user option *)
+									MatchQ[hammingWindowWidth, Except[Automatic]],
+									hammingWindowWidth,
+									(* If FirstOrDefault[resolvedHammingWindowWidths] is valid, use it *)
+									MatchQ[
+										FirstOrDefault[resolvedHammingWindowWidths],
+										(RangeP[2/resolvedAbsorbanceSamplingRate, gradientDuration]|Null)
 									],
-									(* For Agilent instrument and Dionex instrument, check if the value is valid *)
-									Switch[smoothingTimeConstant,
-										(* Enumeration value is not allowed *)
-										HPLCSmoothingTimeConstantP,{smoothingTimeConstant,False,True},
-										GreaterP[0Second],
-										(* Round the value to the nearest possible value *)
-										Which[
-											!MatchQ[allowedSmoothingTimeConstants,{}] && (Count[Abs[allowedSmoothingTimeConstants - smoothingTimeConstant], LessEqualP[0 Second]] > 0),
-											{smoothingTimeConstant, False, False},
-											(* Otherwise, we need to find the closest value in our array *)
-											!MatchQ[allowedSmoothingTimeConstants,{}],
-											{First[Nearest[allowedSmoothingTimeConstants, smoothingTimeConstant]], True, False},
-											MatchQ[smoothingTimeConstant,GreaterP[maxPossibleSmoothingTimeConstant]],{maxPossibleSmoothingTimeConstant,True,False},
-											MatchQ[smoothingTimeConstant,LessP[minPossibleSmoothingTimeConstant]],{minPossibleSmoothingTimeConstant,True,False},
-											True,{SafeRound[smoothingTimeConstant,0.01Second],!EqualQ[smoothingTimeConstant,SafeRound[smoothingTimeConstant,0.01Second]],False}
-										],
-										(* Default to Null *)
-										(* Keep Null *)
-										Except[Automatic],
-										{smoothingTimeConstant,False,False},
-										(* Default to first entry of sample option *)
-										_,{FirstOrDefault[resolvedSmoothingTimeConstants],False,False}
+									FirstOrDefault[resolvedHammingWindowWidths],
+									(* Otherwise resolve to Null *)
+									True,
+									Null
+								];
+
+								invalidHammingWindowWidthQ = If[NullQ[resolvedHammingWindowWidth],
+									(* It is always fine to not do Hamming Filter *)
+									False,
+									(* HammingWindowWidth must be between 2/AbsorbanceSamplingRate (to have 2 points in the window) and gradient length *)
+									(* Usually gradient length is longer than  *)
+									!MatchQ[
+										resolvedHammingWindowWidth,
+										RangeP[2/resolvedAbsorbanceSamplingRate, gradientDuration]
 									]
 								];
 
@@ -16459,25 +16371,33 @@ resolveHPLCInstrumentOptions[
 									resolvedWavelengthResolution,
 									resolvedUVFilter,
 									resolvedAbsorbanceSamplingRate,
-									resolvedSmoothingTimeConstant,
+									resolvedHammingWindowWidth,
+									gradientDuration,
 									wavelengthResolutionConflictQ,
 									roundedSamplingRateQ,
-									invalidEnumerationSmoothingConstantQ,
-									roundedSmoothingTimeConstantQ,
+									invalidHammingWindowWidthQ,
 									roundedResolutionQ
 								}
 							]
 						],
-						ToList /@ {absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, smoothingTimeConstants}
+						ToList /@ {absorbanceWavelengths, wavelengthResolutions, uvFilters, absorbanceSampleRates, hammingWindowWidths, gradients}
 					]
 				]
 			]
 		],
 		{
-			Lookup[expandedStandardOptions, {StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant}],
-			Lookup[expandedBlankOptions, {BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant}],
-			Lookup[expandedColumnOptions, {ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant}],
-			Lookup[expandedColumnOptions, {ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant}]
+			{
+				Lookup[expandedStandardOptions, {StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardUVFilter, StandardAbsorbanceSamplingRate, StandardHammingWindowWidth, StandardGradient}],
+				Lookup[expandedBlankOptions, {BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankUVFilter, BlankAbsorbanceSamplingRate, BlankHammingWindowWidth, BlankGradient}],
+				Lookup[expandedColumnOptions, {ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeUVFilter, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeHammingWindowWidth, ColumnPrimeGradient}],
+				Lookup[expandedColumnOptions, {ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushUVFilter, ColumnFlushAbsorbanceSamplingRate, ColumnFlushHammingWindowWidth, ColumnFlushGradient}]
+			},
+			{
+				standardExistsQ,
+				blankExistsQ,
+				columnPrimeQ,
+				columnFlushQ
+			}
 		}
 	];
 
@@ -16502,45 +16422,58 @@ resolveHPLCInstrumentOptions[
 		warningOrNull["The absorbance sampling rate options are rounded to the nearest allowed value:", True]
 	];
 
-	(* Define the absorbance smoothing time constant options *)
-	smoothingTimeConstantOptions = {SmoothingTimeConstant, StandardSmoothingTimeConstant, BlankSmoothingTimeConstant, ColumnPrimeSmoothingTimeConstant, ColumnFlushSmoothingTimeConstant};
+	(* Define the absorbance Hamming window width options *)
+	hammingWindowWidthOptions = {HammingWindowWidth, StandardHammingWindowWidth, BlankHammingWindowWidth, ColumnPrimeHammingWindowWidth, ColumnFlushHammingWindowWidth};
 
 	(* Invalid Message and Test *)
 	(* Find which options were offending *)
-	invalidSmoothingTimeConstantInvalidBool = (Or @@ #&) /@ {invalidSmoothingTimeConstantBool,invalidStandardSmoothingTimeConstantBool,invalidBlankSmoothingTimeConstantBool,invalidColumnPrimeSmoothingTimeConstantBool,invalidColumnFlushSmoothingTimeConstantBool};
-	invalidSmoothingTimeConstantInvalidOptions = PickList[smoothingTimeConstantOptions, invalidSmoothingTimeConstantInvalidBool];
+	invalidHammingWindowWidthInvalidBool = (Or @@ #&) /@ {invalidHammingWindowWidthBool,invalidStandardHammingWindowWidthBool,invalidBlankHammingWindowWidthBool,invalidColumnPrimeHammingWindowWidthBool,invalidColumnFlushHammingWindowWidthBool};
+	invalidHammingWindowWidthInvalidOptions = PickList[hammingWindowWidthOptions, invalidHammingWindowWidthInvalidBool];
+	invalidHammingWindowWidthInvalidValues = PickList[
+		Join[
+			resolvedHammingWindowWidths,
+			If[standardExistsQ, resolvedStandardHammingWindowWidths, {}],
+			If[blankExistsQ, resolvedBlankHammingWindowWidths, {}],
+			If[columnPrimeQ, resolvedColumnPrimeHammingWindowWidths, {}],
+			If[columnFlushQ, resolvedColumnFlushHammingWindowWidths, {}]
+		],
+		Join @@ {invalidHammingWindowWidthBool,invalidStandardHammingWindowWidthBool,invalidBlankHammingWindowWidthBool,invalidColumnPrimeHammingWindowWidthBool,invalidColumnFlushHammingWindowWidthBool}
+	];
+	(* These are the lower bond for HammingWindowWidth - 2/AbsorbanceSamplingRate *)
+	invalidHammingWindowWidthLowerLimits = 2/PickList[
+		Join[
+			resolvedAbsorbanceSamplingRates,
+			If[standardExistsQ, resolvedStandardAbsorbanceSamplingRates, {}],
+			If[blankExistsQ, resolvedBlankAbsorbanceSamplingRates, {}],
+			If[columnPrimeQ, resolvedColumnPrimeAbsorbanceSamplingRates, {}],
+			If[columnFlushQ, resolvedColumnFlushAbsorbanceSamplingRates, {}]
+		],
+		Join @@ {invalidHammingWindowWidthBool,invalidStandardHammingWindowWidthBool,invalidBlankHammingWindowWidthBool,invalidColumnPrimeHammingWindowWidthBool,invalidColumnFlushHammingWindowWidthBool}
+	];
 
-	If[Length[invalidSmoothingTimeConstantInvalidOptions] > 0 && messagesQ,
+	(* These are the gradient durations *)
+	invalidHammingWindowWidthUpperLimits = 2/PickList[
+		Join @@ {gradientDurations, standardGradientDurations, blankGradientDurations, columnPrimeGradientDurations, columnFlushGradientDurations},
+		Join @@ {invalidHammingWindowWidthBool,invalidStandardHammingWindowWidthBool,invalidBlankHammingWindowWidthBool,invalidColumnPrimeHammingWindowWidthBool,invalidColumnFlushHammingWindowWidthBool}
+	];
+
+	If[Length[invalidHammingWindowWidthInvalidOptions] > 0 && messagesQ,
 		Message[
-			Error::InvalidAbsorbanceSmoothingTimeConstant,
-			ObjectToString[invalidSmoothingTimeConstantInvalidOptions],
-			ObjectToString[currentInstrumentModel]
+			Error::InvalidAbsorbanceHammingWindowWidth,
+			ObjectToString[invalidHammingWindowWidthInvalidOptions],
+			invalidHammingWindowWidthInvalidValues,
+			invalidHammingWindowWidthLowerLimits,
+			invalidHammingWindowWidthUpperLimits
 		]
 	];
 
-	invalidSmoothingTimeConstantTests = If[Length[invalidSmoothingTimeConstantInvalidOptions] > 0,
-		testOrNull["The smoothing time constant options are only set to Small / Medium / Large values on the Waters instruments:", False],
-		testOrNull["The smoothing time constant options are only set to Small / Medium / Large values on the Waters instruments:", True]
+	invalidHammingWindowWidthTests = If[Length[invalidHammingWindowWidthInvalidOptions] > 0,
+		testOrNull["The Hamming window width options are only set to a value between 2/AbsorbanceSamplingRate and gradient duration:", False],
+		testOrNull["The Hamming window width options are only set to a value between 2/AbsorbanceSamplingRate and gradient duration:", True]
 	];
 
 	(* Rounding Message and Test *)
 	(* Find which options were offending *)
-	roundedSmoothingTimeConstantRoundingBool = (Or @@ #&) /@ {roundedSmoothingTimeConstantBool, roundedStandardSmoothingTimeConstantBool, roundedBlankSmoothingTimeConstantBool, roundedColumnPrimeSmoothingTimeConstantBool, roundedColumnFlushSmoothingTimeConstantBool};
-	roundedSmoothingTimeConstantRoundingOptions = PickList[smoothingTimeConstantOptions, roundedSmoothingTimeConstantRoundingBool];
-
-	If[Length[roundedSmoothingTimeConstantRoundingOptions] > 0 && messagesQ && !engineQ,
-		Message[
-			Warning::AbsorbanceSmoothingTimeConstantAdjusted,
-			ObjectToString[roundedSmoothingTimeConstantRoundingOptions],
-			If[MatchQ[possibleSmoothingTimeConstants,{}],"must be rounded to 0.01 Second","can only be specific values"]
-		]
-	];
-
-	roundedSmoothingTimeConstantRoundingTests = If[Length[roundedSmoothingTimeConstantRoundingOptions] > 0,
-		warningOrNull["The smoothing time constant options are rounded to the nearest allowed value:", False],
-		warningOrNull["The smoothing time constant options are rounded to the nearest allowed value:", True]
-	];
-
 	wavelengthResolutionOptions = {WavelengthResolution, StandardWavelengthResolution, BlankWavelengthResolution, ColumnPrimeWavelengthResolution, ColumnFlushWavelengthResolution};
 
 	(* Do the same with the WavelengthResolution *)
@@ -16626,6 +16559,7 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterErrors,
 		tooLargeEmissionCutOffFilterErrors,
 		invalidWatersFluorescenceGainErrors,
+		invalidNonWatersFluorescenceGainErrors,
 		invalidFluorescenceFlowCellTemperatureErrors
 	} = Transpose[
 		MapThread[
@@ -16634,10 +16568,10 @@ resolveHPLCInstrumentOptions[
 				Module[
 					{
 						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 					},
 
-					{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 8];
+					{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 9];
 
 					(* Set Ex/Em from the provided values or automatically *)
 					{resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength} = If[MemberQ[resolvedDetector, Fluorescence],
@@ -16699,9 +16633,15 @@ resolveHPLCInstrumentOptions[
 						True, Null
 					];
 					(* Resolve the Gain from the provided values or automatically *)
-					defaultFluorescenceGain = If[agilentManufacturedQ,
+					defaultFluorescenceGain = Which[
 						(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+						agilentManufacturedQ,
 						60Percent,
+						(* Waters Fluorescence detector recommends a gain at 1, which we treat as 100 percent *)
+						watersManufacturedQ,
+						100Percent,
+						(* Dionex - just do 100 percent *)
+						True,
 						100Percent
 					];
 					resolvedSingleFluorescenceGain = Which[
@@ -16775,13 +16715,19 @@ resolveHPLCInstrumentOptions[
 						False
 					];
 
+					(* If non-Waters is used, fluorescence gain can not exceed 100% *)
+					invalidNonWatersFluorescenceGainError = If[MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"]]],
+						MemberQ[ToList[resolvedSingleFluorescenceGain], GreaterP[100Percent]],
+						False
+					];
+
 					(* Flow cell temperature can only be set for UltiMate 3000 *)
 					invalidFluorescenceFlowCellTemperatureError = MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]] && !MatchQ[resolvedSingleFluorescenceFlowCellTemperature, Ambient | Null];
 
 					(* Return everything *)
 					{
 						resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+						wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 					}
 				]
 			],
@@ -16804,6 +16750,7 @@ resolveHPLCInstrumentOptions[
 			standardInvalidEmissionCutOffFilterErrors,
 			standardTooLargeEmissionCutOffFilterErrors,
 			standardInvalidWatersFluorescenceGainErrors,
+			standardInvalidNonWatersFluorescenceGainErrors,
 			standardInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16819,6 +16766,7 @@ resolveHPLCInstrumentOptions[
 			blankInvalidEmissionCutOffFilterErrors,
 			blankTooLargeEmissionCutOffFilterErrors,
 			blankInvalidWatersFluorescenceGainErrors,
+			blankInvalidNonWatersFluorescenceGainErrors,
 			blankInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16834,6 +16782,7 @@ resolveHPLCInstrumentOptions[
 			columnPrimeInvalidEmissionCutOffFilterErrors,
 			columnPrimeTooLargeEmissionCutOffFilterErrors,
 			columnPrimeInvalidWatersFluorescenceGainErrors,
+			columnPrimeInvalidNonWatersFluorescenceGainErrors,
 			columnPrimeInvalidFluorescenceFlowCellTemperatureErrors
 		},
 		{
@@ -16849,6 +16798,7 @@ resolveHPLCInstrumentOptions[
 			columnFlushInvalidEmissionCutOffFilterErrors,
 			columnFlushTooLargeEmissionCutOffFilterErrors,
 			columnFlushInvalidWatersFluorescenceGainErrors,
+			columnFlushInvalidNonWatersFluorescenceGainErrors,
 			columnFlushInvalidFluorescenceFlowCellTemperatureErrors
 		}
 	} = MapThread[
@@ -16862,10 +16812,10 @@ resolveHPLCInstrumentOptions[
 							Module[
 								{
 									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, defaultFluorescenceGain, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 								},
 
-								{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 8];
+								{wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError} = ConstantArray[False, 9];
 
 								(* Set Ex/Em from the provided values or automatically *)
 								{resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength} = If[MemberQ[resolvedDetector, Fluorescence],
@@ -16903,9 +16853,15 @@ resolveHPLCInstrumentOptions[
 									True, Null
 								];
 								(* Resolve the Gain from the provided values or automatically *)
-								defaultFluorescenceGain = If[agilentManufacturedQ,
+								defaultFluorescenceGain = Which[
 									(* Agilent semiprep Fluorescence detector recommends a gain at 10 out of 0-18 range *)
+									agilentManufacturedQ,
 									60Percent,
+									(* Waters Fluorescence detector recommends a gain at 1, which we treat as 100 percent *)
+									watersManufacturedQ,
+									100Percent,
+									(* Dionex - just do 100 percent *)
+									True,
 									100Percent
 								];
 								(* Resolve the Gain from the provided values or automatically *)
@@ -16923,8 +16879,9 @@ resolveHPLCInstrumentOptions[
 										Table[defaultFluorescenceGain,Length[resolvedSingleExcitationWavelength]],
 										defaultFluorescenceGain
 									],
-									(* If first gain of sample is the same value as the wavelength, use it *)
-									MemberQ[resolvedDetector, Fluorescence]&&SameLengthQ[First[resolvedFluorescenceGain],resolvedSingleExcitationWavelength], First[resolvedFluorescenceGain],
+									(* If first gain of sample is the same length as the wavelength and it has a valid gain, use it *)
+									MemberQ[resolvedDetector, Fluorescence]&&SameLengthQ[First[resolvedFluorescenceGain],resolvedSingleExcitationWavelength]&&!TrueQ[First[invalidNonWatersFluorescenceGainErrors]],
+									First[resolvedFluorescenceGain],
 									(* Otherwise use a default *)
 									MemberQ[resolvedDetector, Fluorescence],
 									If[MatchQ[resolvedSingleExcitationWavelength,_List],
@@ -16999,13 +16956,20 @@ resolveHPLCInstrumentOptions[
 									False
 								];
 
+
+								(* If non-Waters is used, fluorescence gain can not exceed 100% *)
+								invalidNonWatersFluorescenceGainError = If[MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "Waters Acquity UPLC H-Class FLR"]]],
+									MemberQ[ToList[resolvedSingleFluorescenceGain], GreaterP[100Percent]],
+									False
+								];
+
 								(* Flow cell temperature can only be set for UltiMate 3000 *)
 								invalidFluorescenceFlowCellTemperatureError = MemberQ[resolvedDetector, Fluorescence] && !MatchQ[currentInstrumentModel, ObjectP[Model[Instrument, HPLC, "id:wqW9BP7BzwAG"]]] && !MatchQ[resolvedSingleFluorescenceFlowCellTemperature, Ambient | Null];
 
 								(* Return everything *)
 								{
 									resolvedSingleExcitationWavelength, resolvedSingleEmissionWavelength, resolvedSingleEmissionCutOffFilter, resolvedSingleFluorescenceGain, resolvedSingleFluorescenceFlowCellTemperature,
-									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
+									wavelengthSwappedError, tooNarrowFluorescenceRangeError, conflictFluorescenceLengthError, tooManyFluorescenceWavelengthsError, invalidEmissionCutOffFilterError, tooLargeEmissionCutOffFilterError, invalidWatersFluorescenceGainError, invalidNonWatersFluorescenceGainError, invalidFluorescenceFlowCellTemperatureError
 								}
 							]
 						],
@@ -17021,7 +16985,7 @@ resolveHPLCInstrumentOptions[
 						]&,
 						entry
 					],
-					ConstantArray[{}, 8]
+					ConstantArray[{}, 9]
 				]
 			]
 		],
@@ -17610,7 +17574,7 @@ resolveHPLCInstrumentOptions[
 		AbsorbanceWavelength -> resolvedAbsorbanceWavelengths,
 		WavelengthResolution -> resolvedWavelengthResolutions,
 		AbsorbanceSamplingRate -> resolvedAbsorbanceSamplingRates,
-		SmoothingTimeConstant -> resolvedSmoothingTimeConstants,
+		HammingWindowWidth -> resolvedHammingWindowWidths,
 		UVFilter -> resolvedUVFilters,
 		ExcitationWavelength -> resolvedExcitationWavelength /. {(x_) ..} :> x,
 		EmissionWavelength -> resolvedEmissionWavelength /. {(x_) ..} :> x,
@@ -17632,7 +17596,7 @@ resolveHPLCInstrumentOptions[
 		StandardAbsorbanceWavelength -> resolvedStandardAbsorbanceWavelengths,
 		StandardWavelengthResolution -> resolvedStandardWavelengthResolutions,
 		StandardAbsorbanceSamplingRate -> resolvedStandardAbsorbanceSamplingRates,
-		StandardSmoothingTimeConstant -> resolvedStandardSmoothingTimeConstants,
+		StandardHammingWindowWidth -> resolvedStandardHammingWindowWidths,
 		StandardUVFilter -> resolvedStandardUVFilters,
 		StandardExcitationWavelength -> resolvedStandardExcitationWavelength /. {(x_) ..} :> x,
 		StandardEmissionWavelength -> resolvedStandardEmissionWavelength /. {(x_) ..} :> x,
@@ -17654,7 +17618,7 @@ resolveHPLCInstrumentOptions[
 		BlankAbsorbanceWavelength -> resolvedBlankAbsorbanceWavelengths,
 		BlankWavelengthResolution -> resolvedBlankWavelengthResolutions,
 		BlankAbsorbanceSamplingRate -> resolvedBlankAbsorbanceSamplingRates,
-		BlankSmoothingTimeConstant -> resolvedBlankSmoothingTimeConstants,
+		BlankHammingWindowWidth -> resolvedBlankHammingWindowWidths,
 		BlankUVFilter -> resolvedBlankUVFilters,
 		BlankExcitationWavelength -> resolvedBlankExcitationWavelength /. {(x_) ..} :> x,
 		BlankEmissionWavelength -> resolvedBlankEmissionWavelength /. {(x_) ..} :> x,
@@ -17676,7 +17640,7 @@ resolveHPLCInstrumentOptions[
 		ColumnPrimeAbsorbanceWavelength -> resolvedColumnPrimeAbsorbanceWavelengths,
 		ColumnPrimeWavelengthResolution -> resolvedColumnPrimeWavelengthResolutions,
 		ColumnPrimeAbsorbanceSamplingRate -> resolvedColumnPrimeAbsorbanceSamplingRates,
-		ColumnPrimeSmoothingTimeConstant -> resolvedColumnPrimeSmoothingTimeConstants,
+		ColumnPrimeHammingWindowWidth -> resolvedColumnPrimeHammingWindowWidths,
 		ColumnPrimeUVFilter -> resolvedColumnPrimeUVFilters,
 		ColumnPrimeExcitationWavelength -> resolvedColumnPrimeExcitationWavelength /. {(x_) ..} :> x,
 		ColumnPrimeEmissionWavelength -> resolvedColumnPrimeEmissionWavelength /. {(x_) ..} :> x,
@@ -17698,7 +17662,7 @@ resolveHPLCInstrumentOptions[
 		ColumnFlushAbsorbanceWavelength -> resolvedColumnFlushAbsorbanceWavelengths,
 		ColumnFlushWavelengthResolution -> resolvedColumnFlushWavelengthResolutions,
 		ColumnFlushAbsorbanceSamplingRate -> resolvedColumnFlushAbsorbanceSamplingRates,
-		ColumnFlushSmoothingTimeConstant -> resolvedColumnFlushSmoothingTimeConstants,
+		ColumnFlushHammingWindowWidth -> resolvedColumnFlushHammingWindowWidths,
 		ColumnFlushUVFilter -> resolvedColumnFlushUVFilters,
 		ColumnFlushExcitationWavelength -> resolvedColumnFlushExcitationWavelength /. {(x_) ..} :> x,
 		ColumnFlushEmissionWavelength -> resolvedColumnFlushEmissionWavelength /. {(x_) ..} :> x,
@@ -18186,7 +18150,56 @@ resolveHPLCInstrumentOptions[
 		}
 	];
 
-	(* Fluorescence Error 7 - InvalidHPLCFluorescenceFlowCellTemperature - flow cell temperature control is not available on Waters instrument *)
+	(* Fluorescence Error 7 - InvalidWatersHPLCFluorescenceGain - the gain must be the same for multi-channel fluorescence measurement for Waters *)
+	invalidNonWatersFluorescenceGainOptions = MapThread[
+		If[MemberQ[#1, True],
+			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
+			Message[Error::HPLCFluorescenceGainOverMaximum, ObjectToString[currentInstrument, Cache -> cache, Simulation->simulation], ToString[#2]];{#2},
+			{}
+		]&,
+		{
+			(* Error tracking booleans *)
+			{
+				invalidNonWatersFluorescenceGainErrors,
+				standardInvalidNonWatersFluorescenceGainErrors,
+				blankInvalidNonWatersFluorescenceGainErrors,
+				columnPrimeInvalidNonWatersFluorescenceGainErrors,
+				columnFlushInvalidNonWatersFluorescenceGainErrors
+			},
+			(* Option Names *)
+			{
+				FluorescenceGain,
+				StandardFluorescenceGain,
+				BlankFluorescenceGain,
+				ColumnPrimeFluorescenceGain,
+				ColumnFlushFluorescenceGain
+			}
+		}
+	];
+
+	invalidNonWatersFluorescenceGainTests = MapThread[
+		testOrNull["For Non-Waters HPLC system with Fluorescence detector, the " <> ToString[#2] <> " option must be set to a maximum of 100 Percent.", !MemberQ[#1, True]]&,
+		{
+			(* Error tracking booleans *)
+			{
+				invalidNonWatersFluorescenceGainErrors,
+				standardInvalidNonWatersFluorescenceGainErrors,
+				blankInvalidNonWatersFluorescenceGainErrors,
+				columnPrimeInvalidNonWatersFluorescenceGainErrors,
+				columnFlushInvalidNonWatersFluorescenceGainErrors
+			},
+			(* Option Names *)
+			{
+				FluorescenceGain,
+				StandardFluorescenceGain,
+				BlankFluorescenceGain,
+				ColumnPrimeFluorescenceGain,
+				ColumnFlushFluorescenceGain
+			}
+		}
+	];
+
+	(* Fluorescence Error 8 - InvalidHPLCFluorescenceFlowCellTemperature - flow cell temperature control is not available on Waters instrument *)
 	invalidFluorescenceFlowCellTemperatureOptions = MapThread[
 		If[MemberQ[#1, True],
 			(* Construct the error message to give information about invalid options, type of samples and the samples that are invalid *)
@@ -18452,12 +18465,13 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterOptions,
 		tooLargeEmissionCutOffFilterOptions,
 		invalidWatersFluorescenceGainOptions,
+		invalidNonWatersFluorescenceGainOptions,
 		invalidFluorescenceFlowCellTemperatureOptions,
 		conflictRefractiveIndexMethodOptions,
 		gasPressureConflictOptions,
 		gasHeatingPowerConflictOptions,
 		gasHeatingConflictOptions,
-		invalidSmoothingTimeConstantInvalidOptions,
+		invalidHammingWindowWidthInvalidOptions,
 		wavelengthResolutionConflictOptions,
 		wavelengthFractionCollectionConflictOptions,
 		incompatibleFractionCollectionAllOptions,
@@ -18479,6 +18493,7 @@ resolveHPLCInstrumentOptions[
 		invalidEmissionCutOffFilterTests,
 		tooLargeEmissionCutOffFilterTests,
 		invalidWatersFluorescenceGainTests,
+		invalidNonWatersFluorescenceGainTests,
 		invalidFluorescenceFlowCellTemperatureTests,
 		conflictRefractiveIndexMethodTests,
 		gasPressureConflictTest,
@@ -18486,8 +18501,7 @@ resolveHPLCInstrumentOptions[
 		gasHeatingPowerConflictTest,
 		tuvOptionsNotNeededTest,
 		roundedSamplingRateRoundingTests,
-		invalidSmoothingTimeConstantTests,
-		roundedSmoothingTimeConstantRoundingTests,
+		invalidHammingWindowWidthTests,
 		wavelengthResolutionConflictTests,
 		wavelengthFractionCollectionConflictTests,
 		incompatibleFractionCollectionTest,
@@ -18527,7 +18541,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		columnPrimePositions, columnFlushPositions, standardLookup, blankLookup, standardMappingAssociation, blankMappingAssociation,
 		columnPrimeMappingAssociation, standardReverseAssociation, blankReverseAssociation, columnPrimeReverseAssociation, columnFlushReverseAssociation,
 		sampleReverseAssociation, columnFlushMappingAssociation, groupedStandard, flatStandardResources, linkedStandardResources, blankTuples,
-		assignedBlankTuples, groupedBlanksTuples, groupedBlanksPositionVolumes, groupedBlankShared, groupedBlank,
+		assignedBlankTuples, groupedBlanksTuples, groupedBlanksPositionVolumes, groupedBlankShared, patchedGroupedBlankShared, groupedBlank,
 		flatBlankResources, linkedBlankResources, linkedSampleResources, injectionTableWithLinks,
 		standardTuples, assignedStandardTuples, groupedStandardsTuples, groupedStandardsPositionVolumes, groupedStandardShared,
 		samplePackets, samplePositions, samplePositionsWithReplicates, sampleContainers, aliquotContainers, bufferAModel, bufferBModel, bufferCModel, bufferDModel,
@@ -18602,23 +18616,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	(* Most of the detector related options are instrument specific - except the pH/Conductivity calibration options. We don't want to resolve these options again because we cannot prepare the resources for the buffers again *)
 	instrumentSpecificOptions = {Detector, MaxAcceleration, SampleTemperature, FractionCollectionDetector, AbsoluteThreshold, PeakSlope, PeakSlopeDuration, PeakEndThreshold,
 		pHTemperatureCompensation, ConductivityTemperatureCompensation,
-		AbsorbanceWavelength, WavelengthResolution, AbsorbanceSamplingRate, SmoothingTimeConstant, UVFilter,
+		AbsorbanceWavelength, WavelengthResolution, AbsorbanceSamplingRate, HammingWindowWidth, UVFilter,
 		ExcitationWavelength, EmissionWavelength, EmissionCutOffFilter, FluorescenceGain, FluorescenceFlowCellTemperature,
 		NebulizerGas, NebulizerGasHeating, NebulizerHeatingPower, NebulizerGasPressure, DriftTubeTemperature, ELSDGain, ELSDSamplingRate,
 		LightScatteringLaserPower, LightScatteringFlowCellTemperature, RefractiveIndexMethod, RefractiveIndexFlowCellTemperature,
-		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardAbsorbanceSamplingRate, StandardSmoothingTimeConstant, StandardUVFilter,
+		StandardAbsorbanceWavelength, StandardWavelengthResolution, StandardAbsorbanceSamplingRate, StandardHammingWindowWidth, StandardUVFilter,
 		StandardExcitationWavelength, StandardEmissionWavelength, StandardEmissionCutOffFilter, StandardFluorescenceGain, StandardFluorescenceFlowCellTemperature,
 		StandardNebulizerGas, StandardNebulizerGasHeating, StandardNebulizerHeatingPower, StandardNebulizerGasPressure, StandardDriftTubeTemperature, StandardELSDGain, StandardELSDSamplingRate,
 		StandardLightScatteringLaserPower, StandardLightScatteringFlowCellTemperature, StandardRefractiveIndexMethod, StandardRefractiveIndexFlowCellTemperature,
-		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankAbsorbanceSamplingRate, BlankSmoothingTimeConstant, BlankUVFilter,
+		BlankAbsorbanceWavelength, BlankWavelengthResolution, BlankAbsorbanceSamplingRate, BlankHammingWindowWidth, BlankUVFilter,
 		BlankExcitationWavelength, BlankEmissionWavelength, BlankEmissionCutOffFilter, BlankFluorescenceGain, BlankFluorescenceFlowCellTemperature,
 		BlankNebulizerGas, BlankNebulizerGasHeating, BlankNebulizerHeatingPower, BlankNebulizerGasPressure, BlankDriftTubeTemperature, BlankELSDGain, BlankELSDSamplingRate,
 		BlankLightScatteringLaserPower, BlankLightScatteringFlowCellTemperature, BlankRefractiveIndexMethod, BlankRefractiveIndexFlowCellTemperature,
-		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeSmoothingTimeConstant, ColumnPrimeUVFilter,
+		ColumnPrimeAbsorbanceWavelength, ColumnPrimeWavelengthResolution, ColumnPrimeAbsorbanceSamplingRate, ColumnPrimeHammingWindowWidth, ColumnPrimeUVFilter,
 		ColumnPrimeExcitationWavelength, ColumnPrimeEmissionWavelength, ColumnPrimeEmissionCutOffFilter, ColumnPrimeFluorescenceGain, ColumnPrimeFluorescenceFlowCellTemperature,
 		ColumnPrimeNebulizerGas, ColumnPrimeNebulizerGasHeating, ColumnPrimeNebulizerHeatingPower, ColumnPrimeNebulizerGasPressure, ColumnPrimeDriftTubeTemperature, ColumnPrimeELSDGain, ColumnPrimeELSDSamplingRate,
 		ColumnPrimeLightScatteringLaserPower, ColumnPrimeLightScatteringFlowCellTemperature, ColumnPrimeRefractiveIndexMethod, ColumnPrimeRefractiveIndexFlowCellTemperature,
-		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushAbsorbanceSamplingRate, ColumnFlushSmoothingTimeConstant, ColumnFlushUVFilter,
+		ColumnFlushAbsorbanceWavelength, ColumnFlushWavelengthResolution, ColumnFlushAbsorbanceSamplingRate, ColumnFlushHammingWindowWidth, ColumnFlushUVFilter,
 		ColumnFlushExcitationWavelength, ColumnFlushEmissionWavelength, ColumnFlushEmissionCutOffFilter, ColumnFlushFluorescenceGain, ColumnFlushFluorescenceFlowCellTemperature,
 		ColumnFlushNebulizerGas, ColumnFlushNebulizerGasHeating, ColumnFlushNebulizerHeatingPower, ColumnFlushNebulizerGasPressure, ColumnFlushDriftTubeTemperature, ColumnFlushELSDGain, ColumnFlushELSDSamplingRate,
 		ColumnFlushLightScatteringLaserPower, ColumnFlushLightScatteringFlowCellTemperature, ColumnFlushRefractiveIndexMethod, ColumnFlushRefractiveIndexFlowCellTemperature
@@ -18833,70 +18847,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		],
 		Null
 	];
-
-	(* Now, we convert everything to a resource within the selector *)
-	(* We can use multiple columns of the same model, so a separate resource is needed for each *)
-	columnSelectorResources = If[MatchQ[columnSelectorWithJoins, Except[{}|ListableP[Null]]],
-		MapIndexed[
-			Function[
-				{tuple, tupleIndex},
-				(* The map across the each entity within to make our resource *)
-				MapThread[
-					Function[
-						{entity, letter},
-						If[!NullQ[entity],
-							If[MatchQ[entity, ColumnPositionP | ColumnOrientationP], (* Check if the entity within the tuple is an BlahColumnOrientation or ColumnPosition *)
-								entity,
-								Link[Resource[
-									Sample -> entity,
-									Name -> "Column Selector entity " <> ToString[tupleIndex] <> letter
-								]]
-							],
-							(* Otherwise return Null *)
-							Null
-						]
-					],
-					{
-						tuple,
-						(* We use the letters to help with the labeling within the tuple resource *)
-						{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
-					}
-				]
-			],
-			columnSelectorWithJoins
-		],
-		Null
-	];
-
-	(* Finally make our uploadable column selector table *)
-	columnSelectorUploadable = If[MatchQ[columnSelectorResources, Except[{}|ListableP[Null]]],
-		MapThread[
-			Function[
-				{columnPosition, guardColumn, gcOrientation, gcJoin, primColumn, pcOrientation, pcJoin, secondColumn, scJoin, thirdColumn},
-				Association[
-					ColumnPosition -> columnPosition,
-					GuardColumn -> guardColumn,
-					GuardColumnOrientation -> gcOrientation,
-					GuardColumnJoin -> gcJoin,
-					Column -> primColumn,
-					ColumnOrientation -> pcOrientation,
-					ColumnJoin -> pcJoin,
-					SecondaryColumn -> secondColumn,
-					SecondaryColumnJoin -> scJoin,
-					TertiaryColumn -> thirdColumn
-				]
-			],
-			Transpose[columnSelectorResources]
-		],
-		{}
-	];
-
-	(* Get the guard columns, which is just the first column of the selector resources *)
-	guardColumnResources = If[MatchQ[columnSelectorResources, Except[{}|ListableP[Null]]],
-		columnSelectorResources[[All, 2]],
-		{}
-	];
-
+	
 	(* Make Column Holder Resources, if we need them *)
 	columnHolderResources = If[MatchQ[Lookup[myResolvedOptions, IncubateColumn], False],
 		{
@@ -18918,25 +18869,9 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		},
 		Null
 	];
-
-	(* Make the guard cartridge resources *)
-	(* Need to do it here since we want to empty out GuardCartridge is we don't have column *)
-	guardCartridgeResources = If[NullQ[columnSelectorResources],
-		{},
-		Map[
-			If[!NullQ[#],
-				Link@Resource[
-					Sample -> #
-				],
-				Null
-			]&,
-			guardCartridgeObjects
-		]
-	];
-
-
+	
 	(* Get the resolved injection table because that will actually determine much that we do here *)
-	injectionTable = Lookup[myResolvedOptions, InjectionTable];
+	injectionTable = Lookup[myResolvedOptions, InjectionTable] /. {NoInjection -> Null};
 
 	(* Get all of the positions so that it's easy to update the injection table *)
 	{samplePositions, standardPositions, blankPositions, columnPrimePositions, columnFlushPositions} = Map[
@@ -18950,8 +18885,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	compatibleVialContainer = If[MatchQ[instrumentModel,prepAgilentHPLCPattern],
 		(* "50mL Tube" *)
 		{Model[Container, Vessel, "id:bq9LA0dBGGR6"]},
-		(* {"HPLC vial (high recovery)", "1mL HPLC Vial (total recovery)", "Amber HPLC vial (high recovery)", "HPLC vial (high recovery), LCMS Certified", "HPLC vial (high recovery) - Deactivated Clear Glass", "Polypropylene HPLC vial (high recovery)", "PFAS Testing Vials, Agilent"} *)
-		$ChromatographyLCCompatibleVials
+		(* We could assign this to a variable but it returns exactly what we need and is only used here so just inserting the memoized search directly. *)
+		allLCCompatibleVialSearch["Memoization"]
 	];
 
 	(* Set autosampler dead volume (following the same number as in the resolver *)
@@ -19055,7 +18990,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 				{
 					Keys[eachUniqueBlank],
 					(* Injection volume still at this position *)
-					Values[eachUniqueBlank][[All, 3]]
+					(* If the blank is samples the volume will be Null. Replace with 0 microliters for now. *)
+					Values[eachUniqueBlank][[All, 3]] /. Null -> 0 Microliter
 				}
 			]
 		],
@@ -19074,14 +19010,16 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			Sequence @@ Map[
 				(* This is all of the positions *)
 				(
-					#[[All, 1]] ->
-							Resource[
-								Sample -> First[rule],
-								(* Total the volume for the given group *)
-								Amount -> Round[(Total[#[[All, 2]]] + autosamplerDeadVolume)/0.9,0.1Milliliter],
-								Container -> PickList[compatibleVialContainer, vialSampleMaxVolume, GreaterEqualP[(Total[#[[All, 2]]] + autosamplerDeadVolume)/0.9]],
-								Name -> CreateUUID[]
-							]
+					#[[All, 1]] -> If[MatchQ[First[rule], Null],
+						Null,
+						Resource[
+							Sample -> First[rule],
+							(* Total the volume for the given group *)
+							Amount -> Round[(Total[#[[All, 2]]] + autosamplerDeadVolume)/0.9,0.1Milliliter],
+							Container -> PickList[compatibleVialContainer, vialSampleMaxVolume, GreaterEqualP[(Total[#[[All, 2]]] + autosamplerDeadVolume)/0.9]],
+							Name -> CreateUUID[]
+						]
+					]
 				)&,
 				Last[rule]
 			]
@@ -19273,6 +19211,107 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 
 	(* Flatten and reform our injection table *)
 	injectionTableWithReplicates = Partition[Flatten[injectionTableInserted], 7];
+
+	(* Now that injectionTableWithReplicates is available, build column selector resources.
+	   NumberOfUses is computed from the replicate-expanded table so it matches what the parser
+	   records on the column objects after the experiment completes.
+	   injectionTableWithReplicates entries are {Type, Sample, InjectionVolume, ColumnPosition, ColumnTemperature, Gradient, DilutionFactor},
+	   so Type is at index 1 and ColumnPosition is at index 4 — same positions as the pre-replicate table. *)
+	(* We can use multiple columns of the same model, so a separate resource is needed for each *)
+	columnSelectorResources = If[MatchQ[columnSelectorWithJoins, Except[{}|ListableP[Null]]],
+		MapIndexed[
+			Function[
+				{tuple, tupleIndex},
+				Module[{columnPosition, numberOfInjections},
+					(* tuple[[1]] is the ColumnPosition for this selector row (e.g. PositionA, PositionB) *)
+					columnPosition = tuple[[1]];
+					(* Count only Sample/Standard/Blank injections routed through this column position.
+					   Primary, Secondary, and Tertiary columns are in series at the same position and therefore share the same count. *)
+					numberOfInjections = Length[Select[
+						Cases[injectionTableWithReplicates, Except[Null]],
+						MatchQ[#[[4]], columnPosition] && MatchQ[#[[1]], Sample | Standard | Blank]&
+					]];
+					(* The map across each entity within to make our resource *)
+					MapThread[
+						Function[
+							{entity, letter},
+							If[!NullQ[entity],
+								If[MatchQ[entity, ColumnPositionP | ColumnOrientationP], (* Check if the entity within the tuple is an BlahColumnOrientation or ColumnPosition *)
+									entity,
+									(* when NumberOfInjections is zero, Resource fails so we account for it here by assigning a 1 default *)
+									If[MatchQ[numberOfInjections,GreaterP[0]],
+										Link[Resource[
+											Sample -> entity,
+											Name -> "Column Selector entity " <> ToString[tupleIndex] <> letter,
+											NumberOfUses -> numberOfInjections
+										]],
+										Link[Resource[
+											Sample -> entity,
+											Name -> "Column Selector entity " <> ToString[tupleIndex] <> letter,
+											NumberOfUses -> 1
+										]]
+									]
+								],
+								(* Otherwise return Null *)
+								Null
+							]
+						],
+						{
+							tuple,
+							(* We use the letters to help with the labeling within the tuple resource *)
+							{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
+						}
+					]
+				]
+			],
+			columnSelectorWithJoins
+		],
+		Null
+	];
+
+	(* Make our uploadable column selector table *)
+	columnSelectorUploadable = If[MatchQ[columnSelectorResources, Except[{}|ListableP[Null]]],
+		MapThread[
+			Function[
+				{columnPosition, guardColumn, gcOrientation, gcJoin, primColumn, pcOrientation, pcJoin, secondColumn, scJoin, thirdColumn},
+				Association[
+					ColumnPosition -> columnPosition,
+					GuardColumn -> guardColumn,
+					GuardColumnOrientation -> gcOrientation,
+					GuardColumnJoin -> gcJoin,
+					Column -> primColumn,
+					ColumnOrientation -> pcOrientation,
+					ColumnJoin -> pcJoin,
+					SecondaryColumn -> secondColumn,
+					SecondaryColumnJoin -> scJoin,
+					TertiaryColumn -> thirdColumn
+				]
+			],
+			Transpose[columnSelectorResources]
+		],
+		{}
+	];
+
+	(* Get the guard columns, which is just the first column of the selector resources *)
+	guardColumnResources = If[MatchQ[columnSelectorResources, Except[{}|ListableP[Null]]],
+		columnSelectorResources[[All, 2]],
+		{}
+	];
+	
+	(* Make the guard cartridge resources *)
+	(* Need to do it here since we want to empty out GuardCartridge if we don't have column *)
+	guardCartridgeResources = If[NullQ[columnSelectorResources],
+		{},
+		Map[
+			If[!NullQ[#],
+				Link@Resource[
+					Sample -> #
+				],
+				Null
+			]&,
+			guardCartridgeObjects
+		]
+	];
 
 	(* Finally make our uploadable injection table *)
 	injectionTableUploadable = MapThread[
@@ -19625,12 +19664,9 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		columnPrimeFlowRates
 	];
 
-	(* Get the Initial FlowRate of the last ColumnFlush or ColumnPrime - if ColumnPrime is specified as frequency, it will serve as a flush *)
-	columnFlushInitialFlowRate = Which[
-		!NullQ[columnFlushFlowRates], Last[columnFlushFlowRates],
-		!NullQ[columnPrimeFlowRates], Last[columnPrimeFlowRates],
-		True, 1Milliliter / Minute
-	];
+	(* Get the final flow rate of the very last injection (usually column flush) of the injection table to be the flow rate for shut-down. This makes sure that we won't unnecessarily change flow rate during shutdown *)
+	(* Here in theory, we should take the last gradient entry, and then last gradient point, and then last entry as the flow rate. We take an easy route to just flatten everything and the very last entry is just our final flow rate. *)
+	columnFlushInitialFlowRate = Last[Flatten[allGradientTuples]];
 
 	(* Put together the Shutdown gradient *)
 	shutdownGradient = If[MatchQ[instrumentModel, ObjectP[dionexHPLCInstruments]],
@@ -19870,7 +19906,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	];
 
 	(* Leave 0 mL if no BufferD used. Round for water dispenser if buffer is water. *)
-	bufferDVolume = If[NullQ[bufferDModel],
+	bufferDVolume = If[NullQ[Lookup[resolvedOptions, BufferD]],
 		0 Milliliter,
 		If[MatchQ[bufferDModel, WaterModelP],
 			roundToDispenseVolume[Total[bufferDVolumePerGradient] + extraBufferVolume],
@@ -19960,14 +19996,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferAVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferAVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferAVolume) <= 7.5 Liter],
+			If[MatchQ[bufferAModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19978,14 +20023,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferBVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferBVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferBVolume) <= 7.5 Liter],
+			If[MatchQ[bufferBModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -19996,14 +20050,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferCVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferCVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferCVolume) <= 7.5 Liter],
+			If[MatchQ[bufferCModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20014,14 +20077,23 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Waters must use a 2L bottle *)
 		(* User detergent-sensitive bottles for LCMS *)
 		internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
-		watersManufacturedQ, {Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+		watersManufacturedQ,
+			(* if we are doing water prep, only allow the 2L bottle *)
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"]},(* 2L Glass Bottle *)
+				{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]} (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
+			],
 
 		(* If buffer + dead volume fits into an Amber Glass Bottle 4 L, use that *)
 		TrueQ[(bufferDVolume + bufferDeadVolume) <= 4 Liter], {Model[Container, Vessel, "id:Vrbp1jG800Zm"]},
 
 		(* Otherwise, we need a carboy and will use a dead volume of 2.5L in the resource generation below. Find a carboy based on that dead volume *)
 		(* If the volume is less than 10L, we can use either a 10L or 20L carboy *)
-		TrueQ[(bufferDVolume) <= 7.5 Liter], {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]},
+		TrueQ[(bufferDVolume) <= 7.5 Liter],
+			If[MatchQ[bufferDModel, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"]},(* 10L carboy *)
+				{Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} (* 10L or 20L carboy *)
+			],
 
 		(* Otherwise, we must use a 20L carboy *)
 		True, {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}
@@ -20036,7 +20108,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20049,7 +20121,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 			(* User detergent-sensitive bottles for LCMS *)
 			internalUsageQ, {Model[Container, Vessel, "id:rea9jlRPKB05"]}, (* 2L Glass Bottle, Detergent-Sensitive *)
 			watersManufacturedQ,
-			(* Waters moust use a 2L bottle *)
+			(* Waters must use a 2L bottle *)
 			{Model[Container, Vessel, "id:3em6Zv9Njjbv"], Model[Container, Vessel, "id:O81aEBZpZODD"]}, (* 2L Glass Bottle, 2L Glass Bottle, Sterile *)
 			(* Dionex/Agilent must use Amber Glass Bottle 4 L for system prime/flush due to the caps used *)
 			True, {Model[Container, Vessel, "id:Vrbp1jG800Zm"]}
@@ -20111,7 +20183,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 	bufferDResource = Which[
 		(* If no BufferD AND Dionex, set to Null *)
 		And[
-			NullQ[bufferDModel],
+			NullQ[Lookup[resolvedOptions, BufferD]],
 			MatchQ[instrumentModel,dionexHPLCPattern]
 		],
 		Null,
@@ -20119,7 +20191,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* This is only for Agilent *)
 		MatchQ[bufferDContainer, {Model[Container, Vessel, "id:aXRlGnZmOOB9"], Model[Container, Vessel, "id:3em6Zv9NjjkY"]} | {Model[Container, Vessel, "id:3em6Zv9NjjkY"]}],
 		Resource[
-			Sample -> Lookup[resolvedOptions, BufferC],
+			Sample -> Lookup[resolvedOptions, BufferD],
 			Amount -> bufferDVolume + 2.5 Liter,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20127,7 +20199,7 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		(* Otherwise we have a non-carboy *)
 		True,
 		Resource[
-			Sample -> If[!NullQ[bufferDModel], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
+			Sample -> If[!NullQ[Lookup[resolvedOptions, BufferD]], Lookup[resolvedOptions, BufferD], Model[Sample, "Milli-Q water"]],
 			Amount -> bufferDVolume + bufferDeadVolume,
 			Container -> bufferDContainer,
 			Name -> CreateUUID[]
@@ -20156,7 +20228,10 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 				(* Otherwise 1 Liter bottle since we have 1 Liter cap assigned. It requires >130 injections to go beyond the max volume *)
 				If[internalUsageQ,
 					{Model[Container, Vessel, "id:4pO6dM5l83Vz"]}, (* 1L Glass Bottle, Detergent-Sensitive *)
-					{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					If[MatchQ[needleWashSolution, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"]}, (* 1L Glass Bottle *)
+						{Model[Container, Vessel, "id:zGj91aR3ddXJ"], Model[Container, Vessel, "id:XnlV5jKRKBqn"]} (* 1L Glass Bottle *)
+					]
 				]
 			];
 			Resource[
@@ -20179,7 +20254,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferA],
 			Amount -> systemPrimeBufferAVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20196,7 +20272,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferB],
 			Amount -> systemPrimeBufferBVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20213,7 +20290,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferC],
 			Amount -> systemPrimeBufferCVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20231,7 +20309,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemPrimeGradientPacket, BufferD],
 			Amount -> systemPrimeBufferDVolume + bufferDeadVolume,
-			Container -> systemPrimeBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemPrimeBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemPrimeBufferContainer]}, systemPrimeBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20248,7 +20327,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferA],
 			Amount -> systemFlushBufferAVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferA, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20265,7 +20345,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferB],
 			Amount -> systemFlushBufferBVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferB, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20282,7 +20363,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferC],
 			Amount -> systemFlushBufferCVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferC, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20299,7 +20381,8 @@ HPLCResourcePacketsNew[mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOpti
 		Resource[
 			Sample -> Lookup[systemFlushGradientPacket, BufferD],
 			Amount -> systemFlushBufferDVolume + bufferDeadVolume,
-			Container -> systemFlushBufferContainer,
+			(* if this resource is water, then only allow the first listed container model *)
+			Container -> If[MatchQ[systemFlushBufferD, ObjectP[Model[Sample, "id:8qZ1VWNmdLBD"]]], {First[systemFlushBufferContainer]}, systemFlushBufferContainer],
 			RentContainer -> True,
 			Name -> CreateUUID[]
 		]
@@ -20414,7 +20497,11 @@ Model[Container, Rack, "16 x 100 mm Tube Container for Preparative HPLC"],}
 			(* Use buffer and fraction volume to decide the time, or take 6 Hour *)
 			Min[maxFractionTotalVolume / bufferUsePerTime, 6 Hour]
 		],
-		6 Hour
+		(* we don't collect fractions, go a value that is between 1-3Hours and as close to the SeparationTime/2 as possible *)
+		Min[
+			Max[totalRunTime/2,1Hour],
+			3Hour
+		]
 	];
 
 	(* Create placement field value for SystemPrime buffers *)
@@ -21404,27 +21491,27 @@ hplcInstrumentResourcePackets[
 ] := Module[
 	{
 		cache, simulation, preuploadPacketQ, resolvedOptions, safeOptions, uploadQ, alternateOptions, instrumentModelPacket, pertinentOptions,
-		columnPrimeWavelengthResolutions, columnPrimeUVFilter, columnPrimeAbsorbanceSamplingRates,columnPrimeSmoothingTimeConstants,
+		columnPrimeWavelengthResolutions, columnPrimeUVFilter, columnPrimeAbsorbanceSamplingRates,columnPrimeHammingWindowWidths,
 		columnPrimeExcitationWavelengths, columnPrimeSecondaryExcitationWavelengths, columnPrimeTertiaryExcitationWavelengths, columnPrimeQuaternaryExcitationWavelengths, columnPrimeEmissionWavelengths, columnPrimeSecondaryEmissionWavelengths, columnPrimeTertiaryEmissionWavelengths, columnPrimeQuaternaryEmissionWavelengths, columnPrimeEmissionCutOffFilters, columnPrimeFluorescenceGains, columnPrimeSecondaryFluorescenceGains, columnPrimeTertiaryFluorescenceGains, columnPrimeQuaternaryFluorescenceGains, columnPrimeFluorescenceFlowCellTemperatures,
 		columnPrimeLightScatteringLaserPowers, columnPrimeLightScatteringFlowCellTemperatures, columnPrimeRefractiveIndexMethods, columnPrimeRefractiveIndexFlowCellTemperatures,
 		columnPrimeNebulizerGases, columnPrimeNebulizerGasPressures, columnPrimeNebulizerGasHeatings, columnPrimeNebulizerHeatingPowers, columnPrimeDriftTubeTemperatures, columnPrimeELSDGains, columnPrimeELSDSamplingRates,
-		sampleWavelengthResolutions, sampleUVFilter, sampleAbsorbanceSamplingRates,sampleSmoothingTimeConstants,
+		sampleWavelengthResolutions, sampleUVFilter, sampleAbsorbanceSamplingRates,sampleHammingWindowWidths,
 		sampleExcitationWavelengths, sampleSecondaryExcitationWavelengths, sampleTertiaryExcitationWavelengths, sampleQuaternaryExcitationWavelengths, sampleEmissionWavelengths, sampleSecondaryEmissionWavelengths, sampleTertiaryEmissionWavelengths, sampleQuaternaryEmissionWavelengths, sampleEmissionCutOffFilters, sampleFluorescenceGains, sampleSecondaryFluorescenceGains, sampleTertiaryFluorescenceGains, sampleQuaternaryFluorescenceGains, sampleFluorescenceFlowCellTemperatures,
 		sampleLightScatteringLaserPowers, sampleLightScatteringFlowCellTemperatures, sampleRefractiveIndexMethods, sampleRefractiveIndexFlowCellTemperatures,
 		nebulizerGas, nebulizerGasHeating, nebulizerHeatingPower, nebulizerGasPressure, driftTubeTemperature, elsdGain, elsdSamplingRate,
-		standardWavelengthResolutions, standardUVFilter, standardAbsorbanceSamplingRates, standardSmoothingTimeConstants, standardSmoothingTimeConstantsConverted,
+		standardWavelengthResolutions, standardUVFilter, standardAbsorbanceSamplingRates, standardHammingWindowWidths,
 		standardExcitationWavelengths, standardSecondaryExcitationWavelengths, standardTertiaryExcitationWavelengths, standardQuaternaryExcitationWavelengths, standardEmissionWavelengths, standardSecondaryEmissionWavelengths, standardTertiaryEmissionWavelengths, standardQuaternaryEmissionWavelengths, standardEmissionCutOffFilters, standardFluorescenceGains, standardSecondaryFluorescenceGains, standardTertiaryFluorescenceGains, standardQuaternaryFluorescenceGains, standardFluorescenceFlowCellTemperatures,
 		standardLightScatteringLaserPowers, standardLightScatteringFlowCellTemperatures, standardRefractiveIndexMethods, standardRefractiveIndexFlowCellTemperatures,
 		standardDriftTubeTemperature, standardELSDGain, standardELSDSamplingRate, standardNebulizerGas, standardNebulizerGasHeating, standardNebulizerHeatingPower, standardNebulizerGasPressure,
-		blankWavelengthResolutions, blankUVFilter, blankAbsorbanceSamplingRates, blankSmoothingTimeConstants,blankSmoothingTimeConstantsConverted,
+		blankWavelengthResolutions, blankUVFilter, blankAbsorbanceSamplingRates, blankHammingWindowWidths,
 		blankExcitationWavelengths, blankSecondaryExcitationWavelengths, blankTertiaryExcitationWavelengths, blankQuaternaryExcitationWavelengths, blankEmissionWavelengths, blankSecondaryEmissionWavelengths, blankTertiaryEmissionWavelengths, blankQuaternaryEmissionWavelengths, blankEmissionCutOffFilters, blankFluorescenceGains, blankSecondaryFluorescenceGains, blankTertiaryFluorescenceGains, blankQuaternaryFluorescenceGains, blankFluorescenceFlowCellTemperatures,
 		blankLightScatteringLaserPowers, blankLightScatteringFlowCellTemperatures, blankRefractiveIndexMethods, blankRefractiveIndexFlowCellTemperatures,
 		blankDriftTubeTemperature, blankELSDGain, blankELSDSamplingRate, blankNebulizerGas, blankNebulizerGasHeating, blankNebulizerHeatingPower, blankNebulizerGasPressure,
-		columnFlushWavelengthResolutions, columnFlushUVFilter, columnFlushAbsorbanceSamplingRates,columnFlushSmoothingTimeConstants,
+		columnFlushWavelengthResolutions, columnFlushUVFilter, columnFlushAbsorbanceSamplingRates,columnFlushHammingWindowWidths,
 		columnFlushExcitationWavelengths, columnFlushSecondaryExcitationWavelengths, columnFlushTertiaryExcitationWavelengths, columnFlushQuaternaryExcitationWavelengths, columnFlushEmissionWavelengths, columnFlushSecondaryEmissionWavelengths, columnFlushTertiaryEmissionWavelengths, columnFlushQuaternaryEmissionWavelengths, columnFlushEmissionCutOffFilters, columnFlushFluorescenceGains, columnFlushSecondaryFluorescenceGains, columnFlushTertiaryFluorescenceGains, columnFlushQuaternaryFluorescenceGains, columnFlushFluorescenceFlowCellTemperatures,
 		columnFlushLightScatteringLaserPowers, columnFlushLightScatteringFlowCellTemperatures, columnFlushRefractiveIndexMethods, columnFlushRefractiveIndexFlowCellTemperatures,
 		columnFlushNebulizerGases, columnFlushNebulizerGasPressures, columnFlushNebulizerGasHeatings, columnFlushNebulizerHeatingPowers, columnFlushDriftTubeTemperatures, columnFlushELSDGains, columnFlushELSDSamplingRates,
-		instrumentSpecificPacket,possibleSmoothingTimeConstants,
+		instrumentSpecificPacket,
 		columnPrimeAbsorbanceWavelength, columnPrimeMinAbsorbanceWavelengths, columnPrimeMaxAbsorbanceWavelengths,
 		sampleAbsorbanceWavelength, sampleMinAbsorbanceWavelengths, sampleMaxAbsorbanceWavelengths, minAbsorbance, maxAbsorbance,
 		standardAbsorbanceWavelength, standardMinAbsorbanceWavelengths, standardMaxAbsorbanceWavelengths,
@@ -21521,7 +21608,7 @@ hplcInstrumentResourcePackets[
 					unexpandedPertinentOptions,
 					Association[
 						Standard -> Download[resolvedStandard,Object],
-						Blank -> Download[resolvedBlank,Object],
+						Blank -> downloadObjectOrNoInjection[resolvedBlank],
 						ColumnSelector -> listifiedColumnSelector/.{ObjectP[]->Automatic}
 					]
 				],
@@ -21531,7 +21618,6 @@ hplcInstrumentResourcePackets[
 		]
 	];
 
-
 	(* Get the listified Standard/Blank *)
 	(* If all our Standard/Blank options are singleton, we still need to turn them into list. Need to check resolvedInjectionTable for count of Standard/Blank *)
 	{listifiedStandard, listifiedBlank} = MapThread[
@@ -21540,13 +21626,13 @@ hplcInstrumentResourcePackets[
 			(* Check how many Standard/Blank we have *)
 			sampleTypeCount=Count[injectionTable[[All,1]],#2];
 			(* Turn Standard/Blank into list if it is not list yet *)
-			If[
-				And[
-					Depth[#1] <= 2,
-					MatchQ[#1, Except[{} | Null]]
-				],
-				Table[#1,sampleTypeCount],
-				#1
+			Which[
+				MatchQ[#1,{Alternatives[Alternatives[ObjectP[], NoInjection].., Null]}],
+				#1,
+				MatchQ[sampleTypeCount, 0],
+				{Null},
+				True,
+				Table[#1,sampleTypeCount]
 			]
 		]&,
 		{
@@ -21628,7 +21714,7 @@ hplcInstrumentResourcePackets[
 						ColumnFlushFluorescenceGain -> processedColumnFlushFluorescenceGain
 					]
 				],
-				Messages -> False
+				Messages -> True
 			]],
 			ColumnSelector -> listifiedColumnSelector
 		]
@@ -21733,12 +21819,6 @@ hplcInstrumentResourcePackets[
 	columnPrimePositionsCorresponded = If[Length[columnPrimePositions] > 0, Last /@ SortBy[Normal@columnPrimeReverseAssociation, First]];
 	columnFlushPositionsCorresponded = If[Length[columnFlushPositions] > 0, Last /@ SortBy[Normal@columnFlushReverseAssociation, First]];
 
-	(* Get a conversion rule for smoothing time constant *)
-	possibleSmoothingTimeConstants=If[MatchQ[Lookup[instrumentModelPacket,SmoothingTimeConstants],{}],
-		{},
-		Transpose[{Lookup[instrumentModelPacket,AbsorbanceSamplingRates,{}],Lookup[instrumentModelPacket,SmoothingTimeConstants]}]
-	];
-
 	(* Start with the column prime*)
 	(* Start with the ones that can be directly transferred into protocol object*)
 	{
@@ -21753,7 +21833,8 @@ hplcInstrumentResourcePackets[
 		columnPrimeNebulizerHeatingPowers,
 		columnPrimeDriftTubeTemperatures,
 		columnPrimeELSDGains,
-		columnPrimeELSDSamplingRates
+		columnPrimeELSDSamplingRates,
+		columnPrimeHammingWindowWidths
 	} = Map[
 		Function[
 			{optionLookup},
@@ -21775,29 +21856,10 @@ hplcInstrumentResourcePackets[
 				ColumnPrimeNebulizerHeatingPower,
 				ColumnPrimeDriftTubeTemperature,
 				ColumnPrimeELSDGain,
-				ColumnPrimeELSDSamplingRate
+				ColumnPrimeELSDSamplingRate,
+				ColumnPrimeHammingWindowWidth
 			}
 		]
-	];
-
-	(* Column Prime Absorbance SmoothingTimeConstant *)
-	columnPrimeSmoothingTimeConstants=If[!NullQ[columnPrimePositionsCorresponded] && !NullQ[Lookup[pertinentOptions, ColumnPrimeSmoothingTimeConstant]],
-		MapThread[
-			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
-				Module[{allowedSmoothingTimeConstants},
-					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
-					(* Convert to numeric value for uploading *)
-					Switch[#1,
-						Small,allowedSmoothingTimeConstants[[1]],
-						Medium,allowedSmoothingTimeConstants[[2]],
-						Large,allowedSmoothingTimeConstants[[3]]
-					]
-				],
-				#1
-			]&,
-			{Lookup[pertinentOptions, ColumnPrimeSmoothingTimeConstant], columnPrimeAbsorbanceSamplingRates}
-		][[DeleteDuplicates[columnPrimePositionsCorresponded]]],
-		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups*)
@@ -21883,7 +21945,8 @@ hplcInstrumentResourcePackets[
 		nebulizerGasPressure,
 		driftTubeTemperature,
 		elsdGain,
-		elsdSamplingRate
+		elsdSamplingRate,
+		sampleHammingWindowWidths
 	} = Lookup[pertinentOptions,
 		{
 			WavelengthResolution,
@@ -21897,25 +21960,9 @@ hplcInstrumentResourcePackets[
 			NebulizerGasPressure,
 			DriftTubeTemperature,
 			ELSDGain,
-			ELSDSamplingRate
+			ELSDSamplingRate,
+			HammingWindowWidth
 		}
-	];
-
-	(* Absorbance SmoothingTimeConstant *)
-	sampleSmoothingTimeConstants=MapThread[
-		If[MatchQ[#1,HPLCSmoothingTimeConstantP],
-			Module[{allowedSmoothingTimeConstants},
-				allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
-				(* Convert to numeric value for uploading *)
-				Switch[#1,
-					Small,allowedSmoothingTimeConstants[[1]],
-					Medium,allowedSmoothingTimeConstants[[2]],
-					Large,allowedSmoothingTimeConstants[[3]]
-				]
-			],
-			#1
-		]&,
-		{Lookup[pertinentOptions, SmoothingTimeConstant], sampleAbsorbanceSamplingRates}
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -21988,7 +22035,6 @@ hplcInstrumentResourcePackets[
 		standardWavelengthResolutions,
 		standardUVFilter,
 		standardAbsorbanceSamplingRates,
-		standardSmoothingTimeConstants,
 		standardLightScatteringLaserPowers,
 		standardRefractiveIndexMethods,
 		standardDriftTubeTemperature,
@@ -21997,7 +22043,8 @@ hplcInstrumentResourcePackets[
 		standardNebulizerGas,
 		standardNebulizerGasHeating,
 		standardNebulizerHeatingPower,
-		standardNebulizerGasPressure
+		standardNebulizerGasPressure,
+		standardHammingWindowWidths
 	} = Map[
 		Function[{optionLookup},
 			If[!NullQ[standardPositionsCorresponded] && !NullQ[optionLookup],
@@ -22010,7 +22057,6 @@ hplcInstrumentResourcePackets[
 				StandardWavelengthResolution,
 				StandardUVFilter,
 				StandardAbsorbanceSamplingRate,
-				StandardSmoothingTimeConstant,
 				StandardLightScatteringLaserPower,
 				StandardRefractiveIndexMethod,
 				StandardDriftTubeTemperature,
@@ -22019,29 +22065,10 @@ hplcInstrumentResourcePackets[
 				StandardNebulizerGas,
 				StandardNebulizerGasHeating,
 				StandardNebulizerHeatingPower,
-				StandardNebulizerGasPressure
+				StandardNebulizerGasPressure,
+				StandardHammingWindowWidth
 			}
 		]
-	];
-
-	(* Standard Absorbance SmoothingTimeConstant *)
-	standardSmoothingTimeConstantsConverted=If[!NullQ[standardPositionsCorresponded] && !NullQ[standardSmoothingTimeConstants],
-		MapThread[
-			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
-				Module[{allowedSmoothingTimeConstants},
-					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
-					(* Convert to numeric value for uploading *)
-					Switch[#1,
-						Small,allowedSmoothingTimeConstants[[1]],
-						Medium,allowedSmoothingTimeConstants[[2]],
-						Large,allowedSmoothingTimeConstants[[3]]
-					]
-				],
-				#1
-			]&,
-			{standardSmoothingTimeConstants, standardAbsorbanceSamplingRates}
-		][[standardPositionsCorresponded]],
-		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -22119,7 +22146,6 @@ hplcInstrumentResourcePackets[
 		blankWavelengthResolutions,
 		blankUVFilter,
 		blankAbsorbanceSamplingRates,
-		blankSmoothingTimeConstants,
 		blankLightScatteringLaserPowers,
 		blankRefractiveIndexMethods,
 		blankDriftTubeTemperature,
@@ -22128,7 +22154,8 @@ hplcInstrumentResourcePackets[
 		blankNebulizerGas,
 		blankNebulizerGasHeating,
 		blankNebulizerHeatingPower,
-		blankNebulizerGasPressure
+		blankNebulizerGasPressure,
+		blankHammingWindowWidths
 	} = Map[
 		Function[{optionLookup},
 			If[!NullQ[blankPositionsCorresponded] && !NullQ[optionLookup],
@@ -22141,7 +22168,6 @@ hplcInstrumentResourcePackets[
 				BlankWavelengthResolution,
 				BlankUVFilter,
 				BlankAbsorbanceSamplingRate,
-				BlankSmoothingTimeConstant,
 				BlankLightScatteringLaserPower,
 				BlankRefractiveIndexMethod,
 				BlankDriftTubeTemperature,
@@ -22150,29 +22176,10 @@ hplcInstrumentResourcePackets[
 				BlankNebulizerGas,
 				BlankNebulizerGasHeating,
 				BlankNebulizerHeatingPower,
-				BlankNebulizerGasPressure
+				BlankNebulizerGasPressure,
+				BlankHammingWindowWidth
 			}
 		]
-	];
-
-	(* Blank Absorbance SmoothingTimeConstant *)
-	blankSmoothingTimeConstantsConverted=If[!NullQ[blankPositionsCorresponded] && !NullQ[blankSmoothingTimeConstants],
-		MapThread[
-			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
-				Module[{allowedSmoothingTimeConstants},
-					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
-					(* Convert to numeric value for uploading *)
-					Switch[#1,
-						Small,allowedSmoothingTimeConstants[[1]],
-						Medium,allowedSmoothingTimeConstants[[2]],
-						Large,allowedSmoothingTimeConstants[[3]]
-					]
-				],
-				#1
-			]&,
-			{blankSmoothingTimeConstants, blankAbsorbanceSamplingRates}
-		][[blankPositionsCorresponded]],
-		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -22257,7 +22264,8 @@ hplcInstrumentResourcePackets[
 		columnFlushNebulizerHeatingPowers,
 		columnFlushDriftTubeTemperatures,
 		columnFlushELSDGains,
-		columnFlushELSDSamplingRates
+		columnFlushELSDSamplingRates,
+		columnFlushHammingWindowWidths
 	} = Map[
 		Function[{optionLookup},
 			If[!NullQ[columnFlushPositionsCorresponded] && !NullQ[optionLookup],
@@ -22278,29 +22286,10 @@ hplcInstrumentResourcePackets[
 				ColumnFlushNebulizerHeatingPower,
 				ColumnFlushDriftTubeTemperature,
 				ColumnFlushELSDGain,
-				ColumnFlushELSDSamplingRate
+				ColumnFlushELSDSamplingRate,
+				ColumnFlushHammingWindowWidth
 			}
 		]
-	];
-
-	(* Column Flush Absorbance SmoothingTimeConstant *)
-	columnFlushSmoothingTimeConstants=If[!NullQ[columnFlushPositionsCorresponded] && !NullQ[Lookup[pertinentOptions, ColumnFlushSmoothingTimeConstant]],
-		MapThread[
-			If[MatchQ[#1,HPLCSmoothingTimeConstantP],
-				Module[{allowedSmoothingTimeConstants},
-					allowedSmoothingTimeConstants=FirstCase[possibleSmoothingTimeConstants,{EqualP[#2],___},{Null,{}}][[2]];
-					(* Convert to numeric value for uploading *)
-					Switch[#1,
-						Small,allowedSmoothingTimeConstants[[1]],
-						Medium,allowedSmoothingTimeConstants[[2]],
-						Large,allowedSmoothingTimeConstants[[3]]
-					]
-				],
-				#1
-			]&,
-			{Lookup[pertinentOptions, ColumnFlushSmoothingTimeConstant], columnFlushAbsorbanceSamplingRates}
-		][[DeleteDuplicates[columnFlushPositionsCorresponded]]],
-		Null
 	];
 
 	(* Fluorescence options - need to break up into 4 groups *)
@@ -22449,7 +22438,7 @@ hplcInstrumentResourcePackets[
 		Replace[ColumnPrimeWavelengthResolutions] -> columnPrimeWavelengthResolutions /. {{Null...} -> {}},
 		Replace[ColumnPrimeUVFilters] -> columnPrimeUVFilter /. {{Null...} -> {}},
 		Replace[ColumnPrimeAbsorbanceSamplingRates] -> columnPrimeAbsorbanceSamplingRates /. {{Null...} -> {}},
-		Replace[ColumnPrimeSmoothingTimeConstants] -> columnPrimeSmoothingTimeConstants /. {{Null...} -> {}},
+		Replace[ColumnPrimeHammingWindowWidths] -> columnPrimeHammingWindowWidths /. {{Null...} -> {}},
 		Replace[ColumnPrimeExcitationWavelengths] -> columnPrimeExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnPrimeSecondaryExcitationWavelengths] -> columnPrimeSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnPrimeTertiaryExcitationWavelengths] -> columnPrimeTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -22482,7 +22471,7 @@ hplcInstrumentResourcePackets[
 		Replace[WavelengthResolution] -> sampleWavelengthResolutions /. {{Null...} -> {}},
 		Replace[UVFilter] -> sampleUVFilter /. {{Null...} -> {}},
 		Replace[AbsorbanceSamplingRate] -> sampleAbsorbanceSamplingRates /. {{Null...} -> {}},
-		Replace[SmoothingTimeConstants] -> sampleSmoothingTimeConstants /. {{Null...} -> {}},
+		Replace[HammingWindowWidths] -> sampleHammingWindowWidths /. {{Null...} -> {}},
 		Replace[ExcitationWavelengths] -> sampleExcitationWavelengths /. {{Null...} -> {}},
 		Replace[SecondaryExcitationWavelengths] -> sampleSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[TertiaryExcitationWavelengths] -> sampleTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -22515,7 +22504,7 @@ hplcInstrumentResourcePackets[
 		Replace[StandardWavelengthResolution] -> standardWavelengthResolutions /. {{Null...} -> {}},
 		Replace[StandardUVFilter] -> standardUVFilter /. {{Null...} -> {}},
 		Replace[StandardAbsorbanceSamplingRate] -> standardAbsorbanceSamplingRates /. {{Null...} -> {}},
-		Replace[StandardSmoothingTimeConstants] -> standardSmoothingTimeConstantsConverted /. {{Null...} -> {}},
+		Replace[StandardHammingWindowWidths] -> standardHammingWindowWidths /. {{Null...} -> {}},
 		Replace[StandardExcitationWavelengths] -> standardExcitationWavelengths /. {{Null...} -> {}},
 		Replace[StandardSecondaryExcitationWavelengths] -> standardSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[StandardTertiaryExcitationWavelengths] -> standardTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -22548,7 +22537,7 @@ hplcInstrumentResourcePackets[
 		Replace[BlankWavelengthResolution] -> blankWavelengthResolutions /. {{Null...} -> {}},
 		Replace[BlankUVFilter] -> blankUVFilter /. {{Null...} -> {}},
 		Replace[BlankAbsorbanceSamplingRate] -> blankAbsorbanceSamplingRates /. {{Null...} -> {}},
-		Replace[BlankSmoothingTimeConstants] -> blankSmoothingTimeConstantsConverted /. {{Null...} -> {}},
+		Replace[BlankHammingWindowWidths] -> blankHammingWindowWidths /. {{Null...} -> {}},
 		Replace[BlankExcitationWavelengths] -> blankExcitationWavelengths /. {{Null...} -> {}},
 		Replace[BlankSecondaryExcitationWavelengths] -> blankSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[BlankTertiaryExcitationWavelengths] -> blankTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -22581,7 +22570,7 @@ hplcInstrumentResourcePackets[
 		Replace[ColumnFlushWavelengthResolutions] -> columnFlushWavelengthResolutions /. {{Null...} -> {}},
 		Replace[ColumnFlushUVFilters] -> columnFlushUVFilter /. {{Null...} -> {}},
 		Replace[ColumnFlushAbsorbanceSamplingRates] -> columnFlushAbsorbanceSamplingRates /. {{Null...} -> {}},
-		Replace[ColumnFlushSmoothingTimeConstants] -> columnFlushSmoothingTimeConstants /. {{Null...} -> {}},
+		Replace[ColumnFlushHammingWindowWidths] -> columnFlushHammingWindowWidths /. {{Null...} -> {}},
 		Replace[ColumnFlushExcitationWavelengths] -> columnFlushExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnFlushSecondaryExcitationWavelengths] -> columnFlushSecondaryExcitationWavelengths /. {{Null...} -> {}},
 		Replace[ColumnFlushTertiaryExcitationWavelengths] -> columnFlushTertiaryExcitationWavelengths /. {{Null...} -> {}},
@@ -23095,9 +23084,109 @@ calculateBufferUsage[grad_, maxTime_, flowRates_, finalGradientPercentABC_] := M
 	((totalVolume * totalGradientProportion) + extraVolume) Milliliter
 ];
 
+(* Preferred LC Vials *)
+$PreferredLCCompatibleVials = {
+	(* "HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:jLq9jXvxr6OZ"],
+	(* "1mL HPLC Vial (total recovery)" *)
+	Model[Container, Vessel, "id:1ZA60vL48X85"],
+	(* "Amber HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:GmzlKjznOxmE"],
+	(* "HPLC vial (high recovery), LCMS Certified" *)
+	Model[Container, Vessel, "id:3em6ZvL8x4p8"],
+	(* "HPLC vial (high recovery) - Deactivated Clear Glass" *)
+	Model[Container, Vessel, "id:aXRlGnRE6A8m"],
+	(* "Polypropylene HPLC vial (high recovery)" *)
+	Model[Container, Vessel, "id:qdkmxz0A884Y"],
+	(* "PFAS Testing Vials, Agilent" *)
+	Model[Container, Vessel, "id:o1k9jAoPw5RN"],
+	(* "2mL HPLC clear vial, flat bottom" *)
+	Model[Container, Vessel, "id:O81aEBvqN1Ep"]
+}
 
 (* ::Subsubsection::Closed:: *)
-(*allHPLCInstrumentSearch*)
+(*allLCCompatibleVialSearch*)
+
+(* ::Subsubsection::Closed:: *)
+(*pierceableCapFootprints*)
+
+pierceableCapFootprints[fakeString:_String] := pierceableCapSearch[fakeString] = Module[
+	{},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`pierceableCapFootprints];
+
+	DeleteDuplicates[
+		Download[
+			Search[Model[Item, Cap],
+				And[
+					VerifiedCoverModel == True,
+					Pierceable == True,
+					Products[Deprecated] != True
+				]
+			],
+			CoverFootprint
+		]
+	]
+];
+
+
+(* Function to search the database for all non-deprecated CE vials that fit the autosampler.
+ 	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
+allLCCompatibleVialSearch[fakeString:_String] := allLCCompatibleVialSearch[fakeString] = Module[
+	{pierceableContainers, containers, centrifugableQ, coverFootprints},
+
+	(*Add allCentrifugeEquipmentSearch to list of Memoized functions*)
+	AppendTo[$Memoization, Experiment`Private`allLCCompatibleVialSearch];
+
+	coverFootprints = Alternatives@@pierceableCapFootprints["Memoization"];
+
+	{pierceableContainers, containers} = Search[
+		{
+			Model[Container, Vessel],
+			Model[Container, Vessel]
+		},
+		{
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				],
+				CoverFootprints == coverFootprints
+			],
+			And[
+				(* Needs to be a lab-supported model. *)
+				Deprecated != True,
+				(* That will fit into the autosampler rack slows. *)
+				Footprint == CEVial,
+				(* NOTE: These next to limits come from Dionex Ultimate 3000 documentation for their vial rack.*)
+				(* Needs to be tall enough to be retrievable from the autosampler racks. *)
+				Dimensions[[3]] >= 31 Millimeter,
+				(* But not too tall that the needle might collide with the top or cap. *)
+				Dimensions[[3]] <= 43 Millimeter,
+				(* We need to know how deep the needle can go. *)
+				Or[
+					DepthMargin != Null,
+					InternalDepth != Null
+				]
+			]
+		}
+	];
+
+	centrifugableQ = MemberQ[allCentrifugableContainersSearch["Memoization"], ObjectP[#]]& /@ containers;
+
+	SortBy[PickList[containers, centrifugableQ], {!MemberQ[#, $PreferredLCCompatibleVials], !MemberQ[#, pierceableContainers]}]
+];
 
 (* Function to search the database for all non-deprecated HPLC instruments.
  	Memoizes the result after first execution to avoid repeated database trips within a single kernel session. *)
@@ -23174,5 +23263,20 @@ allECLCMUHPLCInstrumentObjectsSearch[fakeString:_String] := allECLCMUHPLCInstrum
 			(* ECL-CMU *)
 			Site==Object[Container, Site, "id:P5ZnEjZpRlK4"]
 		]
+	]
+];
+
+(* downloadOrNoInjection *)
+downloadObjectOrNoInjection[myInput:NoInjection] := NoInjection;
+downloadObjectOrNoInjection[myInput:ObjectP[]] := Download[myInput, Object];
+downloadObjectOrNoInjection[myInputs:{___}] := Module[{noInjectionPositions},
+	(* Find the NoInjection symbols.. *)
+	noInjectionPositions = Position[myInputs, NoInjection];
+	(* Reinsert the NoInjection symbols.. *)
+	Fold[
+		Insert[#1, NoInjection, #2] &,
+		(* ..around the Downloaded objects. *)
+		Download[Delete[myInputs, noInjectionPositions], Object],
+		noInjectionPositions
 	]
 ];

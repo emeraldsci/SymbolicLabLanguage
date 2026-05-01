@@ -40,7 +40,14 @@ DefineObjectType[Model[Maintenance, ConsolidateInventory], {
 			Relation -> Object[Container],
 			Description -> "The location which emptied bin and racks should be stored.",
 			Category -> "General"
-		}
+		},
+        ConsolidationCountThreshold -> {
+            Format -> Single,
+            Class -> Integer,
+            Pattern :> GreaterEqualP[1],
+            Description -> "The threshold for racks that if the count of items is above this value, consolidation should never happen regardless the percentage of remaining capacity.",
+            Category -> "General"
+        }
 
 	}
 }];

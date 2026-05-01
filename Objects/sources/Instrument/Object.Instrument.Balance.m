@@ -87,6 +87,31 @@ DefineObjectType[Object[Instrument, Balance], {
 			Relation -> None,
 			Description -> "Indicates if this balance is enclosed on all sides meant to keep away dust or draft.",
 			Category -> "General"
+		},
+		USPMinWeightLog -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				Qualification -> Link,
+				MinWeight -> Expression
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				Qualification -> _Link,
+				MinWeight -> GreaterEqualP[0*Milligram]
+			},
+			Relation -> {
+				Date -> Null,
+				Qualification -> Object[Qualification],
+				MinWeight -> Null
+			},
+			Headers -> {
+				Date -> "Date Completed",
+				Qualification -> "Qualification",
+				MinWeight -> "Calculated USP Minimum Weight"
+			},
+			Description -> "A record of the USP Minimum Weight calculations from qualifications performed on this instrument.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

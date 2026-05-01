@@ -42,7 +42,15 @@ DefineObjectType[Model[Certification],
 				Category -> "Operations Information",
 				Abstract -> True
 			},
+			(* Remove after BasicCert field is deployed *)
 			AutoEnqueue -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if this certification will automatically be added to a trainee's training queue once any required certifications are complete.",
+				Category -> "Operations Information"
+			},
+			BasicCertification -> {
 				Format -> Single,
 				Class -> Boolean,
 				Pattern :> BooleanP,

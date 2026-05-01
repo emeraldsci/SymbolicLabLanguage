@@ -52,6 +52,19 @@ DefineObjectType[Object[Instrument, PortableHeater], {
 			Description -> "Resources whose samples are stored in this portable cooler during the execution of the given protocol (if there is no resource for a sample, points to the sample directly).",
 			Headers -> {"Resource", "Responsible Protocol"},
 			Category -> "Container Specifications"
+		},
+		CurrentTransporterProtocol -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Protocol][CurrentTransporters],
+				Object[Maintenance][CurrentTransporters],
+				Object[Qualification][CurrentTransporters]
+			],
+			Description -> "Indicates the root protocol this instrument is used under as a transporter to contain samples requiring special transport conditions.",
+			Category -> "Sample Storage",
+			Developer -> True
 		}
 	}
 }];

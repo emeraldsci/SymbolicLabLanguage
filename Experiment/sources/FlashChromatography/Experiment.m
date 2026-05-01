@@ -835,20 +835,6 @@ Warning::TotalFractionVolume="For samples, `1`, FractionCollectionMode is Peaks 
 (* ::Subsection::Closed:: *)
 (*Helper Functions*)
 
-(*fetchModelPacketFromFastAssoc*)
-(* A helper function to return the model packet for an object or model from a fast association *)
-fetchModelPacketFromFastAssoc[myObject_,myAssoc_Association]:=Switch[myObject,
-
-	(* If myObject is a Model, return its packet from the fast association *)
-	ObjectP[Model],fetchPacketFromFastAssoc[myObject,myAssoc],
-
-	(* If myObject is an Object, return the packet of its model from the fast association *)
-	ObjectP[Object],fetchPacketFromFastAssoc[fastAssocLookup[myAssoc,myObject,Model],myAssoc],
-
-	(* Otherwise, return an empty association *)
-	_,<||>
-];
-
 
 (* Helper function that returns a list of CombiFlash compatible syringes *)
 combiFlashCompatibleSyringe[memoization_String]:=combiFlashCompatibleSyringe[memoization]=Module[{},
@@ -6980,7 +6966,7 @@ resolveExperimentFlashChromatographyOptions[
 	];
 
 	(* Resolve the operator option *)
-	resolvedOperator=If[NullQ[specifiedOperator],Model[User,Emerald,Operator,"Level 2"],specifiedOperator];
+	resolvedOperator=If[NullQ[specifiedOperator],Model[User,Emerald,Operator,"Baseline"],specifiedOperator];
 
 	(* Resolve Post Processing Options *)
 	resolvedPostProcessingOptions=resolvePostProcessingOptions[myOptions];
@@ -8339,12 +8325,12 @@ flashChromatographyResourcePackets[
 		UnresolvedOptions->myUnresolvedOptions,
 		ResolvedOptions->myResolvedOptions,
 		Replace[Checkpoints]->{
-			{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->10 Minute]]},
-			{"Instrument Setup",10 Minute,"Buffers are gathered from storage, connected to the instrument, and used to prime the instrument.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->10 Minute]]},
-			{"Separating Samples",totalInstrumentTime-20 Minute,"Samples are separated by Flash Chromatography and fractions are collected.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->totalInstrumentTime-20 Minute]]},
-			{"Instrument Cleanup",10 Minute,"The instrument is flushed, buffers are disconnected from the instrument, and the instrument is cleaned.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->10 Minute]]},
-			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->1 Hour]]},
-			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Level 2"],Time->10 Minute]]}
+			{"Preparing Samples",10 Minute,"Preprocessing, such as incubation, mixing, centrifuging, and aliquoting, is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]},
+			{"Instrument Setup",10 Minute,"Buffers are gathered from storage, connected to the instrument, and used to prime the instrument.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]},
+			{"Separating Samples",totalInstrumentTime-20 Minute,"Samples are separated by Flash Chromatography and fractions are collected.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->totalInstrumentTime-20 Minute]]},
+			{"Instrument Cleanup",10 Minute,"The instrument is flushed, buffers are disconnected from the instrument, and the instrument is cleaned.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]},
+			{"Sample Post-Processing",1 Hour,"Any measuring of volume, weight, or sample imaging post experiment is performed.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->1 Hour]]},
+			{"Returning Materials",10 Minute,"Samples are returned to storage.",Link[Resource[Operator->Model[User,Emerald,Operator,"Baseline"],Time->10 Minute]]}
 		}
 	|>;
 

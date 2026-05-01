@@ -82,5 +82,7 @@ DefineTests[
 			EraseObject[existingObjects, Force -> True, Verbose -> False]
 
 		]
-	)
+	),
+	Parallel -> True,
+	HardwareConfiguration -> HighRAM
 ];

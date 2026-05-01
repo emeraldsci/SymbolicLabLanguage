@@ -720,6 +720,52 @@ DefineTests[ExperimentHPLC,
 				}
 			}
 		],
+		Test[
+			"NumberOfUses on the Column resource reflects the total number of Sample injections expanded by NumberOfReplicates:",
+			Module[{protocol, columnResource},
+				protocol = ExperimentHPLC[
+					{
+						Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					Column -> Object[Item, Column, "Test cartridge-protected column object for ExperimentHPLC" <> $SessionUUID],
+					NumberOfReplicates -> 3,
+					Standard -> Null
+				];
+				columnResource = FirstCase[
+					Download[protocol, RequiredResources],
+					{_, Column, ___}
+				][[1]];
+				Download[columnResource, NumberOfUses]
+			],
+			9
+		],
+		Test[
+			"NumberOfUses on Column and SecondaryColumn resources are equal and reflect the total Sample injection count when both columns are specified:",
+			Module[{protocol, columnResource, secondaryColumnResource},
+				protocol = ExperimentHPLC[
+					{
+						Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],
+						Object[Sample, "Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]
+					},
+					Column -> Object[Item, Column, "Test cartridge-protected column object for ExperimentHPLC" <> $SessionUUID],
+					SecondaryColumn -> Object[Item, Column, "Test cartridge-protected column object for ExperimentHPLC (2)" <> $SessionUUID],
+					Standard -> Null
+				];
+				columnResource = FirstCase[
+					Download[protocol, RequiredResources],
+					{_, Column, ___}
+				][[1]];
+				secondaryColumnResource = FirstCase[
+					Download[protocol, RequiredResources],
+					{_, SecondaryColumn, ___}
+				][[1]];
+				Download[{columnResource, secondaryColumnResource}, NumberOfUses]
+			],
+			{3, 3}
+		],
 		Example[
 			{Options,TertiaryColumn,"Specify the additional column to use for the samples at downstream of the Column and SecondaryColumn. ColumnSelector option is resolved to show the column connections. All Column options can be set to either Model or Object:"},
 			options=ExperimentHPLC[
@@ -1510,52 +1556,24 @@ DefineTests[ExperimentHPLC,
 			Variables:>{options}
 		],
 		Example[
-			{Options,SmoothingTimeConstant,"Specify time window used on the instrument software for data filtering in absorbance collection:"},
-			options = ExperimentHPLCOptions[
-				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				SmoothingTimeConstant->4Second, OutputFormat -> List];
-			{
-				Lookup[options, SmoothingTimeConstant],
-				(* Enumeration SmoothingTimeConstant resolves to Waters instruments *)
-				MemberQ[Lookup[options, Instrument],ObjectP[Model[Instrument, HPLC, "UltiMate 3000"]]]
-			},
-			{EqualP[4Second],True},
-			Variables:>{options}
-		],
-		Example[
-			{Options,SmoothingTimeConstant,"Specify time window used on the instrument software for data filtering in absorbance collection as an enumeration value:"},
-			options = ExperimentHPLCOptions[
-				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				SmoothingTimeConstant->Medium, OutputFormat -> List];
-			{
-				Lookup[options, SmoothingTimeConstant],
-				(* Enumeration SmoothingTimeConstant resolves to Waters instruments *)
-				MemberQ[Lookup[options, Instrument],ObjectP[Model[Instrument, HPLC, "UltiMate 3000"]]]
-			},
-			{Medium,False},
-			Variables:>{options}
-		],
-		Example[
-			{Options,SmoothingTimeConstant,"Resolves AbsorbanceSamplingRate based on the specified SmoothingTimeConstant option:"},
-			options = ExperimentHPLCOptions[
-				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"],
-				SmoothingTimeConstant->0.0125Second, OutputFormat -> List];
-			Lookup[options, {SmoothingTimeConstant,AbsorbanceSamplingRate}],
-			{EqualP[0.0125Second],EqualP[80/Second]},
-			Variables:>{options}
-		],
-		Example[
-			{Options,SmoothingTimeConstant,"Convert the enumeration SmoothingTimeConstant to numeric value for upload:"},
+			{Options,HammingWindowWidth,"Specify time window used on the instrument software for data filtering in absorbance collection:"},
 			protocol = ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"],
-				AbsorbanceSamplingRate -> 40 /Second,
-				SmoothingTimeConstant -> Large
+				HammingWindowWidth->4Second
 			];
-			Download[protocol, {SmoothingTimeConstants,ColumnPrimeSmoothingTimeConstants}],
-			{{EqualP[0.1Second], EqualP[0.1Second], EqualP[0.1Second]},{EqualP[0.1Second]}},
+			Download[protocol, HammingWindowWidths],
+			{EqualP[4Second],EqualP[4Second],EqualP[4Second]},
 			Variables:>{protocol}
+		],
+		Example[
+			{Options,HammingWindowWidth,"Resolves AbsorbanceSamplingRate based on the specified HammingWindowWidth option:"},
+			options = ExperimentHPLCOptions[
+				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				Instrument -> Model[Instrument, HPLC, "Waters Acquity UPLC H-Class PDA"],
+				HammingWindowWidth->0.025Second, OutputFormat -> List];
+			Lookup[options, {HammingWindowWidth,AbsorbanceSamplingRate}],
+			{EqualP[0.025Second],EqualP[80/Second]},
+			Variables:>{options}
 		],
 		Example[
 			{Options,ExcitationWavelength,"Specify the specific wavelength (a single tuple) that is used to excite fluorescence in the samples in the Fluorescence detector:"},
@@ -2605,11 +2623,11 @@ DefineTests[ExperimentHPLC,
 			Variables:>{options}
 		],
 		Example[
-			{Options,StandardSmoothingTimeConstant,"For Standard samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
+			{Options,StandardHammingWindowWidth,"For Standard samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
 			options = ExperimentHPLCOptions[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				Standard -> Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],StandardSmoothingTimeConstant->1Second, OutputFormat -> List];
-			Lookup[options,StandardSmoothingTimeConstant],
+				Standard -> Model[Sample, StockSolution, Standard, "id:N80DNj1rWzaq"],StandardHammingWindowWidth->1Second, OutputFormat -> List];
+			Lookup[options,StandardHammingWindowWidth],
 			EqualP[1Second],
 			Variables:>{options}
 		],
@@ -2952,6 +2970,45 @@ DefineTests[ExperimentHPLC,
 			},
 			Variables:>{packet}
 		],
+		Example[{Options, Blank, "Set Blank to NoInjection to collect blank data without an explicit blank sample:"},
+			options = ExperimentHPLC[{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID]},
+				Blank -> NoInjection,
+				Output -> Options
+			];
+			{
+				Lookup[options, {Blank, BlankInjectionVolume}],
+				Cases[Lookup[options, InjectionTable], {Blank, ___}]
+			},
+			{
+				{
+					NoInjection,
+					Null
+				},
+				{
+					{Blank, NoInjection, Null, ___},
+					{Blank, NoInjection, Null, ___}
+				}
+			},
+			Variables:>{options}
+		],
+		Test["NoInjection Blank options become Null in the Protocol object:",
+			Download[ExperimentHPLC[{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID]},
+				Blank -> NoInjection
+			],
+				{
+					Blanks,
+					BlankSampleVolumes,
+					InjectionTable[[2]],
+					InjectionTable[[4]]
+				}
+			],
+			{
+				{Null, Null},
+				{Null, Null},
+				KeyValuePattern[{Type -> Blank, Sample -> Null, InjectionVolume -> Null}],
+				KeyValuePattern[{Type -> Blank, Sample -> Null, InjectionVolume -> Null}]
+			}
+		],
 		Example[
 			{Options,BlankInjectionVolume,"Specify the volume of each blank to inject:"},
 			(
@@ -3289,7 +3346,7 @@ DefineTests[ExperimentHPLC,
 			EquivalenceFunction -> Equal
 		],
 		Example[
-			{Options,BlankSmoothingTimeConstant,"For Blank samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
+			{Options,BlankHammingWindowWidth,"For Blank samples, specify time window used on the instrument software for data filtering in absorbance collection:"},
 			protocol = ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
 				Blank -> {
@@ -3297,10 +3354,10 @@ DefineTests[ExperimentHPLC,
 					Model[Sample, StockSolution, "Reverse phase buffer B 0.05% HFBA"]
 				},
 				BlankFrequency->FirstAndLast,
-				BlankSmoothingTimeConstant->Small
+				BlankHammingWindowWidth->0.5Second
 			];
-			Download[protocol,BlankSmoothingTimeConstants],
-			{EqualP[0.05Second],EqualP[0.05Second],EqualP[0.05Second],EqualP[0.05Second]},
+			Download[protocol,BlankHammingWindowWidths],
+			{EqualP[0.5Second],EqualP[0.5Second],EqualP[0.5Second],EqualP[0.5Second]},
 			Variables:>{protocol}
 		],
 		Example[
@@ -3827,12 +3884,12 @@ DefineTests[ExperimentHPLC,
 			Variables:>{options}
 		],
 		Example[
-			{Options,ColumnPrimeSmoothingTimeConstant,"For column prime(s), specify time window used on the instrument software for data filtering in absorbance collection:"},
+			{Options,ColumnPrimeHammingWindowWidth,"For column prime(s), specify time window used on the instrument software for data filtering in absorbance collection:"},
 			protocol = ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				ColumnPrimeSmoothingTimeConstant->2.5Second
+				ColumnPrimeHammingWindowWidth->2.5Second
 			];
-			Download[protocol,ColumnPrimeSmoothingTimeConstants],
+			Download[protocol,ColumnPrimeHammingWindowWidths],
 			{EqualP[2.5Second]},
 			Variables:>{protocol}
 		],
@@ -4212,6 +4269,25 @@ DefineTests[ExperimentHPLC,
 			{LinkP[Object[Method, Gradient, "id:M8n3rxYAonm5"]]},
 			Variables:>{packet}
 		],
+		Example[
+			{Options,ColumnFlushGradient,"Specify the column flush gradient with an existing method:"},
+			(
+				packets = ExperimentHPLC[
+					{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+					Upload->False,
+					ColumnFlushGradient -> {
+						{0. Minute, 100. Percent, 0. Percent, 0. Percent, 0. Percent, 1 Milliliter/Minute, None},
+						{30. Minute, 0. Percent, 100. Percent, 0. Percent, 0. Percent, 2 Milliliter/Minute, None}
+					},
+					Instrument->Model[Instrument, HPLC, "id:N80DNjlYwwJq"]
+				];
+				shutdownMethod=Download[Lookup[packets[[1]], ShutdownMethod], Object];
+				shutdownMethodPacket=FirstCase[packets, KeyValuePattern[Object -> shutdownMethod]];
+				Lookup[shutdownMethodPacket, InitialFlowRate]
+			),
+			EqualP[2 Milliliter/Minute],
+			Variables:>{packets, shutdownMethod, shutdownMethodPacket}
+		],
 
 		(* === Options - Column Flush Detector Parameters === *)
 		Example[
@@ -4254,15 +4330,15 @@ DefineTests[ExperimentHPLC,
 			Variables:>{options}
 		],
 		Example[
-			{Options,ColumnFlushSmoothingTimeConstant,"For column flush(es), specify time window used on the instrument software for data filtering in absorbance collection:"},
+			{Options,ColumnFlushHammingWindowWidth,"For column flush(es), specify time window used on the instrument software for data filtering in absorbance collection:"},
 			options = ExperimentHPLCOptions[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
 				ColumnFlushAbsorbanceSamplingRate -> 5 /Second,
-				ColumnFlushSmoothingTimeConstant->Small,
+				ColumnFlushHammingWindowWidth->1 Second,
 				OutputFormat -> List
 			];
-			Lookup[options,ColumnFlushSmoothingTimeConstant],
-			Small,
+			Lookup[options,ColumnFlushHammingWindowWidth],
+			EqualP[1 Second],
 			Variables:>{options}
 		],
 		Example[
@@ -4482,7 +4558,7 @@ DefineTests[ExperimentHPLC,
 		Test["Ensure that in most cases, a centrifugation subprotocol can be generated:",
 			{minTemperature, maxTemperature} = Lookup[First[Cases[Lookup[FirstCase[OptionDefinition[ExperimentHPLC], KeyValuePattern["OptionName" -> "SampleTemperature"]], "Widget"], KeyValuePattern[Type -> Quantity], Infinity]], {Min, Max}];
 			containers = Flatten[{
-				$ChromatographyLCCompatibleVials,
+				allLCCompatibleVialSearch["Memoization"],
 				Model[Container, Plate, "id:L8kPEjkmLbvW"],(*96-well 2mL Deep Well Plate*)
 				Model[Container, Vessel, "id:xRO9n3vk11pw"],(*15mL Tube*)
 				Model[Container, Vessel, "id:bq9LA0dBGGR6"](*50mL Tube*)
@@ -4658,6 +4734,19 @@ DefineTests[ExperimentHPLC,
 			1000 RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			TimeConstraint -> 240
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentHPLC[
+				{Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], Object[Sample, "Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID], Object[Sample, "Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
 			TimeConstraint -> 240
 		],
 		Example[{Options,CentrifugeTime, "Specify the SamplesIn should be centrifuged for 2 minutes:"},
@@ -4859,6 +4948,14 @@ DefineTests[ExperimentHPLC,
 			0.08 Milliliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], AliquotAmount -> 0.08101 Milliliter, Output -> Options];
+			Lookup[options, AliquotAmount],
+			81 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options,AliquotSampleLabel, "Set name labels for aliquots taken from the input samples:"},
 			options = ExperimentHPLC[Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], Aliquot -> True, AliquotSampleLabel -> "Sample 1 aliquot", Output -> Options];
@@ -6151,7 +6248,7 @@ DefineTests[ExperimentHPLC,
 			$Failed,
 			Messages:>{Error::GradientSingleton,				Error::InvalidOption}
 		],
-		Example[{Messages, "GradientAmbiguity", "If Gradient is a table, then auxillary options lead to ambiguity:"},
+		Example[{Messages, "GradientAmbiguity", "If Gradient is a table, then auxiliary options lead to ambiguity:"},
 			protocol = ExperimentHPLC[
 				Object[Sample, "Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
 				Gradient -> {
@@ -6384,6 +6481,43 @@ DefineTests[ExperimentHPLC,
 			$Failed,
 			Messages:>{Error::InjectionVolumeConflict,Error::InvalidOption},
 			Variables:>{customInjectionTable}
+		],
+		Example[{Messages, "InjectionTableInvalidSampleIndex", "An Error is surfaced if the NoInjection symbol specified in the InjectionTable for a non-Blank:"},
+			(
+				customInjectionTables={
+					{{Sample, NoInjection, 30Microliter, PositionA, Ambient, Automatic}},
+					{
+						{Sample, Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID], 30Microliter, PositionA, Ambient, Automatic},
+						{Standard, NoInjection, Null, PositionA, Ambient, Automatic}
+					}
+				};
+
+				ExperimentHPLC[
+					Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+					InjectionTable -> #
+				]& /@ customInjectionTables
+			),
+			{$Failed..},
+			Messages:>{Error::InjectionTableForeignSamples, Error::InjectionTableInvalidSampleIndex, Error::InvalidOption},
+			Variables:>{customInjectionTables}
+		],
+		Example[{Messages, "BlankNoInjectionVolumeConflict", "When Blank is NoInjection, BlankInjectionVolume must be Null:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Blank -> NoInjection,
+				BlankInjectionVolume -> 10 Microliter
+			],
+			$Failed,
+			Messages :> {Error::BlankNoInjectionVolumeConflict, Error::InvalidOption}
+		],
+		Example[{Messages, "StorageConditionForNoInjection", "When Blank is NoInjection, BlankStorageCondition must be Null:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Blank -> NoInjection,
+				BlankStorageCondition -> Disposal
+			],
+			$Failed,
+			Messages :> {Error::StorageConditionForNoInjection, Error::InvalidOption}
 		],
 		Example[{Messages,"ColumnPositionInjectionTableConflict","Error if the ColumnPosition specified in InjectionTable do not match other options:"},
 			(
@@ -6956,48 +7090,30 @@ DefineTests[ExperimentHPLC,
 			},
 			Variables:>{packet}
 		],
-		Example[{Messages,"InvalidAbsorbanceSmoothingTimeConstant","Return an error if enumeration SmoothingTimeConstant is provided for non-Waters instruments:"},
+		Example[{Messages,"InvalidAbsorbanceHammingWindowWidth","Return an error if HammingWindowWidth is too short for sampling rate:"},
 			ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				SmoothingTimeConstant->Medium,
-				Instrument -> Model[Instrument,HPLC,"UltiMate 3000"]
+				HammingWindowWidth -> 1.5 Second,
+				AbsorbanceSamplingRate -> 1/Second
 			],
 			$Failed,
 			Messages:>{
-				Error::InvalidAbsorbanceSmoothingTimeConstant,
+				Error::InvalidAbsorbanceHammingWindowWidth,
 				Error::InvalidOption
 			}
 		],
-		Example[{Messages,"AbsorbanceSmoothingTimeConstantAdjusted","Return a warning if the specified SmoothingTimeConstant option is not an achievable value:"},
-			packet=ExperimentHPLC[
+		Example[{Messages,"InvalidAbsorbanceHammingWindowWidth","Return an error if HammingWindowWidth is too long for gradient:"},
+			ExperimentHPLC[
 				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				Instrument -> Model[Instrument,HPLC,"Waters Acquity UPLC H-Class PDA"],
-				AbsorbanceSamplingRate->20/Second,
-				SmoothingTimeConstant-> {0.256Second,0.28Second,0.6Second},
-				Upload->False
-			][[1]];
-			Lookup[packet,Replace[SmoothingTimeConstants]],
-			{0.25Second,0.3Second,0.5Second},
-			EquivalenceFunction -> Equal,
+				HammingWindowWidth -> 60 Second,
+				GradientA -> {{0Minute, 100 Percent}, {30Second, 100Percent}}
+			],
+			$Failed,
 			Messages:>{
-				Warning::AbsorbanceSmoothingTimeConstantAdjusted
-			},
-			Variables:>{packet}
-		],
-		Example[{Messages,"AbsorbanceSmoothingTimeConstantAdjusted","Return a warning if the specified SmoothingTimeConstant option is rounded (Dionex):"},
-			options=ExperimentHPLC[
-				{Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 2 for ExperimentHPLC tests" <> $SessionUUID],Object[Sample,"Test Sample 3 for ExperimentHPLC tests" <> $SessionUUID]},
-				Instrument -> Model[Instrument,HPLC,"UltiMate 3000"],
-				SmoothingTimeConstant-> {0.256Second,2.25663Second,4.6Second},
-				Output->Options
-			];
-			Lookup[options,SmoothingTimeConstant],
-			{0.26Second,2.26Second,4.55Second},
-			EquivalenceFunction -> Equal,
-			Messages:>{
-				Warning::AbsorbanceSmoothingTimeConstantAdjusted
-			},
-			Variables:>{options}
+				Warning::HPLCGradientNotReequilibrated,
+				Error::InvalidAbsorbanceHammingWindowWidth,
+				Error::InvalidOption
+			}
 		],
 		Example[{Messages,"WavelengthResolutionAdjusted","Return an warning if the specified WavelengthResolution option is not an achievable value:"},
 			packet=ExperimentHPLC[
@@ -7179,6 +7295,17 @@ DefineTests[ExperimentHPLC,
 			],
 			$Failed,
 			Messages:>{Error::InvalidOption,Error::InvalidWatersHPLCFluorescenceGain}
+		],
+		Example[
+			{Messages,"HPLCFluorescenceGainOverMaximum","FluorescenceGain must be below 100 Percent for non-Waters Fluorescence detector:"},
+			ExperimentHPLC[
+				Object[Sample,"Test Sample 1 for ExperimentHPLC tests" <> $SessionUUID],
+				Instrument->Model[Instrument, HPLC, "UltiMate 3000 with FLR Detector"],
+				Detector->Fluorescence,
+				FluorescenceGain-> 1000Percent
+			],
+			$Failed,
+			Messages:>{Error::InvalidOption,Error::HPLCFluorescenceGainOverMaximum}
 		],
 		Example[
 			{Messages,"InvalidHPLCFluorescenceFlowCellTemperature","FluorescenceFlowCellTemperature option can only be set when fluorescence flow cell temperature control is available on the selected instrument:"},
@@ -8033,7 +8160,10 @@ DefineTests[ExperimentHPLC,
 			EraseObject[existingObjs, Force -> True, Verbose -> False]
 		];
 	),
-	Stubs:>{$PersonID=Object[User,"Test user for notebook-less test protocols"]}
+	Stubs:>{
+		$PersonID=Object[User,"Test user for notebook-less test protocols"],
+		$SearchMaxDateCreated=(Now-1Day)
+	}
 ];
 
 

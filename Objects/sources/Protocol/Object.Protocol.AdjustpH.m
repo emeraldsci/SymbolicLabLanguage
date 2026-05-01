@@ -86,6 +86,22 @@ DefineObjectType[Object[Protocol, AdjustpH], {
 			Description -> "The sample manipulations protocol used to transfer the fixed additions into the input samples.",
 			Category -> "pH Titration"
 		},
+		WashSolutionUnitOperations -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> SamplePreparationP,
+			Description -> "The set of instructions specifying the aliquots of working samples to wash solutions.",
+			Category -> "General",
+			Developer -> True
+		},
+		WashSolutionManipulations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
+			Description -> "The sample preparation protocol used to aliquot the working samples to wash solutions.",
+			Category -> "General"
+		},
 
 		(* --- pH Measurement --- *)
 		(* NOTE: This will just be a flat list so you can't immediately see what measurement protocols go with what sample *)

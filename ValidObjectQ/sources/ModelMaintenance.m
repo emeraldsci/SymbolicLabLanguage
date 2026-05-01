@@ -550,11 +550,24 @@ validModelMaintenanceCleanPlateWasherQTests[packet:PacketP[Model[Maintenance,Cle
 	NotNullFieldTest[
 		packet,
 		{
-			WashSolvent,
-			MaintenancePlate,
-			WashVolume,
-			NumberOfWashes
+			WashSolvent
 		}
+	],
+	(* Fields required for ELISA NIMBUS Plate Washer only *)
+	Test["If Targets contain NIMBUS plate washer, MaintenancePlate, WashVolume and NumberOfWashes must be specified",
+		{Download[packet, Targets[IntegratedInstruments]], Lookup[packet, {MaintenancePlate, WashVolume, NumberOfWashes}]},
+		Alternatives[
+			{{___, {___, ObjectP[Model[Instrument, PlateWasher, "id:pZx9jo81mDnj"]], ___}, ___}, {ObjectP[], Except[Null], Except[Null]}},(*Model[Instrument, PlateWasher, "ELISA NIMBUS Microplate Washer"]*)
+			{_, {Null, Null, Null}}
+		]
+	],
+	(* Fields required for ELISA NIMBUS Plate Washer only *)
+	Test["If Targets contain BioTek plate washer, MethodFile must be specified",
+		{Download[packet, Targets[IntegratedInstruments]], Lookup[packet, MethodFile]},
+		Alternatives[
+			{{___, {___, ObjectP[Model[Instrument, PlateWasher, "id:dORYzZm51LLA"]], ___}, ___}, ObjectP[]},(*Model[Instrument, PlateWasher, "BioTek 405LS Microplate Washer"]*)
+			{_, Null}
+		]
 	]
 };
 
@@ -924,6 +937,15 @@ validModelMaintenanceInstallGasCylinderQTests[packet:PacketP[Model[Maintenance,I
 };
 
 (* ::Subsection::Closed:: *)
+(*validModelMaintenanceRestockLocalCacheQTests*)
+
+
+validModelMaintenanceRestockLocalCacheQTests[packet:PacketP[Model[Maintenance,RestockLocalCache]]]:={
+  NotNullFieldTest[packet,{Targets,MaxResults}]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validMaintenanceLubricateQTests*)
 
 
@@ -1211,10 +1233,10 @@ validModelMaintenanceTreatWasteQTests[packet:PacketP[Model[Maintenance,TreatWast
 			CleaningType
 		}
 	],
-	(* BleachTime is populated when CleaningType is Bleach *)
+	(* DisinfectionTime is populated when CleaningType is Bleach *)
 	Test[
-		"BleachTime is populated when CleaningType is Bleach:",
-		If[MatchQ[Lookup[packet, CleaningType], Bleach], TimeQ[Lookup[packet, BleachTime]], True],
+		"DisinfectionTime is populated when CleaningType is Bleach:",
+		If[MatchQ[Lookup[packet, CleaningType], Bleach], TimeQ[Lookup[packet, DisinfectionTime]], True],
 		True
 	]
 };
@@ -1233,6 +1255,52 @@ validModelMaintenanceAuditGasCylindersQTests[packet:PacketP[Model[Maintenance,Au
 	]*)
 };
 
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateColonyHandlerQTests*)
+
+validModelMaintenanceCalibrateColonyHandlerQTests[packet:PacketP[Model[Maintenance, CalibrateColonyHandler]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceCalibrateThermocyclerQTests*)
+
+
+validModelMaintenanceCalibrateThermocyclerQTests[packet:PacketP[Model[Maintenance,CalibrateThermocycler]]]:={
+	NotNullFieldTest[packet,{Targets, CalibrationPlates, CalibrationReportTypes, CalibrationTypes}],
+	RequiredTogetherTest[packet, {ROICalibrationPlate, DyeCalibrationPlates, NormalizationCalibrationPlates}]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenanceAuditInventoryQTests*)
+validModelMaintenanceAuditInventoryQTests[packet:PacketP[Model[Maintenance, AuditInventory]]]:={
+	NotNullFieldTest[packet, {AuditType}],
+	Test["If AuditType == Container, AuditLocation must be informed; if AuditType == Product, AuditLocation cannot be True:",
+		Lookup[packet, {AuditType, AuditLocation}],
+		{Container, BooleanP}|{Product, Except[True]}
+	],
+	Test["If AuditType == Container, AuditNestedContainers must be informed; if AuditType == Product, AuditNestedContainers cannot be True:",
+		Lookup[packet, {AuditType, AuditNestedContainers}],
+		{Container, BooleanP}|{Product, Except[True]}
+	],
+	Test["If AuditNestedContainer == True, MaxNestedContentsToAudit must be informed; if AuditNestedContainer != True, MaxNestedContentsToAudit must be Null:",
+		Lookup[packet, {AuditNestedContainers, MaxNestedContentsToAudit}],
+		{True, GreaterEqualP[1]}|{Except[True], Null}
+	],
+	Test["If AuditType == Container, Only allowed Targets are Model[Container] and Model[Instrument]s:",
+		Lookup[packet, {AuditType, Targets}],
+		{Container, {LinkP[{Model[Container], Model[Instrument]}]...}}|{Product, _}
+	]
+};
+
+(* ::Subsection::Closed:: *)
+(*validModelMaintenancePrepareLinerQTests*)
+
+
+validModelMaintenancePrepareLinerQTests[packet:PacketP[Model[Maintenance,PrepareLiner]]]:={
+	(* don't need any tests *)
+};
+
 
 (* ::Subsection:: *)
 (* Test Registration*)
@@ -1240,12 +1308,14 @@ validModelMaintenanceAuditGasCylindersQTests[packet:PacketP[Model[Maintenance,Au
 
 registerValidQTestFunction[Model[Maintenance],validModelMaintenanceQTests];
 registerValidQTestFunction[Model[Maintenance, AlignLiquidHandlerDevicePrecision],validModelMaintenanceAlignLiquidHandlerDevicePrecisionQTests];
+registerValidQTestFunction[Model[Maintenance, AuditInventory], validModelMaintenanceAuditInventoryQTests];
 registerValidQTestFunction[Model[Maintenance, Autoclave],validModelMaintenanceAutoclaveQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateApertureTube],validModelMaintenanceCalibrateApertureTubeQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateAutosampler],validModelMaintenanceCalibrateAutosamplerQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateBalance],validModelMaintenanceCalibrateBalanceQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateBalance, CrossFlowFiltration],validModelMaintenanceCalibrateBalanceCrossFlowFiltrationQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateCarbonDioxide],validModelMaintenanceCalibrateCarbonDioxideQTests];
+registerValidQTestFunction[Model[Maintenance, CalibrateColonyHandler],validModelMaintenanceCalibrateColonyHandlerQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateConductivity],validModelMaintenanceCalibrateConductivityQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateDNASynthesizer],validModelMaintenanceCalibrateDNASynthesizerQTests];
 registerValidQTestFunction[Model[Maintenance, CalibrateElectrochemicalReactor],validModelMaintenanceCalibrateElectrochemicalReactorQTests];
@@ -1308,10 +1378,13 @@ registerValidQTestFunction[Model[Maintenance, Replace, Sensor],validModelMainten
 registerValidQTestFunction[Model[Maintenance, Replace, GasFilter],validModelMaintenanceReplaceGasFilterQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, VacuumPump],validModelMaintenanceReplaceVacuumPumpQTests];
 registerValidQTestFunction[Model[Maintenance, Replace, WasteContainer], validModelMaintenanceReplaceWasteContainerQTests];
+registerValidQTestFunction[Model[Maintenance, RestockLocalCache],validModelMaintenanceRestockLocalCacheQTests];
 registerValidQTestFunction[Model[Maintenance, StorageUpdate],validModelMaintenanceStorageUpdateQTests];
 registerValidQTestFunction[Model[Maintenance, Shipping],validModelMaintenanceShippingQTests];
 registerValidQTestFunction[Model[Maintenance, TrainInternalRobotArm],validModelMaintenanceTrainInternalRobotArmPositionQTests];
 registerValidQTestFunction[Model[Maintenance,TreatWaste],validModelMaintenanceTreatWasteQTests];
 registerValidQTestFunction[Model[Maintenance, UpdateLiquidHandlerDeckAccuracy],validModelMaintenanceUpdateLiquidHandlerDeckAccuracyQTests];
 registerValidQTestFunction[Model[Maintenance, AuditGasCylinders],validModelMaintenanceAuditGasCylindersQTests];
+registerValidQTestFunction[Model[Maintenance, CalibrateThermocycler], validModelMaintenanceCalibrateThermocyclerQTests];
+registerValidQTestFunction[Model[Maintenance, PrepareLiner],validModelMaintenancePrepareLinerQTests];
 

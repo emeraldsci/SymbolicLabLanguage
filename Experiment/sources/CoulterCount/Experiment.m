@@ -1870,36 +1870,16 @@ resolveExperimentCoulterCountOptions[mySamples:{ObjectP[Object[Sample]]...}, myO
 		{FlowRate, 10^0 * Microliter / Second},
 		{EquilibrationTime, 10^0 * Second},
 		{RunTime, 10^0 * Second},
-		{RunVolume, 10^0 * Microliter}
+		{RunVolume, 10^0 * Microliter},
+		{SampleAmount, {10^-1 * Microliter, 10^-1 * Milligram}}
 	};
 
 	(* Round the options *)
-	{roundedExperimentOptions, optionPrecisionTests} = Module[{roundedExperimentOptionsWithoutSampleAmount, tests, roundedSampleAmount},
-		(* Round all other options *)
-		{roundedExperimentOptionsWithoutSampleAmount, tests} = If[gatherTests,
-			(* If we are gathering tests *)
-			RoundOptionPrecision[Association[myOptions], optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], Output -> {Result, Tests}],
-			(* Otherwise *)
-			{RoundOptionPrecision[Association[myOptions], optionPrecisions[[All, 1]], optionPrecisions[[All, 2]]], {}}
-		];
-		(* Need to round precisions of SampleAmount twice since it can takes two units - mass and volume *)
-		roundedSampleAmount = Module[{volumePos, massPos, roundedVolumes, roundedMasses, posToRoundedValueRules},
-			(* Get the positions of the volume and mass quantity *)
-			volumePos = Position[Lookup[myOptions, SampleAmount], VolumeP];
-			massPos = Position[Lookup[myOptions, SampleAmount], MassP];
-			(* Round the options *)
-			roundedVolumes = Flatten@Values[RoundOptionPrecision[Association[SampleAmount -> Cases[Lookup[myOptions, SampleAmount], VolumeP]], SampleAmount, 10^-1 * Microliter]];
-			roundedMasses = Flatten@Values[RoundOptionPrecision[Association[SampleAmount -> Cases[Lookup[myOptions, SampleAmount], MassP]], SampleAmount, 10^-1 * Milligram]];
-			(* Get the Position to rounded value map *)
-			posToRoundedValueRules = Join[MapThread[#1 -> #2&, {volumePos, roundedVolumes}], MapThread[#1 -> #2&, {massPos, roundedMasses}]];
-			(* Insert back the rounded values *)
-			<|SampleAmount -> ReplacePart[Lookup[myOptions, SampleAmount], posToRoundedValueRules]|>
-		];
-		(* Make the replacement and return results *)
-		{
-			Normal[Append[roundedExperimentOptionsWithoutSampleAmount, roundedSampleAmount], Association],
-			tests
-		}
+	{roundedExperimentOptions, optionPrecisionTests} = If[gatherTests,
+		(* If we are gathering tests *)
+		RoundOptionPrecision[Association[myOptions], optionPrecisions[[All, 1]], optionPrecisions[[All, 2]], Output -> {Result, Tests}],
+		(* Otherwise *)
+		{RoundOptionPrecision[Association[myOptions], optionPrecisions[[All, 1]], optionPrecisions[[All, 2]]], {}}
 	];
 
 	(* Replace the raw options with rounded values in full set of options, myOptions *)

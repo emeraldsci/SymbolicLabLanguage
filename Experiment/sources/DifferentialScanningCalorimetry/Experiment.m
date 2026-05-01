@@ -1273,10 +1273,10 @@ resolveDifferentialScanningCalorimetryOptions[myPooledSamples : ListableP[{Objec
 		True, resolvedPooledMix
 	];
 
-	(* PooledMixRate resolves to 852.22 GravitationalAcceleration if we are centrifuging, or Null otherwise *)
+	(* PooledMixRate resolves to 852.2 GravitationalAcceleration if we are centrifuging, or Null otherwise *)
 	resolvedPooledCentrifugeForce = Which[
 		MatchQ[specifiedPooledCentrifugeForce, Except[Automatic]], specifiedPooledCentrifugeForce,
-		MatchQ[specifiedPooledCentrifugeForce, Automatic] && resolvedPooledCentrifuge, 852.22 GravitationalAcceleration,
+		MatchQ[specifiedPooledCentrifugeForce, Automatic] && resolvedPooledCentrifuge, 852.2 GravitationalAcceleration,
 		True, Null
 	];
 

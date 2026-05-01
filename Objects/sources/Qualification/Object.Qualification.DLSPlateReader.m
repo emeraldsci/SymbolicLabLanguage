@@ -61,6 +61,18 @@ DefineObjectType[Object[Qualification, DLSPlateReader], {
 			Developer -> True,
 			Abstract -> False
 		},
+		SamplePreparationProtocol->{
+			Format->Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Protocol,Filter],
+				Object[Protocol,ManualSamplePreparation],
+				Object[Protocol,RoboticSamplePreparation]
+			],
+			Description -> "The protocol used to prepare the samples and solvent blanks prior to loading them into the plate.",
+			Category -> "General"
+		},
 		(* General *)
 		LightScatteringQualificationProtocol->{
 			Format -> Single,

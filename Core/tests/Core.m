@@ -1121,9 +1121,17 @@ DefineTests[GroupByTotal, {
 		GroupByTotal[{2, 2, 2, 2, 2, 2, 0}, 8],
 		{{0, 2, 2, 2, 2}, {2, 2}}
 	],
+	Example[{Additional, "Zero values will be placed in the first available bin:"},
+		GroupByTotal[{0, 2, 2, 2, 2, 2, 2, 0}, 8],
+		{{0, 0, 2, 2, 2, 2}, {2, 2}}
+	],
 	Example[{Additional, "Only zero values will be placed in the first available bin:"},
 		GroupByTotal[{0, 0, 0}, 8],
 		{{0, 0, 0}}
+	],
+	Example[{Additional, "Only zero values (with labels) will be placed in the first available bin:"},
+		GroupByTotal[{{1, 0}, {2, 0}, {3, 0}}, 8],
+		{{{1, 0}, {2, 0}, {3, 0}}}
 	],
 	Example[{Additional, "Negative values will be placed in the first available bin:"},
 		GroupByTotal[{2, 2, 2, 2, 2, 2, -1}, 8],

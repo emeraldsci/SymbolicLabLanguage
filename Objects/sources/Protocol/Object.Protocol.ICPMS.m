@@ -391,7 +391,7 @@ DefineObjectType[Object[Protocol, ICPMS], {
 			Description->"Rate at which the Ar gas flows into the injector to deliver and aerosolize the input sample.",
 			Category -> "Sample Loading"
 		},
-		AuxillaryGasFlowRate -> {
+		AuxiliaryGasFlowRate -> {
 			Format -> Single,
 			Class -> Real,
 			Pattern:>GreaterEqualP[0 Liter/Minute],

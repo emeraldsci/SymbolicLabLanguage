@@ -199,8 +199,8 @@ DefineObjectType[Model[Container, Rack], {
 			Format -> Multiple,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Model[Instrument, Roller][CompatibleRacks]|Model[Instrument, Shaker][CompatibleAdapters]|Model[Instrument, Sonicator][CompatibleSonicationAdapters],
-			Description -> "A list of instruments that this rack model can support to hold samples during mixing. Currently, this is only applicable for rollers, sonicators and shakers.",
+			Relation -> Model[Instrument, Roller][CompatibleRacks]|Model[Instrument, Shaker][CompatibleAdapters]|Model[Instrument, Sonicator][CompatibleSonicationAdapters]|Model[Instrument, HeatBlock][CompatibleAdapters],
+			Description -> "A list of instruments that this rack model can support to hold samples during incubating. Currently, this is only applicable for rollers, sonicators, heat blocks and shakers.",
 			Category -> "Model Information"
 		},
 		CompatibleVolumetricFlasks ->{

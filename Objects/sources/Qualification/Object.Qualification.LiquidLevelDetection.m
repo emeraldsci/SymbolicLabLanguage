@@ -79,11 +79,27 @@ DefineObjectType[Object[Qualification, LiquidLevelDetection], {
 			Category -> "Experimental Results",
 			Abstract -> True
 		},
+		Pipettor1000ulTightnessCheckFailures -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The channel numbers of any 1000ul pipettors that failed their tightness checks.",
+			Category -> "Experimental Results",
+			Abstract -> True
+		},
 		Pipettor1000ulCapacitiveLLD -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> QualificationResultP,
 			Description -> "The outcome of the capacitive liquid level detection test for the 1000ul channel pipettors.",
+			Category -> "Experimental Results",
+			Abstract -> True
+		},
+		Pipettor1000ulCapacitiveLLDFailures -> {
+			Format -> Multiple,
+			Class -> Integer,
+			Pattern :> GreaterP[0],
+			Description -> "The channel numbers of any 1000ul pipettors that failed their capacitive liquid level detection checks.",
 			Category -> "Experimental Results",
 			Abstract -> True
 		},

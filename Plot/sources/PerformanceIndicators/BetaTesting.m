@@ -13,52 +13,30 @@
 	- Name is often used with SearchCriteria if the exact changes are unclear (for instance if you want to indicate a specific feature added to RSP
 *)
 $BetaExperimentFunctions = <|
-	"ExperimentLiquidLiquidExtraction" -> {
-		StartDate -> DateObject[{2024, 6, 15}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, LiquidLiquidExtraction]],
+	"ExperimentELISA" -> {
+		StartDate -> DateObject[{2025, 12, 1}],
 		UnusedProcedures -> {
-			"RCP QPix",
-			"Robotic Sample Preparation Select LiquidHandler With RequiredInstruments",
-			"RCP Select any Tips",
-			"Sample Preparation Primary Plate Reader Setup",
-			"Sample Preparation Secondary Plate Reader Setup",
-			"CellPreparation Microscope Temperature Setting",
-			"CellPreparation Microscope Carbon dioxide Setting",
-			"Sample Manipulation HPLC Vial Rack Handling",
-			"Integrated Plate Sealer Empty Trash",
-			"Integrated Plate Sealer Check Magazine",
-			"Robotic Keep Enclosure Closed Instruction",
-			"Integrated Plate Sealer Check Seal Stickers",
-			"Integrated Plate Sealer Sort Seals",
-			"Integrated Plate Sealer Discard Seal Stickers",
-			"Integrated Plate Seal Magazine Check position",
-			"Integrated HMotion go to Home Position",
-			"Sterilize bioSTAR",
-			"Robotic Pick Cell Containers",
-			"Load MALDI Plate on Hamilton",
-			"MetaXpress Software Initialization",
-			"Open Robotic Sample and Cell Preparation BioStar Method",
-			"Integrated instrument Power cycle",
-			"Sample Manipulation Robot Wait For Completion",
-			"SampleManipulation Wait For Cool Down",
-			"RCP Careful with Dyne Plates",
-			"Close Uncle Capillary Clips",
-			"MetaXpress Software Shutdown",
-			"CellPreparation Restore Microscope Temperature",
-			"CellPreparation Microscope Carbon dioxide Shutdown",
-			"bioSTAR Turn Off HEPA",
-			"Qualification VerifyHamiltonLabware TopLight PDU Off",
-			"Check Lunatic loading",
-			"Qualification VerifyHamiltonLabware TopLight PDU",
-			"Troubleshooting Catch-All",
-			"Biostar decontaminate enclosure",
-			"Biostar decontamination gather wipes",
-			"Biostar enclosure close all doors and light UV",
+			(* below are SP procedures *)
+			"Sample Preparation Aliquot",
+			"Sample Preparation Centrifuge",
+			"Sample Preparation Filter",
+			"Sample Preparation Incubate",
+			"Sample Preparation Preform Stages",
+			"Sample Preparation Sample Manipulation with Measure Volume",
+			"Select General Balance",
+			"Select General Handling Station and Balance",
+			(* below are failure/retry procedures. We are not actively triggering failures *)
+			"PlateWasher Reopen MethodFile for Maintenance",
+			"PlateWasher Reopen MethodFile for RCP",
+			"Contact Scientific Operation",
+			"Restart OBS",
+			"Start streaming troubleshoot restart OBS",
+			"Hamilton Deck Labware Error Handling",
+			"Hamilton Initialization Failure",
 			"Hamilton Initialization Failure Restart",
-			"Hamilton Method Start Check Necessary Options",
-			"HMotion Gripper Angle adjustment",
-			"HMotion Rail Position adjustment",
-			"HMotion Z Height adjustment",
+			"Hamilton initialization loop",
+			"Hamilton power cycle HEPA",
+			"HiG Centrifuge Power Cycle",
 			"Initial plate adjustment",
 			"Initial plate adjustment loop",
 			"Integrated Centrifuge Power cycle",
@@ -73,23 +51,29 @@ $BetaExperimentFunctions = <|
 			"Integrated Nephelometer Door Check",
 			"Integrated Plate Reader Door Check",
 			"Integrated PlateReader drive reinstall",
-			"Integrated PlateSealer Power cycle",
+			"Integrated PlateWasher Power Cycle",
 			"Integrated Thermocycler Power cycle",
 			"Integrated TiltModule Power cycle",
-			"Liquid handler align remove racks left",
-			"Plate Reader Door Click No",
-			"Plate Reader Door Click Yes",
-			"QualLiquidHandler Gilson Branch",
-			"QualLiquidHandler Hamilton bioSTAR Branch",
-			"VerifyHamiltonLabware Integrated instrument Power cycle"
-		}
-	},
-	"ExperimentELISA" -> {StartDate -> DateObject["July 1 2025"]},
-	"ExperimentCrossFlowFiltration" -> {StartDate -> DateObject[{2024, 9, 13}]},
-	"ExperimentInoculateLiquidMedia" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		UnusedProcedures -> {
-			"CORE2 Check channel alignment",
+			"Power cycle old HEPA",
+			"Power cycle new HEPA",
+			"Troubleshooting Catch-All",
+			(* below are maintenance and qualification procedures. We only use SuperSTAR LH so lots of procedures are not relevant *)
+			Object[Maintenance, EmptyWaste],(*This one has not been implemented yet https://app.asana.com/1/84467620246/task/1209650798208273?focus=true *)
+			Object[Maintenance, TrainInternalRobotArm],(*This one is for HMotion*)
+			Object[Qualification, LiquidHandler],(*This one is an annual qual, won't have another one until Oct 2026*)
+			Object[Qualification, VerifyHamiltonLabware],(*This one is basically retired*)
+			"Chemistry Lab Personal Safety Preparation OEB Compound Handling",
+			"Biostar decontamination gather wipes",
+			"Biostar decontaminate enclosure",
+			"Biostar enclosure close all doors and light UV",
+			"Liquid Handler BioSTAR GoPro Turn On",
+			"LiquidLevelDetection clean channels",
+			"Open deck measurement bioSTAR",
+			"Open deck measurement Starlet",
+			"MaintenanceDecontaminate Filter Tip Carrier Return",
+			"MaintenanceDecontaminate Turn on UV",
+			"Qualification VerifyHamiltonLabware TopLight PDU",
+			"Qualification VerifyHamiltonLabware TopLight PDU Off",
 			"VerifyHamitonLabware pick COREII tips"
 		}
 	},
@@ -195,188 +179,13 @@ $BetaExperimentFunctions = <|
 			"Incubate Cells Robotic Quantification Subprotocol",
 			"Incubate Cells All Quantification Targets Met",
 			(* below are maintenance and qualification procedure *)
+			Object[Maintenance, RefillReservoir],
 			"QualificationIncubator Programmable Incubator Procedure",
 			"MaintenanceDecontaminateIncubator Drain Reservoir with ROCKER",
-			"MaintenanceDecontaminateIncubator Returning Relocated Samples",
-			"MaintenanceRefillReservoir Check Dispenser Volume",
-			"MaintenanceRefillReservoir Check Uncle Internal Reservoir Volume",
-			"MaintenanceRefillReservoir Check QX One Volumes",
-			"MaintenanceRefillReservoir Check SpeedVac Trap Volume",
-			"MaintenanceRefillReservoir Check Desiccant Condition",
-			"MaintenanceRefillReservoir Condensate Recirculator",
-			"MaintenanceRefillReservoir Condensate Recirculator Check Fill Indicator",
-			"MaintenanceRefillReservoir FragmentAnalysis ResourcePicking",
-			"MaintenanceRefillReservoir Reserve Instrument",
-			"MaintenanceRefillReservoir Empty Trap Resource Picking",
-			"MaintenanceRefillReservoir Resource Pick Cryo Gloves",
-			"MaintenanceRefillReservoir Spectrophotometer",
-			"MaintenanceRefillReservoir Sonicator",
-			"MaintenanceRefillReservoir GilsonBufferLine",
-			"MaintenanceRefillReservoir TCHood WaterReservoir",
-			"MaintenanceRefillReservoir SquirtBottlesReservoir",
-			"MaintenanceRefillReservoir FPLCWashBufferDeck",
-			"MaintenanceRefillReservoir FPLCBufferLineReservoir",
-			"MaintenanceRefillReservoir Bufferbot WaterReservoir",
-			"MaintenanceRefillReservoir Bufferbot AcetoneReservoir",
-			"MaintenanceRefillReservoir pHTitrator Acid Cleaning Solution Bottle",
-			"MaintenanceRefillReservoir pHTitrator Base Cleaning Solution Bottle",
-			"MaintenanceRefillReservoir LCMSReservoirDeck",
-			"MaintenanceRefillReservoir UncleInternalReservoir",
-			"MaintenanceRefillReservoir QX One Reader Bottle",
-			"MaintenanceRefillReservoir Carboy",
-			"MaintanceRefillReservoir ZE5 SheathFluid",
-			"MaintenanceRefillReservoir ZE5 Cleaner",
-			"MaintenanceRefillReservoir ZE5 QC beads",
-			"MaintenanceRefillReservoir FragmentAnalysis CapillaryStorageSolutionPlate",
-			"MaintenanceRefillReservoir Echo 650 Coupling Fluid",
-			"MaintenanceRefillReservoir Empty SpeedVac Trap",
-			"MaintenanceRefillReservoir Replace Desiccant",
-			"MaintenanceRefillReservoir SciEx Echo MassSpec Coupling Fluid",
-			"MaintenanceRefillReservoir_MoveContainerToInstrument",
-			"Empty SpeedVac Trap",
-			"MaintenanceRefillReservoir Echo 650 Replace Coupling Fluid Panel",
-			"MaintenanceRefillReservoir ReleaseInstrument",
-			"MaintenanceRefillReservoir Resource Picking All",
-			"MaintenanceRefillReservoir_Clean Up for Spectrophotometer",
-			"MaintenanceRefillReservoir_Clean Up for Sonicator",
-			"MaintenanceRefillReservoir_Clean Up for LiquidWasteAndWasteContainer",
-			"MaintenanceRefillReserovir_Clean Up for QX One",
-			"MaintenanceRefillReservoir Clean up Fill Liquid",
-			"MaintenanceRefillReservoir Cleanup SpeedVac Cryo Trap",
-			"MaintenanceRefillReservoir Cleanup Desiccator"
+			"MaintenanceDecontaminateIncubator Returning Relocated Samples"
 		}
 	},
-	"ExperimentImageCells" -> {StartDate -> DateObject[{2024, 11, 1}]},
-	"ExperimentQuantifyCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		UnusedProcedures -> {
-			(* Only care about replacing filter of BMG instruments *)
-			"MaintenanceReplaceFilter_HPLC buffer inlet filters",
-			"MaintenanceReplaceFilter_MilliporeElixMillipak",
-			"MaintenanceReplaceFilter_MilliQIntegral3BioPak",
-			"MaintenanceReplaceFilter_MilliQIntegral3ProgardPack",
-			"MaintenanceReplaceFilter_MilliQIntegral3QuantumCartridge",
-			"MaintenanceReplaceFilter_MilliQIntegral3VentFilter",
-			"MaintenanceReplaceFilter_MilliQIQ7010Biopak",
-			"MaintenanceReplaceFilter_MilliQIQ7010IPAKGard",
-			"MaintenanceReplaceFilter_MilliQIQ7010IPAKQuanta",
-			"MaintenanceReplaceFilter_MilliQIQ7010Or7015VentFilter",
-			"MaintenanceReplaceFilter_ProteinSimpleMaurice",
-			
-			(* AlphaScreen qual is currently turned off (and not relevant to cell bio) *)
-			"AlphaScreen Qualification Procedure"
-		}
-	},
-	"ExperimentQuantifyColonies" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> {
-			Any[InputUnitOperations[Type] == Object[UnitOperation, QuantifyColonies]], (* For RCP *)
-			True(* For Object[Protocol,QuantifyColonies] *)
-		},
-		UnusedProcedures -> {
-			"RCP Hamilton", "PickColonies OutputUnitOperation", "SpreadCells OutputUnitOperation",
-			"QPix Insert PrimaryWashSolution", "QPix Insert SecondaryWashSolution", "QPix Insert TertiaryWashSolution",
-			"QPix Dispose PrimaryWashSolution", "QPix Dispose SecondaryWashSolution", "QPix Dispose TertiaryWashSolution",
-			"QPixPrepUnitOperationLoop", "PickColonies OutputUnitOperation Prep", "PickColonies Plate Preparation",
-			"SpreadStreak Plate Preparation", "SpreadCells OutputUnitOperation Prep", "SpreadStreak Sample Resuspension"
-		}
-	},
-	"ExperimentPickColonies" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, PickColonies]],
-		UnusedProcedures -> {
-			"RCP Hamilton", "SpreadCells OutputUnitOperation", "ImageColonies OutputUnitOperation",
-			"Qpix Swap Tip Rack", "QPix final tip return"
-		}
-	},
-	"ExperimentSpreadCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, SpreadCells]],
-		UnusedProcedures -> {
-			"RCP Hamilton", "PickColonies OutputUnitOperation", "ImageColonies OutputUnitOperation"
-		}
-	},
-	"ExperimentStreakCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, StreakCells]],
-		UnusedProcedures -> {
-			"RCP Hamilton", "PickColonies OutputUnitOperation", "ImageColonies OutputUnitOperation"
-		}
-	},
-	"ExperimentWashCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, WashCells]],
-		UnusedProcedures -> {
-			(*General branches not relavant to WashCells, which is essentially a list of Label, Transfer, Pellet UOs*)
-			"RCP QPix",
-			"Sample Preparation Primary Plate Reader Setup", "Sample Preparation Secondary Plate Reader Setup",
-			"CellPreparation Microscope Temperature Setting", "CellPreparation Microscope Carbon dioxide Setting",
-			"Sample Manipulation HPLC Vial Rack Handling", "Liquid Handler STAR GoPro Turn On",
-			"Open SampleManipulation Starlet Method", "Open SampleManipulation SuperStar Method",
-			"Troubleshooting Catch-All", "MetaXpress Software Initialization", "MetaXpress Software Shutdown",
-			"CellPreparation Restore Microscope Temperature", "CellPreparation Microscope Carbon dioxide Shutdown",
-			"Liquid Handling Measure Volume", "Liquid Handling Measure Weight",
-			"Liquid Handling Image Sample", "RCP Careful with Dyne Plates", "Check Lunatic loading",
-			(*"RCP Hamilton" procedure branches that are error-triggered. We are not actively testing those.*)
-			"Integrated instrument Power cycle", "Integrated HMotion Power cycle",
-			"Integrated PlateSealer Power cycle", "Integrated Thermocycler Power cycle",
-			"Integrated MPE Power cycle", "Integrated Centrifuge Power cycle",
-			"Integrated Heater Shaker Power cycle", "Integrated Heater Cooler Power cycle",
-			"Integrated HeaterCoolerShaker Power cycle", "Integrated Incubator Power cycle",
-			"Integrated Microscope Power cycle", "Integrated TiltModule Power cycle",
-			"Power cycle new HEPA", "Power cycle old HEPA", "Hamilton Initialization Failure"
-		}
-	},
-	"ExperimentLyseCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[InputUnitOperations[Type] == Object[UnitOperation, LyseCells]],
-		UnusedProcedures -> {
-			(*General branches not relavant to LyseCells, which is essentially a list of Label, Transfer, Pellet UOs*)
-			"RCP QPix",
-			"Sample Preparation Primary Plate Reader Setup", "Sample Preparation Secondary Plate Reader Setup",
-			"CellPreparation Microscope Temperature Setting", "CellPreparation Microscope Carbon dioxide Setting",
-			"Sample Manipulation HPLC Vial Rack Handling", "Liquid Handler STAR GoPro Turn On",
-			"Open SampleManipulation Starlet Method", "Open SampleManipulation SuperStar Method",
-			"Troubleshooting Catch-All", "MetaXpress Software Initialization", "MetaXpress Software Shutdown",
-			"CellPreparation Restore Microscope Temperature", "CellPreparation Microscope Carbon dioxide Shutdown",
-			"Liquid Handling Measure Volume", "Liquid Handling Measure Weight",
-			"Liquid Handling Image Sample", "RCP Careful with Dyne Plates", "Check Lunatic loading",
-			(*"RCP Hamilton" procedure branches that are error-triggered. We are not actively testing those.*)
-			"Integrated instrument Power cycle", "Integrated HMotion Power cycle",
-			"Integrated PlateSealer Power cycle", "Integrated Thermocycler Power cycle",
-			"Integrated MPE Power cycle", "Integrated Centrifuge Power cycle",
-			"Integrated Heater Shaker Power cycle", "Integrated Heater Cooler Power cycle",
-			"Integrated HeaterCoolerShaker Power cycle", "Integrated Incubator Power cycle",
-			"Integrated Microscope Power cycle", "Integrated TiltModule Power cycle",
-			"Power cycle new HEPA", "Power cycle old HEPA", "Hamilton Initialization Failure"
-		}
-	},
-	"ExperimentFreezeCells" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		UnusedProcedures -> {
-			"ECL-CMU Go to Cryostores",
-			"VIA Freeze Lid Open Alarm",
-			"VIA Freeze Other Alarm Second Attempt",
-			"VIA Freeze System Overheating Alarm",
-			(* below are maintenance and qualification procedure *)
-			"MaintenanceClean Bench", "MaintenanceClean Bufferbot", "MaintenanceClean Centrifuge",
-			"MaintenanceClean Centrifuge Loop", "MaintenanceClean Collect Step Ladder", "MaintenanceClean CoulterCounter",
-			"MaintenanceClean DrumRoller", "MaintenanceClean FixedAngle Centrifuge Rotor",
-			"MaintenanceClean FlammableCabinet", "MaintenanceCleanFreeezer Gather Spill Pads",
-			"MaintenanceClean FumeHood", "MaintenanceClean PassThroughShelf", "MaintenanceClean Peptide Synthesizer",
-			"MaintenanceClean pHTitrator", "MaintenanceClean Reactor", "MaintenanceClean Return Step Stool",
-			"MaintenanceClean Room", "MaintenanceClean SolidPhaseExtraction", "MaintenanceClean SwingBucket",
-			"MaintenanceDefrost Absorbent mat placement -20 C", "Maintenance Defrost audit loop",
-			"Maintenance Defrost freezer audit wrapper", "MaintenanceDefrost  temperature Alarm -20C",
-			"MaintenanceDefrost Turn On Temperature Alarm -20C", "MaintneanceClean CleanInstrumentsExteriorSurfaces"
-		}
-	},
-	"ExperimentMedia" -> {
-		StartDate -> DateObject[{2024, 12, 2}],
-		SearchCriteria -> Any[StockSolutionModels[Type] == Model[Sample, Media]],
-		UnusedProcedures -> {"Stock Solution Plate Media"}
-	},
-	"ExperimentPlateMedia" -> {StartDate -> DateObject[{2024, 12, 2}]}
+	"ExperimentImageCells" -> {StartDate -> DateObject[{2024, 11, 1}]}
 |>;
 
 (*$ErrorCategoriesToExclude*)
@@ -403,7 +212,7 @@ DefineOptions[PlotBetaTesting,Options:>{
 	{Name->Null,Null|_String,"A short description of the change being beta tested."},
 	{Email->True,BooleanP,"Indicates if the respective parties should be emailed the results of the beta testing notebooks. If False, summary tables are returned in the notebook."},
 	{OutputFormat->Notebook,ListableP[(Notebook|SummaryTable|SummaryData)],"Indicates how the beta testing plots should be displayed."},
-	{UnusedProcedures->{},{_String...},"Procedure branches that should not be checked when calculating TaskCoverage."}
+	{UnusedProcedures->{},{(_String|TypeP[{Object[Maintenance], Object[Qualification]}])...},"Procedure branches that should not be checked when calculating TaskCoverage."}
 }];
 
 PlotBetaTesting::TypeLookup="You must add your experiment to Experiment'Private'experimentFunctionTypeLookup (for experiments) or to ProcedureFramework'Private'experimentFunctionTypeLookup (for qualifications and maintenances) in order to use this function.";
@@ -643,12 +452,19 @@ PlotBetaTesting[experimentFunction_Symbol,ops:OptionsPattern[PlotBetaTesting]]:=
 	ManifoldEcho[{protocolTypes,qualTypes,maintenanceTypes},"types"];
 
 	(* For each type find all procedures it could encounter will running in Engine *)
-	allProtocolProcedures=Flatten[procedureTree[#,unusedProcedures]& /@ protocolTypes];
-	allQualProcedures=If[MatchQ[qualTypes,{}|Null],{},Flatten[procedureTree[#,unusedProcedures]&/@DeleteDuplicates[qualTypes],1]];
-	allMaintenanceProcedures=If[MatchQ[maintenanceTypes,{}|Null],{},Flatten[procedureTree[#,unusedProcedures]&/@DeleteDuplicates[maintenanceTypes],1]];
-	allProcedures=DeleteDuplicates[Join[allProtocolProcedures,allQualProcedures,allMaintenanceProcedures]];
+	(* If a maintenance or qualification type is excluded with option UnusedProcedures, do it here *)
+	allProtocolProcedures = Flatten[procedureTree[#, unusedProcedures]& /@ protocolTypes];
+	allQualProcedures = If[MatchQ[qualTypes, {}|Null] || MatchQ[DeleteCases[qualTypes, Alternatives@@Cases[unusedProcedures, TypeP[]]], {}],
+		{},
+		Flatten[procedureTree[#, unusedProcedures]& /@ DeleteDuplicates[DeleteCases[qualTypes, Alternatives@@Cases[unusedProcedures, TypeP[]]]], 1]
+	];
+	allMaintenanceProcedures = If[MatchQ[maintenanceTypes, {}|Null] || MatchQ[DeleteCases[maintenanceTypes, Alternatives@@Cases[unusedProcedures, TypeP[]]], {}],
+		{},
+		Flatten[procedureTree[#, unusedProcedures]& /@ DeleteDuplicates[DeleteCases[maintenanceTypes, Alternatives@@Cases[unusedProcedures, TypeP[]]]], 1]
+	];
+	allProcedures = DeleteDuplicates[Join[allProtocolProcedures, allQualProcedures, allMaintenanceProcedures]];
 
-	allTaskCounts=taskCountInProcedure/@allProcedures;
+	allTaskCounts = taskCountInProcedure /@ allProcedures;
 
 	(* Get all procedures we've actually tested in Engine *)
 	allProcedureEventsEncountered=Join[encounteredProcedures,Flatten[encounteredSubprotocolProcedures,1]];

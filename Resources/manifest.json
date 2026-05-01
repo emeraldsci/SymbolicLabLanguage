@@ -48,6 +48,7 @@
 		"InsufficientTotalVolume",
 		"InsufficientVolume",
 		"InvalidSterileRequest",
+		"InvalidTrainingModelRequest",
 		"MissingObjects",
 		"ModelInstances",
 		"ModelObjectType",

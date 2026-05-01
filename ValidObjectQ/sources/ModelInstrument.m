@@ -441,6 +441,49 @@ validModelInstrumentCuvetteWasherQTests[packet:PacketP[Model[Instrument,CuvetteW
 
 
 (* ::Subsection::Closed:: *)
+(*validModelInstrumentCuttingStationQTests*)
+
+
+validModelInstrumentCuttingStationQTests[packet:PacketP[Model[Instrument,CuttingStation]]]:={
+
+	NotNullFieldTest[packet,{
+		WorkSurfaceDimensions,
+		ParallelRulerLength,
+		PerpendicularRulerLength,
+		MaxSpoolWidth,
+		MaxSpoolDiameter,
+		Positions
+	}],
+
+	(* ParallelRulerLength should not exceed WorkSurfaceDimensions depth *)
+	Test["ParallelRulerLength should not exceed WorkSurfaceDimensions depth:",
+		Module[{workSurfaceDimensions, rulerLength},
+			workSurfaceDimensions = Lookup[packet, WorkSurfaceDimensions];
+			rulerLength = Lookup[packet, ParallelRulerLength];
+			If[!NullQ[workSurfaceDimensions] && !NullQ[rulerLength],
+				LessEqualQ[rulerLength, workSurfaceDimensions[[2]]],
+				True
+			]
+		],
+		True
+	],
+
+	(* PerpendicularRulerLength should not exceed WorkSurfaceDimensions width *)
+	Test["PerpendicularRulerLength should not exceed WorkSurfaceDimensions width:",
+		Module[{workSurfaceDimensions, rulerLength},
+			workSurfaceDimensions = Lookup[packet, WorkSurfaceDimensions];
+			rulerLength = Lookup[packet, PerpendicularRulerLength];
+			If[!NullQ[workSurfaceDimensions] && !NullQ[rulerLength],
+				LessEqualQ[rulerLength, workSurfaceDimensions[[1]]],
+				True
+			]
+		],
+		True
+	]
+};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelInstrumentpHMeterQTests*)
 
 
@@ -1127,6 +1170,13 @@ validModelInstrumentDispenserQTests[packet:PacketP[Model[Instrument,Dispenser]]]
 
 
 (* ::Subsection::Closed:: *)
+(*validModelInstrumentDisintegrationApparatusQTests*)
+
+
+validModelInstrumentDisintegrationApparatusQTests[packet:PacketP[Model[Instrument,DisintegrationApparatus]]]:={};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelInstrumentDissolvedOxygenMeterQTests*)
 
 
@@ -1144,6 +1194,12 @@ validModelInstrumentDissolvedOxygenMeterQTests[packet:PacketP[Model[Instrument,D
 	FieldComparisonTest[packet,{MinTemperature,MaxTemperature},LessEqual],
 	FieldComparisonTest[packet,{MinDissolvedOxygen,MaxDissolvedOxygen},LessEqual]
 };
+
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentDissolutionApparatusQTests*)
+
+validModelInstrumentDissolutionApparatusQTests[packet:PacketP[Model[Instrument,DissolutionApparatus]]]:= {};
 
 
 
@@ -1558,14 +1614,15 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 	(* if balance type is populated, every objects should have the corresponding balance types! *)
 	Test["BalanceType of the model matches up with each instance's Field[Balances[Mode]]:",
 		Module[{balanceTypesToHave, instances, instanceTuples},
-			balanceTypesToHave = Lookup[packet, BalanceType];
+			(* make sure the balance type is well sorted *)
+			balanceTypesToHave = Sort[DeleteDuplicates[Lookup[packet, BalanceType]]];
 
 			(* get the objects *)
 			instances = Lookup[packet, Objects];
 			instanceTuples = Download[instances, {Status, Balances[Mode]}];
 
 			(* only check non-Retired instances *)
-			SubsetQ[balanceTypesToHave, #[[2]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
+			MatchQ[balanceTypesToHave, Sort[DeleteDuplicates[#[[2]]]]]& /@ DeleteCases[instanceTuples, {Retired, _}]
 		],
 		{True...}
 	],
@@ -1591,6 +1648,7 @@ validModelInstrumentHandlingStationQTests[packet:PacketP[Model[Instrument,Handli
 
 
 validModelInstrumentHandlingStationAmbientQTests[packet:PacketP[Model[Instrument,HandlingStation,Ambient]]]:={
+	NotNullFieldTest[packet, DefaultLinerModels]
 };
 
 
@@ -1663,25 +1721,17 @@ validModelInstrumentHPLCQTests[packet:PacketP[Model[Instrument,HPLC]]]:={
 	(* If Detector LampType is informed, then Absorbance criteria must be informed *)
 	RequiredTogetherTest[packet,{DetectorLampType,AbsorbanceDetector,AbsorbanceFilterType,MinAbsorbanceWavelength,MaxAbsorbanceWavelength,AbsorbanceWavelengthBandpass}],
 	RequiredTogetherTest[packet,{MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate}],
-	RequiredTogetherTest[packet,{MinSmoothingTimeConstant,MaxSmoothingTimeConstant}],
 
 	(* Min/Max tests *)
 	FieldComparisonTest[packet,{MinFlowRate,MaxFlowRate},LessEqual],
 	FieldComparisonTest[packet,{MinPressure,TubingMaxPressure},LessEqual],
 	FieldComparisonTest[packet,{MinAbsorbanceWavelength,MaxAbsorbanceWavelength},LessEqual],
 	FieldComparisonTest[packet,{MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate},LessEqual],
-	FieldComparisonTest[packet,{MinSmoothingTimeConstant,MaxSmoothingTimeConstant},LessEqual],
 	FieldComparisonTest[packet,{MinSampleVolume,MaxSampleVolume},LessEqual],
 
 	(* If AbsorbanceSamplingRates are provided, MinAbsorbanceSamplingRate and MaxAbsorbanceSamplingRate cannot be populated and vice versa *)
 	Test["Either AbsorbanceSamplingRates or MinAbsorbanceSamplingRate and MaxAbsorbanceSamplingRate pair can be populated:",
 		Lookup[packet, {AbsorbanceSamplingRates,MinAbsorbanceSamplingRate,MaxAbsorbanceSamplingRate}],
-		{{},Except[Null],Except[Null]}|{Except[{}],Null,Null}|{{},Null,Null}
-	],
-
-	(* If SmoothingTimeConstants are provided, MinSmoothingTimeConstant and MaxSmoothingTimeConstant cannot be populated and vice versa *)
-	Test["Either SmoothingTimeConstants or MinSmoothingTimeConstant and MaxSmoothingTimeConstant pair can be populated:",
-		Lookup[packet, {SmoothingTimeConstants,MinSmoothingTimeConstant,MaxSmoothingTimeConstant}],
 		{{},Except[Null],Except[Null]}|{Except[{}],Null,Null}|{{},Null,Null}
 	],
 
@@ -2162,7 +2212,7 @@ validModelInstrumentFumeHoodQTests[packet:PacketP[Model[Instrument,FumeHood]]]:=
 
 validModelInstrumentHandlingStationFumeHoodQTests[packet:PacketP[Model[Instrument,HandlingStation,FumeHood]]]:={
 	(* Fields which should not be null *)
-	NotNullFieldTest[packet,{Mode,FlowMeter,MinFlowSpeed,Plumbing,Positions,PositionPlotting}],
+	NotNullFieldTest[packet,{Mode,FlowMeter,MinFlowSpeed,Plumbing,Positions,PositionPlotting,DefaultLinerModels}],
 
 	(* Fields which should all be populated *)
 	Test["The three indexes in InternalDimensions must be all informed:",
@@ -2884,6 +2934,29 @@ validModelInstrumentIonChromatographyQTests[packet:PacketP[Model[Instrument, Ion
 
 (* ::Subsection::Closed:: *)
 (*validModelInstrumentKarlFischerTiratorQTests*)
+
+(* ::Subsection::Closed:: *)
+(*validModelInstrumentKarlFischerTiratorQTests*)
+
+
+validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
+	(* Shared fields which should be null *)
+
+	(* Shared fields which should NOT be null *)
+	NotNullFieldTest[packet,{
+			Positions,
+			PositionPlotting,
+			TitrationTechnique,
+			SamplingMethods,
+			ReactionVesselModel
+		}
+	],
+
+
+	(* Min/Max tests *)
+	FieldComparisonTest[packet, {MinTemperature,MaxTemperature}, LessEqual]
+};
+
 
 
 validModelInstrumentKarlFischerTiratorQTests[packet:PacketP[Model[Instrument, KarlFischerTitrator]]]:={
@@ -4251,6 +4324,8 @@ validModelInstrumentPlateWasherQTests[packet:PacketP[Model[Instrument,PlateWashe
 
 	RequiredTogetherTest[packet,{MinRotationRate,MaxRotationRate}],
 
+	RequiredTogetherTest[packet,{MaxXOffset,MaxYOffset,MaxZOffset,XOffsetConversion,YOffsetConversion,ZOffsetConversion}],
+
 	FieldComparisonTest[packet,{MaxRotationRate,MinRotationRate},GreaterEqual],
 
 	FieldComparisonTest[packet,{MaxAspirateTravelRate,MinAspirateTravelRate},GreaterEqual],
@@ -5428,6 +5503,12 @@ validModelInstrumentSpargeFilterCleanerQTests[packet:PacketP[Model[Instrument,Sp
 validModelInstrumentUVLampQTests[packet:PacketP[Model[Instrument,UVLamp]]]:={
 };
 
+(* ::Subsection:: *)
+(*validModelInstrumentBarrelMediaDispenserQTests*)
+
+
+validModelInstrumentBarrelMediaDispenserQTests[packet:PacketP[Model[Instrument,BarrelMediaDispenser]]]:={};
+
 
 (* ::Subsection:: *)
 (* Test Registration *)
@@ -5438,6 +5519,7 @@ registerValidQTestFunction[Model[Instrument, Anemometer],validModelInstrumentAne
 registerValidQTestFunction[Model[Instrument, Aspirator],validModelInstrumentAspiratorQTests];
 registerValidQTestFunction[Model[Instrument, Autoclave],validModelInstrumentAutoclaveQTests];
 registerValidQTestFunction[Model[Instrument, Balance],validModelInstrumentBalanceQTests];
+registerValidQTestFunction[Model[Instrument, BarrelMediaDispenser], validModelInstrumentBarrelMediaDispenserQTests];
 registerValidQTestFunction[Model[Instrument, DistanceGauge],validModelInstrumentDistanceGaugeQTests];
 registerValidQTestFunction[Model[Instrument, BioLayerInterferometer], validModelInstrumentBioLayerInterferometerQTests];
 registerValidQTestFunction[Model[Instrument, BiosafetyCabinet],validModelInstrumentBiosafetyCabinetQTests];
@@ -5457,6 +5539,7 @@ registerValidQTestFunction[Model[Instrument, CrossFlowFiltration],validModelInst
 registerValidQTestFunction[Model[Instrument, CryogenicFreezer],validModelInstrumentCryogenicFreezerQTests];
 registerValidQTestFunction[Model[Instrument, CrystalIncubator],validModelInstrumentCrystalIncubatorQTests];
 registerValidQTestFunction[Model[Instrument, CuvetteWasher],validModelInstrumentCuvetteWasherQTests];
+registerValidQTestFunction[Model[Instrument, CuttingStation],validModelInstrumentCuttingStationQTests];
 registerValidQTestFunction[Model[Instrument, Darkroom],validModelInstrumentDarkroomQTests];
 registerValidQTestFunction[Model[Instrument, DensityMeter],validModelInstrumentDensityMeterQTests];
 registerValidQTestFunction[Model[Instrument, Desiccator],validModelInstrumentDesiccatorQTests];
@@ -5466,7 +5549,9 @@ registerValidQTestFunction[Model[Instrument, Diffractometer],validModelInstrumen
 registerValidQTestFunction[Model[Instrument, Dishwasher],validModelInstrumentDishwasherQTests];
 registerValidQTestFunction[Model[Instrument, Dispenser],validModelInstrumentDispenserQTests];
 registerValidQTestFunction[Model[Instrument, DLSPlateReader],validModelInstrumentDLSPlateReaderQTests];
+registerValidQTestFunction[Model[Instrument, DisintegrationApparatus],validModelInstrumentDisintegrationApparatusQTests];
 registerValidQTestFunction[Model[Instrument, DissolvedOxygenMeter],validModelInstrumentDissolvedOxygenMeterQTests];
+registerValidQTestFunction[Model[Instrument, DissolutionApparatus],validModelInstrumentDissolutionApparatusQTests];
 registerValidQTestFunction[Model[Instrument, DNASynthesizer],validModelInstrumentDNASynthesizerQTests];
 registerValidQTestFunction[Model[Instrument, DifferentialScanningCalorimeter],validModelInstrumentDifferentialScanningCalorimeterQTests];
 registerValidQTestFunction[Model[Instrument, DynamicFoamAnalyzer],validModelInstrumentDynamicFoamAnalyzerQTests];

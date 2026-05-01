@@ -17,6 +17,24 @@ DefineObjectType[Object[Instrument, WaterPurifier], {
 			Description -> "The type of water that this instrument dispenses.",
 			Category -> "Instrument Specifications"
 		},
+		WaterReservoir -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "The instrument internal container that holds the purified water sample.",
+			Category -> "Instrument Specifications",
+			Developer -> True
+		},
+		WaterSample -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Sample],
+			Description -> "The sample object representing the current purified water sample dispensed by the instrument.",
+			Category -> "Instrument Specifications",
+			Developer -> True
+		},
 		AdditionalFiltering -> {
 			Format -> Single,
 			Class -> Expression,
@@ -100,6 +118,16 @@ DefineObjectType[Object[Instrument, WaterPurifier], {
 			Pattern :> GreaterP[(0*(Gram*Nano))/(Liter*Milli)],
 			Description -> "Maximum concentration of RNase the pure water should contain.",
 			Category -> "Operating Limits"
+		},
+		VolumeLog -> {
+			Format -> Multiple,
+			Class -> {Date, Real, Link, Expression},
+			Pattern :> {_?DateObjectQ, GreaterEqualP[0*Liter], _Link, VolumeMeasurementStatusP},
+			Relation -> {Null, Null, Object[Protocol] | Object[Analysis] | Object[Product] | Object[Maintenance] | Object[Qualification] | Object[User], Null},
+			Units -> {None, Liter, None, None},
+			Description -> "A historical record of the measured volume of the water purifier.",
+			Category -> "Physical Properties",
+			Headers -> {"Date", "Volume", "Responsible Party", "Measurement Type"}
 		}
 	}
 }];

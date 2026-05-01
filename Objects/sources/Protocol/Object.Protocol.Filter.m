@@ -73,6 +73,26 @@ DefineObjectType[Object[Protocol, Filter], {
 			Category -> "Organizational Information",
 			IndexMatching -> RetentateContainersOut
 		},
+		InitialFiltrateContainersOut -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Container],
+				Object[Container]
+			],
+			Description -> "For each member of SamplesIn, the containers the initial filtrate samples are collected in during the initial filtration step.",
+			Category -> "Organizational Information",
+			IndexMatching -> SamplesIn
+		},
+		InitialFiltrateDestinationWell -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> WellP,
+			Description -> "For each member of SamplesIn, the positions of the containers in which the initial filtrate samples are collected during the initial filtration step.",
+			Category -> "Organizational Information",
+			IndexMatching -> SamplesIn
+		},
 		FilterStorageConditions -> {
 			Format -> Multiple,
 			Class -> Expression,
@@ -201,6 +221,23 @@ DefineObjectType[Object[Protocol, Filter], {
 			Category -> "Filtration",
 			Developer -> True
 		},
+		(* oven drying fields *)
+		OvenDryGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are oven dried before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
+		DepyrogenateGlassware -> {
+			Format -> Multiple,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "For each member of SamplesIn, indicates whether the collection container (and, if relevant, any glassware belonging to the filter apparatus) are depyrogenated in an oven before filtration.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
 		(* --- Centrifugation --- *)
 		CentrifugeSpeeds -> {
 			Format -> Multiple,
@@ -280,6 +317,39 @@ DefineObjectType[Object[Protocol, Filter], {
 			Category -> "Filtration",
 			IndexMatching -> SamplesIn,
 			Developer -> True
+		},
+		SampleLoadingDrainTime -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterEqualP[0 Minute],
+			Units -> Minute,
+			Description -> "For each member of SamplesIn, the amount of time to wait after the sample has been loaded into the filter plate before applying pressure to filter, in order to capture any gravity-drainage from the top filter plate to the bottom collection container. This field is only populated if Preparation is Robotic.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
+		RetentateWashDrainTime -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {(GreaterEqualP[0 Minute] | Null)..} | GreaterEqualP[0 Minute],
+			Description -> "For each member of SamplesIn, for each member of RetentateWashBuffer, the amount of time to wait after the retentate wash buffer has been loaded into the filter before applying force, in order to allow gravity drainage. This field is only populated if Preparation is Robotic.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
+		RetentateWashTime -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {(GreaterP[0 Minute] | Null)..} | GreaterP[0 Minute],
+			Description -> "For each member of SamplesIn, for each member of RetentateWashBuffer, the amount of time for which force is applied to move the retentate wash buffer through the filter after initial filtration and prior to retentate collection.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
+		},
+		RetentateWashPipettingMethod -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {(ObjectP[Model[Method, Pipetting]] | Null)..} | ObjectP[Model[Method, Pipetting]],
+			Description -> "For each member of SamplesIn, for each member of RetentateWashBuffer, the set of pipetting parameters used to manipulate the RetentateWashBuffer when transferring it into the filter plate. This field is only populated if Preparation is Robotic.",
+			Category -> "Filtration",
+			IndexMatching -> SamplesIn
 		},
 		RetentateCollectionContainers -> {
 			Format -> Multiple,

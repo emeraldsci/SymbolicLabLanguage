@@ -188,11 +188,11 @@ DefineObjectType[Object[Wiring], {
 		
 		RestrictedLog -> {
 			Format -> Multiple,
-			Class -> {Date, Boolean, Link},
-			Pattern :> {_?DateObjectQ, BooleanP, _Link},
-			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification]},
+			Class -> {Date, Boolean, Link, String},
+			Pattern :> {_?DateObjectQ, BooleanP, _Link, _String},
+			Relation -> {Null, Null, Object[User] | Object[Protocol] | Object[Maintenance] | Object[Qualification], Null},
 			Description -> "A log of changes made to this wiring component's restricted status.",
-			Headers -> {"Date", "Restricted", "Responsible Party"},
+			Headers -> {"Date", "Restricted", "Responsible Party", "Reason"},
 			Category -> "Organizational Information"
 		},
 
@@ -355,6 +355,14 @@ DefineObjectType[Object[Wiring], {
 			Description -> "The receiving protocol in which this wiring component was received into the lab.",
 			Category -> "Inventory"
 		},
+		BarcodeInventory -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Maintenance, BarcodeInventory][BarcodedItems],
+			Description -> "The MaintenanceBarcodeInventory in which the SLL object sticker of this wiring component is affixed.",
+			Category -> "Inventory"
+		},
 
 		(* --- Storage --- *)
 		StorageCondition -> {
@@ -453,7 +461,13 @@ DefineObjectType[Object[Wiring], {
 			Headers -> {"Date","Change Type","Container","Position","Responsible Party"},
 			Category -> "Storage Information"
 		},
-
+		DateLastMoved->{
+			Format->Single,
+			Class->Date,
+			Pattern:>_?DateObjectQ,
+			Description->"Date this wiring was moved to a different container or instrument.",
+			Category->"Storage Information"
+		},
 		AsepticTransportContainerType -> {
 			Format -> Single,
 			Class -> Expression,
@@ -562,6 +576,24 @@ DefineObjectType[Object[Wiring], {
 			Pattern :> BooleanP,
 			Description -> "Indicates if a new sticker with a hashphrase has been printed for this object and therefore the hashphrase should be shown in engine when scanning the object.",
 			Category -> "Migration Support",
+			Developer -> True
+		},
+		PrintStickersLog -> {
+			Format -> Multiple,
+			Class -> {Date, Link},
+			Pattern :> {_?DateObjectQ, _Link},
+			Relation -> {Null, Alternatives[Object[User], Object[Protocol], Object[Maintenance], Object[Qualification]]},
+			Description -> "Indicates times at which stickers were printed for this wiring.",
+			Headers -> {"Date", "Responsible Party"},
+			Category -> "Organizational Information",
+			Developer -> True
+		},
+		PermanentSticker -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if the object is labeled with a durable sticker that does not detach when washed.",
+			Category -> "Organizational Information",
 			Developer -> True
 		},
 		RequestedResources -> {

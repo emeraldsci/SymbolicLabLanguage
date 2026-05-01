@@ -2978,7 +2978,7 @@ Test["Not more than one of protocols, qualifications, and maintenance should be 
 (*validDataFlowRateQTests*)
 
 
-validDataFlowRateQTests[packet:PacketP[Object[Data,FlowRate]]] := {
+validDataVolumetricFlowRateQTests[packet:PacketP[Object[Data,VolumetricFlowRate]]] := {
 (* Shared Fields which should NOT be null *)
 NotNullFieldTest[packet,Sensor],
 UniquelyInformedTest[packet, {Instrument, Sensor}],
@@ -2987,7 +2987,7 @@ UniquelyInformedTest[packet, {Instrument, Sensor}],
 NullFieldTest[packet,{SamplesOut,Instrument,DataFile}],
 
 (* Unique Fields which should NOT be null *)
-NotNullFieldTest[packet,{FlowRateLog,RawData}],
+NotNullFieldTest[packet,{VolumetricFlowRateLog,RawData}],
 
 (* Sensible Min/Max *)
 RequiredTogetherTest[packet,{FirstDataPoint,LastDataPoint}],
@@ -3374,6 +3374,16 @@ validDataIRSpectroscopyQTests[packet : PacketP[Object[Data, IRSpectroscopy]]] :=
 
 
 validDataKarlFischerTitrationQTests[packet:PacketP[Object[Data, KarlFischerTitration]]]:={
+	Test["If Technique is Volumetric, then DateSampleAdded must be populated; if Technique is Coulometric, then it must be Null:",
+		With[{technique = Lookup[packet, Technique], dateSampleAdded = Lookup[packet, DateSampleAdded]},
+			Or[
+				MatchQ[technique, Volumetric] && Not[NullQ[dateSampleAdded]],
+				Not[MatchQ[technique, Volumetric]] && NullQ[dateSampleAdded]
+			]
+		],
+		True
+	]
+
 };
 
 (* ::Subsection::Closed:: *)
@@ -3731,7 +3741,7 @@ registerValidQTestFunction[Object[Data, RefractiveIndex], validDataRefractiveInd
 registerValidQTestFunction[Object[Data, RelativeHumidity],validDataRelativeHumidityQTests];
 registerValidQTestFunction[Object[Data, SurfaceTension],validDataSurfaceTensionQTests];
 registerValidQTestFunction[Object[Data, Temperature],validDataTemperatureQTests];
-registerValidQTestFunction[Object[Data, FlowRate],validDataFlowRateQTests];
+registerValidQTestFunction[Object[Data, VolumetricFlowRate],validDataVolumetricFlowRateQTests];
 registerValidQTestFunction[Object[Data, TLC],validDataTLCQTests];
 registerValidQTestFunction[Object[Data, VacuumEvaporation],validDataVacuumEvaporationQTests];
 registerValidQTestFunction[Object[Data, Viscosity],validDataViscosityQTests];

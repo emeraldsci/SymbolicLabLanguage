@@ -15,7 +15,7 @@
 (*validInventoryQTests*)
 
 
-validInventoryQTests[packet:PacketP[Object[Inventory]]]:={
+validInventoryQTests[packet:PacketP[Object[Inventory]]]:= {
 
 	(* --------- Shared field shaping --------- *)
 	NotNullFieldTest[packet,{StockedInventory, Status, Author, DateCreated, Site, StockingMethod, CurrentAmount, ReorderThreshold, ReorderAmount}],
@@ -68,16 +68,6 @@ validInventoryQTests[packet:PacketP[Object[Inventory]]]:={
 		],
 		{}
 	],
-	(* If Expires \[Equal] True, then either ShelfLife or UnsealedShelfLife must be informed. If either ShelfLife or UnsealedShelfLife is informed, then Expires must \[Equal] True. *)
-	Test["Either ShelfLife or UnsealedShelfLife must be populated if Expires is True; if either ShelfLife or UnsealedShelfLife is informed, Expires must be True:",
-		Lookup[packet, {Expires, ShelfLife, UnsealedShelfLife}],
-		Alternatives[
-			{True, Except[NullP | {}], NullP | {}},
-			{True, NullP | {}, Except[NullP | {}]},
-			{True, Except[NullP | {}], Except[NullP | {}]},
-			{Except[True], NullP | {}, NullP | {}}
-		]
-	],
 
 	Test["If the StockedInventory is Deprecated, the Status of the Inventory cannot be active:",
 		If[MatchQ[Lookup[packet, Status], Active],
@@ -93,109 +83,162 @@ validInventoryQTests[packet:PacketP[Object[Inventory]]]:={
 (*validInventoryProductQTests*)
 
 
-validInventoryProductQTests[packet:PacketP[Object[Inventory, Product]]]:={
+validInventoryProductQTests[packet:PacketP[Object[Inventory, Product]]]:= Module[
+	{modelStockedObject, modelStockedPacket},
 
-	NotNullFieldTest[packet, {ModelStocked}],
+	(* Find the ModelStocked *)
+	modelStockedObject = Lookup[packet, ModelStocked];
 
-	Test["CurrentAmount, ReorderThreshold, and ReorderAmount must have compatible units:",
-		Or[
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Unit], UnitsP[Unit], UnitsP[Unit]}],
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milliliter], UnitsP[Milliliter], UnitsP[Milliliter]|UnitsP[Unit]}],
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milligram], UnitsP[Milligram], UnitsP[Milligram]|UnitsP[Unit]}]
-		],
-		True
-	],
+	modelStockedPacket = Quiet[
+		Download[modelStockedObject, Packet[Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfHours, MaxNumberOfUses]],
+		{Download::ObjectDoesNotExist, Download::FieldDoesntExist}
+	];
 
-	Test["If StockingMethod -> TotalAmount, Amount field of the product to stock must match the units of ReorderThreshold unless the ReorderThreshold indicates individual items are being purchased:",
-		If[MatchQ[Lookup[packet, StockingMethod], TotalAmount],
-			Module[{products,product,reorderThreshold,modelStocked,amount,countPerSample,kitComponents},
+	{
 
-				{products,reorderThreshold,modelStocked} = Lookup[packet, {StockedInventory,ReorderThreshold,ModelStocked}];
-				product = FirstOrDefault[products];
+		NotNullFieldTest[packet, {ModelStocked}],
 
-				{amount,countPerSample,kitComponents} = Download[product, {Amount, CountPerSample,KitComponents}];
-
-				Or[
-					NullQ[amount] && MatchQ[reorderThreshold,UnitsP[Unit]],
-					Quiet[CompatibleUnitQ[amount, reorderThreshold]],
-					Quiet[CompatibleUnitQ[countPerSample, reorderThreshold]],
-					With[{kitElement = SelectFirst[kitComponents, MatchQ[Lookup[#, ProductModel], ObjectP[modelStocked]]&]},
-						Or[
-							Quiet[CompatibleUnitQ[Lookup[kitElement, Amount], reorderThreshold]],
-							NullQ[Lookup[kitElement, Amount]] && MatchQ[reorderThreshold,UnitsP[Unit]]
-						]
-					]
-				]
+		Test["CurrentAmount, ReorderThreshold, and ReorderAmount must have compatible units:",
+			Or[
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Unit], UnitsP[Unit], UnitsP[Unit]}],
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milliliter], UnitsP[Milliliter], UnitsP[Milliliter]|UnitsP[Unit]}],
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milligram], UnitsP[Milligram], UnitsP[Milligram]|UnitsP[Unit]}]
 			],
 			True
 		],
-		True
-	],
 
-	Test["Cannot stock a container that has KitProductsContainers field populated with this same product:",
-		With[{kitProductsContainers = Quiet[Download[Lookup[packet, ModelStocked], KitProductsContainers]], product = Lookup[packet, StockedInventory][[1]]},
-			Not[MemberQ[kitProductsContainers, ObjectP[product]]]
-		],
-		True
-	],
+		Test["If StockingMethod -> TotalAmount, Amount field of the product to stock must match the units of ReorderThreshold unless the ReorderThreshold indicates individual items are being purchased:",
+			If[MatchQ[Lookup[packet, StockingMethod], TotalAmount],
+				Module[{products,product,reorderThreshold,modelStocked,amount,countPerSample,kitComponents},
 
-	Test["If the ModelStocked is Deprecated, the Status of the Inventory cannot be active:",
-		If[MatchQ[Lookup[packet, Status], Active],
-			Not[MatchQ[Download[Lookup[packet, ModelStocked], Deprecated], True]],
+					{products,reorderThreshold,modelStocked} = Lookup[packet, {StockedInventory,ReorderThreshold,ModelStocked}];
+					product = FirstOrDefault[products];
+
+					{amount,countPerSample,kitComponents} = Download[product, {Amount, CountPerSample,KitComponents}];
+
+					Or[
+						NullQ[amount] && MatchQ[reorderThreshold,UnitsP[Unit]],
+						Quiet[CompatibleUnitQ[amount, reorderThreshold]],
+						Quiet[CompatibleUnitQ[countPerSample, reorderThreshold]],
+						With[{kitElement = SelectFirst[kitComponents, MatchQ[Lookup[#, ProductModel], ObjectP[modelStocked]]&, <||>]},
+							Or[
+								Quiet[CompatibleUnitQ[Lookup[kitElement, Amount, Null], reorderThreshold]],
+								NullQ[Lookup[kitElement, Amount, Null]] && MatchQ[reorderThreshold,UnitsP[Unit]]
+							]
+						]
+					]
+				],
+				True
+			],
 			True
 		],
-		True
-	]
 
-};
+		Test["Cannot stock a container that has KitProductsContainers field populated with this same product:",
+			With[{kitProductsContainers = Quiet[Download[Lookup[packet, ModelStocked], KitProductsContainers]], product = Lookup[packet, StockedInventory][[1]]},
+				Not[MemberQ[kitProductsContainers, ObjectP[product]]]
+			],
+			True
+		],
+
+		Test["If the ModelStocked is Deprecated, the Status of the Inventory cannot be active:",
+			If[MatchQ[Lookup[packet, Status], Active],
+				Not[MatchQ[Download[Lookup[packet, ModelStocked], Deprecated], True]],
+				True
+			],
+			True
+		],
+
+		Test["If the ModelStocked is Expires -> True, then either ShelfLife or UnsealedShelfLife must be populated; if either ShelfLife or UnsealedShelfLife is informed, Expires must be True:",
+			Lookup[modelStockedPacket, {Expires, ShelfLife, UnsealedShelfLife}, Null],
+			Alternatives[
+				{True, Except[NullP | {}], NullP | {}},
+				{True, NullP | {}, Except[NullP | {}]},
+				{True, Except[NullP | {}], Except[NullP | {}]},
+				{Except[True], NullP | {}, NullP | {}}
+			]
+		],
+
+		Test["If PreferredProduct is populated, it must be a member of StockedInventory:",
+			Module[{preferredProduct, stockedInventory},
+				preferredProduct = Download[Lookup[packet, PreferredProduct], Object];
+				stockedInventory = Download[Lookup[packet, StockedInventory], Object];
+				Or[NullQ[preferredProduct], MemberQ[stockedInventory, preferredProduct]]
+			],
+			True
+		]
+
+	}
+];
 
 
 (* ::Subsection:: *)
 (*validInventorStockSolutionyQTests*)
 
 
-validInventoryStockSolutionQTests[packet:PacketP[Object[Inventory, StockSolution]]]:={
+validInventoryStockSolutionQTests[packet:PacketP[Object[Inventory, StockSolution]]]:= Module[
+	{stockedInventoryObjects, stockedInventoryPackets, allExpires},
 
-	Test["CurrentAmount, ReorderThreshold, and ReorderAmount must have compatible units:",
-		Or[
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milliliter], UnitsP[Milliliter], UnitsP[Milliliter]}],
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milligram], UnitsP[Milligram], UnitsP[Milligram]}],
-			MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Unit], UnitsP[Unit], UnitsP[Unit] | UnitsP[Milligram] | UnitsP[Milliliter]}]
-		],
-		True
-	],
+	(* Find the StockedInventory *)
+	stockedInventoryObjects = Lookup[packet, StockedInventory];
 
-	Test["ReorderAmount must be enough to reach or exceed ReorderThreshold:",
-		Lookup[packet, ReorderAmount] >= Lookup[packet, ReorderThreshold],
-		True
-	],
-
-	Test["If the inventory's model has volume increments and StockingMethod -> TotalAmount, then the reorder amount must be a mutliple of the volume increment:",
-		Module[{model, volumeIncrements, amount},
-			model = FirstOrDefault[Lookup[packet, StockedInventory]];
-			volumeIncrements = Download[model, VolumeIncrements];
-			amount = Lookup[packet, ReorderAmount];
-
-			If[MatchQ[volumeIncrements, {}] || MatchQ[Lookup[packet, StockingMethod], NumberOfStockedContainers] || Not[VolumeQ[Lookup[packet, ReorderAmount]]],
-				True,
-				MemberQ[Rationalize[volumeIncrements /. Lookup[packet, ReorderAmount]], _Integer]
-			]
-		],
-		True
+	stockedInventoryPackets = Quiet[
+		Download[stockedInventoryObjects, Packet[Expires, ShelfLife, UnsealedShelfLife, MaxNumberOfHours, MaxNumberOfUses]],
+		{Download::ObjectDoesNotExist, Download::FieldDoesntExist}
 	];
 
-	Test["If ReorderThreshold and ReorderAmount are both above 0 and Notebook is Null, then the linked stock solution must have Price populated:",
-		Module[{reorderThreshold, reorderAmount, notebook, ssPrice},
-			{reorderThreshold, reorderAmount, notebook} = Lookup[packet, {ReorderThreshold, ReorderAmount, Notebook}];
+	allExpires = If[MatchQ[stockedInventoryPackets, {PacketP[]..}],
+		Lookup[stockedInventoryPackets, Expires, Null],
+		{Null}
+	];
 
-			If[MatchQ[{reorderThreshold, reorderAmount}, {GreaterP[0 Gram] | GreaterP[0 Liter] | GreaterP[0 Unit], GreaterP[0 Gram] | GreaterP[0 Liter] | GreaterP[0 Unit]}] && Not[NullQ[notebook]],
-				Not[NullQ[ssPrice]],
-				True
-			]
+	{
+
+		Test["CurrentAmount, ReorderThreshold, and ReorderAmount must have compatible units:",
+			Or[
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milliliter], UnitsP[Milliliter], UnitsP[Milliliter]}],
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Milligram], UnitsP[Milligram], UnitsP[Milligram]}],
+				MatchQ[Lookup[packet, {CurrentAmount, ReorderThreshold, ReorderAmount}], {UnitsP[Unit], UnitsP[Unit], UnitsP[Unit] | UnitsP[Milligram] | UnitsP[Milliliter]}]
+			],
+			True
 		],
-		True
-	]
-};
+
+		Test["ReorderAmount must be enough to reach or exceed ReorderThreshold:",
+			Lookup[packet, ReorderAmount] >= Lookup[packet, ReorderThreshold],
+			True
+		],
+
+		Test["If the inventory's model has volume increments and StockingMethod -> TotalAmount, then the reorder amount must be a multiple of the volume increment:",
+			Module[{model, volumeIncrements, amount},
+				model = FirstOrDefault[Lookup[packet, StockedInventory]];
+				volumeIncrements = Download[model, VolumeIncrements];
+				amount = Lookup[packet, ReorderAmount];
+
+				If[MatchQ[volumeIncrements, {}] || MatchQ[Lookup[packet, StockingMethod], NumberOfStockedContainers] || Not[VolumeQ[Lookup[packet, ReorderAmount]]],
+					True,
+					MemberQ[Rationalize[volumeIncrements / Lookup[packet, ReorderAmount]], _Integer]
+				]
+			],
+			True
+		],
+
+		Test["If ReorderThreshold and ReorderAmount are both above 0 and Notebook is Null, then the linked stock solution must have Price populated:",
+			Module[{reorderThreshold, reorderAmount, notebook, ssPrice},
+				{reorderThreshold, reorderAmount, notebook} = Lookup[packet, {ReorderThreshold, ReorderAmount, Notebook}];
+
+				If[MatchQ[{reorderThreshold, reorderAmount}, {GreaterP[0 Gram] | GreaterP[0 Liter] | GreaterP[0 Unit], GreaterP[0 Gram] | GreaterP[0 Liter] | GreaterP[0 Unit]}] && Not[NullQ[notebook]],
+					Not[NullQ[ssPrice]],
+					True
+				]
+			],
+			True
+		],
+
+		Test["If there are multiple objects in StockedInventory, they are either all Expires -> True, or all Expires -> False:",
+			TrueQ /@ allExpires,
+			{True...} | {False ...}
+		]
+	}
+];
 
 
 

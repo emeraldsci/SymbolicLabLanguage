@@ -354,6 +354,14 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 			Lookup[packet, Mass]
 		],
 
+		Test["If the sample is not InUse and has State set to Solid, Mass must be populated:",
+			If[MatchQ[Lookup[packet, Status], Except[InUse]] && MatchQ[Lookup[packet, State], Solid],
+				MassQ[Lookup[packet, Mass]],
+				True
+			],
+			True
+		],
+
 		Test["The last entry in CountLog matches the current Count:",
 			If[Lookup[packet, CountLog] == {},
 				Null,
@@ -362,10 +370,14 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 			Lookup[packet, Count]
 		],
 
-		Test["The last entry in DensityLog matches the current Density:",
-			If[Lookup[packet, DensityLog] == {},
-				True,
-				MatchQ[Last[Lookup[packet, DensityLog]][[2]], Lookup[packet, Density]]
+		Test["If the sample is not InUse and SampleHandling is Itemized, Count must be populated:",
+			If[
+				And[
+					MatchQ[Lookup[packet, Status], Except[InUse]],
+					SameQ[Lookup[packet, SampleHandling], Itemized]
+				],
+				IntegerQ[Lookup[packet, Count]],
+				True
 			],
 			True
 		],
@@ -376,6 +388,42 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 				{Except[NullP], Except[NullP]},
 				{_, _}
 			]
+		],
+
+		Test["If Tablet is True, the SolidUnitWeight must be populated for the sample or its model:",
+			If[TrueQ[Lookup[packet, Tablet]],
+				Or[
+					MatchQ[Lookup[packet, SolidUnitWeight], MassP],
+					And[
+						Not[NullQ[modelPacket]],
+						MatchQ[Lookup[modelPacket, SolidUnitWeight], MassP]
+					]
+				],
+				True
+			],
+			True
+		],
+
+		Test["If Capsule is True, the SolidUnitWeight must be populated for the sample or its model:",
+			If[TrueQ[Lookup[packet, Capsule]],
+				Or[
+					MatchQ[Lookup[packet, SolidUnitWeight], MassP],
+					And[
+						Not[NullQ[modelPacket]],
+						MatchQ[Lookup[modelPacket, SolidUnitWeight], MassP]
+					]
+				],
+				True
+			],
+			True
+		],
+
+		Test["The last entry in DensityLog matches the current Density:",
+			If[Lookup[packet, DensityLog] == {},
+				True,
+				MatchQ[Last[Lookup[packet, DensityLog]][[2]], Lookup[packet, Density]]
+			],
+			True
 		],
 
 		Test["The last entry in ConcentrationLog matches the current Concentration:",
@@ -394,6 +442,31 @@ validSampleQTests[packet:PacketP[Object[Sample]]]:=Module[
 		Test["If Status is Transit, the sample has a Destination:",
 			If[MatchQ[Lookup[packet, Status], Transit],
 				!NullQ[Lookup[packet, Destination]],
+				True
+			],
+			True
+		],
+
+		(* Sample Handling *)
+		Test["If Tablet or Capsule is True, the State must be Solid:",
+			If[TrueQ[Lookup[packet, Tablet]]||TrueQ[Lookup[packet, Capsule]],
+				SameQ[Lookup[packet, State], Solid],
+				True
+			],
+			True
+		],
+
+		Test["If Tablet or Capsule is True, the SampleHandling must be Itemized:",
+			If[TrueQ[Lookup[packet, Tablet]]||TrueQ[Lookup[packet, Capsule]],
+				SameQ[Lookup[packet, SampleHandling], Itemized],
+				True
+			],
+			True
+		],
+
+		Test["Fiber, Sachet, Capsule and Tablet must not be True at the same time:",
+			If[Length[Cases[Lookup[packet, {Fiber, Tablet, Capsule, Sachet}],True]] > 1,
+				False,
 				True
 			],
 			True

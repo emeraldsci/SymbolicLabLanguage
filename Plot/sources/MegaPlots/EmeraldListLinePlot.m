@@ -255,6 +255,8 @@ EmeraldListLinePlot[in:oneDataSetP|{(oneDataSetP|{oneDataSetP..})..},ops:Options
 		plotRangeApprox,unzoomableFig,expandedSafeOps,insetImages,updatedUnzoomableFig,allResolvedOptions,validResolvedOptions,secondYStyle,el,
 		definitionToUse
 	},
+	TagTrace["sll.function.call", 1];
+	TagTrace["sll.function.context", StringReplace[StringTrim[ToString[{ops}], "{" | "}"], " "->""]];
 
 	(* Convert the original option into a list *)
 	originalOps=ToList[ops];

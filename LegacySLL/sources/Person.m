@@ -268,7 +268,7 @@ createAttachment[filePath_String]:=Module[
 	];
 
 	(* MM uses a special MIME type for notebooks: https://www.wolfram.com/technologies/nb/ *)
-	(* NOTE: MM does have a MIME type interpreter, however it returns the incorrect type:
+	(* NOTE: MM does have a MIME type interpreter; however, it returns the incorrect type:
 	         https://reference.wolfram.com/language/ref/interpreter/MIMETypeString.html *)
 	mimeType = Switch[fileFormat,
 		"txt",  "text/plain",

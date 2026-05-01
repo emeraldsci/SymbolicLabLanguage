@@ -2736,7 +2736,7 @@ DefineTests[ExperimentMassSpectrometry,
 				resources=Download[protocol,RequiredResources];
 
 				resourceFields=DeleteDuplicates[resources[[All,2]]];
-				allResourcesMade=ContainsExactly[resourceFields,{SamplesIn,ContainersIn,Calibrants,Instrument,Buffer,NeedleWashSolution,SystemPrimeBuffer,SystemPrimeBufferPlacements,SystemFlushBuffer,SystemFlushContainerPlacements,NeedleWashPlacements,TubingRinseSolution,PrimingSyringe,Checkpoints, MassSpectrometryInstrument, Null}];
+				allResourcesMade=ContainsExactly[resourceFields,{SamplesIn,ContainersIn,Calibrants,Instrument,Buffer,NeedleWashSolution,SystemPrimeBuffer,SystemPrimeBufferPlacements,SystemFlushBuffer,SystemFlushContainerPlacements,NeedleWashPlacements,TubingRinseSolution,PrimingSyringe,Checkpoints, MassSpectrometryInstrument}];
 
 				(* we should have a single needle wash resource for all samples *)
 				needleWashResources=Cases[resources,{_,NeedleWashSolution,___}][[All,1]][Object];
@@ -2886,6 +2886,20 @@ DefineTests[ExperimentMassSpectrometry,
 			1000*RPM,
 			EquivalenceFunction -> Equal,
 			Variables :> {options},
+			TimeConstraint -> 240
+		],
+		Example[{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			options = ExperimentMassSpectrometry[
+				Object[Container, Plate, "Test Plate 3 for ExperimentMassSpectrometry"<>$SessionUUID],
+				IonSource -> MALDI,
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			];
+			Lookup[options, CentrifugeIntensity],
+			1000 RPM,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::CentrifugePrecision},
 			TimeConstraint -> 240
 		],
 		Example[{Options, CentrifugeTime, "Specify the SamplesIn should be centrifuged for 2 minutes:"},
@@ -3055,6 +3069,19 @@ DefineTests[ExperimentMassSpectrometry,
 			100 Microliter,
 			EquivalenceFunction -> Equal,
 			Variables :> {options}
+		],
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentMassSpectrometry[
+				Object[Sample,"Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],
+				AliquotAmount -> 100.01 Microliter,
+				IonSource -> MALDI,
+				Output -> Options
+			];
+			Lookup[options, AliquotAmount],
+			100 Microliter,
+			EquivalenceFunction -> Equal,
+			Variables :> {options},
+			Messages :> {Warning::AliquotAmountPrecision}
 		],
 		Example[{Options, AssayVolume, "Specify the total volume of the aliquot. Here a 100uL aliquot containing 50uL of the input sample and 50uL of buffer will be generated:"},
 			options = ExperimentMassSpectrometry[Object[Sample,"Oligomer 1 Sample for ExperimentMassSpectrometry"<>$SessionUUID],

@@ -424,6 +424,7 @@ experimentFunctionTypeLookup = <|
 	ExperimentImageSample -> Object[Protocol, ImageSample],
 	ExperimentIonChromatography -> Object[Protocol,IonChromatography],
 	ExperimentIRSpectroscopy -> Object[Protocol, IRSpectroscopy],
+	ExperimentKarlFischerTitration -> Object[Protocol, KarlFischerTitration],
 	ExperimentLCMS -> Object[Protocol, LCMS],
 	ExperimentLuminescenceIntensity -> Object[Protocol, LuminescenceIntensity],
 	ExperimentLuminescenceKinetics -> Object[Protocol, LuminescenceKinetics],
@@ -450,6 +451,7 @@ experimentFunctionTypeLookup = <|
 	ExperimentNephelometryKinetics -> Object[Protocol, NephelometryKinetics],
 	ExperimentNMR -> Object[Protocol, NMR],
 	ExperimentNMR2D -> Object[Protocol, NMR2D],
+	ExperimentOvenDry -> Object[Protocol, OvenDry],
 	ExperimentPAGE -> Object[Protocol, PAGE],
 	ExperimentPCR -> {
 		Object[Protocol, ManualSamplePreparation],
@@ -513,6 +515,7 @@ experimentFunctionTypeLookup = <|
 	ExperimentSpreadCells -> Object[Protocol, RoboticCellPreparation],
 	ExperimentStreakCells -> Object[Protocol, RoboticCellPreparation],
 	ExperimentLyseCells -> Object[Protocol, RoboticCellPreparation],
-	ExperimentWashCells -> Object[Protocol, RoboticCellPreparation]
+	ExperimentWashCells -> Object[Protocol, RoboticCellPreparation],
+	ExperimentWaterPreparation -> Object[Protocol, WaterPreparation]
 |>
 

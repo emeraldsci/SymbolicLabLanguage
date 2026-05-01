@@ -1116,18 +1116,48 @@ protocolWaitingTimeBreakdown[protocolPacket:PacketP[],ticketPackets:{PacketP[Obj
 (* ::Subsection::Closed:: *)
 (* supportTicketWaitingTime *)
 
+DefineOptions[supportTicketWaitingTime,
+	Options:>{
+		{
+			OutputFormat->TotalTime,
+			Alternatives[
+				TotalTime,
+				DateRange
+			],
+			"The format that the support ticket waiting time should be output in. By default, the total of support ticket waiting time is returned. DateRange returns a list of times for OperatorProcessing during which support ticket is waiting."
+		}
+	}
+];
+
 (* no ticket overload *)
-supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{}]:=0 Hour;
+supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{}, ops:OptionsPattern[]]:=Module[
+	{safeOps, outputFormat},
+	safeOps=SafeOptions[supportTicketWaitingTime,ToList[ops]];
+	{outputFormat}=Lookup[safeOps,{OutputFormat}];
+
+	If[MatchQ[outputFormat, TotalTime],
+		0 Hour,
+		{}
+	]
+];
 
 (*core*)
-supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{PacketP[Object[SupportTicket, Operations]]..}]:=Module[
-	{datesCreated,resolutionTurnaroundTime, completedTaskStartTimes,nextActionFromLogs,timeToNextAction,validTicketPackets,protocolDateCompleted, statusLogs, endTimes,orderedDates,nextDatesCreated},
+supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{PacketP[Object[SupportTicket, Operations]]..}, ops:OptionsPattern[]]:=Module[
+	{datesCreated, completedTaskStartTimes,nextActionFromLogs,validTicketPackets,protocolDateCompleted, statusLogs, endTimes,orderedDates,nextDatesCreated, safeOps, outputFormat, ticketTimeSpanLists, ticketTimeSpans},
+
+	safeOps=SafeOptions[supportTicketWaitingTime,ToList[ops]];
+	{outputFormat}=Lookup[safeOps,{OutputFormat}];
 
 	protocolDateCompleted = Lookup[protocol, DateCompleted];
 
 	(* only use tickets that were filed by operations during the course of the protocol. If there were no usable tickets, return early *)
 	validTicketPackets = Select[ticketPackets, MatchQ[Lookup[#, {CreatedBy, DateCreated}], {ObjectP[Object[User, Emerald, Operator]], LessP[protocolDateCompleted]}]&];
-	If[MatchQ[validTicketPackets, {}], Return[0 Hour]];
+	If[MatchQ[validTicketPackets, {}],
+		If[MatchQ[outputFormat, TotalTime],
+			Return[0 Hour],
+			Return[{}]
+		]
+	];
 
 	(* -- establish "resolution" time -- *)
 
@@ -1140,7 +1170,7 @@ supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{PacketP[Object[Suppo
 
 	(*to avoid double counting, we always cap the end time of the ticket as the start time of the next ticket*)
 	nextDatesCreated = Map[FirstCase[orderedDates, GreaterP[#], protocolDateCompleted]&,datesCreated];
-	endTimes = MapThread[Min[FirstCase[#1, {_, (BlockingRequested|Null), _}, {protocolDateCompleted}][[1]], #2]&,{statusLogs, nextDatesCreated}];
+	endTimes = MapThread[Min[FirstCase[#1, {_, (BlockingRequested|Resolved|Null), _}, {protocolDateCompleted}][[1]], #2]&,{statusLogs, nextDatesCreated}];
 
 	(* Check the completed tasks for the next meaningful action following the ticket creation. Because its possible that we will reload or handoff as part of the ticket resolution, we really can only rely on a task with an ID as an indication of progress *)
 	(* Empirical testing indicates that this is a very small difference for most cases (<5%), but in cases where a reload is performed, followed by a long delay, it significantly increases the accuracy of the calculation *)
@@ -1163,16 +1193,27 @@ supportTicketWaitingTime[protocol:PacketP[], ticketPackets:{PacketP[Object[Suppo
 	(* this metric is intended to account for OperatorProcessing time that is spent waiting for issue resolution *)
 	(* this helper function computes the amount of OperatorProcessing time that occurs in that span. If we were to exit the protocol due to a resource constraint, it leave the ticket unresolved but the status would be OperatorReady*)
 	opProcessingTimeInSpan[protocolPacket_, startDate_?DateObjectQ, endDate_?DateObjectQ]:= Lookup[
-			ParseLog[protocolPacket, StatusLog, StartDate -> startDate, EndDate -> endDate],
-			OperatorProcessing,
-			0 Hour
-		];
+		ParseLog[protocolPacket, StatusLog, StartDate -> startDate, EndDate -> endDate, OutputFormat -> DateRange],
+		OperatorProcessing,
+		{}
+	];
 
-	resolutionTurnaroundTime = MapThread[opProcessingTimeInSpan[protocol, #1, #2]&, {datesCreated, endTimes}];
-	timeToNextAction = MapThread[opProcessingTimeInSpan[protocol, #1, #2]&, {datesCreated, nextActionFromLogs}];
+	(* find out all the operator processing time span that is affected *)
+	ticketTimeSpanLists = MapThread[
+		(* use the earlier end date *)
+		If[#2 < #3,
+			opProcessingTimeInSpan[protocol, #1, #2],
+			opProcessingTimeInSpan[protocol, #1, #3]
+		]&,
+		{datesCreated, endTimes, nextActionFromLogs}
+	];
+	ticketTimeSpans = Join[Sequence@@ticketTimeSpanLists];
 
-	(* use the less of the two times *)
-	UnitConvert[Total[Min/@Transpose[{resolutionTurnaroundTime, timeToNextAction}]], Hour]
+	(* return based on output format *)
+	If[MatchQ[outputFormat, TotalTime],
+		UnitConvert[Total[(#1[[2]] - #1[[1]])& /@ ticketTimeSpans], Hour],
+		ticketTimeSpans
+	]
 ];
 
 (* ::Subsection::Closed:: *)

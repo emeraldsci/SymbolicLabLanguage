@@ -11,11 +11,11 @@ DefineTests[
 			];
 
 			UploadSampleModel[
-				"Test Cryo Cell Sample for UploadThawCellsMethod " <> $SessionUUID,
-				Composition -> {
+				{
 					{5 VolumePercent, Model[Cell, Mammalian, "HeLa"]},
 					{95 VolumePercent, Model[Molecule, "Glycerol"]}
 				},
+				Name -> "Test Cryo Cell Sample for UploadThawCellsMethod " <> $SessionUUID,
 				(* Glycerol *)
 				Media -> Model[Sample, "id:jLq9jXY4kkmW"],
 				Expires -> True,

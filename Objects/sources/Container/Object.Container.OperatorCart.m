@@ -29,6 +29,14 @@ DefineObjectType[Object[Container, OperatorCart], {
 			Description -> "The experiment, maintenance, or control that is currently running on this cart.",
 			Category -> "Organizational Information",
 			Abstract -> True
+		},
+		WorkstationComputer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Part, Computer][OperatorCart],
+			Description -> "The tablet or computer that is permanently assigned to this cart.",
+			Category -> "Integrations"
 		}
 	}
 }];

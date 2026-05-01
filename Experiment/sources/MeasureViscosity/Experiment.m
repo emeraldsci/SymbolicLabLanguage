@@ -4523,7 +4523,7 @@ experimentMeasureViscosityResourcePackets[mySamples:{ObjectP[Object[Sample]]..},
 
 	(* If autosamplerContainerBool is True, we need to make a resource for a needle to remove bubbles since we cannot centrifuge the containers *)
 	needleResource = If[autosamplerContainerBool,
-		Resource[Sample -> Model[Item, Needle, "id:AEqRl9x4OE7p"], Name -> ToString[Unique[]]],(*"14Ga x 4In Disposable Blunt Tip Lure Lock Dispensing Needle"*)
+		Resource[Sample -> Model[Item, Needle, "id:AEqRl9x4OE7p"], Name -> ToString[Unique[]]],(*"14Ga x 4In Disposable Blunt Tip Luer Lock Dispensing Needle"*)
 		Null
 	];
 

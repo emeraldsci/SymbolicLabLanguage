@@ -61,7 +61,8 @@ DefineObjectType[Model[Maintenance], {
 				Model[Sample][MaintenanceFrequency, 1],
 				Model[Sensor][MaintenanceFrequency, 1],
 				Model[Part][MaintenanceFrequency, 1],
-				Model[Item][MaintenanceFrequency, 1]
+				Model[Item][MaintenanceFrequency, 1],
+				Model[User][MaintenanceFrequency, 1]
 			],
 			Description -> "The target model of object for which this model of Maintenance is designed to maintain.",
 			Category -> "Qualifications & Maintenance"
@@ -96,6 +97,38 @@ DefineObjectType[Model[Maintenance], {
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Indicates if this Maintenance should be enqueued even if the target instrument's status is UndergoingMaintenance.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		DeveloperOnly -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[Null, BooleanP],
+			Description -> "Indicates if the maintenance should be performed by a developer or a trained engineer.",
+			Category -> "General"
+		},
+		TargetSubprotocolCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0,1],
+			Description -> "The number of subprotocols expected to run during the execution of a qualification.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		TargetResourceCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0,1],
+			Description -> "The number of unique resource requests in the SubprotocolRequiredResources field for a qualification of this model. This information ensures consistent execution of the qualification.",
+			Category -> "Qualifications & Maintenance",
+			Developer -> True
+		},
+		BaselineOperatorProcessingTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Hour],
+			Units -> Hour,
+			Description -> "The least amount of time required to complete a qualification of this model. This information is used for scheduling qualifications.",
 			Category -> "Qualifications & Maintenance",
 			Developer -> True
 		}

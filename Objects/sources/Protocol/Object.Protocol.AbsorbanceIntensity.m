@@ -262,6 +262,22 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "The absorbance data collected from the container with buffer alone that are repeated due to instrument's unsuccessful absorbance measurement in the protocol and thus not used in adjusting the absorbance measurement to account for any background signal. The successful repeated data are stored in the BlankAbsorbance field. The data objects in this field are for tracking purposes only.",
 			Category -> "Experimental Results"
 		},
+		StandardData -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "The absorbance data collected from the well with the standard sample.",
+			Category -> "Experimental Results"
+		},
+		StandardAbsorbanceRequiredRetries -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Data][Protocol],
+			Description -> "The absorbance data collected from the standard samples that are repeated due to instrument's unsuccessful absorbance measurement in the protocol. The successful repeated data are stored in the StandardData field. The data objects in this field are for tracking purposes only.",
+			Category -> "Experimental Results"
+		},
 		QuantifyConcentration -> {
 			Format -> Single,
 			Class -> Boolean,
@@ -286,6 +302,35 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Experimental Results",
 			IndexMatching -> SamplesIn
 		},
+		LoadingRetryLog -> {
+			Format -> Multiple,
+			Class -> {
+				Date -> Date,
+				LiquidHandler -> Link,
+				NumberOfSuccessfulLoadings -> Integer,
+				NumberOfFailedLoadings -> Integer,
+				FractionFailed -> Real
+			},
+			Pattern :> {
+				Date -> _?DateObjectQ,
+				LiquidHandler -> ObjectP[Object[Instrument, LiquidHandler]],
+				NumberOfSuccessfulLoadings -> GreaterEqualP[0, 1],
+				NumberOfFailedLoadings -> GreaterEqualP[0, 1],
+				FractionFailed -> GreaterEqualP[0]
+			},
+			Relation -> {
+				Date -> Null,
+				LiquidHandler -> Object[Instrument, LiquidHandler],
+				NumberOfSuccessfulLoadings -> Null,
+				NumberOfFailedLoadings -> Null,
+				FractionFailed -> Null
+			},
+			(* No units for anything *)
+			Description -> "Performance tracking of the success rate for microfluidic chip sample loading and detection across all measurements (including retries) within this protocol. The Date is recorded as the time when the corresponding measurement or retry measurement is evaluated to determine whether each sample loading is successful. This evaluation occurs shortly after the microfluidic chips are loaded with the samples and measured on the plate reader. This applies only to protocols performed on the \"Lunatic\" plate reader model.",
+			Category -> "Experimental Results",
+			Developer -> True
+		},
+
 		SpectralBandwidth ->{
 			Format->Single,
 			Class->Real,
@@ -613,6 +658,31 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description->"The pipetting instructions used to manually load samples onto microfluidic chips.",
 			Category -> "Sample Loading"
 		},
+		MicrofluidicChipSamplePlacements -> {
+			Format -> Multiple,
+			Class ->{
+				Sample->Link,
+				MicrofluidicChipRack->Link,
+				Position->Expression,
+				WorkingSample->Link
+			},
+			Pattern :> {
+				Sample->_Link,
+				MicrofluidicChipRack->_Link,
+				Position->LocationPositionP,
+				WorkingSample->_Link
+			},
+			Relation -> {
+				Sample->Object[Sample],
+				MicrofluidicChipRack->Object[Container],
+				Position->Null,
+				WorkingSample->Object[Sample]
+			},
+			Description -> "A list of placements for each sample on the microfluidic chip rack used to house the samples and the sample objects generated after transfers.",
+			Category -> "General",
+			Developer -> True
+		},
+		(* Note: The following fields are used in OLD Manual loading framework and Manual retry. These are no longer used as of March 2026. we may actually need to bring back the Manual loading support in the future so keeping them for now. Putting a note here to avoid confusion with fields marked as "Retry xxx" later in the file. *)
 		MicrofluidicChipManualLoadingManipulation -> {
 			Format -> Single,
 			Class -> Link,
@@ -620,27 +690,6 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Relation -> Object[Protocol, SampleManipulation],
 			Description -> "A sample manipulation protocol used to manually transfer unspotted samples into the microfluidic chips used to house sample for absorbance measurement.",
 			Category -> "General"
-		},
-		MicrofluidicChipSamplePlacements -> {
-			Format -> Multiple,
-			Class ->{
-				Sample->Link,
-				MicrofluidicChipRack->Link,
-				Position->Expression
-			},
-			Pattern :> {
-				Sample->_Link,
-				MicrofluidicChipRack->_Link,
-				Position->LocationPositionP
-			},
-			Relation -> {
-				Sample->Object[Sample],
-				MicrofluidicChipRack->Object[Container],
-				Position->Null
-			},
-			Description -> "A list of placement for each sample on the microfluidic chip rack used to house the samples.",
-			Category -> "General",
-			Developer -> True
 		},
 		MicrofluidicChipSamplePlacementSuccess-> {
 			Format -> Multiple,
@@ -667,6 +716,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "A sample manipulation protocol used to manually transfer unspotted samples into the microfluidic chips used to house sample for absorbance measurement.",
 			Category -> "General"
 		},
+		(* End Here *)
 		MagnifyingGlass -> {
 			Format -> Single,
 			Class -> Link,
@@ -785,6 +835,15 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Category -> "Absorbance Measurement",
 			IndexMatching -> SamplesIn
 		},
+		BlankVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 * Microliter],
+			Units -> Microliter,
+			Description -> "For each member of Blanks, the volume of that sample that should be used for blank measurements.",
+			Category -> "Absorbance Measurement",
+			IndexMatching -> Blanks
+		},
 		BlankLabels -> {
 			Format -> Multiple,
 			Class -> String,
@@ -792,6 +851,73 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "For each member of SamplesIn, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SamplesIn.",
 			Category -> "Absorbance Measurement",
 			IndexMatching -> SamplesIn
+		},
+		(* Standard measurement is currently supported only on Lunatic *)
+		Standards -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "The reference samples with known absorbance to run in parallel with the unknown samples, often used to check internal measurement consistency.",
+			Category -> "Standards"
+		},
+		StandardLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of Standards, the label of the object or source used to generate a standard sample, often used to check internal measurement consistency.",
+			Category -> "Standards",
+			IndexMatching -> Standards
+		},
+		StandardVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 * Microliter],
+			Units -> Microliter,
+			Description -> "For each member of Standards, the amount of liquid that should be transferred out and used to perform standard measurements.",
+			Category -> "Standards",
+			IndexMatching -> Standards
+		},
+		StandardWavelengths -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 Nanometer],
+			Units -> Nanometer,
+			Description -> "For each member of Standards, the specific wavelength(s) which should be used to measure absorbance in the standards.",
+			Category -> "Optics",
+			IndexMatching -> Standards
+		},
+		StandardBlanks -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Sample],
+				Object[Sample]
+			],
+			Description -> "For each member of Standards, the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards.",
+			Category -> "Standards",
+			IndexMatching -> Standards
+		},
+		StandardBlankLabels -> {
+			Format -> Multiple,
+			Class -> String,
+			Pattern :> _String,
+			Description -> "For each member of Standards, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards.",
+			Category -> "Standards",
+			IndexMatching -> Standards
+		},
+		StandardBlankVolumes -> {
+			Format -> Multiple,
+			Class -> Real,
+			Pattern :> GreaterP[0 * Microliter],
+			Units -> Microliter,
+			Description -> "For each member of Standards, the amount of liquid of the StandardBlanks that should be transferred out and used to blank measurements.",
+			Category -> "Standards",
+			IndexMatching -> Standards
 		},
 		CuvetteSamplePrimitives -> {
 			Format -> Multiple,
@@ -822,7 +948,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] | Object[Notebook, Script],
+			Relation -> Object[Protocol,SampleManipulation] | Object[Protocol, ManualSamplePreparation] | Object[Protocol, RoboticSamplePreparation] |  Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation] | Object[Notebook, Script],
 			Description -> "The sample preparation protocol used to transfer the samples from the cuvettes into the ContainersOut for storage after the experiment.",
 			Category -> "Sample Storage",
 			Developer -> True
@@ -838,15 +964,6 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "The sample used to equilibrate the fixed path length microfluidic chips prior to taking blank spectra and sample measurement.",
 			Category -> "Absorbance Measurement",
 			Developer -> True
-		},
-		BlankVolumes -> {
-			Format -> Multiple,
-			Class -> Real,
-			Pattern :> GreaterP[0 * Microliter],
-			Units -> Microliter,
-			Description -> "For each member of Blanks, the volume of that sample that should be used for blank measurements.",
-			Category -> "Absorbance Measurement",
-			IndexMatching -> Blanks
 		},
 		RetainCover -> {
 			Format -> Single,
@@ -867,7 +984,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script], Object[Protocol,RoboticCellPreparation], Object[Protocol,ManualCellPreparation]],
 			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
 			Category -> "General"
 		},
@@ -1100,12 +1217,19 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 		},
 		
 		(* -- Retry Logic -- *)
+		MaxLoadingRetries->{
+			Format->Single,
+			Class->Integer,
+			Pattern:>GreaterEqualP[1,1],
+			Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+			Category->"Retry"
+		},
 		ContinueRetry -> {
 			Format -> Single,
 			Class -> Boolean,
 			Pattern :> BooleanP,
 			Description -> "Whether to continue retrying data acquisition when all data for all input samples are either missing or encountering single cuvette read failure after max number of retries.",
-			Category -> "General",
+			Category->"Retry",
 			Developer -> True
 		},
 		RetryState->{
@@ -1113,7 +1237,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Class->Expression,
 			Pattern:>BooleanP,
 			Description->"Whether or not the retry branch should be entered.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		RetrySampleIndices->{
@@ -1121,7 +1245,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Class->Expression,
 			Pattern:>{GreaterEqualP[0,1]...},
 			Description->"A list of integers referring to the indices of SamplesIn to be retried.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		RetryMicrofluidicChips->{
@@ -1133,7 +1257,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Object[Container,MicrofluidicChip]
 			]},
 			Description->"The microfluidic chips used to house sample for absorbance measurement for each retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		CurrentRetryMicrofluidicChips->{
@@ -1145,7 +1269,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 				Object[Container,MicrofluidicChip]
 			],
 			Description->"The microfluidic chips used to house sample for absorbance measurement for the curreht retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		RetryMicrofluidicChipPrimitives->{
@@ -1153,30 +1277,41 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Class->Expression,
 			Pattern:>{(SampleManipulationP|SamplePreparationP)..},
 			Description->"A set of instructions specifying the transfers of samples into the microfluidic chips for each retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
+		},
+		RetryMicrofluidicChipManipulations -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, RoboticSamplePreparation], Object[Protocol, ManualSamplePreparation]],
+			Description -> "A sample preparation protocol used to transfer samples into the microfluidic chips used to house sample for absorbance measurement for each retry step.",
+			Category -> "General"
 		},
 		RetrySettingsFilePaths->{
 			Format->Multiple,
 			Class->Expression,
 			Pattern:>{FilePathP..},
 			Description->"The file paths for the executable files that set the measurement parameters and run the experiment for each retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
-		RetryMicrofluidicChipSamplePlacements->{
-			Format->Multiple,
-			Class->Expression,
-			Pattern:>{{
+		RetryMicrofluidicChipSamplePlacements -> {
+			Format -> Multiple,
+			Class -> Expression,
+			Pattern :> {{
 				KeyValuePattern[
-					{Sample->_Link,
-						MicrofluidicChipRack->_Link,
-						Position->LocationPositionP}
+					{
+						Sample -> _Link,
+						MicrofluidicChipRack -> _Link,
+						Position -> LocationPositionP,
+						WorkingSample -> (_Link|Null)
+					}
 				]..
 			}..},
-			Description->"A list of placement for each sample on the microfluidic chip rack for each retry step.",
-			Category->"General",
-			Developer->True
+			Description -> "A list of placements for each sample on the microfluidic chip rack and the sample objects generated after transfers for each retry step.",
+			Category->"Retry",
+			Developer -> True
 		},
 		RetryAssayPlatePlacements->{
 			Format->Multiple,
@@ -1184,7 +1319,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Pattern:>{{_Link,{LocationPositionP..}}..},
 			Relation->{{Object[Container],Null}},
 			Description->"A list of placements used to move assay plates into the plate reader for each retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		CurrentRetryAssayPlatePlacements->{
@@ -1194,7 +1329,7 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Relation->{Object[Container],Null},
 			Description->"A list of placements used to move assay plates into the plate reader for the current retry step.",
 			Headers->{"Object to Place","Placement Tree"},
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		RetryDataFileNames->{
@@ -1202,15 +1337,15 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Class->String,
 			Pattern:>_String,
 			Description->"The file name used for the data file generated at the conclusion of the experiment for each retry step.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
-		RetryRawDateFileNames->{
+		RetryRawDataFileNames->{
 			Format->Multiple,
 			Class->String,
 			Pattern:>_String,
 			Description->"The file name used for the data file containing raw, unblanked data generated at the conclusion of the experiment.",
-			Category->"General",
+			Category->"Retry",
 			Developer->True
 		},
 		EstimatedProcessingTime -> {
@@ -1221,6 +1356,15 @@ DefineObjectType[Object[Protocol, AbsorbanceIntensity], {
 			Description -> "The predicted total time to complete readings of all samples based on requested run times, injections and mixing times.",
 			Developer -> True,
 			Category -> "General"
+		},
+
+		(* -- Sample Post-Processing -- *)
+		ImageMicrofluidicPlate -> {
+			Format -> Single,
+			Class -> Expression,
+			Pattern :> Alternatives[PreRead, PostRead, All],
+			Description -> "When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+			Category -> "Sample Post-Processing"
 		}
 	}
 }];

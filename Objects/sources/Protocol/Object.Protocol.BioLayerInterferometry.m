@@ -162,7 +162,7 @@ DefineObjectType[Object[Protocol, BioLayerInterferometry], {
       Format->Single,
       Class->Link,
       Pattern:>_Link,
-      Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script],
+      Relation->Object[Protocol,SampleManipulation]|Object[Protocol,RoboticSamplePreparation]|Object[Protocol,ManualSamplePreparation]|Object[Notebook,Script] |  Object[Protocol,RoboticCellPreparation] | Object[Protocol,ManualCellPreparation],
       Description->"A sample manipulation protocol used to load the assay plate.",
       Category -> "Sample Preparation"
     },

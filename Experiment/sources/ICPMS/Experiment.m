@@ -599,8 +599,20 @@ DefineOptions[ExperimentICPMS,
 			Category -> "Post Experiment",
 			Widget -> Widget[Type->Enumeration,Pattern:>BooleanP]
 		},
-
-		ModelInputOptions,
+        ModifyOptions[
+            ModelInputOptions,
+            PreparedModelAmount,
+            {
+                ResolutionDescription -> "Automatically set to 3 Milliliter."
+            }
+        ],
+        ModifyOptions[
+            ModelInputOptions,
+            PreparedModelContainer,
+            {
+                ResolutionDescription -> "If PreparedModelAmount is set to All and the input model has a product associated with both Amount and DefaultContainerModel populated, automatically set to the DefaultContainerModel value in the product. Otherwise, automatically set to Model[Container, Vessel, \"15mL MetalFree Centrifuge Tube\"]."
+            }
+        ],
 		NonBiologyFuntopiaSharedOptions,
 		SamplesInStorageOptions,
 		AnalyticalNumberOfReplicatesOption,
@@ -678,7 +690,9 @@ ExperimentICPMS[myInputs : ListableP[ObjectP[{Object[Container], Object[Sample],
 		{mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, updatedSimulation} = simulateSamplePreparationPacketsNew[
 			ExperimentICPMS,
 			ToList[myInputs],
-			ToList[myOptions]
+			ToList[myOptions],
+            DefaultPreparedModelAmount -> 3 Milliliter,
+            DefaultPreparedModelContainer -> Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *)
 		],
 		$Failed,
 		{Download::ObjectDoesNotExist, Error::MissingDefineNames, Error::InvalidInput, Error::InvalidOption}
@@ -754,7 +768,7 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 		resolvedOptions, resolvedOptionsTests, collapsedResolvedOptions, returnEarlyQ, performSimulationQ, protocolPacket, resourcePacketTests, simulatedProtocol,
 		simulation, resolvedPreparation, result, samplesWithPreparedSamplesNamed, optionsWithPreparedSamplesNamed,
 		safeOptionsNamed, allContainerModels,
-		digestionInstruments, standards, allSampleModels, sampleOption, sampleObjects, elementDataIndex, elementData,
+		digestionInstruments, standards, allSampleModels, sampleOption, sampleObjects, defaultContainers, elementDataIndex, elementData,
 		sampleModelRequiredField, methodPackets, simulationWithMicrowaveDigestion, digestionPrimitives
 	},
 
@@ -885,9 +899,14 @@ ExperimentICPMS[mySamples : ListableP[ObjectP[Object[Sample]]], myOptions : Opti
 	(* pull out any Object[Sample]s in the sampleOption *)
 	sampleObjects = Cases[Flatten[{sampleOption}], ObjectP[{Object[Sample], Model[Sample]}]];
 
+    (* we require samples and standards to be in these two metal-free centrifuge tube models *)
+    defaultContainers = {
+        Model[Container, Vessel, "id:KBL5DvR0wqok"], (* Model[Container, Vessel, "15mL MetalFree Centrifuge Tube"] *)
+        Model[Container, Vessel, "id:D8KAEv5mGnxK"]  (* Model[Container, Vessel, "50mL MetalFree Centrifuge Tube"] *)
+    };
 
 	(* split things into groups by types (since we'll be downloading different things from different types of objects) *)
-	allObjects = DeleteDuplicates[Flatten[{instruments, digestionInstruments, standards, sampleObjects}]];
+	allObjects = DeleteDuplicates[Flatten[{instruments, digestionInstruments, standards, sampleObjects, defaultContainers}]];
 	allInstruments = Cases[allObjects, ObjectP[Model[Instrument]]];
 	allContainerModels = Flatten[{
 		Cases[allObjects, ObjectP[{Model[Container, Vessel], Model[Container, Plate]}]],
@@ -4289,7 +4308,7 @@ resolveExperimentICPMSOptions[myInputSamples:{ObjectP[Object[Sample]]...},myOpti
 
 	requiredAliquotAmounts = RiffleAlternatives[Table[Null, Length[samplesToDigest]], sampleAmountToNotDigest, resolvedDigestions];
 
-	requiredAliquotContainers = RiffleAlternatives[Table[Automatic, Length[samplesToDigest]], Table[Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *), Length[samplesToNotDigest]], resolvedDigestions];
+	requiredAliquotContainers = RiffleAlternatives[Table[Automatic, Length[samplesToDigest]], Table[Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *), Length[samplesToNotDigest]], resolvedDigestions];
 
 	{resolvedAliquotOptions, aliquotTests} = If[gatherTests,
 		resolveAliquotOptions[
@@ -4812,7 +4831,7 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 
 	(* Populate Container field for StandardSpikedSamples *)
 	standardSpikedSamplesContainer = If[standardAdditionQ,
-		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *)]], Total[standardAdditionMultiplicity]]
+		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *)]], Total[standardAdditionMultiplicity]]
 	];
 
 	standardSpikedSamplesUploadable = If[standardAdditionQ,
@@ -4921,7 +4940,7 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 	(* Otherwise 15 mL Tube needed for each input samples *)
 	icpmsSampleContainers = If[standardAdditionQ,
 		{},
-		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *)]], Length[samplesWithReplicates]]
+		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *)]], Length[samplesWithReplicates]]
 	];
 
 
@@ -5005,7 +5024,7 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 
 	(* Construct a list of containers for diluting external standards *)
 	externalStandardContainer = If[externalStandardQ,
-		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:xRO9n3vk11pw"] (* "15mL Tube" *)]], Total[externalStandardMultiplicity]]
+		Table[Link[Resource[Sample -> Model[Container, Vessel, "id:KBL5DvR0wqok"] (* "15mL MetalFree Centrifuge Tube" *)]], Total[externalStandardMultiplicity]]
 	];
 
 	(* Construct the ExternalStandard field *)
@@ -5119,10 +5138,18 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 	];
 
 	(* Get Blank resource. Blank is only measured once so 10 ml would be more than enough *)
-	blankResource = Link[Resource[Sample -> blank, Name -> "Blank: "<>ToString[blank], Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"] (* "50mL Tube" *)]];
-	blankDiluentResource = If[NullQ[blankVolume],
-		Null,
-		Link[Resource[Sample -> blank, Name -> "Blank for dilution: "<>ToString[blank], Amount -> blankVolume]]
+	blankResource = Link[Resource[Sample -> blank, Name -> "Blank: "<>ToString[blank], Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "id:D8KAEv5mGnxK"] (* "50mL MetalFree Centrifuge Tube" *)]];
+	blankDiluentResource = Which[
+        (* If there is no blank volume, there is no need to create a resource. *)
+        NullQ[blankVolume],
+            Null,
+        (* If the blankVolume is less than 50 mL, use "50mL MetalFree Centrifuge Tube" to avoid leaching. *)
+        LessQ[blankVolume, 50 Milliliter],
+            Link[Resource[Sample -> blank, Name -> "Blank for dilution: "<>ToString[blank], Amount -> blankVolume, Container -> Model[Container, Vessel, "id:D8KAEv5mGnxK"] (* "50mL MetalFree Centrifuge Tube" *)]],
+        (* Otherwise, create the resource without any specified constraints. *)
+        (* We don't have a metal-free container with a greater volume than 50 mL at this time. *)
+		True,
+            Link[Resource[Sample -> blank, Name -> "Blank for dilution: "<>ToString[blank], Amount -> blankVolume]]
 	];
 
 	(* Get Rinse-related options *)
@@ -5231,7 +5258,7 @@ icpmsResourcePackets[mySamples:{ObjectP[Object[Sample]]...},myUnresolvedOptions:
 	(* Calculate volume needed. Allocate 15 ml for each measurement method, but no more than 45 ml *)
 	tuningStandardVolume = 15 Milliliter * Min[Length[measurementMethod], 3];
 	(* Construct resource for tuning solution *)
-	tuningStandard = Resource[Sample -> Link[Model[Sample, "id:aXRlGnReBqLm"] (* "iCAP Q/RQ Tune Solution" *)], Amount -> tuningStandardVolume, Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"] (* "50mL Tube" *)];
+	tuningStandard = Resource[Sample -> Link[Model[Sample, "id:aXRlGnReBqLm"] (* "iCAP Q/RQ Tune Solution" *)], Amount -> tuningStandardVolume, Container -> Model[Container, Vessel, "id:D8KAEv5mGnxK"] (* "50mL MetalFree Centrifuge Tube" *)];
 
 	(* Construct UnitOperation object of digestion primitives *)
 

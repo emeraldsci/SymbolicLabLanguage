@@ -29,20 +29,20 @@ Error::CrimpOnlyOptionsFromExternalField = "`1` option can only be specified if 
 Error::CrimpOnlyOptionsInconsistentFromExternalField = "`1` option can only be specified if `2` is Crimp. However, `1` is set to Null according to `3`. Please either manually set `1` option to Null, or change option `2` to other values.";
 Error::CrimpOnlyOptionsBetweenExternalField = "`1` option can only be specified if `2` is Crimp. However, `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either manually set `1` option to Null, or change option `2` to other values.";
 Error::CrimpCoverCannotReuse = "Crimp covers cannot be reused. Please either change option `1` to other values, or set `2` to False.";
-Error::CrimpCoverCannotReuseFromExternalField = "Crimp covers cannot be reused, however `1` is set to `4` according to `3`. Please either set option `1` to `5`, or set `2` to `6`.";
-Error::CrimpCoverCannotReuseBetweenExternalField = "Crimp covers cannot be reused, however `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either set option `1` to `6`, or set `2` to `7`.";
+Error::CrimpCoverCannotReuseFromExternalField = "Crimp covers cannot be reused; however, `1` is set to `4` according to `3`. Please either set option `1` to `5`, or set `2` to `6`.";
+Error::CrimpCoverCannotReuseBetweenExternalField = "Crimp covers cannot be reused; however, `1` is set to `4` and `2` is set to `5`, both according to `3`. Please either set option `1` to `6`, or set `2` to `7`.";
 Error::CoverTypeMismatch = "Option `1` cannot be `3` for input type `2`. Please change the `1` to other values.";
-Error::CoverTypeMismatchFromExternalField = "Option `1` was set to `3` according to `4`, however this CoverType is not supported for input type `2`. Please manually change the `1` to other values.";
+Error::CoverTypeMismatchFromExternalField = "Option `1` was set to `3` according to `4`; however, this CoverType is not supported for input type `2`. Please manually change the `1` to other values.";
 Error::BarcodeForbidden = "Caps whose width and depth are under 41 mm are too small to fit barcode sticker. Please set the `1` option to False.";
-Error::BarcodeForbiddenFromExternalField = "Caps whose width and depth are under 41 mm are too small to fit barcode sticker, however `1` option is set to True according to `2`. Please set the `1` option to False manually.";
+Error::BarcodeForbiddenFromExternalField = "Caps whose width and depth are under 41 mm are too small to fit barcode sticker; however, `1` option is set to True according to `2`. Please set the `1` option to False manually.";
 Error::BarcodeRequired = "Caps whose width or depth are over 54 mm are required to have barcode sticker. Please set the `1` option to True.";
-Error::BarcodeRequiredFromExternalField = "Caps whose width or depth are over 54 mm are required to have barcode sticker, however `1` option is set to False according to `2`. Please set the `1` option to True manually.";
+Error::BarcodeRequiredFromExternalField = "Caps whose width or depth are over 54 mm are required to have barcode sticker; however, `1` option is set to False according to `2`. Please set the `1` option to True manually.";
 Error::InconsistentMargin = "`1` option should be specified if and only if `2` is greater than 1. Please set `1` to Null, or change the value of `2` to greater than 1.";
-Error::InconsistentMarginWithExistingField = "You have specified the `1` option, however this is not allowed since the `2` option was set to 1 according to `3`. Please either set `1` to Null, or manually change `2` to greater than 1.";
-Error::InconsistentMarginToExistingField = "A non-Null value has been inherited from `3` for option `1`, however this conflicts with `2` option, because `1` should only be specified if `2` is greater than 1. Please manually set `1` option to Null.";
+Error::InconsistentMarginWithExistingField = "You have specified the `1` option; however, this is not allowed since the `2` option was set to 1 according to `3`. Please either set `1` to Null, or manually change `2` to greater than 1.";
+Error::InconsistentMarginToExistingField = "A non-Null value has been inherited from `3` for option `1`; however, this conflicts with `2` option, because `1` should only be specified if `2` is greater than 1. Please manually set `1` option to Null.";
 Error::InconsistentMarginBetweenExistingField = "The options `1` and `2` inherited from `3` conflicts with each other because `1` should only be specified if `2` is greater than 1. Please manually change either one of these options.";
 Error::PlateSealCoverTypeMismatch = "For Model[Item, PlateSeal] type input, the only allowed value for `1` option is Seal. Please set `1` option to Seal.";
-Error::PlateSealCoverTypeMismatchFromExternalField = "For Model[Item, PlateSeal] type input, the only allowed value for `1` option is Seal, however it's set to `3` according to `2`. Please set `1` option to Seal manually.";
+Error::PlateSealCoverTypeMismatchFromExternalField = "For Model[Item, PlateSeal] type input, the only allowed value for `1` option is Seal; however, it's set to `3` according to `2`. Please set `1` option to Seal manually.";
 
 DefineOptions[
 	validModelItemQTests,
@@ -716,6 +716,13 @@ validItemBlankQTests[packet:PacketP[Model[Item, Blank]]]:={
 
 
 (* ::Subsection::Closed:: *)
+(*validItemCannulaQTests*)
+
+
+validItemCannulaQTests[packet:PacketP[Model[Item, Cannula]]]:={};
+
+
+(* ::Subsection::Closed:: *)
 (*validModelItemCrossFlowFilterQTests*)
 
 
@@ -1058,6 +1065,116 @@ validModelItemLidQTests[packet : PacketP[Model[Item, Lid]], ops:OptionsPattern[]
 
 
 (* ::Subsection::Closed:: *)
+(*validModelItemLinerQTests*)
+
+
+validModelItemLinerQTests[packet:PacketP[Model[Item, Liner]]]:=Module[
+	{sourceLinerPacket, customCut, sourceLiner, dimensions, sourceDimensions, minTemp, maxTemp},
+
+	(* Download the source liner packet if it exists *)
+	sourceLinerPacket = If[!NullQ[Lookup[packet, SourceLiner]],
+		Download[Lookup[packet, SourceLiner], Packet[Dimensions]],
+		Null
+	];
+
+	(* Extract relevant fields *)
+	{customCut, sourceLiner, dimensions, minTemp, maxTemp} = Lookup[packet, {CustomCut, SourceLiner, Dimensions, MinTemperature, MaxTemperature}];
+
+	sourceDimensions = If[!NullQ[sourceLinerPacket],
+		Lookup[sourceLinerPacket, Dimensions],
+		Null
+	];
+
+	{
+		(* If CustomCut -> True, SourceLiner must be populated *)
+		Test["If CustomCut is True, SourceLiner must be populated:",
+			{customCut, sourceLiner},
+			{True, Except[Null]} | {Except[True], _}
+		],
+
+		(* If CustomCut != True, SourceLiner must not be populated *)
+		Test["If CustomCut is not True, SourceLiner must not be populated:",
+			{customCut, sourceLiner},
+			{Except[True], Null} | {True, _}
+		],
+
+		(* SourceLiner must not reference itself *)
+		Test["SourceLiner must not reference itself:",
+			Or[
+				NullQ[sourceLiner],
+				!MatchQ[Download[sourceLiner, Object], Lookup[packet, Object]]
+			],
+			True
+		],
+
+		(* Check liner and source have dimensions if custom cut *)
+		Test["If CustomCut is True, both the liner and the source liner have dimensions:",
+			Or[
+				!TrueQ[customCut],
+				!MatchQ[dimensions, Null | {}] && !MatchQ[sourceDimensions, Null | {}]
+			],
+			True
+		],
+
+		(* Dimension compatibility if CustomCut is True and both have Dimensions *)
+		Test["If CustomCut is True, prepared liner dimensions must be compatible with source liner dimensions:",
+			Which[
+				(* Pass and skip if not custom cut *)
+				!TrueQ[customCut],
+				True,
+
+				(* Fail if custom cut and no dimensions *)
+				TrueQ[customCut] && Or[MatchQ[dimensions, Null | {}], MatchQ[sourceDimensions, Null | {}]],
+				False,
+
+				(* Fail if the dimensions are incomplete *)
+				Or[GreaterQ[Count[dimensions, Null], 1], GreaterQ[Count[dimensions, Null], 1]],
+				False,
+
+				(* Otherwise perform the check *)
+				True,
+				Module[
+					{
+						sourceThickness, prepThickness, sourceXY, prepXY
+					},
+
+					(* Get XY dimensions (without thickness) *)
+					sourceXY = MaximalBy[sourceDimensions, If[QuantityQ[#], #, 0 Meter] &, 2];
+					prepXY = MaximalBy[dimensions, If[QuantityQ[#], #, 0 Meter] &, 2];
+
+					(* Get the thickness (may be Null) *)
+					sourceThickness = First[Complement[sourceDimensions, sourceXY], Null];
+					prepThickness = First[Complement[dimensions, prepXY], Null];
+					
+					And[
+						(* Prep liner dimensions must fit within the source *)
+						LessEqualQ[prepXY[[1]], sourceXY[[1]]],
+						LessEqualQ[prepXY[[2]], sourceXY[[2]]],
+
+						(* Thickness must be equal, or one or both must be Null *)
+						Or[
+							EqualQ[prepThickness, sourceThickness],
+							MemberQ[{prepThickness, sourceThickness}, Null]
+						]
+					]
+				]
+			],
+			True
+		],
+
+		(* Check Valid Temperature range *)
+		Test["If both MinTemperature and MaxTemperature are populated, MinTemperature must be less than MaxTemperature:",
+			Or[
+				!(UnitsQ[minTemp, Kelvin] || UnitsQ[maxTemp, Kelvin]),
+				LessEqualQ[minTemp, maxTemp]
+			],
+			True
+		]
+	}
+];
+
+
+(* ::Subsection::Closed:: *)
 (*validModelItemLidSpacerQTests*)
 
 
@@ -1084,6 +1201,107 @@ validModelItemLidSpacerQTests[packet:PacketP[Model[Item, LidSpacer]]]:={
 		True
 	]
 };
+
+
+(* ::Subsection::Closed:: *)
+(*validModelItemLinerQTests*)
+
+
+validModelItemLinerQTests[packet:PacketP[Model[Item, Liner]]]:=Module[
+	{sourceLinerPacket, customCut, sourceLiner, materialDimensions, sourceMaterialDimensions, minTemp, maxTemp},
+
+	(* Extract relevant fields *)
+	{customCut, sourceLiner, materialDimensions, minTemp, maxTemp} = Lookup[packet, {CustomCut, SourceLiner, MaterialDimensions, MinTemperature, MaxTemperature}];
+
+	(* Download the source liner packet if it exists *)
+	sourceLinerPacket = If[!NullQ[Lookup[packet, SourceLiner]],
+		Download[sourceLiner, Packet[MaterialDimensions]],
+		Null
+	];
+
+	sourceMaterialDimensions = If[!NullQ[sourceLinerPacket],
+		Lookup[sourceLinerPacket, MaterialDimensions],
+		Null
+	];
+
+	{
+		(* If CustomCut -> True, SourceLiner must be populated *)
+		Test["If CustomCut is True, SourceLiner must be populated:",
+			{customCut, sourceLiner},
+			{True, Except[Null]} | {Except[True], _}
+		],
+
+		(* If CustomCut != True, SourceLiner must not be populated *)
+		Test["If CustomCut is not True, SourceLiner must not be populated:",
+			{customCut, sourceLiner},
+			{Except[True], Null} | {True, _}
+		],
+
+		(* SourceLiner must not reference itself *)
+		Test["SourceLiner must not reference itself:",
+			Or[
+				NullQ[sourceLiner],
+				!MatchQ[Download[sourceLiner, Object], Lookup[packet, Object]]
+			],
+			True
+		],
+
+		(* Check liner and source have dimensions if custom cut *)
+		Test["If CustomCut is True, both the liner and the source liner have material dimensions:",
+			Or[
+				!TrueQ[customCut],
+				!MatchQ[materialDimensions, Null | {}] && !MatchQ[sourceMaterialDimensions, Null | {}]
+			],
+			True
+		],
+
+		(* Dimension compatibility if CustomCut is True and both have Dimensions *)
+		(* Material dimensions are xy only *)
+		Test["If CustomCut is True, prepared liner material dimensions must be compatible with source liner material dimensions:",
+			Which[
+				(* Pass and skip if not custom cut *)
+				!TrueQ[customCut],
+				True,
+
+				(* Fail if custom cut and no dimensions *)
+				TrueQ[customCut] && Or[MatchQ[materialDimensions, Null | {}], MatchQ[sourceMaterialDimensions, Null | {}]],
+				False,
+
+				(* Fail if the dimensions are incomplete *)
+				MemberQ[materialDimensions, Null],
+				False,
+
+				(* Otherwise perform the check *)
+				True,
+				Module[
+					{
+						sourceXYSorted, prepXYSorted
+					},
+
+					(* Sort the XY dimensions *)
+					sourceXYSorted = ReverseSort[sourceMaterialDimensions];
+					prepXYSorted = ReverseSort[materialDimensions];
+
+					And[
+						(* Prep liner dimensions must fit within the source *)
+						LessEqualQ[prepXYSorted[[1]], sourceXYSorted[[1]]],
+						LessEqualQ[prepXYSorted[[2]], sourceXYSorted[[2]]]
+					]
+				]
+			],
+			True
+		],
+
+		(* Check Valid Temperature range *)
+		Test["If both MinTemperature and MaxTemperature are populated, MinTemperature must be less than MaxTemperature:",
+			Or[
+				!(UnitsQ[minTemp, Kelvin] || UnitsQ[maxTemp, Kelvin]),
+				LessEqualQ[minTemp, maxTemp]
+			],
+			True
+		]
+	}
+];
 
 
 (* ::Subsection::Closed:: *)
@@ -2314,7 +2532,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, NullP, NullP},
 			{BottleTop,_,_},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2328,7 +2546,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP], Except[NullP]},
 			{BottleTop,Except[NullP],Except[NullP]},
 			{CrossFlowFiltration,_,_},
-			{G2InLine|G2ProbeTip,_,_}
+			{G2InLine|QLADVInnerFilter,_,_}
 		]
 	],
 
@@ -2342,7 +2560,7 @@ validModelItemFilterQTests[packet:PacketP[Model[Item,Filter]]]:=
 			{Membrane, Except[NullP]},
 			{BottleTop,Except[NullP]},
 			{CrossFlowFiltration,_},
-			{G2InLine|G2ProbeTip,_}
+			{G2InLine|QLADVInnerFilter,_}
 		]
 	]
 };
@@ -3207,7 +3425,6 @@ validModelItemStickerQTests[packet:PacketP[Model[Item,Sticker]]]:={
 };
 
 
-
 (* ::Subsection::Closed:: *)
 (*validModelItemTabletCutterQTests*)
 
@@ -3790,6 +4007,16 @@ validModelItemSpatulaQTests[packet:PacketP[Model[Item,Spatula]]]:={
 	}]
 };
 
+(* ::Subsection:: *)
+(*validModelItemSinkerQTests*)
+
+DefineOptions[
+	validModelItemSinkerQTests,
+	Options :> {additionalValidQTestOptions}
+];
+
+validModelItemSinkerQTests[packet:PacketP[Model[Item,Sinker]], ops:OptionsPattern[]] := {};
+
 
 (* ::Subsection:: *)
 (*Test Registration *)
@@ -3803,6 +4030,7 @@ registerValidQTestFunction[Model[Item, Consumable, Blade],validModelItemConsumab
 registerValidQTestFunction[Model[Item, Consumable, Sandpaper],validModelItemConsumableSandpaperQTests];
 registerValidQTestFunction[Model[Item, CrossFlowFilter],validModelItemCrossFlowFilterQTests];
 registerValidQTestFunction[Model[Item, Blank],validItemBlankQTests];
+registerValidQTestFunction[Model[Item, Cannula],validItemCannulaQTests];
 registerValidQTestFunction[Model[Item, Plunger],validModelItemPlungerQTests];
 registerValidQTestFunction[Model[Item, Cap],validModelItemCapQTests];
 registerValidQTestFunction[Model[Item, PlateSeal],validModelItemPlateSealQTests];
@@ -3810,6 +4038,7 @@ registerValidQTestFunction[Model[Item, Stopper],validModelItemStopperQTests];
 registerValidQTestFunction[Model[Item, Cap, ElectrodeCap], validModelItemCapElectrodeCapQTests];
 registerValidQTestFunction[Model[Item, Cap, ElectrodeCap, CalibrationCap], validModelItemCapElectrodeCapCalibrationCapQTests];
 registerValidQTestFunction[Model[Item, Lid],validModelItemLidQTests];
+registerValidQTestFunction[Model[Item, Liner],validModelItemLinerQTests];
 registerValidQTestFunction[Model[Item, LidSpacer],validModelItemLidSpacerQTests];
 registerValidQTestFunction[Model[Item, Clamp],validModelItemClampQTests];
 registerValidQTestFunction[Model[Item, Column],validModelItemColumnQTests];
@@ -3869,4 +4098,6 @@ registerValidQTestFunction[Model[Item, WasteLabel], validModelItemWasteLabelQTes
 registerValidQTestFunction[Model[Item, WilhelmyPlate],validModelItemWilhelmyPlateQTests];
 registerValidQTestFunction[Model[Item, WeighBoat], validModelItemWeighBoatQTests];
 registerValidQTestFunction[Model[Item, WeighBoat, WeighingFunnel], validModelItemWeighBoatWeighingFunnelQTests];
+registerValidQTestFunction[Model[Item, Sinker],validModelItemSinkerQTests];
 registerValidQTestFunction[Model[Item, Spatula], validModelItemSpatulaQTests];
+registerValidQTestFunction[Model[Item, Liner], validModelItemLinerQTests];

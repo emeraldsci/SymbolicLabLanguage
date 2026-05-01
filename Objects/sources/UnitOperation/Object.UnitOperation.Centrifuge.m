@@ -344,8 +344,115 @@ DefineObjectType[Object[UnitOperation,Centrifuge],
 				Developer->True,
 				Category->"Centrifuge Setup"
 			},
-			
-			
+			(* Biosafety related fields for batched unit operations *)
+			TransferEnvironments -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]],
+				Description -> "For each member of SampleLink, the biosafety cabinet in which the loading and unloading of biohazardous samples into and out of centrifuge buckets occurs for this unit operation.",
+				Category -> "Centrifuge Setup",
+				Developer -> True
+			},
+			SetUpTransferEnvironments -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "For each member of SamplesIn, whether the TransferEnvironment needs to be set up for this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			TearDownTransferEnvironments -> {
+				Format -> Multiple,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "For each member of SamplesIn, whether the TransferEnvironment needs to be torn down at the end of this unit operation.",
+				Category -> "General",
+				Developer -> True
+			},
+			BiosafetyCabinetPlacements -> {
+				Format -> Multiple,
+				Class -> {Link, Link, String},
+				Pattern :> {_Link, _Link, LocationPositionP},
+				Relation -> {
+					Alternatives[
+						Object[Container],
+						Object[Item],
+						Model[Item],
+						Object[Sample]
+					],
+					Alternatives[Model[Instrument, HandlingStation, BiosafetyCabinet], Object[Instrument, HandlingStation, BiosafetyCabinet]],
+					Null
+				},
+				Headers -> {"Objects to move", "BSC to move to", "Position to move to"},
+				Description -> "The specific positions into which objects should be moved into the TransferEnvironments in order to load and cover the centrifuge bucket before centrifugation of this unit operation.",
+				Category -> "Centrifuge Setup",
+				Developer -> True
+			},
+			AsepticBucketLoadingPlacements -> {
+				Format -> Multiple,
+				Class -> {Link, Link, String},
+				Pattern :> {_Link, _Link, LocationPositionP},
+				Relation -> {
+					Object[Part] | Model[Part] | Object[Item] | Model[Item] | Object[Container] | Model[Container],
+					Object[Container]| Model[Container],(*Bucket*)
+					Null},
+				Description -> "A list of placements used to place the container, collection container, counterweight, and stacked counterweight into the centrifuge buckets using aseptic technique in TransferEnvironments, before centrifugation of this unit operation.",
+				Category -> "Centrifuge Setup",
+				Developer -> True,
+				Headers -> {"Object to Place", "Bucket to move to", "Position to move to"}
+			},
+			AsepticHandlingBucketCovers -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Item, Lid],
+					Model[Item, Lid]
+				],
+				Description -> "For each member of AsepticHandlingBuckets, the centrifuge bucket lids applied and subsequently removed in the TransferEnvironments. This may not represent the full set of bucket covers used in this unit operation, as buckets loaded solely with counterweights can be covered and uncovered outside the biosafety cabinets.",
+				Category -> "Centrifuge Setup",
+				IndexMatching -> AsepticHandlingBuckets,
+				Developer -> True
+			},
+			AsepticHandlingBuckets -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Model[Container]
+				],
+				Description -> "The centrifuge buckets that that are loaded and subsequently unloaded in the TransferEnvironments. This may not represent the full set of buckets used in this unit operation, as buckets loaded solely with counterweights can be loaded and unloaded outside the biosafety cabinets.",
+				Category -> "Centrifuge Setup",
+				Developer -> True
+			},
+			BucketCovers -> {
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Item, Lid]
+				],
+				Description -> "For each member of Buckets, the lid used to cover it. This is the full set of bucket covers used in this unit operation, including those covered and uncovered inside the biosafety cabinets.",
+				Category -> "Centrifuge Setup",
+				IndexMatching -> Buckets,
+				Developer -> True
+			},
+			CollectionObjects->{
+				Format -> Multiple,
+				Class -> Link,
+				Pattern :> _Link,
+				Relation -> Alternatives[
+					Object[Container],
+					Object[Item],
+					Object[Sample]
+				],
+				Description -> "The objects to be moved from the biosafety cabinet's work surface back onto the cart after working in the biosafety cabinet.",
+				Category -> "General",
+				Developer -> True
+			},
+
 			(* Batching fields below are excluded from the new unit operations*)
 			(*BucketPlacementsBatching,ContainerPlacementsBatching,CollectionContainerPlacementsBatching,CounterweightPlacementsBatching*)
 			

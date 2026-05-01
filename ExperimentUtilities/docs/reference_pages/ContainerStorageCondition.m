@@ -12,10 +12,10 @@ DefineUsage[
 		},
 		Input :> {
 			{"mySamples", ListableP[ObjectP[Object[Sample]]], "The objects that we want to make sure have compatible storage conditions."},
-			{"myStorageConditions", ListableP[SampleStorageConditionP | Disposal], "The storage conditions we want to make sure are compatible with the shared container samples."},
+			{"myStorageConditions", ListableP[SampleStorageConditionP | Disposal | Null], "The storage conditions we want to make sure are compatible with the shared container samples."},
 			{"myGeneratedSamples", ListableP[ObjectP[{Object[Sample], Model[Sample]}]], "The objects that we want to make sure have compatible storage conditions."},
 			{"myResolvedContainers", ListableP[{_Integer, ObjectP[{Model[Container]}]} | ObjectP[{Object[Container], Model[Container]}]], "The containers the samples will be generated in."},
-			{"myResolvedStorageConditions", ListableP[SampleStorageConditionP | Disposal], "The storage conditions we want to make sure are compatible with the shared container samples."}
+			{"myResolvedStorageConditions", ListableP[SampleStorageConditionP | Disposal | Null], "The storage conditions we want to make sure are compatible with the shared container samples."}
 		},
 		Output :> {
 			{"isValidContainerStorageCondition", ListableP[BooleanP], "Indicates if the storage conditions 'myStorageConditions' are compatible with shared container sample storage conditions."}

@@ -139,7 +139,7 @@ DefineOptions[resolveLabelSamplePrimitive,
           ],
           "Count" -> Widget[
             Type -> Number,
-            Pattern :> GreaterEqualP[1, 1]
+            Pattern :> GreaterEqualP[0, 1]
           ],
           "Percent Tolerance" -> Widget[
             Type -> Quantity,
@@ -310,8 +310,7 @@ DefineOptions[resolveLabelSampleMethod,
 (* Source Code *)
 
 resolveLabelSampleMethod[myLabels:ListableP[_String|Automatic], myOptions:OptionsPattern[]]:=Module[
-  {safeOptions, outputSpecification, output, gatherTests, objectContainerPackets, modelContainerPackets,
-    manualRequirementStrings, roboticRequirementStrings, allModelContainerPackets, allModelContainerPlatePackets, liquidHandlerIncompatibleContainers, result, tests},
+  {safeOptions, outputSpecification, output, gatherTests, manualRequirementStrings, roboticRequirementStrings, result, tests},
 
   (* Get our safe options. *)
   safeOptions=SafeOptions[resolveLabelSampleMethod, ToList[myOptions]];
@@ -323,48 +322,10 @@ resolveLabelSampleMethod[myLabels:ListableP[_String|Automatic], myOptions:Option
   (* Determine if we should keep a running list of tests *)
   gatherTests=MemberQ[output,Tests];
 
-  (* Download information that we need from our inputs and/or options. *)
-  {
-    objectContainerPackets,
-    modelContainerPackets
-  }=Quiet[
-    Download[
-      {
-        Cases[Flatten[ToList[Lookup[safeOptions, Container]]], ObjectP[Object[Container]]],
-        Cases[Flatten[ToList[Lookup[safeOptions, Container]]], ObjectP[Model[Container]]]
-      },
-      {
-        {Packet[Model, Name], Packet[Model[{Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix}]]},
-        {Packet[Footprint, LiquidHandlerAdapter, LiquidHandlerPrefix]}
-      },
-      Cache->Lookup[ToList[myOptions], Cache, {}],
-      Simulation->Lookup[ToList[myOptions], Simulation, Null]
-    ],
-    {Download::NotLinkField, Download::FieldDoesntExist}
-  ];
-
-  (* Get all of our Model[Container]s and look at their footprints. *)
-  allModelContainerPackets=Cases[
-    Flatten[{objectContainerPackets, modelContainerPackets}],
-    PacketP[Model[Container]]
-  ];
-  allModelContainerPlatePackets=Cases[allModelContainerPackets,PacketP[Model[Container,Plate]]];
-
-  (* determine if all the container model packets in question can fit on the liquid handler (MetaXpress can only accept plate) *)
-  liquidHandlerIncompatibleContainers=DeleteDuplicates[
-    Join[
-      Lookup[Cases[allModelContainerPackets,KeyValuePattern[Footprint->Except[LiquidHandlerCompatibleFootprintP]]],Object,{}],
-      Lookup[Cases[allModelContainerPlatePackets,KeyValuePattern[LiquidHandlerPrefix->Null]],Object,{}]
-    ]
-  ];
-
-
   (* Create a list of reasons why we need Preparation->Manual. *)
+  (* Note:we remove manual requirement for LH Incompatible containers, since 1)LH can have offdeck placments for LHIncompatible containers *)
+  (* 2)each robotic unit operation has its own check for container model, no need to do within LabelSample *)
   manualRequirementStrings={
-    If[!MatchQ[liquidHandlerIncompatibleContainers,{}],
-      "the sample containers "<>ToString[ObjectToString/@liquidHandlerIncompatibleContainers]<>" are not liquid handler compatible",
-      Nothing
-    ],
     If[MatchQ[Lookup[safeOptions, Preparation], Manual],
       "the Preparation option is set to Manual by the user",
       Nothing
@@ -394,13 +355,13 @@ resolveLabelSampleMethod[myLabels:ListableP[_String|Automatic], myOptions:Option
   (* Return our result and tests. *)
   result=Which[
     !MatchQ[Lookup[safeOptions, Preparation], Automatic],
-    Lookup[safeOptions, Preparation],
+      Lookup[safeOptions, Preparation],
     Length[manualRequirementStrings]>0,
-    Manual,
+      Manual,
     Length[roboticRequirementStrings]>0,
-    Robotic,
+      Robotic,
     True,
-    {Manual, Robotic}
+      {Manual, Robotic}
   ];
 
   tests=If[MatchQ[gatherTests, False],
@@ -927,11 +888,13 @@ resolveLabelSamplePrimitiveOptions[myLabels:{_String..}, myOptions:{_Rule..}, my
         ];
 
         (* Resolve the Tolerance option. *)
-        resolvedTolerance=Which[
+        resolvedTolerance = Which[
           (* if user specified one, use it *)
           MatchQ[Lookup[mapThreadOptions, Tolerance], Except[Automatic]],
             Lookup[mapThreadOptions, Tolerance],
-          (* resolve to True if we have ExactAmount->True *)
+          (* resolve to 0 if we have ExactAmount -> True and Amount is a count *)
+          TrueQ[resolvedExactAmount] && MatchQ[resolvedAmount, UnitsP[Unit]], 0,
+          (* resolve to 0.01*the amount if we have ExactAmount->True *)
           MatchQ[resolvedExactAmount, True]&&MatchQ[resolvedAmount, UnitsP[]],
             0.01*resolvedAmount,
           (* otherwise, resolve to Null *)
@@ -2237,7 +2200,7 @@ simulateLabelSamplePrimitive[myUnitOperationPacket:PacketP[],myLabels:{_String..
       If[Length[specifiedEHSOptions]==0 || NullQ[sampleObject],
         Nothing,
         Module[{allChangePackets},
-          (* Sometimes generateChangePackets generates auxilliary cloud file packets if URLs are provided *)
+          (* Sometimes generateChangePackets generates auxiliary cloud file packets if URLs are provided *)
           allChangePackets=ExternalUpload`Private`generateChangePackets[Object[Sample],specifiedEHSOptions];
 
           Flatten[{

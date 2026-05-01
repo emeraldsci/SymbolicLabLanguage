@@ -348,14 +348,16 @@ evaluateAssociations[packet_Association]:=With[{packetNoComputables = removeComp
 
 ];
 
-UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module[
+UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=TraceExpression["UpdateSimulation",Module[
   {cloneSimulationID, currentSimulationNoChangePackets, simulationChangePackets, packetsWithObjectKey,
-    packetsWithNoObjectsWithName, changeAndBacklinkPackets, newSimulationSimulatedObjects,
+    packetsWithNoObjectsWithName, changePacketObjectsNeedingType, changePacketObjectToType, allBacklinks,
+    backlinkDownloadLookup, packetsWithNoObjectsWithNameLookup, changeAndBacklinkPackets, newSimulationSimulatedObjects,
     simulatedObjectPacketsWithFullFields, currentSimulationWithNewSimulatedObjects, currentObjectPackets,
     currentObjectPacketsLookup, objectsExistInDatabaseDatabaseMemberQ, currentSimulationFieldsPerObject, combinedLabels,
-    combinedLabelFields, currentSimulatedObjects, inputSimulationObjects, knownSimulatedPackets, knownRealPackets,
-    unknownChangeAndBacklinkPackets, unknownObjectsExistInDatabaseDatabaseMemberQ, objectsExistInDatabaseReplaceRules,
-    deFactoRealPattern},
+    combinedLabelFields, currentSimulatedObjects, inputSimulationObjects,
+    currentSimulatedObjectsSet, inputSimulationObjectsSet, knownSimulatedFlags, knownSimulatedObjects,
+    objectsExistInDatabaseClassification, unknownPositions, unknownObjectsExistInDatabaseDatabaseMemberQ,
+    deFactoRealPattern, allPacketsForObjectLookup, nameToObjectLookup},
 
   (* NOTE: This is a little dangerous because we are basically mocking how the server is going to handle the upload of *)
   (* change packets. We need to make sure that our client side mock mirrors what the server will do as closely as possible. *)
@@ -458,20 +460,20 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
       Lookup[currentSimulationNoChangePackets[[1]], Packets]
     ];
 
+    (* Build a hash lookup from {typeHead, name} -> Object for O(1) resolution instead of O(N*M) FirstCase scans. *)
+    (* Key includes the type prefix (Most[obj]) so that objects of different types with the same name don't collide. *)
+    (* Reverse so that earlier packets (current sim) take precedence over later ones (global sim), *)
+    (* matching the FirstCase semantics of the original code. *)
+    nameToObjectLookup=Association[Reverse@Cases[allSimulations,
+      KeyValuePattern[{Name -> name_String, Object -> obj_}] :> ({Most[obj], name} -> obj)
+    ]];
+
     (* Try to get the ID of our object with name from the simulations first. *)
     simulationObjectsWithNameToID=Map[
       Function[objectWithName,
-        Module[{objectWithNamePacket},
-          (* Try to find the packet in our simulation packets. *)
-          objectWithNamePacket=FirstCase[
-            allSimulations,
-            KeyValuePattern[{Name->Last[objectWithName], Object->Append[Most[objectWithName], _String]}],
-            Null
-          ];
-
-          (* If we were able to find a packet, then that means that we were able to find the objectWithName in regular object ID format. *)
-          If[MatchQ[objectWithNamePacket, _Association],
-            objectWithName->Lookup[objectWithNamePacket, Object],
+        With[{resolved = Lookup[nameToObjectLookup, Key[{Most[objectWithName], Last[objectWithName]}], Missing[]]},
+          If[!MatchQ[resolved, _Missing],
+            objectWithName -> resolved,
             Nothing
           ]
         ]
@@ -494,9 +496,43 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     ReplaceAll[packetsWithObjectKey, allObjectsWithNameToID]
   ];
 
+  (* Pre-computation for step 3: batch all Downloads and build hash-maps before entering the Map. *)
+  (* This avoids O(N) + O(N*M) individual NativeDownload calls inside the nested Maps. *)
+
+  (* Batch-fetch Type for any change packet that does not already carry a Type key. *)
+  changePacketObjectsNeedingType=Select[packetsWithNoObjectsWithName, (!KeyExistsQ[#, Type])&];
+  changePacketObjectToType=If[Length[changePacketObjectsNeedingType]==0,
+    <||>,
+    AssociationThread[
+      Lookup[changePacketObjectsNeedingType, Object],
+      Download[Lookup[changePacketObjectsNeedingType, Object], Type]
+    ]
+  ];
+
+  (* Collect every unique backlink across all change packets and resolve Object+Type in one batched Download. *)
+  allBacklinks=DeleteDuplicates[Flatten[
+    (Cases[#, (Link[_, _Symbol]|Link[_, _Symbol, _Symbol]|Link[_, _Symbol, _Integer]), Infinity]&)/@packetsWithNoObjectsWithName
+  ]];
+  backlinkDownloadLookup=If[Length[allBacklinks]==0,
+    <||>,
+    AssociationThread[
+      allBacklinks,
+      Download[allBacklinks, {Object, Type}]
+    ]
+  ];
+
+  (* Build an O(1) lookup for packetsWithNoObjectsWithName to replace O(N) FirstCase inside the inner Map. *)
+  packetsWithNoObjectsWithNameLookup=Association[(Lookup[#, Object]->#)&/@packetsWithNoObjectsWithName];
+
+  (* NOTE: When multiple change packets exist for the same object, packetsWithNoObjectsWithNameLookup only keeps the last *)
+  (* packet per object. allPacketsForObjectLookup groups ALL packets per object so the backlink existence check can scan *)
+  (* every packet for an object -- not just the last one -- to avoid generating a spurious Append backlink when an earlier *)
+  (* change packet already specified the field via Replace[...]. *)
+  allPacketsForObjectLookup=GroupBy[packetsWithNoObjectsWithName, Lookup[#, Object]&];
+
   (* 3) For each change packet, see if we have any backlinks. If so, we will make an extra packet to make sure that the *)
   (* backlink gets created -- unless that link value is already in the field. *)
-  changeAndBacklinkPackets=Map[
+  changeAndBacklinkPackets=TraceExpression["changeAndBacklinkPackets",Map[
     Function[changePacket,
       Module[{backlinks, backlinksWithIDs, backlinkChangePackets, changePacketTypes},
         (* Get all backlinks from this change packet. *)
@@ -509,7 +545,8 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
 
         (* get the type and all parent types of the change packet *)
         (* so if you are an Object[Container, Plate, Filter], this will give you {Object[Container], Object[Container, Plate], Object[Container, Plate, Filter]} *)
-        changePacketTypes = With[{type = Download[Lookup[changePacket, Object], Type]},
+        (* Use Type from the packet itself, or fall back to the pre-fetched lookup -- avoids a Download per change packet. *)
+        changePacketTypes = With[{type = Lookup[changePacket, Type, Lookup[changePacketObjectToType, Lookup[changePacket, Object]]]},
           Table[
             Take[type, i],
             {i, Length[type]}
@@ -523,8 +560,8 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
               (* Get the field that we're backlinking to. *)
               backlinkSpec=Rest[List@@backlink];
 
-              (* Get the object form of the backlink. *)
-              {backlinkObject,backlinkObjectType}=Download[backlink, {Object, Type}];
+              (* Get the object form of the backlink from the pre-fetched lookup -- avoids one Download per backlink. *)
+              {backlinkObject,backlinkObjectType}=Lookup[backlinkDownloadLookup, backlink];
 
               (* Get the type definition information. *)
               typeDefinition=LookupTypeDefinition[backlinkObjectType, First[backlinkSpec]];
@@ -543,10 +580,10 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
               (* Get the format of the otherside backlink. *)
               othersideBacklink=Link@@{Lookup[changePacket, Object], Sequence@@othersideBacklinkSpec, SimulateCreateID[]};
 
-              (* Try to get the object that we're backlinking to. *)
+              (* Try to get the object that we're backlinking to using the pre-built O(1) hash-map. *)
               (* NOTE: We're only looking up from packetsWithNoObjectsWithName which is derived from our new simulation's *)
               (* change packets because we will indeed make a backlink if it wasn't included in the new simulation's change packets. *)
-              backlinkPacket=FirstCase[packetsWithNoObjectsWithName, KeyValuePattern[Object->backlinkObject], <||>];
+              backlinkPacket=Lookup[packetsWithNoObjectsWithNameLookup, backlinkObject, <||>];
 
               backlinkPacketWithoutChangeHeads=Normal[backlinkPacket]/.{(Append|Replace|Prepend)[sym_Symbol]:>sym};
 
@@ -555,7 +592,23 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
                 (* Multiple field *)
                 MatchQ[backlinkSpec, {_Symbol}] && MatchQ[Lookup[typeDefinition, Format], Multiple],
                   (* If we've already provided the backlink value, don't double append. *)
-                  If[MemberQ[ToList[Lookup[backlinkPacketWithoutChangeHeads, First[backlinkSpec], {}]], LinkP[Lookup[changePacket, Object]]],
+                  (* NOTE: We compare object references directly instead of using LinkP because LinkP does not handle full *)
+                  (* object references (ID form) as input -- it expects types or type heads, not Object[..., "id:..."] -- *)
+                  (* so LinkP[objectRef] evaluates to an unevaluated expression that never pattern-matches a Link. *)
+                  (* NOTE: We check ALL change packets for backlinkObject (not just the last one via packetsWithNoObjectsWithNameLookup) *)
+                  (* because multiple change packets for the same object may exist and an earlier one may have already set the field *)
+                  (* via Replace[...]. Or[]  (i.e., Or@@{}) evaluates to False so the backlink is generated when no packets exist. *)
+                  If[Or@@Map[
+                      Function[p, MemberQ[
+                        First /@ Cases[ToList[Lookup[
+                          Normal[p, Association]/.{(Append|Replace|Prepend)[sym_Symbol]:>sym},
+                          First@backlinkSpec,
+                          {}
+                        ]], _Link],
+                        Lookup[changePacket, Object]
+                      ]],
+                      Lookup[allPacketsForObjectLookup, backlinkObject, {}]
+                    ],
                     Nothing,
                     <|
                       Object->backlinkObject,
@@ -566,7 +619,10 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
                 (* Single field *)
                 MatchQ[backlinkSpec, {_Symbol}] && MatchQ[Lookup[typeDefinition, Format], Single],
                   (* If we left this out it would just overwrite and be equivalent but check for the existing backlink anyways. *)
-                  If[MatchQ[Lookup[backlinkPacketWithoutChangeHeads, First[backlinkSpec], Null], LinkP[Lookup[changePacket, Object]]],
+                  (* NOTE: Same direct object-reference comparison as the Multiple case above; LinkP[objectRef] does not work. *)
+                  If[With[{fieldValue = Lookup[backlinkPacketWithoutChangeHeads, First[backlinkSpec], Null]},
+                      MatchQ[fieldValue, _Link] && MatchQ[First[fieldValue], Lookup[changePacket, Object]]
+                    ],
                     Nothing,
                     <|
                       Object->backlinkObject,
@@ -658,7 +714,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
       ]
     ],
     packetsWithNoObjectsWithName
-  ];
+  ]];
 
   (* 4) Determine which objects are in the database and which are simulated and update the SimulatedObjects field accordingly *)
   (* Also, for the simulated objects, make sure they have all fields either set to Null/{} depending on single/multiple *)
@@ -674,20 +730,20 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
   currentSimulatedObjects = Lookup[currentSimulationNoChangePackets[[1]], SimulatedObjects];
   inputSimulationObjects = DeleteCases[Lookup[Lookup[currentSimulationNoChangePackets[[1]], Packets], Object, {}], _Missing];
 
-  (* now get the ones we know are simulated*)
-  knownSimulatedPackets = Map[
-    With[{id = Last[Lookup[#, Object]]},
-      (* 15 here means 12 characters for the IDs + the three for "id:"*)
-      (* if we are not equal to that, then we have an ID from SimulateCreateID *)
-      (* also if we already have this as a simulated object, then don't need to check again *)
-      Which[
-        StringLength[id] != 15, #,
-        MemberQ[currentSimulatedObjects, Lookup[#, Object]], #,
-        True, Nothing
-      ]
+  (* Build hash sets for O(1) membership checks instead of linear MemberQ scans. *)
+  currentSimulatedObjectsSet = Association[Thread[currentSimulatedObjects -> True]];
+  inputSimulationObjectsSet = Association[Thread[inputSimulationObjects -> True]];
+
+  (* First pass: identify known-simulated packets by ID length or SimulatedObjects membership. *)
+  (* 15 here means 12 characters for the IDs + the three for "id:" *)
+  (* if we are not equal to that, then we have an ID from SimulateCreateID *)
+  knownSimulatedFlags = Map[
+    With[{obj = Lookup[#, Object], id = Last[Lookup[#, Object]]},
+      StringLength[id] != 15 || TrueQ[Lookup[currentSimulatedObjectsSet, obj, False]]
     ]&,
     changeAndBacklinkPackets
   ];
+  knownSimulatedObjects = PickList[Lookup[changeAndBacklinkPackets, Object], knownSimulatedFlags];
 
   (* decide which packet types we don't need to call DatabaseMemberQ on (and we can just assume they're real) *)
   (* Something being marked as "real" here doesn't really mean anything except that we will NOT backfill the default value (i.e., Null or {}) for all the unstated fields *)
@@ -699,7 +755,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
   (* NOTE FINALLY that this is not comprehensive; there are going to be more things that we can probably ID as being part of a Simulation or being Real without calling DatabaseMemberQ, but I feel like this is already too complicated here *)
   (* so this does give a modest speedup in certain cases, and since UpdateSimulation is called so widely, it is still worth it, but I wish it were more comprehensive and/or less ugly*)
   deFactoRealPattern = Alternatives[
-    KeyValuePattern[{Object -> Model[___], (Objects|Append[Objects]) -> Link[Alternatives @@ Lookup[knownSimulatedPackets, Object], ___]}],
+    KeyValuePattern[{Object -> Model[___], (Objects|Append[Objects]) -> Link[Alternatives @@ knownSimulatedObjects, ___]}],
     (* this allows me to guarantee that we will ONLY be checking for these two fields *)
     <|Object -> _, ReadyCheckLastUpdated -> _|>,
     KeyValuePattern[{Object -> Object[Team, Financing, ___]}],
@@ -708,48 +764,49 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     KeyValuePattern[{Object -> Object[Resource, ___]}]
   ];
 
-  (* now get the ones we know are real *)
-  knownRealPackets = Select[
-    changeAndBacklinkPackets,
-    (* this is especially goofy.  two cases we "know" it's a real object (see corresponding lines below) *)
-    Or[
-      (* 1.) if we know the object is included in the packets of currentSimulation, and NOT in the SimulatedObjects of the currentSimulation *)
-      MemberQ[inputSimulationObjects, Lookup[#, Object]] && Not[MemberQ[currentSimulatedObjects, Lookup[#, Object]]],
-      (* 2.) the object is not a known simulated sample and it matches any of the above criteria *)
-      And[
-        Not[MemberQ[knownSimulatedPackets, #]],
-        MatchQ[#, deFactoRealPattern]
+  (* Single-pass classification: for each packet determine simulated (False) / real (True) / unknown ("unknown"). *)
+  objectsExistInDatabaseClassification = MapThread[
+    Function[{packet, isKnownSimulated},
+      If[isKnownSimulated,
+        False,
+        With[{obj = Lookup[packet, Object]},
+          Which[
+            (* if we know the object is included in the packets of currentSimulation, and NOT in the SimulatedObjects of the currentSimulation *)
+            TrueQ[Lookup[inputSimulationObjectsSet, obj, False]], True,
+            (* the object matches one of the de-facto real heuristic patterns *)
+            MatchQ[packet, deFactoRealPattern], True,
+            (* undetermined -- will need DatabaseMemberQ *)
+            True, "unknown"
+          ]
+        ]
       ]
-    ]&
+    ],
+    {changeAndBacklinkPackets, knownSimulatedFlags}
   ];
 
-  (* get the ones that are still undetermined; these ones we do need to call DatabaseMemberQ on *)
-  (* note that DMQ is more or less an all-or-nothing thing.  If we can make it necessary to call DMQ on NOTHING then we go a lot faster.  If we have to call it on some things then it's the same as just calling it on everything*)
-  (* note also that Verbatim is important here because for conditional branch functions this can be messed up because those have _? functions inside and this DeleteCases can mess with them *)
-  (* ultimately, it's because if you try to do something like this, it returns False and throws a message (incorrectly) *)
-  (* MatchQ[Hold[{_?(StringContainsQ[#1, "4.3."] &) -> "NMR TopSpin 4.3 Setup", _ -> "NMR TopSpin 3.6 Setup"}], Hold[{_?(StringContainsQ[#1, "4.3."] &) -> "NMR TopSpin 4.3 Setup", _ -> "NMR TopSpin 3.6 Setup"}]]*)
-  (* you would think the Hold would prevent the shenanigans, but Hold is _only_ shenanigans so you would be wrong *)
-  (* instead, if we did this, it correctly just returns True: *)
-  (* MatchQ[Hold[{_?(StringContainsQ[#1, "4.3."] &) -> "NMR TopSpin 4.3 Setup", _ -> "NMR TopSpin 3.6 Setup"}], Verbatim[Hold[{_?(StringContainsQ[#1, "4.3."] &) -> "NMR TopSpin 4.3 Setup", _ -> "NMR TopSpin 3.6 Setup"}]]]*)
-  unknownChangeAndBacklinkPackets = DeleteCases[changeAndBacklinkPackets, Alternatives @@ (Verbatim /@ Join[knownSimulatedPackets, knownRealPackets])];
-
-  (* NOTE: Including these full field packets for objects we already have in the existing simulation is ok because if we already have them in the existing simulation but they don't actually exist and we don't have the field in question, then it must be the default value anyway and there's nothing to overwrite*)
-  (* we won't overwrite actual values *)
-  unknownObjectsExistInDatabaseDatabaseMemberQ=If[MatchQ[unknownChangeAndBacklinkPackets, {}],
+  (* Resolve unknowns via DatabaseMemberQ *)
+  (* note that DMQ is more or less an all-or-nothing thing.  If we can make it necessary to call DMQ on NOTHING then we go a lot faster.  If we have to call it on some things then it's the same as just calling it on everything *)
+  unknownPositions = Flatten[Position[objectsExistInDatabaseClassification, "unknown"]];
+  unknownObjectsExistInDatabaseDatabaseMemberQ = TraceExpression["unknownObjectsExistInDatabaseDatabaseMemberQ",If[Length[unknownPositions] == 0,
     {},
     Block[{$Simulation=False, $CurrentSimulation=Null, enableIdCasAssoc=False},
-      DatabaseMemberQ[Lookup[unknownChangeAndBacklinkPackets, Object, {}]]
+      DatabaseMemberQ[Lookup[changeAndBacklinkPackets[[unknownPositions]], Object, {}]]
     ]
-  ];
+  ]];
 
-  (* make replace rules indicating whether a given packet actually exists or not, and use that to get the final value *)
-  objectsExistInDatabaseReplaceRules = Join[
-    AssociationThread[knownSimulatedPackets, ConstantArray[False, Length[knownSimulatedPackets]]],
-    AssociationThread[knownRealPackets, ConstantArray[True, Length[knownRealPackets]]],
-    AssociationThread[unknownChangeAndBacklinkPackets, unknownObjectsExistInDatabaseDatabaseMemberQ]
-  ];
-  (* important to use Replace and not /. because I don't to accidentally change things inside the packets themselves *)
-  objectsExistInDatabaseDatabaseMemberQ = Replace[changeAndBacklinkPackets, objectsExistInDatabaseReplaceRules, {1}];
+  (* Fill in the unknown results to produce the final Boolean list *)
+  objectsExistInDatabaseDatabaseMemberQ = TraceExpression["objectsExistInDatabaseDatabaseMemberQ",Module[{result, unknownIdx},
+    result = objectsExistInDatabaseClassification;
+    unknownIdx = 1;
+    Map[
+      Function[pos,
+        result[[pos]] = unknownObjectsExistInDatabaseDatabaseMemberQ[[unknownIdx]];
+        unknownIdx++;
+      ],
+      unknownPositions
+    ];
+    result
+  ]];
 
   newSimulationSimulatedObjects = ECL`PickList[
     Lookup[changeAndBacklinkPackets, Object, {}],
@@ -781,7 +838,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
   ];
 
   (* update the current simulation to include the packets for new simulated objects *)
-  currentSimulationWithNewSimulatedObjects=Simulation[<|
+  currentSimulationWithNewSimulatedObjects=TraceExpression["currentSimulationWithNewSimulatedObjects",Simulation[<|
     Packets->DeleteDuplicates[Flatten[{
       Lookup[currentSimulationNoChangePackets[[1]], Packets],
       simulatedObjectPacketsWithFullFields
@@ -793,12 +850,12 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     ],
     Updated->True,
     NativeSimulationID -> None
-  |>];
+  |>]];
 
   (* make an association (i.e., a dictionary) with the objects as the keys and the lists of fields in their packets as the values *)
-  currentSimulationFieldsPerObject = With[{simPackets = Lookup[currentSimulationWithNewSimulatedObjects[[1]], Packets]},
+  currentSimulationFieldsPerObject = TraceExpression["currentSimulationWithNewSimulatedObjects",With[{simPackets = Lookup[currentSimulationWithNewSimulatedObjects[[1]], Packets]},
     AssociationThread[Lookup[simPackets, Object, {}], Keys[simPackets]]
-  ];
+  ]];
 
   (* 5) Fetch values that we need due to Append[...], Prepend[...], Erase[...], or EraseCases[...] heads. Do this all at once so that *)
   (* if we are reaching out to the server (in the case that we're simulating a change to a real object) we will bundle our *)
@@ -814,12 +871,11 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
   (* we haven't changed the field at all -- it won't reach out to the server. *)
 
   (* NOTE: This variable will always be in full packet form (no change packets). *)
-  currentObjectPackets=Module[{objectsAndChangeFields, packetsWithoutChangeFields, downloadedPackets},
+  currentObjectPackets=TraceExpression["currentObjectPackets",Module[{objectsAndChangeFields, packetsWithoutChangeFields, downloadedPackets, reaped},
     (* Get the objects and fields that have Append[...], Prepend[...], Erase[...], or EraseCases[...] heads. *)
-    objectsAndChangeFields={};
-    packetsWithoutChangeFields={};
+    (* NOTE: Use Sow/Reap instead of Append to avoid O(N^2) list copying. *)
 
-    Map[
+    reaped=Reap[Map[
       Function[changePacket,
         Module[{changePacketObject, existingFields, changeFields,packetWithoutChangeFields, existingFieldsAlternatives,
           appendFields, changePacketNoAppendFields},
@@ -905,16 +961,18 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
           ];
 
           If[Length[Keys[packetWithoutChangeFields]]>0,
-            packetsWithoutChangeFields=Append[packetsWithoutChangeFields, packetWithoutChangeFields];
+            Sow[packetWithoutChangeFields, "packets"];
           ];
 
           If[Length[changeFields]>0,
-            objectsAndChangeFields=Append[objectsAndChangeFields, changePacketObject->(changeFields[[All,1]])];
+            Sow[changePacketObject->(changeFields[[All,1]]), "fields"];
           ];
         ]
       ],
       changeAndBacklinkPackets
-    ];
+    ], {"packets", "fields"}];
+    packetsWithoutChangeFields=Flatten[reaped[[2, 1]],1];
+    objectsAndChangeFields=Flatten[reaped[[2, 2]],1];
 
     (* Download the current values from our change fields, if we have any. *)
     downloadedPackets=If[Length[objectsAndChangeFields]==0,
@@ -928,7 +986,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
       (* IMPORTANTLY 2: We can't get away with this if we have an object that DOES exist but also has a packet in the current simulation or $CurrentSimulation *)
       (* I think this will still save us some time net, but it is an unfortunate failure to remove passing in Simulation to the Download *)
       (* If we can come up with something here then we should try to change it up *)
-      Module[
+      TraceExpression["downloadedPackets",Module[
         {allSimPackets, passSimInQ},
 
         (* determine if one of these objects is already in the simulations we started with; if it is, we need to incorporate these *)
@@ -957,7 +1015,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
           ],
           {Download::ObjectDoesNotExist}
         ]
-      ]
+      ]]
     ];
 
     (* Merge this in with our current simulation. *)
@@ -966,7 +1024,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     (* if the key shows up in multiple packets. That shouldn't affect things though since Download is looking at our local *)
     (* current simulation first so the values should be the same. *)
     (Merge[#, Last]&)/@GatherBy[Flatten[{Lookup[currentSimulationNoChangePackets[[1]], Packets], packetsWithoutChangeFields, downloadedPackets}], (Lookup[#, Object]&)]
-  ];
+  ]];
 
   (* Create a hashed lookup of our object (in object reference form) to the packet that corresponds to it. *)
   (* We do this because when we have large simulations, doing a FirstCase/fetchPacketFromCache inside of our Map below is *)
@@ -978,11 +1036,13 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
 
   (* After this map, currentObjectPackets will contain full packets (no change packets) with the updated values for our updated *)
   (* simulation. *)
-  Map[
+  TraceExpression["currentObjectPackets-update",Map[
     Function[changePacket,
-      Module[{currentPacket, wasteQ},
+      Module[{currentPacket, wasteQ, type},
         (* Get the packet that relates to the object in this change packet. *)
         currentPacket=Lookup[currentObjectPacketsLookup, Lookup[changePacket, Object]];
+        (* Hoist type lookup outside the inner Map so it is computed once per change packet, not once per field. *)
+        type = Lookup[currentPacket, Type, Download[Lookup[currentPacket, Object], Type]];
         wasteQ = MatchQ[Lookup[currentPacket, {Object, WasteType}], {ObjectReferenceP[Object[ECL`Sample]],ECL`WasteTypeP}];
 
         (* For each of the change packet fields, propagate the change into the current packet. *)
@@ -994,18 +1054,19 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
               With[
                 {
                   changeField=changeFieldAndValue[[1]],
-                  changeValue=changeFieldAndValue[[2]],
-                  type = Lookup[currentPacket, Type, Download[Lookup[currentPacket, Object], Type]]
+                  changeValue=changeFieldAndValue[[2]]
                 },
                 Switch[{changeField, type, wasteQ},
                   (* Just replace the value in currentPacket (unless it's StatusLog/ContentsLog for Instruments/Containers/Items, in which case we set it to {}. *)
                   {ECL`StatusLog | ECL`ContentsLog | Append[ECL`StatusLog] | Append[ECL`ContentsLog], TypeP[{Object[ECL`Instrument], Object[Container], Object[Item]}], _},
                   (* doing the FirstOrDefault trick so that we remove the Append if we need to *)
                     currentPacket[FirstOrDefault[changeField, changeField]] = {},
-                  (* Just replace the value in currentPacket (unless it's StatusLog/ContentsLog for Instruments/Containers/Items, in which case we set it to {}. *)
-                  {ECL`LocationLog | Append[ECL`LocationLog], TypeP[{Object[ECL`Instrument], Object[Item]}], _},
-                    (* doing the FirstOrDefault trick so that we remove the Append if we need to *)
-                    currentPacket[FirstOrDefault[changeField, changeField]] = {},
+                  (* LocationLog is NOT cleared like StatusLog/ContentsLog because it is needed in simulation land for the MoveBack task *)
+                  {ECL`LocationLog, TypeP[{Object[ECL`Instrument], Object[ECL`Container], Object[Item]}], _},
+                    currentPacket[changeField] = changeValue,
+				  (* same behavior for ManifoldJobs in Financing Teams (this is admittedly weird but for the Development team we are accumulating these forever and it always just makes things slower and slower) *)
+				  {ECL`ManifoldJobs, TypeP[{Object[ECL`Team, ECL`Financing]}], _},
+					currentPacket[FirstOrDefault[changeField, changeField]] = {},
                   (* same behavior for Data in Sensors *)
                   {ECL`Data | Append[ECL`Data], TypeP[Object[Sensor]], _},
                   (* doing the FirstOrDefault trick so that we remove the Append if we need to *)
@@ -1103,7 +1164,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
       ]
     ],
     changeAndBacklinkPackets
-  ];
+  ]];
 
   (* 6) Combine our labels. *)
   (* This part happens within one unit operation - meaining one subprotocol for manual preparation *)
@@ -1120,7 +1181,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
   (* 7) Return our new simulation. *)
 
   (* Update NativeSimulation to match updatedSimulation *)
-  If[MatchQ[cloneSimulationID,_String],
+  TraceExpression["UpdateNativeSimulation-call",If[MatchQ[cloneSimulationID,_String],
     Check[
       If[$VersionNumber>=13.0,
         UpdateNativeSimulation[cloneSimulationID,Complement[Values[currentObjectPacketsLookup],Lookup[currentSimulation[[1]],Packets]]],
@@ -1130,7 +1191,7 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
       Quiet[DeleteNativeSimulation[cloneSimulationID]];
       cloneSimulationID=None
     ]
-  ];
+  ]];
 
   Simulation[<|
     Packets->Values[currentObjectPacketsLookup],
@@ -1142,4 +1203,16 @@ UpdateSimulation[currentSimulation_Simulation, newSimulation_Simulation]:=Module
     Updated->True,
     NativeSimulationID -> If[MatchQ[cloneSimulationID,_String|None],cloneSimulationID,None]
   |>]
-];
+]];
+
+
+(* SimulatedObjectQ *)
+
+(* Singleton Overload *)
+SimulatedObjectQ[myObject:ObjectP[]] := First[SimulatedObjectQ[{myObject}]];
+
+(* Listed Overload *)
+SimulatedObjectQ[myObjects:{ObjectP[]..}] := SimulatedObjectQ[Download[myObjects, Object], Internal];
+
+(* Functional Overload *)
+SimulatedObjectQ[myObjectReferenceList_, Internal] := Map[StringStartsQ[Last[#], "id:Simulated"]&, myObjectReferenceList];

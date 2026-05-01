@@ -2335,10 +2335,10 @@ desiccateResourcePackets[
 			UnresolvedOptions -> myUnresolvedOptions,
 			ResolvedOptions -> myResolvedOptions,
 			Replace[Checkpoints] -> {
-				{"Picking Resources", 60 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 60 Minute]]},
-				{"Running Experiment", 2*time, "Samples are being desiccated.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 2*time]]},
-				{"Sample Post-Processing", 10 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 10 Minute]]},
-				{"Returning Materials", 30 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Level 1"], Time -> 30 Minute]]}
+				{"Picking Resources", 60 Minute, "Samples required to execute this protocol are gathered from storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 60 Minute]]},
+				{"Running Experiment", 2*time, "Samples are being desiccated.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 2*time]]},
+				{"Sample Post-Processing", 10 Minute, "Any measuring of volume, weight, or sample imaging post experiment is performed.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 10 Minute]]},
+				{"Returning Materials", 30 Minute, "Samples are returned to storage.", Link[Resource[Operator -> Model[User, Emerald, Operator, "Baseline"], Time -> 30 Minute]]}
 			},
 			Replace[BatchedUnitOperations] -> (Link[#, Protocol]&) /@ ToList[Lookup[unitOperationPackets, Object]]
 		|>

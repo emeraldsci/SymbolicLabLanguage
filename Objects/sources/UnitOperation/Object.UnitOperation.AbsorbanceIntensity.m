@@ -324,26 +324,6 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "Number of redundant readings taken by the detector to determine a single averaged absorbance reading.",
 		Category -> "General"
 	},
-	BlankAbsorbance -> {
-		Format -> Single,
-		Class -> Boolean,
-		Pattern :> BooleanP,
-		Description->"Indicates if blank samples are prepared to account for the background signal when reading absorbance of the assay samples.",
-		Category -> "Data Processing"
-	},
-	BlankLink -> {
-		Format -> Multiple,
-		Class -> Link,
-		Pattern :> _Link,
-		Relation -> Alternatives[
-			Model[Sample],
-			Object[Sample]
-		],
-		Description -> "For each member of SampleLink, the model or sample used to generate a blank sample whose measurement will be subtracted as background.",
-		Category -> "Data Processing",
-		IndexMatching -> SampleLink,
-		Migration -> SplitField
-	},
 	SpectralBandwidth ->{
 		Format->Single,
 		Class->Real,
@@ -422,6 +402,26 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "The integrated detector on the spectrophotometer used to monitor temperature during the experiment. Possibilities include 'CuvetteBlock', indicating that a temperature sensor in the heater/chiller block will be monitored, and 'ImmersionProbe', indicating that a temperature sensor in a buffer-filled cuvette will be monitored.",
 		Category -> "Absorbance Measurement"
 	},
+	BlankAbsorbance -> {
+		Format -> Single,
+		Class -> Boolean,
+		Pattern :> BooleanP,
+		Description->"Indicates if blank samples are prepared to account for the background signal when reading absorbance of the assay samples.",
+		Category -> "Data Processing"
+	},
+	BlankLink -> {
+		Format -> Multiple,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Alternatives[
+			Model[Sample],
+			Object[Sample]
+		],
+		Description -> "For each member of SampleLink, the model or sample used to generate a blank sample whose measurement will be subtracted as background.",
+		Category -> "Data Processing",
+		IndexMatching -> SampleLink,
+		Migration -> SplitField
+	},
 	BlankMeasurement -> {
 		Format -> Single,
 		Class -> Expression,
@@ -451,6 +451,14 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		IndexMatching -> SampleLink,
 		Migration -> SplitField
 	},
+	BlankLabel -> {
+		Format -> Multiple,
+		Class -> String,
+		Pattern :> _String,
+		Description -> "For each member of SampleLink, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SampleLink.",
+		Category -> "General",
+		IndexMatching -> SampleLink
+	},
 	BlankVolumes -> {
 		Format -> Multiple,
 		Class -> Real,
@@ -460,14 +468,14 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Category -> "Data Processing",
 		IndexMatching -> BlanksLink
 	},
+	(* BlankData might not be index matching to Blanks because of Lunatic Retry *)
 	BlankData -> {
 		Format -> Multiple,
 		Class -> Link,
 		Pattern :> _Link,
 		Relation -> Object[Data],
-		Description -> "For each member of BlanksLink, the absorbance data collected from the well, chamber, or cuvette with buffer alone.",
-		Category -> "Data Processing",
-		IndexMatching -> BlanksLink
+		Description -> "The absorbance data collected from the well, chamber, or cuvette with buffer alone.",
+		Category -> "Data Processing"
 	},
 	BlankContainers -> {
 		Format -> Multiple,
@@ -521,13 +529,12 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "Indicates if the SampleLink are loaded by a robotic liquid handler or manually into the assay container.",
 		Category -> "General"
 	},
-	BlankLabel -> {
-		Format -> Multiple,
-		Class -> String,
-		Pattern :> _String,
-		Description -> "For each member of SampleLink, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the SampleLink.",
-		Category -> "General",
-		IndexMatching -> SampleLink
+	MaxLoadingRetries->{
+		Format->Single,
+		Class->Integer,
+		Pattern:>GreaterEqualP[1,1],
+		Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+		Category->"General"
 	},
 	InjectionSampleStorageCondition -> {
 		Format -> Single,
@@ -555,7 +562,17 @@ $ObjectUnitOperationAbsorbanceSpectroscopyFields={
 		Description -> "For each member of SampleLink, indicates if the aliquot used to measure the absorbance should be returned to source container after each reading.",
 		Category -> "Data Processing",
 		IndexMatching -> SampleLink
+	},
+
+	(* -- Sample Post-Processing -- *)
+	ImageMicrofluidicPlate -> {
+		Format -> Single,
+		Class -> Expression,
+		Pattern :> Alternatives[PreRead, PostRead, All],
+		Description -> "When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+		Category -> "Sample Post-Processing"
 	}
+
 };
 $ObjectUnitOperationPlateReaderKineticInjectionFields = {
 	TertiaryInjectionSample -> {
@@ -650,6 +667,95 @@ $ObjectUnitOperationPlateReaderKineticInjectionFields = {
 	}
 };
 
+$ObjectUnitOperationAbsorbanceSpectroscopyStandardFields = {
+	(* Standard measurement is currently supported only on Lunatic *)
+	StandardsLink -> {
+		Format -> Multiple,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Alternatives[
+			Model[Sample],
+			Object[Sample]
+		],
+		Description -> "The reference samples with known absorbance to run in parallel with the unknown samples, often used to check internal measurement consistency.",
+		Category -> "Standards",
+		Migration -> SplitField
+	},
+	StandardsString -> {
+		Format -> Multiple,
+		Class -> String,
+		Pattern :> _String,
+		Description -> "The reference samples with known absorbance to run in parallel with the unknown samples, often used to check internal measurement consistency.",
+		Category -> "Standards",
+		Migration -> SplitField
+	},
+	StandardLabel -> {
+		Format -> Multiple,
+		Class -> String,
+		Pattern :> _String,
+		Description -> "For each member of StandardsLink, the label of the object or source used to generate a standard sample, often used to check internal measurement consistency.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink
+	},
+	StandardVolumes -> {
+		Format -> Multiple,
+		Class -> Real,
+		Pattern :> GreaterP[0 * Microliter],
+		Units -> Microliter,
+		Description -> "For each member of StandardsLink, the amount of liquid that should be transferred out and used to perform standard measurements.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink
+	},
+	StandardBlanksLink -> {
+		Format -> Multiple,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Alternatives[
+			Model[Sample],
+			Object[Sample]
+		],
+		Description -> "For each member of StandardsLink, the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink,
+		Migration -> SplitField
+	},
+	StandardBlanksString -> {
+		Format -> Multiple,
+		Class -> String,
+		Pattern :> _String,
+		Description -> "For each member of StandardsLink, the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink,
+		Migration -> SplitField
+	},
+	StandardBlankLabel -> {
+		Format -> Multiple,
+		Class -> String,
+		Pattern :> _String,
+		Description -> "For each member of StandardsLink, the label of the object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink
+	},
+	StandardBlankVolumes -> {
+		Format -> Multiple,
+		Class -> Real,
+		Pattern :> GreaterP[0 * Microliter],
+		Units -> Microliter,
+		Description -> "For each member of StandardsLink, the amount of liquid of the StandardBlanks that should be transferred out and used to blank measurements.",
+		Category -> "Standards",
+		IndexMatching -> StandardsLink
+	},
+	(* StandardData might not be index matching to Standards because of Lunatic Retry *)
+	StandardData -> {
+		Format -> Multiple,
+		Class -> Link,
+		Pattern :> _Link,
+		Relation -> Object[Data],
+		Description -> "The absorbance data collected from the well with the standard sample.",
+		Category -> "Standards"
+	}
+};
+
 $ObjectUnitOperationFluorescenceIntensityFields = {
 	DelayTime -> {
 		Format -> Single,
@@ -722,13 +828,6 @@ $ObjectUnitOperationFluorescenceIntensityFields = {
 		Description->"For each member of ExcitationWavelength, the gain which should be applied to the signal reaching the primary detector during the excitation scan. This may be specified either as a direct voltage, or as a percentage (which indicates that the gain should be set such that the AdjustmentSample fluoresces at that percentage of the instrument's dynamic range).",
 		IndexMatching -> ExcitationWavelength,
 		Category -> "Optics"
-	},
-	MicrofluidicChipLoading -> {
-		Format -> Single,
-		Class -> Expression,
-		Pattern :> Alternatives[Robotic, Manual],
-		Description -> "The loading method for microfluidic chips.",
-		Category -> "General"
 	}
 };
 
@@ -1314,7 +1413,8 @@ $ObjectUnitOperationLuminescenceIntensityFields = {
 
 With[{
 	insertMe=Sequence@@$ObjectUnitOperationAbsorbanceSpectroscopyFields,
-	insertMe2=Sequence@@$ObjectUnitOperationPlateReaderBaseFields
+	insertMe2=Sequence@@$ObjectUnitOperationPlateReaderBaseFields,
+	insertMe3=Sequence@@$ObjectUnitOperationAbsorbanceSpectroscopyStandardFields
 },
 	DefineObjectType[Object[UnitOperation,AbsorbanceIntensity], {
 		Description->"A detailed set of parameters that specifies a single absorbance intensity reading step in a larger protocol.",
@@ -1328,6 +1428,15 @@ With[{
 				Units -> Nanometer,
 				Description -> "For each member of SampleLink, the specific wavelength(s) which should be used to measure absorbance in the samples.",
 				Category -> "Optics"
+			},
+			StandardWavelength -> {
+				Format -> Multiple,
+				Class -> Real,
+				Pattern :> GreaterP[0 Nanometer],
+				Units -> Nanometer,
+				Description -> "For each member of StandardsLink, the specific wavelength(s) which should be used to measure absorbance in the standards.",
+				Category -> "Optics",
+				IndexMatching -> StandardsLink
 			},
 			QuantifyConcentration -> {
 				Format -> Multiple,
@@ -1348,7 +1457,8 @@ With[{
 			},
 
 			insertMe,
-			insertMe2
+			insertMe2,
+			insertMe3
 		}
 	}]
 ];

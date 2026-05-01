@@ -42,6 +42,28 @@ DefineObjectType[Object[Maintenance,Clean,pHDetector],{
 			],
 			Description->"The solution used to fill the pH electrode and its offline storage container.",
 			Category -> "General"
+		},
+		WasteSyringe -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Item,Consumable],
+				Model[Item,Consumable]
+			],
+			Description -> "The syringe used to remove the existing storage buffer from the pH probe storage container.",
+			Category -> "General"
+		},
+		WasteContainer -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Object[Container,Vessel],
+				Model[Container,Vessel]
+			],
+			Description -> "The container used to hold waste from the pH probe storage container.",
+			Category -> "General"
 		}
 	}
 }];

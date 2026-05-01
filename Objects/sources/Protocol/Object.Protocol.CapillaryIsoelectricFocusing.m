@@ -254,6 +254,14 @@ DefineObjectType[Object[Protocol,CapillaryIsoelectricFocusing],
 				Description->"The FluorescenceCalibrationStandard solution is used to adjust the baseline and normalize the signal for detection.",
 				Category->"Instrument Setup"
 			},
+			Calibrated -> {
+				Format -> Single,
+				Class -> Boolean,
+				Pattern :> BooleanP,
+				Description -> "Indicates if the calibration passed.",
+				Category -> "Calibration",
+				Developer -> True
+			},
 			WashSolution->{
 				Format->Multiple,
 				Class->Link,

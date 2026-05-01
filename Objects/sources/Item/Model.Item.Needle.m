@@ -59,6 +59,15 @@ DefineObjectType[Model[Item, Needle], {
 			Description -> "The angle of the needle point, where a smaller angle indicates a sharper needle.",
 			Category -> "Dimensions & Positions",
 			Abstract -> True
+		},
+		TareWeight -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0*Gram],
+			Units -> Gram,
+			Description -> "The mean weight of empty needles of this model.",
+			Category -> "Container Specifications"
 		}
+
 	}
 }];

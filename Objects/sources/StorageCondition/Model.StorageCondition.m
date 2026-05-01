@@ -160,11 +160,33 @@ DefineObjectType[Model[StorageCondition], {
 			Description -> "Indicates if this storage condition is meant to store dust-sensitive or fragile items in a shelving unit or cabinet that is enclosed on all sides.",
 			Category -> "Storage Information"
 		},
+		Lined -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this storage condition contains a protective insert to reduce contamination or cushion fragile samples.",
+			Category -> "Storage Information"
+		},
+		OEBCompoundStorage -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if this storage condition is in a sealed secondary container intended to contain OEB 4 and 5 Compounds.",
+			Category -> "Storage Information"
+		},
 		AtmosphericCondition  -> {
 			Format -> Single,
 			Class -> Expression,
 			Pattern :> AtmosphereP,
 			Description -> "Indicates the atmospheric condition under which the samples are stored, for instance if the storage environment is held under vacuum or at ambient atmospheric pressure, or if the samples are kept in an inert atmosphere of argon or nitrogen gas.",
+			Category -> "Storage Information"
+		},
+		OvenTime -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Minute],
+			Units -> Minute,
+			Description -> "The minimum length of time for which samples in this storage condition are kept in this storage condition before becoming eligible for resource picking.",
 			Category -> "Storage Information"
 		},
 		PricingRate -> {

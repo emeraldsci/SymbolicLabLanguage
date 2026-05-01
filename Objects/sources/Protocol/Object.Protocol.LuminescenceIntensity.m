@@ -351,7 +351,7 @@ DefineObjectType[Object[Protocol, LuminescenceIntensity], {
 			Format -> Single,
 			Class -> Link,
 			Pattern :> _Link,
-			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script]],
+			Relation -> Alternatives[Object[Protocol, SampleManipulation], Object[Protocol, ManualSamplePreparation], Object[Protocol, RoboticSamplePreparation], Object[Notebook, Script], Object[Protocol,RoboticCellPreparation], Object[Protocol,ManualCellPreparation]],
 			Description -> "The sample preparation protocol used to transfer buffer into the moat wells.",
 			Category -> "General"
 		},

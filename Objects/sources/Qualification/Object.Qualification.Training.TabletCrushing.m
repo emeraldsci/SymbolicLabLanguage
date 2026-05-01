@@ -170,6 +170,15 @@ DefineObjectType[Object[Qualification,Training,TabletCrushing], {
 			Units -> Milligram,
 			Description -> "The max allowed amplitude the balance readings can fluctuate with for a duration defined by WeightStabilityDuration before being considered stable and measured.",
 			Category -> "General"
+		},
+		Balance -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Instrument, Balance], Object[Instrument, Balance]],
+			Description -> "This field is identical to TabletBalance. It is used so that the procedure may insert subprocedures that reference the Balance field.",
+			Category -> "Tablet Crushing Skills",
+			Developer -> True
 		}
 	}
 }]

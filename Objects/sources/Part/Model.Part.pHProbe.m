@@ -100,6 +100,22 @@ DefineObjectType[Model[Part, pHProbe], {
 			Units -> Celsius,
 			Description -> "Maximum temperature the probe can perform a measurement at.",
 			Category -> "Operating Limits"
+		},
+		DefaultMinpHOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> LessP[0 Millivolt],
+			Units -> Millivolt,
+			Description -> "The lower boundary for the allowable y-intercept (offset) at pH 7.00.",
+			Category -> "Operating Limits"
+		},
+		DefaultMaxpHOffset -> {
+			Format -> Single,
+			Class -> Real,
+			Pattern :> GreaterP[0 Millivolt],
+			Units -> Millivolt,
+			Description -> "The upper boundary for the allowable y-intercept (offset) at pH 7.00.",
+			Category -> "Operating Limits"
 		}
 	}
 }];

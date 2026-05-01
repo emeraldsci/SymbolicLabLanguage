@@ -176,16 +176,32 @@ validInstrumentQTests[packet:PacketP[Object[Instrument]]]:={
 		MemberQ[Lookup[packet, Contents], {Null, _} | {_, Null}],
 		False
 	],
+
+	(* Any part that is in the Contents should have an entry in the ContentsLog *)
+	Test["All Object[Part] in the Contents has an installation date in the ContentsLog:",
+		Module[{currentParts},
+			(* get the current parts *)
+			currentParts = DeleteDuplicates[Download[Cases[Flatten[Lookup[packet, Contents]], ObjectP[Object[Part]]], Object]];
+			(* Are all the parts valid in terms of it has an installation entry in log *)
+			If[Length[currentParts] > 0,
+				(* Check every part, if an In entry is present *)
+				AllTrue[currentParts, MemberQ[Lookup[packet, ContentsLog], { _?DateObjectQ, In, ObjectP[#], _, _}]&],
+				(* Instrument has no parts *)
+				True
+			]
+		],
+		True
+	],
 	
-	Test["If LocalCache is populated, its LocalCacheStorage field is True in all local cache containers:",
-		If[MatchQ[Lookup[packet,LocalCache],{ObjectP[]..}],
-			And@@(TrueQ/@Download[Lookup[packet,LocalCache],LocalCacheStorage]),
+	Test["If LocalCaches is populated, its LocalCacheStorage field is True in all local cache containers:",
+		If[MatchQ[Lookup[packet,LocalCaches],{{ObjectP[],_,_}..}],
+			And@@(TrueQ/@Download[Lookup[packet,LocalCaches][[All,1]],LocalCacheStorage]),
 			True
 		],
 		True
 	],
 
-	Test["If the instrument's model has LocalCacheContents and the instrument is active, the LocalCache contents and any deck contents satisfy the model's LocalCacheContents requirements:",
+	Test["If the instrument's model has LocalCacheContents and the instrument is active, the LocalCaches contents and any deck contents satisfy the model's LocalCacheContents requirements:",
 		If[MatchQ[Lookup[packet,Status],Available|Running],
 			Module[{modelLocalCacheContents,allContentPackets,localCacheValidityBools},
 
@@ -197,11 +213,11 @@ validInstrumentQTests[packet:PacketP[Object[Instrument]]]:={
 					Return[True]
 				];
 
-				(* now download everything in instrument's contents, and LocalCache contents *)
+				(* now download everything in instrument's contents, and LocalCaches contents *)
 				allContentPackets=Flatten@Download[Lookup[packet,Object],
 					{
 						Packet[Repeated[Contents[[All,2]]][{Model}]],
-						Packet[LocalCache[Repeated[Contents[[All,2]]]][{Model}]]
+						Packet[LocalCaches[[All,1]][Repeated[Contents[[All,2]]]][{Model}]]
 					}
 				];
 
@@ -527,7 +543,13 @@ validInstrumentBalanceQTests[packet:PacketP[Object[Instrument,Balance]]]:={
 		WasteContainer,
 		ArgonValve,
 		NitrogenValve
-	}]
+	}],
+
+	(* only one camera exists for monitoring the "Weighing Slot" of the balance *)
+	Test["Each balance has exactly one camera that monitors its \"Weighing Slot\":",
+		Count[Lookup[packet, Cameras], {"Weighing Slot", LinkP[Object[Part, Camera]]}],
+		1
+	]
 };
 
 validInstrumentDistanceGaugeQTests[packet:PacketP[Object[Instrument,DistanceGauge]]]:={
@@ -580,7 +602,8 @@ validInstrumentpHMeterQTests[packet:PacketP[Object[Instrument,pHMeter]]]:={
 		(* Only check this for SevenExcellence (for pH) probes.
 		Model[Instrument, pHMeter, "Mettler Toledo InLab Micro"] and Model[Instrument, pHMeter, "Mettler Toledo InLab Reach 225"] are not checked
 		because these two models do not have Probes filed populated *)
-		If[MatchQ[Lookup[packet,Model],ObjectP[Model[Instrument, pHMeter, "id:dORYzZJx7zpw"]]],(*Model[Instrument, pHMeter, "SevenExcellence (for pH)"]*)
+		If[MatchQ[Lookup[packet,Model],ObjectP[{Model[Instrument, pHMeter, "id:dORYzZJx7zpw"], Model[Instrument, pHMeter, "id:dORYzZm9x5WG"]}]],(*Model[Instrument, pHMeter, "SevenExcellence (for pH)"], Model[Instrument, pHMeter, "SevenExcellence (for pH) for Temperature \
+Control"]*)
 			MatchQ[
 				Download[DeleteCases[Lookup[packet, {Probe, SecondaryProbe, TertiaryProbe}], Null], Model[Object]],
 				DeleteCases[Download[packet,Model[Probes][Object]],Null]
@@ -1127,6 +1150,31 @@ validInstrumentDialyzerQTests[packet:PacketP[Object[Instrument,Dialyzer]]]:={
 	]
 };
 
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentDissolutionApparatusQTests*)
+
+
+validInstrumentDissolutionApparatusQTests[packet:PacketP[Object[Instrument,DissolutionApparatus]]]:={
+
+	(* Required fields for DissolutionApparatus *)
+	NotNullFieldTest[packet,
+		{
+			GasCylinder,
+			HeliumDeliveryPressureSensor,
+			WastePump,
+			AutosamplerDeck,
+			HeliumValve
+		}
+	],
+
+	(* DissolutionVesselCaps should have exactly 6 elements *)
+	Test["DissolutionVesselCaps field should contain exactly 6 cap objects:",
+		Length[Lookup[packet, DissolutionVesselCaps]],
+		6
+	]
+
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -2420,7 +2468,19 @@ validInstrumentGravityRackQTests[packet:PacketP[Object[Instrument,GravityRack]]]
 (*validInstrumentHandlingStationQTests*)
 
 
-validInstrumentHandlingStationQTests[packet:PacketP[Object[Instrument,HandlingStation]]]:={};
+validInstrumentHandlingStationQTests[packet:PacketP[Object[Instrument,HandlingStation]]]:={
+	Test["BalanceType of the object matches up with its model's Field[BalanceType]:",
+		Module[{balanceTypes, modelBalanceTypes},
+			balanceTypes = Sort[DeleteDuplicates[Download[Lookup[packet, Balances], Mode]]];
+
+			(* get the balance types that we should find in this object from model *)
+			modelBalanceTypes = Sort[DeleteDuplicates[Download[Lookup[packet, Model], BalanceType]]];
+
+			MatchQ[balanceTypes, modelBalanceTypes]
+		],
+		True
+	]
+};
 
 
 (* ::Subsection::Closed:: *)
@@ -2439,19 +2499,59 @@ validInstrumentInfraredProbeQTests[packet:PacketP[Object[Instrument,InfraredProb
 (* ::Subsection::Closed:: *)
 (*validInstrumentKarlFischerTitratorQTests*)
 
-validInstrumentKarlFischerTitratorQTests[packet:PacketP[Object[Instrument, KarlFischerTitrator]]]:={
-	(* Individual fields *)
-	NotNullFieldTest[
-		packet,
-		{
-			MediumCap,
-			WasteContainerCap,
-			MediumWeightSensor,
-			StirBarRetriever,
-			ContainerDisconnectionSlot
-		}
-	]
-};
+validInstrumentKarlFischerTitratorQTests[packet:PacketP[Object[Instrument, KarlFischerTitrator]]]:=Module[
+	{modelPacket},
+	modelPacket = Download[Lookup[packet, Object], Packet[Model[SamplingMethods]]];
+	{
+		(* Individual fields *)
+		NotNullFieldTest[
+			packet,
+			{
+				MediumCap,
+				WasteContainerCap,
+				MediumWeightSensor,
+				StirBarRetriever,
+				ContainerDisconnectionSlot,
+				ReactionVessel,
+				KarlFischerReagentStorageCap,
+				WasteContainerStorageCap,
+				KarlFischerReagentWeightSensor,
+				ContainerDisconnectionSlot,
+				WasteScale
+			}
+		],
+
+		Test["If we have a headspace sampling instrument, we need a sticker sheet:",
+			If[MemberQ[Lookup[modelPacket, SamplingMethods], Headspace],
+				Not[NullQ[Lookup[packet, StickerSheet]]],
+				True
+			],
+			True
+		],
+
+		Test["If we have a liquid sampling instrument, then we need Septum, NumberOfInjections, and MaxNumberOfInjections populated:",
+			If[MemberQ[Lookup[modelPacket, SamplingMethods], Liquid],
+				And[
+					Not[NullQ[Lookup[packet, Septum]]],
+					Not[NullQ[Lookup[packet, NumberOfInjections]]],
+					Not[NullQ[Lookup[packet, MaxNumberOfInjections]]]
+				],
+				True
+			],
+			True
+		],
+		Test["If we have a coulometric instrument, then we need NumberOfTitrations and MaxNumberOfTitrations populated:",
+			If[MatchQ[Lookup[modelPacket, TitrationTechnique], Coulometric],
+				And[
+					Not[NullQ[Lookup[packet, NumberOfTitrations]]],
+					Not[NullQ[Lookup[packet, MaxNumberOfTitrations]]]
+				],
+				True
+			],
+			True
+		]
+	}
+];
 
 (* ::Subsection::Closed:: *)
 (*validInstrumentIonChromatographyQTests*)
@@ -3254,14 +3354,6 @@ validInstrumentOvenQTests[packet:PacketP[Object[Instrument,Oven]]]:={
 		{
 			MinTemperature,
 			MaxTemperature
-
-		}
-	],
-
-	(*Individual fields*)
-	NotNullFieldTest[
-		packet,
-		{
 
 		}
 	]
@@ -4941,6 +5033,29 @@ validInstrumentUVLampQTests[packet:PacketP[Object[Instrument,UVLamp]]]:={
 };
 
 
+(* ::Subsection::Closed:: *)
+(*validInstrumentBarrelLiftApparatusQTests*)
+
+
+validInstrumentBarrelLiftApparatusQTests[packet:PacketP[Object[Instrument, BarrelLiftApparatus]]]:={
+};
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentBarrelMediaDispenserQTests*)
+
+
+validInstrumentBarrelMediaDispenserQTests[packet:PacketP[Object[Instrument, BarrelMediaDispenser]]]:={
+};
+
+
+(* ::Subsection::Closed:: *)
+(*validInstrumentPalletJackQTests*)
+
+
+validInstrumentPalletJackQTests[packet:PacketP[Object[Instrument, PalletJack]]]:={
+};
+
+
 
 (* ::Subsection:: *)
 (* Test Registration *)
@@ -4951,6 +5066,8 @@ registerValidQTestFunction[Object[Instrument, Anemometer],validInstrumentAnemome
 registerValidQTestFunction[Object[Instrument, Aspirator],validInstrumentAspiratorQTests];
 registerValidQTestFunction[Object[Instrument, Autoclave],validInstrumentAutoclaveQTests];
 registerValidQTestFunction[Object[Instrument, Balance],validInstrumentBalanceQTests];
+registerValidQTestFunction[Object[Instrument, BarrelLiftApparatus], validInstrumentBarrelLiftApparatusQTests];
+registerValidQTestFunction[Object[Instrument, BarrelMediaDispenser], validInstrumentBarrelMediaDispenserQTests];
 registerValidQTestFunction[Object[Instrument, DistanceGauge],validInstrumentDistanceGaugeQTests];
 registerValidQTestFunction[Object[Instrument, BioLayerInterferometer], validInstrumentBioLayerInterferometerQTests];
 registerValidQTestFunction[Object[Instrument, BiosafetyCabinet],validInstrumentBiosafetyCabinetQTests];
@@ -4977,6 +5094,7 @@ registerValidQTestFunction[Object[Instrument, Dewar],validInstrumentDewarQTests]
 registerValidQTestFunction[Object[Instrument, Dialyzer],validInstrumentDialyzerQTests];
 registerValidQTestFunction[Object[Instrument, Diffractometer],validInstrumentDiffractometerQTests];
 registerValidQTestFunction[Object[Instrument, Dishwasher],validInstrumentDishwasherQTests];
+registerValidQTestFunction[Object[Instrument, DissolutionApparatus],validInstrumentDissolutionApparatusQTests];
 registerValidQTestFunction[Object[Instrument, Dispenser],validInstrumentDispenserQTests];
 registerValidQTestFunction[Object[Instrument, DissolvedOxygenMeter],validInstrumentDissolvedOxygenMeterQTests];
 registerValidQTestFunction[Object[Instrument, DLSPlateReader],validInstrumentDLSPlateReaderQTests];
@@ -5014,6 +5132,7 @@ registerValidQTestFunction[Object[Instrument, HPLC],validInstrumentHPLCQTests];
 registerValidQTestFunction[Object[Instrument, SupercriticalFluidChromatography],validInstrumentSFCQTests];
 registerValidQTestFunction[Object[Instrument, Incubator],validInstrumentIncubatorQTests];
 registerValidQTestFunction[Object[Instrument, InfraredProbe],validInstrumentInfraredProbeQTests];
+registerValidQTestFunction[Object[Instrument, KarlFischerTitrator],validInstrumentKarlFischerTitratorQTests];
 registerValidQTestFunction[Object[Instrument, IonChromatography],validInstrumentIonChromatographyQTests];
 registerValidQTestFunction[Object[Instrument, KarlFischerTitrator],validInstrumentKarlFischerTitratorQTests];
 registerValidQTestFunction[Object[Instrument, LightMeter],validInstrumentLightMeterQTests];
@@ -5034,6 +5153,7 @@ registerValidQTestFunction[Object[Instrument, Osmometer],validInstrumentOsmomete
 registerValidQTestFunction[Object[Instrument, Oven],validInstrumentOvenQTests];
 registerValidQTestFunction[Object[Instrument, OverheadStirrer],validInstrumentOverheadStirrerQTests];
 registerValidQTestFunction[Object[Instrument, PackingDevice],validInstrumentPackingDeviceQTests];
+registerValidQTestFunction[Object[Instrument, PalletJack], validInstrumentPalletJackQTests];
 registerValidQTestFunction[Object[Instrument, ParticleSizeProbe],validInstrumentParticleSizeProbeQTests];
 registerValidQTestFunction[Object[Instrument, PeptideSynthesizer],validInstrumentPeptideSynthesizerQTests];
 registerValidQTestFunction[Object[Instrument, PeristalticPump],validInstrumentPeristalticPumpQTests];

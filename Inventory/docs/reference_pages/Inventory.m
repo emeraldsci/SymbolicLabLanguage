@@ -1644,7 +1644,7 @@ DefineUsage[ValidShipToUserQ,
 		BasicDefinitions->{
 			{
 				Definition -> {"ValidShipToUserQ[sample]","bools"},
-				Description -> "checks whether the provided 'sample' and specified otpions are valid for calling ShipToUser.",
+				Description -> "checks whether the provided 'sample' and specified options are valid for calling ShipToUser.",
 				Inputs :> {
 					IndexMatching[
 						{

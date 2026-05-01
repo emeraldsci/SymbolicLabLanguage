@@ -87,6 +87,14 @@ DefineObjectType[Object[Container, Vessel], {
 			Pattern:>ObjectP[Model[Container,Rack]],
 			Description->"Model of a container capable of holding this type of vessel upright.",
 			Category->"Compatibility"
+		},
+		Rinsed -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates whether the reusable container has been cleaned with solvent at the chemical waste before proceeding to further cleaning such as Dishwash.",
+			Category -> "Container History",
+			Developer -> True
 		}
 	}
 }];

@@ -164,7 +164,7 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
 		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, downloadFields, protocolObject,
+		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, specifiedBlankAnsStandardObjects, specifiedBlankAnsStandardModels, downloadFields, protocolObject,
 		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples, samplePreparationSimulation,
 		mySamplesWithPreparedSamplesNamed,safeOptionsNamed, myOptionsWithPreparedSamplesNamed},
 
@@ -262,12 +262,39 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 	(* get all specified instruments *)
 	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
 
+	(* get all objects from blank and standard options *)
+	specifiedBlankAnsStandardObjects = DeleteDuplicates[
+		Download[
+			Cases[
+				Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+				ObjectP[Object]
+			],
+			Object
+		]
+	];
+
+	specifiedBlankAnsStandardModels = DeleteDuplicates[
+		Join[
+			Download[
+				Cases[
+					Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+					ObjectP[Model]
+				],
+				Object
+			],
+			(* Default blank - Milli-Q water *)
+			{Model[Sample, "id:8qZ1VWNmdLBD"]}
+		]
+	];
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+			Packet[Field[Composition[[All, 2]][{Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
+			Packet[Field[Container[Contents][[All,2]][{State,Volume,Container,CellType}]]],
+			Packet[Solvent[{State}]]
 		},
 		{
 			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
@@ -275,7 +302,15 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 			Packet[IntegratedLiquidHandler[Model]],
 			Packet[IntegratedLiquidHandler[Model][Object]],
 			Packet[IntegratedLiquidHandlers[Object]]
-		}
+		},
+		(* Blank and Standard Object *)
+		{
+			Packet[Container, State, Volume],
+			Packet[Container[{Model}]],
+			Packet[Container[Model][{MaxVolume,RecommendedFillVolume}]]
+		},
+		(* Blank and Standard Model *)
+		{Packet[State]}
 	};
 
 	(* make the up front Download call *)
@@ -284,7 +319,9 @@ ExperimentAbsorbanceKinetics[mySamples : ListableP[ObjectP[Object[Sample]]], myO
 			Download[
 				{
 					mySamplesWithPreparedSamples,
-					specifiedInstruments
+					specifiedInstruments,
+					specifiedBlankAnsStandardObjects,
+					specifiedBlankAnsStandardModels
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,

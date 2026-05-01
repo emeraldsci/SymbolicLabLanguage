@@ -240,7 +240,7 @@ PlotCapillaryIsoelectricFocusing[infs:ListableP[ObjectP[Object[Data,CapillaryIso
 		flTraces,uvAbsTraces,currentTraces,voltageTraces,fluorescenceDataQ,uvAbsDataQ,currentDataQ,voltageDataQ,
 		rawDataQ,flExposures,longestFlExposures,invalidExposures,resolvedFLExposure,primaryDataFields,secondaryDataFields,
 		resolvedPrimaryData,resolvedSecondaryData,updatedPackets,resolvedLegend,optionLegend,finalLegend,imageSize,
-		plotLabel,resolvedOpsWithOutput,ellpResult,result,options
+		plotLabel,resolvedOpsWithOutput,ellpResult,result,options, piMarkers, peakLength, updatedPacketsLength
 	},
 
 	(* -- DOWNLOAD AND OPTIONS LOOKUP -- *)
@@ -503,6 +503,46 @@ PlotCapillaryIsoelectricFocusing[infs:ListableP[ObjectP[Object[Data,CapillaryIso
 	(* Force output of Result and Options *)
 	resolvedOpsWithOutput=ReplaceRule[listedOptions,{resolvedPrimaryData,resolvedSecondaryData,Legend->finalLegend,ImageSize->imageSize,PlotLabel->plotLabel,Output->{Result,Options}}];
 
+	Which[
+		(*One peaks object*)
+		MatchQ[OptionValue[Peaks], ObjectP[Object[Analysis, Peaks]]],
+
+		If[MatchQ[OptionValue[PrimaryData], ProcessedUVAbsorbanceData],
+			(*Download the markers.  Empty list if not set; {{_, _}, {_, _}} if set*)
+			piMarkers = Download[OptionValue[Peaks], IsoelectricPointMarkers];
+
+			Replace[{updatedPackets, piMarkers},
+				{{KeyValuePattern[{ProcessedUVAbsorbanceData -> qa_QuantityArray}]}, {{piLow_, pixelLow_}, {piHigh_, pixelHigh_}}} :> {
+					updatedPackets[[1, Key[ProcessedUVAbsorbanceData]]] = applyIsoelectricCalibration[qa, {{piLow, pixelLow}, {piHigh, pixelHigh}}];
+				}
+			]
+		],
+
+		(*Many peaks objects*)
+		MatchQ[OptionValue[Peaks], {ObjectP[Object[Analysis, Peaks]] ..}],
+
+		peakLength = Length[OptionValue[Peaks]];
+		updatedPacketsLength = Length[updatedPackets];
+
+		(*Download the markers.  Empty list if not set; {{_, _}, {_, _}} if set*)
+		piMarkers = Download[OptionValue[Peaks], IsoelectricPointMarkers];
+
+		If[peakLength === updatedPacketsLength && MatchQ[OptionValue[PrimaryData], ProcessedUVAbsorbanceData],
+			MapThread[
+				Replace[{#1, #2},
+					{KeyValuePattern[{ProcessedUVAbsorbanceData -> qa_QuantityArray}], {{piLow_, pixelLow_}, {piHigh_, pixelHigh_}}} :> {
+						updatedPackets[[#3, Key[ProcessedUVAbsorbanceData]]] = applyIsoelectricCalibration[qa, {{piLow, pixelLow}, {piHigh, pixelHigh}}];
+					}
+				]&,
+				{updatedPackets, piMarkers, Range[peakLength]}
+			];
+		],
+
+		True,
+		Null
+
+	];
+
 	(* Call EmeraldListLinePlot with these resolved options, forcing Output\[Rule]{Result,Options}. *)
 	ellpResult=packetToELLP[updatedPackets,PlotCapillaryIsoelectricFocusing,resolvedOpsWithOutput];
 
@@ -545,3 +585,20 @@ PlotCapillaryIsoelectricFocusing[infs:ListableP[ObjectP[Object[Data,CapillaryIso
 		Tests->{}
 	}
 ];
+
+(*Recalibrates the ProcessedUVAbsorbance data using the specified IsoelectricPointMarkers*)
+applyIsoelectricCalibration[qa_QuantityArray (*Pixels, AbsorbanceUnits*), {{piLow_, pixelLow_}, {piHigh_, pixelHigh_}}] :=
+	Module[{
+		unitlessData,
+		xUnits,
+		yUnits
+	},
+
+		unitlessData = QuantityMagnitude[qa];
+		{xUnits, yUnits} = qa["UnitBlock"];
+
+		QuantityArray[
+			MapAt[(piHigh-piLow)/(pixelHigh-pixelLow)*(#1-pixelLow)+piLow&, unitlessData, {All, 1}],
+			{"DimensionlessUnit", IndependentUnit["AbsorbanceUnit"]}
+		]
+	];

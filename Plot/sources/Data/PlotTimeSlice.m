@@ -13,7 +13,7 @@
 DefineOptions[PlotTimeSlice,
     Options :> {
         {ReferenceField -> IonAbundance3D, (IonAbundance3D | Absorbance3D), "The field containing the BigQuantityArray data to be sliced and plotted."},
-        {BigQuantityArrayByteLimit -> Quantity[100, "MB"], UnitsP["Bytes"], "The maximum sub-array size used when searching through the BigQuantityArray for the data slice."},
+        {BigQuantityArrayByteLimit -> Quantity[100, "Megabytes"], UnitsP["Bytes"], "The maximum sub-array size used when searching through the BigQuantityArray for the data slice."},
         {TimeSliceSpans -> Null, Alternatives[_Association, Null], "The association of time slice spans generated from TimeSliceSpans. If known this will speed up the plotting function."}
     },
     SharedOptions :> {
@@ -138,9 +138,9 @@ TimeSliceSpans[myObject:ObjectP[Object[Data,ChromatographyMassSpectra]], myField
 
     (* add manifold logging after getting raw spans *)
     If[TrueQ[ECL`$ManifoldRuntime],
-        Echo["Processed all spans! The size of the raw spans are "<>ToString[N[UnitConvert[Quantity[ByteCount[rawSpans], "Bytes"], "MB"]]]];
-        Echo["Memory in use: "<>ToString[N[UnitConvert[Quantity[MemoryInUse[], "Bytes"], "GB"]]]];
-        Echo["Available memory: "<>ToString[N[UnitConvert[Quantity[MemoryInUse[], "Bytes"], "GB"]]]];
+        Echo["Processed all spans! The size of the raw spans are "<>ToString[N[UnitConvert[Quantity[ByteCount[rawSpans], "Bytes"], "Megabytes"]]]];
+        Echo["Memory in use: "<>ToString[N[UnitConvert[Quantity[MemoryInUse[], "Bytes"], "Gigabytes"]]]];
+        Echo["Available memory: "<>ToString[N[UnitConvert[Quantity[MemoryInUse[], "Bytes"], "Gigabytes"]]]];
     ];
 
     (* combine the raw span results into a list of {time1->{start1, stop1}, time1->{start2, stop2},...} *)
@@ -171,7 +171,7 @@ recursivelyFindSpans[myObject_, myField_, currentStart_Integer, maxSize_, spanRe
             "Processed ",
             ToString[(currentStart - 1) * 100. / $TotalSize * Percent],
             " out of ",
-            ToString[N[UnitConvert[Quantity[$TotalBytes, "Bytes"], "GB"]]],
+            ToString[N[UnitConvert[Quantity[$TotalBytes, "Bytes"], "Gigabytes"]]],
             " of data."
         ]];
     ];

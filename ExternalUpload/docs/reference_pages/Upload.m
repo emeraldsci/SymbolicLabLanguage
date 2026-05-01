@@ -339,314 +339,335 @@ DefineUsage[UploadCompanySupplierOptions,
 
 (* ::Subsection::Closed:: *)
 (*UploadProduct*)
-
-
-(* ::Subsubsection::Closed:: *)
-(*Main Function*)
-
-
-DefineUsage[UploadProduct,
+With[
 	{
-		BasicDefinitions -> {
-			{
-				Definition -> {"UploadProduct[ThermoFisherURL]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product from the ThermoFisher product URL.",
-				Inputs :> {
-					{
-						InputName -> "ThermoFisherURL",
-						Description -> "The URL of the ThermoFisher product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> ThermoFisherURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the ThermoFisher product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			},
-			{
-				Definition -> {"UploadProduct[MilliporeSigmaURL]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product from the MilliporeSigma product URL.",
-				Inputs :> {
-					{
-						InputName -> "MilliporeSigmaURL",
-						Description -> "The URL of the MilliporeSigma product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> MilliporeSigmaURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the MilliporeSigma product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			},
-			{
-				Definition -> {"UploadProduct[FisherScientificURL]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product from the Fisher Scientific product URL.",
-				Inputs :> {
-					{
-						InputName -> "FisherScientificURL",
-						Description -> "The URL of the Fisher Scientific product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> FisherScientificURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the Fisher Scientific product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			},
-			{
-				Definition -> {"UploadProduct[]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product.",
-				Inputs :> {},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"ValidUploadProductQ",
-			"UploadProductOptions",
-			"UploadMolecule",
-			"UploadCompanySupplier",
-			"Upload",
-			"Download",
-			"Inspect"
-		},
-		Author -> {"lei.tian", "andrey.shur", "thomas", "wyatt"}
-	}
-];
+		(* Input widgets *)
+		urlWidget := Widget[
+			Type -> String,
+			Pattern :> URLP,
+			Size -> Line,
+			PatternTooltip -> "The URL of the product page of this product object."
+		],
+		allowNullUrlWidget := Alternatives[
+			Widget[
+				Type -> String,
+				Pattern :> URLP,
+				Size -> Line,
+				PatternTooltip -> "The URL of the product page of this product object."
+			],
+			Widget[
+				Type -> Enumeration,
+				Pattern :> Alternatives[Null]
+			]
+		],
+		existingProductWidget := Widget[
+			Type -> Object,
+			Pattern :> ObjectP[Object[Product]]
+		],
+		(* Outputs *)
+		productObjectOutput := {
+			OutputName -> "productObject",
+			Description -> "The object that represents this product.",
+			Pattern :> ObjectP[Object[Product]]
+		}
 
+	},
 
-(* ::Subsubsection::Closed:: *)
-(*ValidUploadProductQ*)
-
-
-DefineUsage[ValidUploadProductQ,
-	{
-		BasicDefinitions -> {
-			{
-				Definition -> {"ValidUploadProductQ[ThermoFisherURL]", "isValidProductObject"},
-				Description -> "returns a boolean that indicates if a valid object will be generated from the inputs of this function.",
-				Inputs :> {
-					{
-						InputName -> "ThermoFisherURL",
-						Description -> "The URL of the ThermoFisher product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> ThermoFisherURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the ThermoFisher product page of this product object."
-						]
+	DefineUsage[UploadProduct,
+		{
+			BasicDefinitions -> {
+				{
+					Definition -> {"UploadProduct[ProductURLLink]", "productObject"},
+					Description -> "creates a new object 'productObject' that contains the information given about the product from the supplier webpage 'ProductURLLink'.",
+					Inputs :> {
+						{
+							InputName -> "ProductURLLink",
+							Description -> "The URL of the product page of this product object.",
+							Widget -> urlWidget
+						}
+					},
+					Outputs :> {
+						productObjectOutput
 					}
 				},
-				Outputs :> {
-					{
-						OutputName -> "isValidProductObject",
-						Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
-						Pattern :> BooleanP
+				{
+					Definition -> {"UploadProduct[]", "productObject"},
+					Description -> "returns an object 'productObject' that contains the information given about the product, which no webpage url is available.",
+					Inputs :> {
+
+					},
+					Outputs :> {
+						productObjectOutput
+					}
+				},
+				{
+					Definition -> {"UploadProduct[productObject]", "productObject"},
+					Description -> "update 'productObject' that contains the information given about the product, based on supplied options.",
+					Inputs :> {
+						{
+							InputName -> "productObject",
+							Description -> "The object representing a product which needs to be updated.",
+							Widget -> existingProductWidget
+						}
+					},
+					Outputs :> {
+						productObjectOutput
+					},
+					CommandBuilder -> False
+				},
+				{
+					Definition -> {"UploadProduct[ListOfInputs]", "productObject"},
+					Description -> "create or update 'productObject' that contains the information given about the product, based on supplied options.",
+					Inputs :> {
+						IndexMatching[
+							{
+								InputName -> "ListOfInputs",
+								Description -> "A list of inputs to base the creation of new product objects, or modification of existing ones on.",
+								Widget -> Alternatives[
+									existingProductWidget,
+									allowNullUrlWidget
+								]
+							},
+							IndexName -> "Input Data"
+						]
+					},
+					Outputs :> {
+						productObjectOutput
+					},
+					CommandBuilder -> False
+				}
+			},
+			SeeAlso -> {
+				"ValidUploadProductQ",
+				"UploadProductOptions",
+				"UploadMolecule",
+				"UploadCompanySupplier",
+				"Upload",
+				"Download",
+				"Inspect"
+			},
+			Author -> {"hanming.yang", "lei.tian", "andrey.shur", "thomas", "wyatt"}
+		}
+	];
+
+	DefineUsage[ValidUploadProductQ,
+		{
+			BasicDefinitions -> {
+				{
+					Definition -> {"ValidUploadProductQ[ProductURLLink]", "isValidProductObject"},
+					Description -> "check if a new object that contains the information given about the product from the 'ProductURLLink' can be created without error.",
+					Inputs :> {
+						{
+							InputName -> "ProductURLLink",
+							Description -> "The URL of the product page of this product object.",
+							Widget -> urlWidget
+						}
+					},
+					Outputs :> {
+						{
+							OutputName -> "isValidProductObject",
+							Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
+							Pattern :> BooleanP
+						}
+					}
+				},
+				{
+					Definition -> {"ValidUploadProductQ[]", "isValidProductObject"},
+					Description -> "checks if a new object that contains the information given about the product, which no webpage url is available, can be created without error.",
+					Inputs :> {
+
+					},
+					Outputs :> {
+						{
+							OutputName -> "isValidProductObject",
+							Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
+							Pattern :> BooleanP
+						}
+					}
+				},
+				{
+					Definition -> {"ValidUploadProductQ[productObject]", "isValidProductObject"},
+					Description -> "checks if updating 'productObject' that contains the information given about the product, based on supplied options can be done without error.",
+					Inputs :> {
+						{
+							InputName -> "productObject",
+							Description -> "The object representing a product which needs to be updated.",
+							Widget -> existingProductWidget
+						}
+					},
+					Outputs :> {
+						{
+							OutputName -> "isValidProductObject",
+							Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
+							Pattern :> BooleanP
+						}
+					}
+				},
+				{
+					Definition -> {"ValidUploadProductQ[ListOfURLs]", "isValidProductObject"},
+					Description -> "checks if creating new objects that contains the information given about the product from 'ListOfURLs', based on supplied options, can be done without error.",
+					Inputs :> {
+						IndexMatching[
+							{
+								InputName -> "ListOfURLs",
+								Description -> "A list of productURLs to base the creation of new product objects on.",
+								Widget -> allowNullUrlWidget
+							},
+							IndexName -> "Input Data"
+						]
+					},
+					Outputs :> {
+						{
+							OutputName -> "isValidProductObject",
+							Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
+							Pattern :> BooleanP
+						}
+					}
+				},
+				{
+					Definition -> {"ValidUploadProductQ[productObjects]", "isValidProductObject"},
+					Description -> "checks if updating multiple 'productObjects' that contain the information given about the product, based on supplied options can be done without error.",
+					Inputs :> {
+						IndexMatching[
+							{
+								InputName -> "productObjects",
+								Description -> "A list of inputs to base the modification of existing product objects on.",
+								Widget -> existingProductWidget
+							},
+							IndexName -> "Input Data"
+						]
+					},
+					Outputs :> {
+						{
+							OutputName -> "isValidProductObject",
+							Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
+							Pattern :> BooleanP
+						}
 					}
 				}
 			},
-			{
-				Definition -> {"ValidUploadProductQ[MilliporeSigmaURL]", "isValidProductObject"},
-				Description -> "returns a boolean that indicates if a valid object will be generated from the inputs of this function.",
-				Inputs :> {
-					{
-						InputName -> "MilliporeSigmaURL",
-						Description -> "The URL of the MilliporeSigma product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> MilliporeSigmaURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the MilliporeSigma product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "isValidProductObject",
-						Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
-						Pattern :> BooleanP
-					}
-				}
+			SeeAlso -> {
+				"UploadProduct",
+				"UploadProductOptions",
+				"UploadMolecule",
+				"UploadCompanySupplier",
+				"Upload",
+				"Download",
+				"Inspect"
 			},
-			{
-				Definition -> {"UploadProduct[FisherScientificURL]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product from the Fisher Scientific product URL.",
-				Inputs :> {
-					{
-						InputName -> "FisherScientificURL",
-						Description -> "The URL of the Fisher Scientific product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> FisherScientificURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the Fisher Scientific product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			},
-			{
-				Definition -> {"ValidUploadProductQ[]", "isValidProductObject"},
-				Description -> "returns a boolean that indicates if a valid object will be generated from the inputs of this function.",
-				Inputs :> {},
-				Outputs :> {
-					{
-						OutputName -> "isValidProductObject",
-						Description -> "A boolean that indicates if a valid object will be generated from the inputs of this function.",
-						Pattern :> BooleanP
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"UploadProduct",
-			"UploadProductOptions",
-			"UploadMolecule",
-			"UploadCompanySupplier",
-			"Upload",
-			"Download",
-			"Inspect"
-		},
-		Author -> {"lei.tian", "andrey.shur", "thomas"}
-	}
-];
+			Author -> {"hanming.yang", "lei.tian", "andrey.shur", "thomas"}
+		}
+	];
 
-
-(* ::Subsubsection::Closed:: *)
-(*UploadProductOptions*)
-
-
-DefineUsage[UploadProductOptions,
-	{
-		BasicDefinitions -> {
-			{
-				Definition -> {"UploadProductOptions[ThermoFisherURL]", "resolvedProductObjectOptions"},
-				Description -> "returns a list of options as they will be resolved by UploadProduct[].",
-				Inputs :> {
-					{
-						InputName -> "ThermoFisherURL",
-						Description -> "The URL of the ThermoFisher product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> ThermoFisherURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the ThermoFisher product page of this product object."
-						]
+	DefineUsage[UploadProductOptions,
+		{
+			BasicDefinitions -> {
+				{
+					Definition -> {"UploadProductOptions[ProductURLLink]", "resolvedProductObjectOptions"},
+					Description -> "returns a list of options as they will be resolved by UploadProduct[].",
+					Inputs :> {
+						{
+							InputName -> "ProductURLLink",
+							Description -> "The URL of the product page of this product object.",
+							Widget -> urlWidget
+						}
+					},
+					Outputs :> {
+						{
+							OutputName -> "resolvedProductObjectOptions",
+							Description -> "A list of resolved options as they will be resolved by UploadProduct[].",
+							Pattern :> {Rule..}
+						}
 					}
 				},
-				Outputs :> {
-					{
-						OutputName -> "resolvedProductObjectOptions",
-						Description -> "A list of resolved options as they will be resolved by UploadMolecule[].",
-						Pattern :> {Rule..}
+				{
+					Definition -> {"UploadProductOptions[]", "resolvedProductObjectOptions"},
+					Description -> "returns a list of options as they will be resolved by UploadProduct[].",
+					Inputs :> {
+
+					},
+					Outputs :> {
+						{
+							OutputName -> "resolvedProductObjectOptions",
+							Description -> "A list of resolved options as they will be resolved by UploadProduct[].",
+							Pattern :> {Rule..}
+						}
+					}
+				},
+				{
+					Definition -> {"UploadProductOptions[productObject]", "resolvedProductObjectOptions"},
+					Description -> "returns a list of options as they will be resolved by UploadProduct[].",
+					Inputs :> {
+						{
+							InputName -> "productObject",
+							Description -> "The object representing a product which needs to be updated.",
+							Widget -> existingProductWidget
+						}
+					},
+					Outputs :> {
+						{
+							OutputName -> "resolvedProductObjectOptions",
+							Description -> "A list of resolved options as they will be resolved by UploadProduct[].",
+							Pattern :> {Rule..}
+						}
+					}
+				},
+				{
+					Definition -> {"UploadProductOptions[ListOfURLs]", "resolvedProductObjectOptions"},
+					Description -> "returns a list of options as they will be resolved by UploadProduct[].",
+					Inputs :> {
+						IndexMatching[
+							{
+								InputName -> "ListOfURLs",
+								Description -> "A list of productURLs to base the creation of new product objects on.",
+								Widget -> allowNullUrlWidget
+							},
+							IndexName -> "Input Data"
+						]
+					},
+					Outputs :> {
+						{
+							OutputName -> "resolvedProductObjectOptions",
+							Description -> "A list of resolved options as they will be resolved by UploadProduct[].",
+							Pattern :> {Rule..}
+						}
+					}
+				},
+				{
+					Definition -> {"UploadProductOptions[ListOfInputs]", "resolvedProductObjectOptions"},
+					Description -> "returns a list of options as they will be resolved by UploadProduct[].",
+					Inputs :> {
+						IndexMatching[
+							{
+								InputName -> "ListOfInputs",
+								Description -> "A list of inputs to base the creation of new product objects on.",
+								Widget -> existingProductWidget
+							},
+							IndexName -> "Input Data"
+						]
+					},
+					Outputs :> {
+						{
+							OutputName -> "resolvedProductObjectOptions",
+							Description -> "A list of resolved options as they will be resolved by UploadProduct[].",
+							Pattern :> {Rule..}
+						}
 					}
 				}
 			},
-			{
-				Definition -> {"UploadProductOptions[MilliporeSigmaURL]", "resolvedProductObjectOptions"},
-				Description -> "returns a list of options as they will be resolved by UploadProduct[].",
-				Inputs :> {
-					{
-						InputName -> "MilliporeSigmaURL",
-						Description -> "The URL of the MilliporeSigma product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> MilliporeSigmaURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the MilliporeSigma product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "resolvedProductObjectOptions",
-						Description -> "A list of resolved options as they will be resolved by UploadMolecule[].",
-						Pattern :> {Rule..}
-					}
-				}
+			SeeAlso -> {
+				"UploadProduct",
+				"ValidUploadProductQ",
+				"UploadMolecule",
+				"UploadCompanySupplier",
+				"Upload",
+				"Download",
+				"Inspect"
 			},
-			{
-				Definition -> {"UploadProduct[FisherScientificURL]", "productObject"},
-				Description -> "returns an object 'productObject' that contains the information given about the product from the Fisher Scientific product URL.",
-				Inputs :> {
-					{
-						InputName -> "FisherScientificURL",
-						Description -> "The URL of the Fisher Scientific product page of this product object.",
-						Widget -> Widget[
-							Type -> String,
-							Pattern :> FisherScientificURLP,
-							Size -> Line,
-							PatternTooltip -> "The URL of the Fisher Scientific product page of this product object."
-						]
-					}
-				},
-				Outputs :> {
-					{
-						OutputName -> "productObject",
-						Description -> "The object that represents this product.",
-						Pattern :> ObjectP[Object[Product]]
-					}
-				}
-			},
-			{
-				Definition -> {"UploadProductOptions[]", "resolvedProductObjectOptions"},
-				Description -> "returns a list of options as they will be resolved by UploadProduct[].",
-				Inputs :> {},
-				Outputs :> {
-					{
-						OutputName -> "resolvedProductObjectOptions",
-						Description -> "A list of resolved options as they will be resolved by UploadMolecule[].",
-						Pattern :> {Rule..}
-					}
-				}
-			}
-		},
-		SeeAlso -> {
-			"UploadProduct",
-			"ValidUploadProductQ",
-			"UploadMolecule",
-			"UploadCompanySupplier",
-			"Upload",
-			"Download",
-			"Inspect"
-		},
-		Author -> {"lei.tian", "andrey.shur", "thomas"}
-	}
+			Author -> {"hanming.yang", "lei.tian", "andrey.shur", "thomas"}
+		}
+	];
+
 ];
 
 

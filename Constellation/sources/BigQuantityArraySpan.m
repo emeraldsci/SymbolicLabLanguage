@@ -22,7 +22,7 @@ DownloadBigQuantityArraySpan[myObject_, myBigQAField_Symbol, myStartPosition_Int
 DefineOptions[
 	BigQuantityArraySpan,
 	Options :> {
-		{BigQuantityArrayByteLimit -> Quantity[5, "GiB"], UnitsP["Bytes"], "The memory limit for each chunk in bytes."},
+		{BigQuantityArrayByteLimit -> Quantity[5, "Gigabytes"], UnitsP["Bytes"], "The memory limit for each chunk in bytes."},
 		{FileLocation -> Local, Alternatives[Local, Cloud], "The location of the file that will be parsed to get the span. The Local option will download the file from S3, if not already done so, and the Cloud option will download the span directly from S3."}
 	}
 ];

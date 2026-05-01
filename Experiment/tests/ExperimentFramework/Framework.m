@@ -5539,7 +5539,7 @@ DefineTests[sanitizeInputs,
 				{_Rule..},
 				{_Rule..}
 			},
-			Messages :> {Warning::OptionContainsUnusableObject},
+			Messages :> {Warning::OptionContainsUnsuitableObject},
 			SetUp :> (
 				Upload[<|
 					Type -> Object[Item, Filter],
@@ -5570,7 +5570,7 @@ DefineTests[sanitizeInputs,
 				{_Rule..},
 				{_Rule..}
 			},
-			Messages :> {Warning::OptionContainsUnusableObject},
+			Messages :> {Warning::OptionContainsUnsuitableObject},
 			SetUp :> (
 				Upload[<|
 					Type -> Object[Item, Filter],
@@ -6149,6 +6149,22 @@ DefineTests[resolvePostProcessingOptions,
 				MeasureWeight->False
 			}
 		],
+		Example[{Options, AllowAsepticImageSample, "The default boolean that ImageSample is set to can be specified if the transfer environment contains any biosafety cabinet:"},
+			resolvePostProcessingOptions[
+				{
+					ImageSample->Automatic,
+					MeasureVolume->False,
+					MeasureWeight->False,
+					TransferEnvironment -> Object[Instrument, HandlingStation, BiosafetyCabinet, "id:E8zoYvO70Vx5"]
+				},
+				AllowAsepticImageSample -> False
+			],
+			{
+				ImageSample -> False,
+				MeasureVolume -> False,
+				MeasureWeight -> False
+			}
+		],
 		Example[{Messages,"Warning::PostProcessingSterileSamples","If samples are expected to be Sterile but there is post-processing option specified to be True, a warning will be thrown:"},
 			resolvePostProcessingOptions[
 				{
@@ -6286,9 +6302,47 @@ DefineTests[resolvePostProcessingOptions,
 
 DefineTests[populatePreparedSamples,
 	{
-		Example[{Basic,"Simulate sample preparation for two inputs that are both simulated:"},
-			{samplesIn,containersIn,workingSamples,workingContainers}=Download[populatePreparedSamples[Object[Protocol,Incubate,"Fake incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID]],{SamplesIn,ContainersIn,WorkingSamples,WorkingContainers}];
+		Example[{Basic, "Simulate sample preparation for two inputs that are both simulated:"},
+			protocol = populatePreparedSamples[Object[Protocol, Incubate, "Test incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID]];
+			{samplesIn, containersIn, workingSamples, workingContainers} = Download[protocol, {SamplesIn, ContainersIn, WorkingSamples, WorkingContainers}];
 
+			And[
+				MatchQ[{samplesIn, containersIn, workingSamples, workingContainers},
+					{
+						{ObjectP[Object[Sample]]..},
+						{ObjectP[Object[Container]]..},
+						{ObjectP[Object[Sample]]..},
+						{ObjectP[Object[Container]]..}
+					}
+				],
+				MatchQ[Download[samplesIn, Object], Download[workingSamples, Object]],
+				MatchQ[Download[containersIn, Object], Download[workingContainers, Object]]
+			],
+			True,
+			Variables :> {protocol, samplesIn, containersIn, workingSamples, workingContainers}
+		],
+		Example[{Basic, "Simulate sample preparation for a input when SampleContainerLabel is populated:"},
+			protocol = populatePreparedSamples[Object[Protocol, Filter, "Test filter protocol 1 for populatePreparedSamples tests" <> $SessionUUID]];
+			{samplesIn, containersIn, workingSamples, workingContainers} = Download[protocol, {SamplesIn, ContainersIn, WorkingSamples, WorkingContainers}];
+
+			And[
+				MatchQ[{samplesIn, containersIn, workingSamples, workingContainers},
+					{
+						{ObjectP[Object[Sample]]..},
+						{ObjectP[Object[Container]]..},
+						{ObjectP[Object[Sample]]..},
+						{ObjectP[Object[Container]]..}
+					}
+				],
+				MatchQ[Download[samplesIn, Object], Download[workingSamples, Object]],
+				MatchQ[Download[containersIn, Object], Download[workingContainers, Object]]
+			],
+			True,
+			Variables :> {protocol, samplesIn, containersIn, workingSamples, workingContainers}
+		],
+		Example[{Basic, "Simulate sample preparation for inputs that are a combination of simulated a non-simulated:"},
+			protocol = populatePreparedSamples[Object[Protocol, Incubate, "Test incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID]];
+			{samplesIn, containersIn, workingSamples, workingContainers} = Download[protocol, {SamplesIn, ContainersIn, WorkingSamples, WorkingContainers}];
 			And[
 				MatchQ[{samplesIn,containersIn,workingSamples,workingContainers},
 					{
@@ -6298,17 +6352,18 @@ DefineTests[populatePreparedSamples,
 						{ObjectP[Object[Container]]..}
 					}
 				],
-				MatchQ[Download[samplesIn,Object],Download[workingSamples,Object]],
-				MatchQ[Download[containersIn,Object],Download[workingContainers,Object]]
+				MatchQ[Download[samplesIn, Object], Download[workingSamples, Object]],
+				MatchQ[Download[containersIn, Object], Download[workingContainers, Object]]
 			],
 			True,
-			Variables:>{samplesIn,containersIn,workingSamples,workingContainers}
+			Variables :> {protocol, samplesIn, containersIn, workingSamples, workingContainers}
 		],
-		Example[{Basic,"Simulate sample preparation for inputs that are a combination of simulated a non-simulated:"},
-			{samplesIn,containersIn,workingSamples,workingContainers}=Download[populatePreparedSamples[Object[Protocol,Incubate,"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID]],{SamplesIn,ContainersIn,WorkingSamples,WorkingContainers}];
+		Example[{Additional, "When multiple samples sit in the same plates, pair the SampleLabel and SampleContainerLabel correctly:"},
+			protocol = populatePreparedSamples[Object[Protocol, Filter, "Test filter protocol 2 for populatePreparedSamples tests" <> $SessionUUID]];
+			{samplesIn, containersIn, workingSamples, workingContainers} = Download[protocol, {SamplesIn, ContainersIn, WorkingSamples, WorkingContainers}];
 
 			And[
-				MatchQ[{samplesIn,containersIn,workingSamples,workingContainers},
+				MatchQ[{samplesIn, containersIn, workingSamples, workingContainers},
 					{
 						{ObjectP[Object[Sample]]..},
 						{ObjectP[Object[Container]]..},
@@ -6316,181 +6371,301 @@ DefineTests[populatePreparedSamples,
 						{ObjectP[Object[Container]]..}
 					}
 				],
-				MatchQ[Download[samplesIn,Object],Download[workingSamples,Object]],
-				MatchQ[Download[containersIn,Object],Download[workingContainers,Object]]
+				MatchQ[Download[samplesIn, Object], Download[workingSamples, Object]],
+				MatchQ[Download[containersIn, Object], Download[workingContainers, Object]]
 			],
 			True,
-			Variables:>{samplesIn,containersIn,workingSamples,workingContainers}
+			Variables :> {protocol, samplesIn, containersIn, workingSamples, workingContainers}
 		],
-		Example[{Additional,"","Update NestedIndexMatchingSamplesIn when we can:"},
+		Example[{Additional, "Update NestedIndexMatchingSamplesIn when we can:"},
 			Download[
-				populatePreparedSamples[Object[Protocol,ImageCells,"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID]],
+				populatePreparedSamples[Object[Protocol, ImageCells, "Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID]],
 				NestedIndexMatchingSamplesIn
 			],
 			{{ObjectReferenceP[]}}
+		],
+		Example[{Messages, "NoSamplePreparationProtocol", "When no SamplePreparationProtocols are linked to the input, throw an error message:"},
+			populatePreparedSamples[Object[Protocol, Incubate, "Test protocol without SamplePreparationProtocols for populatePreparedSamples tests" <> $SessionUUID]],
+			$Failed,
+			Messages :> {Error::NoSamplePreparationProtocol}
+		],
+		Example[{Messages, "MissingDefineName", "When the labels are not defined in SamplePreparationProtocol, throw an error message:"},
+			populatePreparedSamples[Object[Protocol, Incubate, "Test protocol with missing labels for populatePreparedSamples tests" <> $SessionUUID]],
+			$Failed,
+			Messages :> {Error::MissingDefineName}
 		]
-		(* TODO: Add more tests once define correctly points at a sample and not a container. Right now, our tests are limited to preparing inputs. *)
 	},
-	SymbolSetUp:>(
-		$CreatedObjects={};
+	SymbolSetUp :> (
+		$CreatedObjects = {};
 
 		Module[{namedObjects},
 			(* Erase any objects that exist. *)
-			namedObjects={
-				Object[Container,Vessel,"Test container 1 for populatePreparedSamples" <> $SessionUUID],
-				Object[Container,Vessel,"Test container 2 for populatePreparedSamples" <> $SessionUUID],
-				Object[Container,Vessel,"Test container 3 for populatePreparedSamples" <> $SessionUUID],
-				Object[Container,Vessel,"Test container 4 for populatePreparedSamples" <> $SessionUUID],
-				Object[Sample,"Test sample 1 for populatePreparedSamples" <> $SessionUUID],
-				Object[Sample,"Test sample 2 for populatePreparedSamples" <> $SessionUUID],
-				Object[Sample,"Test sample 3 for populatePreparedSamples" <> $SessionUUID],
-				Object[Sample,"Test sample 4 for populatePreparedSamples" <> $SessionUUID],
-				Object[Protocol,Incubate,"Fake incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID],
-				Object[Protocol,Incubate,"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID],
-				Object[Protocol,ImageCells,"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID]
+			namedObjects = {
+				Object[Container, Vessel, "Test container 1 for populatePreparedSamples" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 2 for populatePreparedSamples" <> $SessionUUID],
+				Object[Container, Vessel, "Test container 3 for populatePreparedSamples" <> $SessionUUID],
+				Object[Container, Plate, "Test container 4 for populatePreparedSamples" <> $SessionUUID],
+				Object[Container, Plate, "Test container 5 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 1 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 2 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 3 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 4 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 5 for populatePreparedSamples" <> $SessionUUID],
+				Object[Sample, "Test sample 6 for populatePreparedSamples" <> $SessionUUID],
+				Object[Protocol, Incubate, "Test incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, Incubate, "Test incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, Incubate, "Test protocol without SamplePreparationProtocols for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, Incubate, "Test protocol with missing labels for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, ImageCells, "Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, Filter, "Test filter protocol 1 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, Filter, "Test filter protocol 2 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test SamplePreparationProtocol 1 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test SamplePreparationProtocol 2 for populatePreparedSamples tests" <> $SessionUUID],
+				Object[Protocol, ManualSamplePreparation, "Test SamplePreparationProtocol 3 for populatePreparedSamples tests" <> $SessionUUID]
 			};
 
 			EraseObject[
-				PickList[namedObjects,DatabaseMemberQ[namedObjects]],
-				Force->True,
-				Verbose->False
+				PickList[namedObjects, DatabaseMemberQ[namedObjects]],
+				Force -> True,
+				Verbose -> False
 			];
 		];
-
-		Module[{
-			emptyContainer1,emptyContainer2,emptyContainer3,sample1,sample2,sample3,incubateProtocol1,
-			incubateProtocol2,samplePreparationProtocol,emptyContainer4,sample4
-			,imageCellsProtocol1},
-
-			(* Create our container with a sample in it. *)
-			{emptyContainer1,emptyContainer2,emptyContainer3,emptyContainer4}=Upload[{
-				<|
-					Type->Object[Container,Vessel],
-					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
-					Name->"Test container 1 for populatePreparedSamples" <> $SessionUUID,
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type->Object[Container,Vessel],
-					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
-					Name->"Test container 2 for populatePreparedSamples" <> $SessionUUID,
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type->Object[Container,Vessel],
-					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
-					Name->"Test container 3 for populatePreparedSamples" <> $SessionUUID,
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				|>,
-				<|
-					Type->Object[Container,Vessel],
-					Model->Link[Model[Container,Vessel,"50mL Tube"],Objects],
-					Name->"Test container 4 for populatePreparedSamples" <> $SessionUUID,
-					DeveloperObject->True,
-					Site -> Link[$Site]
-				|>
-			}];
-
-			(* Create our sample. *)
-			{sample1,sample2,sample3,sample4}=ECL`InternalUpload`UploadSample[
+		Block[{$DeveloperUpload = True},
+			Module[
 				{
-					Model[Sample,"Milli-Q water"],
-					Model[Sample,"Milli-Q water"],
-					Model[Sample,"Milli-Q water"],
-					Model[Sample,"Milli-Q water"]
+					emptyContainer1, emptyContainer2, emptyContainer3, emptyContainer4, emptyContainer5, sample1, sample2, sample3,
+					sample4, sample5, sample6, incubateProtocol1, incubateProtocol2, filterProtocol1, filterProtocol2, failedProtocol1,
+					failedProtocol2, imageCellsProtocol1, samplePreparationProtocols
 				},
+
+				(* Create our container with a sample in it. *)
 				{
-					{"A1",emptyContainer1},
-					{"A1",emptyContainer2},
-					{"A1",emptyContainer3},
-					{"A1",emptyContainer4}
-				},
-				InitialAmount->{49 Milliliter,49 Milliliter,49 Milliliter,49 Milliliter},
-				Name->{
-					"Test sample 1 for populatePreparedSamples" <> $SessionUUID,
-					"Test sample 2 for populatePreparedSamples" <> $SessionUUID,
-					"Test sample 3 for populatePreparedSamples" <> $SessionUUID,
-					"Test sample 4 for populatePreparedSamples" <> $SessionUUID
-				}
-			];
+					emptyContainer1,
+					emptyContainer2,
+					emptyContainer3,
+					emptyContainer4,
+					emptyContainer5
+				} = Upload[{
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Test container 1 for populatePreparedSamples" <> $SessionUUID,
+						Site -> Link[$Site]
+					|>,
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"], Objects],
+						Name -> "Test container 2 for populatePreparedSamples" <> $SessionUUID,
+						Site -> Link[$Site]
+					|>,
+					<|
+						Type -> Object[Container, Vessel],
+						Model -> Link[Model[Container, Vessel, "50mL Tube"] ,Objects],
+						Name -> "Test container 3 for populatePreparedSamples" <> $SessionUUID,
+						Site -> Link[$Site]
+					|>,
+					<|
+						Type -> Object[Container, Plate],
+						Model -> Link[Model[Container, Plate, "6-well Tissue Culture Plate"], Objects],
+						Name -> "Test container 4 for populatePreparedSamples" <> $SessionUUID,
+						Site -> Link[$Site]
+					|>,
+					<|
+						Type -> Object[Container, Plate],
+						Model -> Link[Model[Container, Plate, "96-well 2mL Deep Well Plate"], Objects],
+						Name -> "Test container 5 for populatePreparedSamples" <> $SessionUUID,
+						Site -> Link[$Site]
+					|>
+				}];
 
-			(* Create an incubation protocol. *)
-			(* Quiet because we have some fields missing from cache right now. *)
-			(* SM should put our sample in position "A1". *)
-			incubateProtocol1=Quiet[
-				ExperimentIncubate[
-					{"my container","my sample"},
-					PreparatoryUnitOperations->{
-						LabelContainer[Label->"my container",Container->Model[Container,Vessel,"50mL Tube"]],
-						Transfer[Source->Model[Sample,"Methanol"],Amount->10 Milliliter,Destination->"my container",DestinationLabel->"destination sample"],
-						LabelSample[Label->"my sample",Sample->sample2]
+				(* Create our sample. *)
+				{sample1, sample2, sample3, sample4, sample5, sample6} = ECL`InternalUpload`UploadSample[
+					Join[
+						ConstantArray[Model[Sample, "Methanol"], 3],
+						ConstantArray[Model[Sample, "Nuclease-free Water"], 1],
+						ConstantArray[Model[Sample, "Milli-Q water"], 2]
+					],
+					{
+						{"A1", emptyContainer1},
+						{"A1", emptyContainer2},
+						{"A1", emptyContainer3},
+						{"A1", emptyContainer4},
+						{"A1", emptyContainer5},
+						{"B1", emptyContainer5}
+					},
+					InitialAmount -> {49 Milliliter, 49 Milliliter, 10 Milliliter, 1 Milliliter, 1 Milliliter, 1 Milliliter},
+					Name -> {
+						"Test sample 1 for populatePreparedSamples" <> $SessionUUID,
+						"Test sample 2 for populatePreparedSamples" <> $SessionUUID,
+						"Test sample 3 for populatePreparedSamples" <> $SessionUUID,
+						"Test sample 4 for populatePreparedSamples" <> $SessionUUID,
+						"Test sample 5 for populatePreparedSamples" <> $SessionUUID,
+						"Test sample 6 for populatePreparedSamples" <> $SessionUUID
 					}
-				]
-			];
+				];
 
-			incubateProtocol2=Quiet[
-				ExperimentIncubate[
-					{sample1,"my container","my sample"},
-					PreparatoryUnitOperations->{
-						LabelContainer[Label->"my container",Container->Model[Container,Vessel,"50mL Tube"]],
-						Transfer[Source->Model[Sample,"Methanol"],Amount->10 Milliliter,Destination->"my container",DestinationLabel->"destination sample"],
-						LabelSample[Label->"my sample",Sample->sample2]
-					}
-				]
-			];
+				(* Create an incubation protocol. *)
+				(* Quiet because we have some fields missing from cache right now. *)
+				(* SM should put our sample in position "A1". *)
+				incubateProtocol1 = Quiet[
+					ExperimentIncubate[
+						{"my container", "my sample"},
+						PreparatoryUnitOperations -> {
+							LabelContainer[Label -> "my container", Container -> Model[Container, Vessel, "50mL Tube"]],
+							Transfer[Source -> Model[Sample, "Methanol"], Amount -> 10 Milliliter, Destination -> "my container", DestinationLabel -> "destination sample"],
+							LabelSample[Label -> "my sample", Sample -> sample2]
+						}
+					]
+				];
 
-			imageCellsProtocol1=Quiet[
-				ExperimentImageCells[
-					"my sample",
-					PreparatoryUnitOperations->{ManualSamplePreparation[ECL`LabelSample[<|ECL`Sample -> {ECL`Model[ECL`Sample, "id:O81aEBZnWMRO"]}, ECL`Sterile -> {True}, ECL`Amount -> {Quantity[1, "Milliliters"]}, ECL`Container -> {ECL`Model[ECL`Container, ECL`Plate, "id:eGakld01zzLx"]}, Label -> {"my sample"}|>]]},
-					SamplingPattern->Grid,
-					SamplingNumberOfRows->4,
-					SamplingNumberOfColumns->4
-				]
-			];
+				incubateProtocol2 = Quiet[
+					ExperimentIncubate[
+						{sample1, "my container", "my sample"},
+						PreparatoryUnitOperations -> {
+							LabelContainer[Label -> "my container", Container -> Model[Container, Vessel, "50mL Tube"]],
+							Transfer[Source -> Model[Sample, "Methanol"], Amount -> 10 Milliliter, Destination -> "my container", DestinationLabel -> "destination sample"],
+							LabelSample[Label -> "my sample", Sample -> sample2]
+						}
+					]
+				];
 
-			(* Create a sample manipulation protocol with DefinedObjects of "my container". *)
-			samplePreparationProtocol=Upload[<|
-				Type->Object[Protocol,ManualSamplePreparation],
-				Replace[LabeledObjects]->{
-					{"my container",Link[emptyContainer1]},
-					{"my sample",Link[sample2]},
-					{"destination sample", Link[sample3]}
-				}
-			|>];
+				imageCellsProtocol1 = Quiet[
+					ExperimentImageCells[
+						"my sample",
+						PreparatoryUnitOperations -> {
+							ManualSamplePreparation[
+								LabelSample[Label -> "my sample", Sample -> Model[Sample, "Nuclease-free Water"], Sterile -> True, Amount -> 1 Milliliter, Container -> Model[Container, Plate, "6-well Tissue Culture Plate"]
+								]
+							]
+						},
+						SamplingPattern -> Grid,
+						SamplingNumberOfRows -> 4,
+						SamplingNumberOfColumns -> 4
+					]
+				];
 
-			(* Add our SM as a subprotocol to our incubate protocol. *)
-			Upload[{
-				<|
-					Object->incubateProtocol1,
-					Name->"Fake incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
-					Append[SamplePreparationProtocols]->Link[samplePreparationProtocol]
-				|>,
-				<|
-					Object->incubateProtocol2,
-					Name->"Fake incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID,
-					Append[SamplePreparationProtocols]->Link[samplePreparationProtocol]
-				|>,
-				<|
-					Object->imageCellsProtocol1,
-					Name->"Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
-					Append[SamplePreparationProtocols]->Link[samplePreparationProtocol]
-				|>
+				(* Generate a protocol with PreparedSamples populated with duplicated "my sample" as SamplesIn but only 1 "my 50mL Tube" as ContainersIn *)
+				filterProtocol1 = Quiet[
+					ExperimentFilter[
+						{"my sample", "my sample"},
+						SampleContainerLabel -> {"my 50mL Tube", "my 50mL Tube"},
+						PreparatoryUnitOperations -> {
+							LabelSample[Label -> "my sample", Sample -> Model[Sample, "Methanol"], Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "50mL Tube"]]
+						}
+					]
+				];
 
-			}];
+				(* Generate a protocol with PreparedSamples populated with multiple SamplesIn in the same ContainersIn (Plate) *)
+				filterProtocol2 = Quiet[
+					ExperimentFilter[
+						{"my sample1", "my sample2"},
+						SampleContainerLabel -> {"my Plate", "my Plate"},
+						PreparatoryUnitOperations -> {
+							LabelContainer[Label -> "my Plate", Container -> Model[Container, Plate, "96-well 2mL Deep Well Plate"]],
+							Transfer[
+								Source -> {Model[Sample, "Milli-Q water"], Model[Sample, "Milli-Q water"]},
+								Destination -> {"my Plate", "my Plate"},
+								DestinationWell -> {"A1", "B1"},
+								Amount -> {1 Milliliter, 1 Milliliter},
+								DestinationLabel -> {"my sample1", "my sample2"}
+							]
+						}
+					]
+				];
 
-			(* Make all of the objects created developer objects *)
-			Upload[<|Object->#,DeveloperObject->True|> &/@$CreatedObjects];
+				failedProtocol1 = Quiet[
+					ExperimentIncubate[
+						{"my container", "my sample"},
+						PreparatoryUnitOperations -> {
+							LabelContainer[Label -> "my container", Container -> Model[Container, Vessel, "50mL Tube"]],
+							Transfer[Source -> Model[Sample, "Methanol"], Amount -> 10 Milliliter, Destination -> "my container", DestinationLabel -> "destination sample"],
+							LabelSample[Label -> "my sample", Sample -> sample2]
+						}
+					]
+				];
+
+				failedProtocol2 = Quiet[
+					ExperimentIncubate[
+						{"my sample2"},
+						PreparatoryUnitOperations -> {
+							LabelSample[Label -> "my sample2", Sample -> Model[Sample, "Methanol"], Amount -> 10 Milliliter, Container -> Model[Container, Vessel, "50mL Tube"]]
+						}
+					]
+				];
+
+				(* Create a sample manipulation protocol with DefinedObjects of "my container". *)
+				samplePreparationProtocols = Upload[{
+					<|
+						Type -> Object[Protocol, ManualSamplePreparation],
+						Name -> "Test SamplePreparationProtocol 1 for populatePreparedSamples tests" <> $SessionUUID,
+						Replace[LabeledObjects] -> {
+							{"my container", Link[emptyContainer3]},
+							{"my sample", Link[sample2]},
+							{"destination sample", Link[sample3]}
+						}
+					|>,
+					<|
+						Type -> Object[Protocol, ManualSamplePreparation],
+						Name -> "Test SamplePreparationProtocol 2 for populatePreparedSamples tests" <> $SessionUUID,
+						Replace[LabeledObjects] -> {
+							{"my sample", Link[sample4]}
+						}
+					|>,
+					<|
+						Type -> Object[Protocol, ManualSamplePreparation],
+						Name -> "Test SamplePreparationProtocol 3 for populatePreparedSamples tests" <> $SessionUUID,
+						Replace[LabeledObjects] -> {
+							{"my sample1", Link[sample5]},
+							{"my sample2", Link[sample6]}
+						}
+					|>
+				}];
+
+				(* Add our SM as a subprotocol to our incubate protocol. *)
+				Upload[{
+					<|
+						Object -> incubateProtocol1,
+						Name -> "Test incubate protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[1]]]
+					|>,
+					<|
+						Object -> incubateProtocol2,
+						Name -> "Test incubate protocol 2 for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[1]]]
+					|>,
+					<|
+						Object -> imageCellsProtocol1,
+						Name -> "Test image cells protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[2]]]
+					|>,
+					<|
+						Object -> filterProtocol1,
+						Name -> "Test filter protocol 1 for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[1]]]
+					|>,
+					<|
+						Object -> filterProtocol2,
+						Name -> "Test filter protocol 2 for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[3]]]
+					|>,
+					<|
+						Object -> failedProtocol1,
+						Name -> "Test protocol without SamplePreparationProtocols for populatePreparedSamples tests" <> $SessionUUID
+					|>,
+					<|
+						Object -> failedProtocol2,
+						Name -> "Test protocol with missing labels for populatePreparedSamples tests" <> $SessionUUID,
+						Append[SamplePreparationProtocols] -> Link[samplePreparationProtocols[[1]]]
+					|>
+				}];
+			]
 		]
 	),
-	SymbolTearDown:>(
+	SymbolTearDown :> (
 		EraseObject[
-			PickList[$CreatedObjects,DatabaseMemberQ[$CreatedObjects]],
-			Force->True,
-			Verbose->False
+			PickList[$CreatedObjects, DatabaseMemberQ[$CreatedObjects]],
+			Force -> True,
+			Verbose -> False
 		];
 
 		(* clear $CreatedObjects *)
@@ -7237,10 +7412,10 @@ DefineTests[
 		Example[{Basic, "SamplePreparationCacheFields returns the fields associated with an Object[Sample] input:"},
 			SamplePreparationCacheFields[Object[Sample]],
 			{
-				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, SampleHandling, Composition,
+				Object, Type, Name, State, BiosafetyLevel, CellType, CultureAdhesion, BiohazardDisposal, SampleHandling, Composition,
 				Analytes, Solvent, MassConcentration, Concentration, Volume, Mass, Count, Status, Model, Position,
 				Container, Living, Sterile, StorageCondition, MeltingPoint, ThawTime, ThawTemperature, MaxThawTime, ThawMixType,
-				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Sachet, SolidUnitWeight,
+				ThawMixRate, ThawMixTime, ThawNumberOfMixes, TransportTemperature, Tablet, Capsule, Sachet, SolidUnitWeight,
 				LiquidHandlerIncompatible, Site, RequestedResources, Conductivity, IncompatibleMaterials, pH, KitComponents,
 				AsepticHandling, Density, Fuming, InertHandling, ParticleWeight, PipettingMethod, Pyrophoric,
 				ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, Well, SurfaceTension,
@@ -7252,7 +7427,7 @@ DefineTests[
 			{
 				Conductivity, IncompatibleMaterials, pH, KitComponents, RequestedResources, Products, KitProducts,
 				MaxThawTime, Solvent, SampleHandling, CellType, CultureAdhesion, BiosafetyLevel, Composition, Analytes, TransportTemperature,
-				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
+				Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, Capsule, Sachet, SolidUnitWeight, State, MolecularWeight, MeltingPoint,
 				ThawTime, ThawTemperature, Dimensions, ExtinctionCoefficients, UsedAsSolvent, AsepticHandling, Density, Fuming, InertHandling,
 				ParticleWeight, PipettingMethod, Pyrophoric, ReversePipetting, RNaseFree, TransferTemperature, TransportCondition, Ventilated, SurfaceTension,
 				Parafilm, AluminumFoil, Living, Flammable, DOTHazardClass
@@ -7655,8 +7830,11 @@ DefineTests[
 
 				(* Make a test Model[Sample] *)
 				modelSample1 = UploadSampleModel[
-					"Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					{
+						{95 VolumePercent, Model[Molecule, "Water"]},
+						{5 VolumePercent, modelCell1}
+					},
+					Name -> "Bacterial sample model for resolveManualFrameworkFunction tests " <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -8091,8 +8269,11 @@ DefineTests[
 
 				(* Make a test Model[Sample] *)
 				modelSample1 = UploadSampleModel[
-					"Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID,
-					Composition -> {{95 VolumePercent, Model[Molecule, "Water"]}, {5 VolumePercent, modelCell1}},
+					{
+						{95 VolumePercent, Model[Molecule, "Water"]},
+						{5 VolumePercent, modelCell1}
+					},
+					Name -> "Bacterial sample model for resolvePotentialWorkCells tests " <> $SessionUUID,
 					Expires -> False,
 					DefaultStorageCondition -> Model[StorageCondition, "Ambient Storage"],
 					State -> Liquid,
@@ -8298,4 +8479,3 @@ DefineTests[
 		]
 	}
 ];
-

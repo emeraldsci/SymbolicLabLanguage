@@ -139,6 +139,20 @@ DefineObjectType[Model[Part], {
 			Description -> "Indicates how parts of this model are contained in an aseptic barrier and if they need to be unbagged before being used in a protocol, maintenance, or qualification.",
 			Category -> "Storage Information"
 		},
+		ExposedSurfaces -> {
+			Format -> Single,
+			Class -> Boolean,
+			Pattern :> BooleanP,
+			Description -> "Indicates if any portions of the exterior surfaces of this part are sensitive and prone to contamination.",
+			Category -> "Compatibility"
+		},
+        ExposedInterior -> {
+            Format -> Single,
+            Class -> Boolean,
+            Pattern :> BooleanP,
+            Description -> "Indicates if any sensitive portions of the interior surfaces of this part are open to the external environment and prone to contamination.",
+            Category -> "Compatibility"
+        },
 		
 		(* --- Plumbing Information --- *)
 		Connectors -> {
@@ -211,14 +225,6 @@ DefineObjectType[Model[Part], {
 			Description -> "Products ordering information for this model if this model is part of one or more kits.",
 			Category -> "Inventory"
 		},
-		StickeredUponArrival -> {
-			Format -> Single,
-			Class -> Expression,
-			Pattern :> BooleanP,
-			Description -> "Indicates if a sticker should be attached to this item during Receive Inventory, or if the unpeeled sticker should be stored with the item and affixed during resource picking.",
-			Category -> "Inventory",
-			Developer->True
-		},
 		StickerPositionOnReceiving -> {
 			Format -> Single,
 			Class -> Expression,
@@ -277,6 +283,17 @@ DefineObjectType[Model[Part], {
 		    Pattern :> MaterialP,
 			Category -> "Compatibility",
 		    Description -> "The materials of which this part is made that may come in direct contact with fluids."
+		},
+		CompatibleHandle -> {
+			Format -> Single,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[
+				Model[Item, Handle][CompatibleComponents]
+			],
+			Description -> "The handle that is appropriate for moving this part around the lab.",
+			Category -> "Compatibility",
+			Developer -> True
 		},
 
 		(* --- Dimensions & Positions --- *)

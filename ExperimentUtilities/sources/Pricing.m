@@ -7,7 +7,7 @@
 (* ::Section:: *)
 (*Source Code*)
 $PriceSystemSwitchDate=DateObject[{2021, 1, 1, 0, 0, 1.`}, "Instant", "Gregorian", -7.`];
-$WasteResourcePricingDate=DateObject[{2026, 1, 1, 0, 0, 1.`}, "Instant", "Gregorian", -7.`];
+$WasteResourcePricingDate=DateObject[{2028, 1, 1, 0, 0, 1.`}, "Instant", "Gregorian", -7.`];
 
 (* ::Subsection:: *)
 (*Patterns*)
@@ -18,7 +18,7 @@ $WasteResourcePricingDate=DateObject[{2026, 1, 1, 0, 0, 1.`}, "Instant", "Gregor
 
 
 (* pattern for the different kinds of output for the pricing functions *)
-PricingOutputP=Table | Association | TotalPrice | JSON;
+PricingOutputP=Table | Association | TotalPrice | JSON | SummaryAssociation;
 
 
 
@@ -595,6 +595,17 @@ DefineOptions[PriceExperiment,
 			Pattern -> Column|SlideView|List,
 			Description -> "Determines whether the function return all the tables of each price functions.",
 			Category -> "General"
+		},
+		{
+			OptionName -> Time,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> EstimatedTime | Time | Automatic],
+			Description -> "Determines whether the price provided of operator time is based on the estimated or actual amount of time used.",
+			ResolutionDescription -> "Automatically resolved to use the real operator time.",
+			Category -> "Hidden"
 		}
 	}
 ];
@@ -653,6 +664,17 @@ DefineOptions[SummaryPrice,
 			Description -> "Determines whether the function return all the tables of each price functions.",
 			Category -> "Hidden"
 		},
+		{
+			OptionName -> Time,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> EstimatedTime | Time | Automatic],
+			Description -> "Determines whether the price provided of operator time is based on the estimated or actual amount of time used.",
+			ResolutionDescription -> "Automatically resolved to use the real operator time.",
+			Category -> "Hidden"
+		},
 		CacheOption
 	}
 ];
@@ -693,12 +715,12 @@ SummaryPrice[mySources:{ObjectP[{Object[Protocol], Object[Qualification], Object
 		safeOps, cache, output, wastePricingPacket, instrumentTimePricingPacket, operatorTimePricingPacket,
 		materialsPricingPacket, stockingPricingPacket, cleaningPricingPacket, materialsPricing, operatorTimePricing, stockingPricing, cleaningPricing, wastePricing, instrumentTimePricing,
 		allPricingInformation, stringProtocols, title, consolidation,
-		resolvedConsolidation, resolvedOptions, protocols, tableFormat, tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable
+		resolvedConsolidation, resolvedOptions, protocols, tableFormat, tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable, timeSource
 	},
 
 	(* get the safe options and pull out the option values *)
 	safeOps=SafeOptions[SummaryPrice, ToList[ops]];
-	{consolidation, cache, output, summaryTable, tableFormat}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat}];
+	{consolidation, cache, output, summaryTable, tableFormat, timeSource}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat, Time}];
 
 	(* if Consolidation -> Automatic, resolve to Protocol (either Protocol or Transaction) *)
 	resolvedConsolidation=Which[
@@ -729,7 +751,7 @@ SummaryPrice[mySources:{ObjectP[{Object[Protocol], Object[Qualification], Object
 		stockingPricingPacket,
 		cleaningPricingPacket
 	}=Map[
-		priceAndSurfaceErrors[protocols, #]&,
+		priceAndSurfaceErrors[protocols, #, timeSource]&,
 		{
 			PriceWaste,
 			PriceInstrumentTime,
@@ -799,7 +821,7 @@ SummaryPrice[mySources:{ObjectP[{Object[Protocol], Object[Qualification], Object
 		Module[{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable,totalTable},
 			(* run all the price functions to report their tables *)
 			{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable} = {
-				PriceOperatorTime[mySources],
+				PriceOperatorTime[mySources, Time -> timeSource],
 				PriceInstrumentTime[mySources],
 				PriceMaterials[mySources],
 				PriceCleaning[mySources],
@@ -846,12 +868,12 @@ SummaryPrice[myNotebooks:{ObjectP[Object[LaboratoryNotebook]]..}, myDateRange:Sp
 		operatorTimePricing, materialsPricing,
 		stockingPricing, cleaningPricing, allPricingInformation,
 		stringNotebooks, title, wastePricingPacket, instrumentTimePricingPacket, operatorTimePricingPacket,
-		materialsPricingPacket, stockingPricingPacket, cleaningPricingPacket, tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable, tableFormat, output
+		materialsPricingPacket, stockingPricingPacket, cleaningPricingPacket, tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable, tableFormat, output, timeSource
 	},
 
 	(* get the safe options and pull out the option values *)
 	safeOps=SafeOptions[SummaryPrice, ToList[ops]];
-	{consolidation, cache, output, summaryTable, tableFormat}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat}];
+	{consolidation, cache, output, summaryTable, tableFormat, timeSource}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat, Time}];
 
 	(* if Consolidation -> Automatic, resolve to SummaryPriceCategory *)
 	resolvedConsolidation=If[MatchQ[consolidation, Automatic],
@@ -924,7 +946,7 @@ SummaryPrice[myNotebooks:{ObjectP[Object[LaboratoryNotebook]]..}, myDateRange:Sp
 		stockingPricingPacket,
 		cleaningPricingPacket
 	}=Map[
-		priceAndSurfaceErrors[allProtocols, #]&,
+		priceAndSurfaceErrors[allProtocols, #, timeSource]&,
 		{
 			PriceWaste,
 			PriceInstrumentTime,
@@ -996,7 +1018,7 @@ SummaryPrice[myNotebooks:{ObjectP[Object[LaboratoryNotebook]]..}, myDateRange:Sp
 		Module[{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable, totalTable},
 			(* run all the price functions to report their tables *)
 			{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable} = {
-				PriceOperatorTime[myNotebooks],
+				PriceOperatorTime[myNotebooks, Time -> timeSource],
 				PriceInstrumentTime[myNotebooks],
 				PriceMaterials[myNotebooks],
 				PriceCleaning[myNotebooks],
@@ -1047,12 +1069,12 @@ SummaryPrice[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Span[_?Da
 		stockingPricing, allPricingInformation,
 		stringTeams, title, wastePricingPacket, instrumentTimePricingPacket,
 		operatorTimePricingPacket, materialsPricingPacket, stockingPricingPacket, cleaningPricingPacket,
-		tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable, tableFormat, output
+		tableOutput, combinedAssocOutput, totalTotalPrice, summaryTable, tableFormat, output, timeSource
 	},
 
 	(* get the safe options and pull out the option values *)
 	safeOps=SafeOptions[SummaryPrice, ToList[ops]];
-	{consolidation, cache, output, summaryTable, tableFormat}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat}];
+	{consolidation, cache, output, summaryTable, tableFormat, timeSource}=Lookup[safeOps, {Consolidation, Cache, OutputFormat, SummaryTable, TableFormat, Time}];
 
 	(* if Consolidation -> Automatic, resolve to SummaryPriceCategory *)
 	resolvedConsolidation=If[MatchQ[consolidation, Automatic],
@@ -1141,7 +1163,7 @@ SummaryPrice[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Span[_?Da
 		stockingPricingPacket,
 		cleaningPricingPacket
 	}=Map[
-		priceAndSurfaceErrors[allProtocols, #]&,
+		priceAndSurfaceErrors[allProtocols, #, timeSource]&,
 		{
 			PriceWaste,
 			PriceInstrumentTime,
@@ -1213,7 +1235,7 @@ SummaryPrice[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Span[_?Da
 		Module[{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable, totalTable},
 			(* run all the price functions to report their tables *)
 			{operatorTable, instrumentTable, materialsTable, cleaningTable, stockingTable, wasteTable} = {
-				PriceOperatorTime[myTeams],
+				PriceOperatorTime[myTeams, Time -> timeSource],
 				PriceInstrumentTime[myTeams],
 				PriceMaterials[myTeams],
 				PriceCleaning[myTeams],
@@ -1278,7 +1300,7 @@ constructPricingTable[
 		combinedAssocOutput, tableToUse, subtotalRows, columnHeaders,
 		dataWithSubtotal, tableOutput, totalWastePriceNoZero,
 		totalInstrumentPriceNoZero, allNotebooksSourceConsolidation,
-		materialsValues, totalMaterialsPrice, totalMaterialsPriceNoZero
+		materialsValues, totalMaterialsPrice, totalMaterialsPriceNoZero, totalChargePerNotebook, totalChargePerSource
 	},
 
 	(* pull out the Consolidation and OutputFormat options *)
@@ -1358,10 +1380,13 @@ constructPricingTable[
 	(* get the total price by each notebook *)
 	totalPricePerNotebook=Total[Lookup[#, Value]]& /@ pricingGroupedByNotebook;
 
+	(* get the total charge by each notebook *)
+	totalChargePerNotebook=Total[Lookup[#, Charge]]& /@ pricingGroupedByNotebook;
+
 	(* generate a table for the case where Consolidation -> Notebook and OutputFormat -> Table *)
 	notebookTable=MapThread[
-		{#1, NumberForm[#2, {\[Infinity], 2}]}&,
-		{allNotebooksNoDupes, totalPricePerNotebook}
+		{#1, NumberForm[#2, {\[Infinity], 2}], NumberForm[#3, {\[Infinity], 2}]}&,
+		{allNotebooksNoDupes, totalPricePerNotebook, totalChargePerNotebook}
 	];
 
 	(* -- group by protocol -- *)
@@ -1378,11 +1403,14 @@ constructPricingTable[
 	(* get the total price by each protocol *)
 	totalPricePerSource=Total[Lookup[#, Value]]& /@ pricingGroupedBySource;
 
+	(* get the total charge by each protocol *)
+	totalChargePerSource=Total[Lookup[#, Charge]]& /@ pricingGroupedBySource;
+
 	(* generate the table for the case where Consolidation -> Protocol and OutputFormat -> Table NOT INCLUDING the storage and maintenance information *)
 	(* this also includes the Notebook information *)
 	sourceTable=MapThread[
-		{#1, #2, NumberForm[#3, {\[Infinity], 2}]}&,
-		{allNotebooksSourceConsolidation, allSourcesNoDupes, totalPricePerSource}
+		{#1, #2, NumberForm[#3, {\[Infinity], 2}], NumberForm[#4, {\[Infinity], 2}]}&,
+		{allNotebooksSourceConsolidation, allSourcesNoDupes, totalPricePerSource, totalChargePerSource}
 	];
 
 	(* ------------------- *)
@@ -1398,7 +1426,7 @@ constructPricingTable[
 
 	(* generate the subtotal row; in all cases the number of columns are the same *)
 	subtotalRows=If[MatchQ[consolidation, Protocol],
-		{{"", "", "", ""}, {"", "Total Price", totalTotalPrice, totalTotalCharge}},
+		{{"", "", "", ""}, {"Value", "Charge", totalTotalPrice, totalTotalCharge}},
 		{{"", "", ""}, {"Total Price", totalTotalPrice, totalTotalCharge}}
 	];
 
@@ -1406,8 +1434,8 @@ constructPricingTable[
 
 	columnHeaders=Switch[consolidation,
 		PricingCategory, {"Pricing Category", Tooltip["Value","Price for the category before any discounts are applied"], Tooltip["Charge","Price for the category after any discounts are applied"]},
-		Notebook, {"Notebook",  Tooltip["Value","Price for the category before any discounts are applied"], Tooltip["Value","Price for the category after any discounts are applied"]},
-		Protocol, {"Notebook", "Source (Protocol, Transaction or CleaningMethod)",  Tooltip["Value","Price for the category before any discounts are applied"], Tooltip["Value","Price for the category after any discounts are applied"]}
+		Notebook, {"Notebook",  Tooltip["Value","Price for the category before any discounts are applied"], Tooltip["Charge","Price for the category after any discounts are applied"]},
+		Protocol, {"Notebook", "Source (Protocol, Transaction or CleaningMethod)",  Tooltip["Value","Price for the category before any discounts are applied"], Tooltip["Charge","Price for the category after any discounts are applied"]}
 	];
 
 	(* get the whole data table with the subtotal row appended to it *)
@@ -1518,7 +1546,7 @@ constructPricingTable[
 (* -------------------------------------------------------------- *)
 
 (* check for specific errors and quiet them, then look up from the association which errors were thrown *)
-priceAndSurfaceErrors[input_, function_]:=
+priceAndSurfaceErrors[input_, function_, time_]:=
 	Module[{output, outputWithTracker},
 		Flatten[
 			(* quiet these errors since we want to surface them only once *)
@@ -1526,8 +1554,9 @@ priceAndSurfaceErrors[input_, function_]:=
 				Check[
 					outputWithTracker=Check[
 						(* run the pricing subfunction with output -> association on the protocols *)
-						output=(Result ->
-							function[input, OutputFormat -> Association]),
+						output=(Result ->If[MatchQ[function, PriceOperatorTime],
+							function[input, OutputFormat -> Association, Time -> time],
+							function[input, OutputFormat -> Association]]),
 						{output, Incomplete -> True},
 						{function::ProtocolNotCompleted}
 					],
@@ -2292,6 +2321,22 @@ priceStorageMonthlyRate[myItems:{ObjectP[{Object[Sample], Object[Container], Obj
 (*PriceStorage (date overloads)*)
 (* --- Date range overloads --- *)
 
+(* empty list case *)
+PriceStorage[{}, myDateRange:Span[_?DateObjectQ, _?DateObjectQ], ops:OptionsPattern[]]:=Module[
+	{safeOps, output},
+
+	(* get the safe options and pull out the OutputFormat option *)
+	safeOps=SafeOptions[PriceStorage, ToList[ops]];
+	output=Lookup[safeOps, OutputFormat];
+
+	(* return either an empty list or 0*USD depending on what the OutputFormat option is *)
+	Switch[output,
+		Table, {},
+		Association, {},
+		TotalPrice, 0 * USD
+	]
+
+];
 
 (* singleton Notebook overload with date range *)
 PriceStorage[myNotebook:ObjectP[Object[LaboratoryNotebook]], myDateRange:Span[_?DateObjectQ, _?DateObjectQ], ops:OptionsPattern[]]:=PriceStorage[{myNotebook}, myDateRange, ops];
@@ -4369,8 +4414,8 @@ DefineOptions[PriceInstrumentTime,
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> EstimatedTime | Time | Automatic],
-			Description -> "Determines whether the price provided is based on the Estimated or actual amount of time used.",
-			ResolutionDescription -> "Automatically picks the smaller time between Estimated and a real time.",
+			Description -> "Determines whether the price provided is based on the estimated or actual amount of time used.",
+			ResolutionDescription -> "Automatically picks the smaller time between estimated and a real time.",
 			Category -> "General"
 		},
 		{
@@ -4381,6 +4426,16 @@ DefineOptions[PriceInstrumentTime,
 				Type -> Enumeration,
 				Pattern :> BooleanP],
 			Description -> "Fails the function automatically.",
+			Category -> "Hidden"
+		},
+		{
+			OptionName -> ReplaceSunsetInstruments,
+			Default -> True,
+			AllowNull -> False,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP],
+			Description -> "Determines whether to use the ReplacementInstrumentModel of the instrument in pricing calculations if the instrument model has DateSunset populated.",
 			Category -> "Hidden"
 		},
 		CacheOption
@@ -4526,19 +4581,21 @@ PriceInstrumentTime[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Sp
 
 (* core function that all PriceInstrumentTime overloads call *)
 priceInstrumentTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...}, myDateRange:(Null | Span[_?DateObjectQ, _?DateObjectQ]), ops:OptionsPattern[]]:=Module[
-	{safeOps,output,consolidation,cache,now,
-		allDownloadValues,protocolPackets,tsReportPackets,allResourcePackets,instrumentModelPackets,
+	{safeOps,output,consolidation,cache,updatedCache,now,
+		allSubProtocols,subProtocolFields,allDownloadValues,protocolPackets,tsReportPackets,allResourcePackets,instrumentModelPackets, replacementInstrumentModelPackets,
 		pricingLists,notebooks,protocols,datesCompleted,instObjs,modelInst,usageTimes,pricingRates,nonDiscountedPricings,discountedPricingRates,discountedPricings,pricingCategories,
 		nonDiscountedTotalPrice,discountedTotalPrice,modelInstName, allDataTableCollapse,allDataTable,dataTableTier,pricingTiers,dataTableDateCompleted,associationOutput,noNotebookDataTable,noProtocolDataTable,
 		gatheredByNotebook,notebookConsolidatedPreTotal,notebookConsolidatedTotals,notebookConsolidatedTable,
 		gatheredByProtocol,protocolConsolidatedPreTotal,protocolConsolidatedTotals,protocolConsolidatedTable,
 		gatheredByInstrument,instrumentConsolidatedPreTotal,instrumentConsolidatedTotals,instrumentConsolidatedTable,
 		numNotebooks,numProts,dataTableToUse,subtotalRows,columnHeaders,singleTableTitle,dataWithSubtotal,tableOutput,
-		startDate,endDate,timeSource,objectBillPackets,sites, alignments, dividerPositions, dividers, noProtocolDataTablePre, allDataTablePre, noNotebookDataTablePre, namePackets, nameLookups, objectsExistQ},
+		startDate,endDate,timeSource,replaceSunsetInstruments, objectBillPackets, rootProtocolPackets, rootProtocolTicketPackets, sites, alignments, dividerPositions, dividers, noProtocolDataTablePre, allDataTablePre, noNotebookDataTablePre, namePackets, nameLookups, objectsExistQ,
+		averageTaskTimeDownload, latestComputation, cloudFile, tempFile, importAveTaskTime, aveTaskTimeAssoc
+	},
 
 	(* get the safe options and pull out the OutputFormat option *)
 	safeOps=SafeOptions[PriceInstrumentTime, ToList[ops]];
-	{output, consolidation, cache, timeSource}=Lookup[safeOps, {OutputFormat, Consolidation, Cache, Time}];
+	{output, consolidation, cache, timeSource, replaceSunsetInstruments}=Lookup[safeOps, {OutputFormat, Consolidation, Cache, Time, ReplaceSunsetInstruments}];
 
 	(* pull out the start date and end date from the date range (unless it's Null, in which case don't worry about it) *)
 	{startDate, endDate}=If[NullQ[myDateRange],
@@ -4556,19 +4613,48 @@ priceInstrumentTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenan
 	(* Set Now now so it doesn't change during the running of the protocol*)
 	now=Now;
 
+	(* Download all subprotocols. Two downloads are done here because we cannot do Repeated download of packets for sub fields *)
+	allSubProtocols =  Download[myProtocols, Repeated[Subprotocols], Cache -> cache];
+
+	(* Depending on the length of allSubProtocols, we may download everything here as Cache, or just do Download in procedureLogTime (slower but less RAM required) *)
+	subProtocolFields = If[Length[Flatten[allSubProtocols]]<=50,
+		{
+			Packet[ProcedureLog],
+			Packet[ProcedureLog[{EventType, DateCreated, Protocol, CreatedBy,TaskID, NumberOfItems}]],
+			Packet[ProcedureLog[CreatedBy][{Position}]]
+		},
+		{Packet[Object]}
+	];
+
 	(* Download the information about the the instruments used by this protocol and all its subs, the pricing rates of those instruments, the name of the models of these instruments, and the notebook of the protocol *)
 	(* need to quiet the FieldDoesntExist and NotLinkField messages because some resources are not instrument resources and we need to distinguish these cases *)
 	allDownloadValues=Quiet[
 		Download[
-			myProtocols,
 			{
-				Packet[Notebook, ParentProtocol, Status, DateCompleted, Site],
-				Packet[UserCommunications[Refund]],
-				Packet[SubprotocolRequiredResources[{Time, EstimatedTime, Instrument, Status, Requestor,RootProtocol}]],
-				Packet[SubprotocolRequiredResources[Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel,Objects}]],
-				Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, IncludedInstrumentHours, Site,InstrumentTimeCharges}]],
-				Packet[Notebook[Name]],
-				Packet[Site[Name]]
+				myProtocols,
+				Flatten[allSubProtocols],
+				{Object[Notebook, Job, "Average Task Time Weekly Report"]}
+			},
+			{
+				{
+					Packet[Notebook, ParentProtocol, RootProtocol, Status, StatusLog, DateCompleted, Site, ProcedureLog],
+					Packet[UserCommunications[Refund]],
+					Packet[SubprotocolRequiredResources[{Time, EstimatedTime, Instrument, Status, Requestor, RootProtocol, DateInUse, DateFulfilled}]],
+					Packet[SubprotocolRequiredResources[Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects, DateSunset, Deprecated}]],
+					Packet[SubprotocolRequiredResources[Instrument][Model][ReplacementInstrumentModel][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, IncludedInstrumentHours, Site, InstrumentTimeCharges}]],
+					Packet[Notebook[Name]],
+					Packet[Site[Name]],
+					Packet[RootProtocol[{DateCompleted, CompletedTasks, StatusLog, InternalCommunications}]],
+					Packet[RootProtocol[InternalCommunications][{CreatedBy, DateCreated, StatusLog}]],
+					Packet[ProcedureLog[{EventType, DateCreated, Protocol, CreatedBy, TaskID, NumberOfItems}]],
+					Packet[ProcedureLog[CreatedBy][{Position}]]
+				},
+				subProtocolFields,
+				{
+					(* It is possible that the current computation is running, then its result is empty list, so take all of them and find the last completed one.*)
+					Packet[Computations[{History, Status}]]
+				}
 			},
 			Cache -> cache,
 			SquashResponses -> True,
@@ -4578,31 +4664,56 @@ priceInstrumentTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenan
 	];
 
 	(* slice out the individual downloaded lists for passing to core private helper *)
-	protocolPackets=allDownloadValues[[All, 1]];
-	tsReportPackets=allDownloadValues[[All, 2]];
-	allResourcePackets=allDownloadValues[[All, 3]];
-	instrumentModelPackets=allDownloadValues[[All, 4]];
-	objectBillPackets=allDownloadValues[[All, 5]];
+	protocolPackets=allDownloadValues[[1, All, 1]];
+	tsReportPackets=allDownloadValues[[1, All, 2]];
+	allResourcePackets=allDownloadValues[[1, All, 3]];
+	instrumentModelPackets=allDownloadValues[[1, All, 4]];
+	replacementInstrumentModelPackets=allDownloadValues[[1, All, 5]];
+	objectBillPackets=allDownloadValues[[1, All, 6]];
+	rootProtocolPackets=allDownloadValues[[1, All, 9]];
+	rootProtocolTicketPackets=allDownloadValues[[1, All, 10]];
+
 	(*get the name of the Notebook and Site*)
-	namePackets = DeleteCases[Flatten[allDownloadValues[[All, 6 ;; 7]]], $Failed|Null];
+	namePackets = DeleteCases[Flatten[allDownloadValues[[1, All, 7 ;; 8]]], $Failed|Null];
 	(*generate Association for Name replacement in tables*)
 	nameLookups = AssociationThread[Lookup[namePackets, Object], Lookup[namePackets, Name]];
+
+	(* update cache *)
+	updatedCache = Experiment`Private`FlattenCachePackets[{cache,  allDownloadValues}];
+
+	(* == prepare the average task time to use == *)
+	averageTaskTimeDownload = allDownloadValues[[-1]];
+	latestComputation = Last[PickList[Lookup[Flatten[averageTaskTimeDownload], History], Lookup[Flatten[averageTaskTimeDownload], Status], Completed]];
+	cloudFile = Lookup[latestComputation, ObjectsGenerated] /. {Hold[x_] :> x};
+	(* download latest cloud file to use *)
+	tempFile = DownloadCloudFile[First[Flatten[cloudFile]], FileNameJoin[{$TemporaryDirectory, "AverageTimeResult.txt"}]];
+	importAveTaskTime = FastImport[tempFile, "Text"];
+	(* transform to Expression for later calculation *)
+	aveTaskTimeAssoc = Quiet[ToExpression[importAveTaskTime]];
 
 	(* get the info required for pricing table generation from a core helper; might return a failure *)
 	pricingLists=priceInstrumentTimeProtocols[
 		protocolPackets,
+		rootProtocolPackets,
+		Flatten/@allSubProtocols,
 		tsReportPackets,
+		rootProtocolTicketPackets,
 		allResourcePackets,
 		instrumentModelPackets,
+		replacementInstrumentModelPackets,
 		objectBillPackets,
-		Time -> timeSource
+		aveTaskTimeAssoc,
+		Time -> timeSource,
+		ReplaceSunsetInstruments -> replaceSunsetInstruments,
+		Cache -> updatedCache
 	];
 	If[MatchQ[pricingLists, $Failed],
 		Return[$Failed]
 	];
 
 	(* get the info required for pricing table generation from a core helper *)
-	{notebooks, protocols, datesCompleted, instObjs, modelInst, modelInstName, usageTimes, pricingRates, nonDiscountedPricings, pricingCategories, pricingTiers, sites, discountedPricingRates,discountedPricings}=pricingLists;
+	(* We don't have a good plan for now to charge for different operator models so use replacement to treat all operator as Baseline *)
+	{notebooks, protocols, datesCompleted, instObjs, modelInst, modelInstName, usageTimes, pricingRates, nonDiscountedPricings, pricingCategories, pricingTiers, sites, discountedPricingRates,discountedPricings}=pricingLists/.{"Level 1" -> "Baseline", "Level 2" -> "Baseline", "Level 3" -> "Baseline"};
 
 
 	(* generate a list with the DateCompleted of each row in the DataTable generated above, with the rows with null Time or Rates removed *)
@@ -4963,38 +5074,46 @@ priceInstrumentTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenan
 	Input:
 
 	Output:
-	{indexMatchedNotebooks, indexMatchedProtocols, instObjs, modelInst, UnitScale[timeUsed, Simplify -> False], pricingRate, pricing}
+	{indexMatchedNotebooks, indexMatchedProtocols, instObjs, modelInst, UnitScale[timeUsedToReport, Simplify -> False], pricingRate, pricing}
 *)
 
 DefineOptions[priceInstrumentTimeProtocols,
 	Options :> {
 		{AllowSubprotocols -> False, BooleanP, "Indicates if subprotocols are allowed to be considered for instrument time pricing."},
-		{Time -> EstimatedTime, EstimatedTime | Time | Automatic, "Determines whether the price provided is based on the Estimated or actual amount of time used.", Category -> Hidden}
+		{Time -> EstimatedTime, EstimatedTime | Time | Automatic, "Determines whether the price provided is based on the estimated or actual amount of time used.", Category -> Hidden},
+		{ReplaceSunsetInstruments -> False, BooleanP, "Determines whether to use the ReplacementInstrumentModel of the instrument in pricing calculations if the instrument model has DateSunset populated."},
+		CacheOption
 	}
 ];
 
 priceInstrumentTimeProtocols[
 	myProtocolPackets:{PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...},
+	myRootProtocolPackets:{PacketP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...},
+	mySubProtocols:{{ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...}...},
 	myTSReportPackets:{{PacketP[Object[SupportTicket, UserCommunication]]...}...},
+	myTSTicketPackets:{{PacketP[Object[SupportTicket, Operations]]...}...},
 	myResourcePackets:{{PacketP[Object[Resource]]...}...},
 	myInstrumentModelPackets:{{(PacketP[Model[Instrument]] | $Failed | Null)...}...},
+	myReplacementInstrumentModelPackets:{{(PacketP[Model[Instrument]] | $Failed | Null)...}...},
 	myObjectBillPackets:{
 		({
 			({PacketP[Object[Bill]]...} | $Failed | Null)...
 		} | Null)...
 	},
+	aveTimeAssoc_Association,
 	myOptions:OptionsPattern[]
 ]:=Module[
-	{safeOptions,allowSubprotocolsQ,refundStatus,nonRefundedProtPackets,protocolObjects,
-		protocolNotebooks,allInstrumentResourcePackets,allModelInstrumentPackets,allInstrumentResourceStatuses,
+	{safeOptions,cache,allowSubprotocolsQ,refundStatus,nonRefundedProtPackets,protocolObjects,
+		protocolNotebooks,allInstrumentResourcePackets,allModelInstrumentPackets,allReplacementModelInstrumentPackets,allModelInstrumentPacketsWithReplacement, allInstrumentResourceStatuses,
 		allFulfilledInstrumentResourcePackets,allFulfilledModelInstrumentPackets,subprotocols,notCompletedProts,
 		billForEachProtocol,indexMatchedBills,pricingLevel,indexMatchedRefundStatus,
-		indexMatchedNotebooks,indexMatchedProtocols,indexMatchedDateCompleted,flatInstResourcePackets,flatModelInstPackets,
-		pricingRate,timeUsed,pricingRateDiscounted,pricingCategory,instObjs,nullInstruments,nonDiscountedPricing,discountedPricing,modelInst,timeSource,missingBillsQ,indexMatchedSites, modelInstName},
+		indexMatchedNotebooks,indexMatchedProtocols,indexMatchedRootProtocols,indexMatchedSubprotocols,indexMatchedRootProtocolStatusLog,indexMatchedDateCompleted,flatInstResourcePackets,flatModelInstPackets,
+		rootProtocolSupportTicketWaitingTimes,opProcessingTimeTuples,groupedOpProcessingTimeTuples,protocolToSubprotocolsRule,effectiveOpProcessingTimesRule,realTimesUsed,
+		pricingRate,timeUsedToReport,pricingRateDiscounted,pricingCategory,instObjs,nullInstruments,nonDiscountedPricing,discountedPricing,modelInst,timeSource,replaceSunsetInstruments,missingBillsQ,indexMatchedSites, modelInstName},
 
 	(* get safe options *)
 	safeOptions=SafeOptions[priceInstrumentTimeProtocols, ToList[myOptions]];
-	{allowSubprotocolsQ, timeSource}=Lookup[safeOptions, {AllowSubprotocols, Time}];
+	{allowSubprotocolsQ, timeSource, replaceSunsetInstruments, cache}=Lookup[safeOptions, {AllowSubprotocols, Time, ReplaceSunsetInstruments, Cache}];
 
 	(* get the refund status of each inputted protocol *)
 	refundStatus=Map[
@@ -5017,12 +5136,45 @@ priceInstrumentTimeProtocols[
 	];
 
 	(* get all the model instrument packets *)
-	(* this is a list of lists that is index matched with the input protocols *)
-	(* each nested list is index matched with the instrument resource above *)
 	allModelInstrumentPackets=MapThread[
 		PickList[#2, #1, PacketP[Object[Resource, Instrument]]]&,
 		{myResourcePackets, myInstrumentModelPackets}
 	];
+	
+	allReplacementModelInstrumentPackets=MapThread[
+		PickList[#2, #1, PacketP[Object[Resource, Instrument]]]&,
+		{myResourcePackets, myReplacementInstrumentModelPackets}
+	];
+	
+	(* replace instrument model with ReplacementInstrumentModel if Deprecated is True or DateSunset is in the past *)
+	allModelInstrumentPacketsWithReplacement=If[MatchQ[replaceSunsetInstruments,True],
+		MapThread[
+			Function[{instrumentModelPacketList,replacementInstrumentModelPacketList},
+				MapThread[
+					Function[{instrumentModelPacket, replacementInstrumentModelPacket},
+						If[
+							And[
+								(* This might be Null if the resource is not fulfilled. We will do the filtering later. *)
+								!NullQ[instrumentModelPacket],
+								MatchQ[Lookup[instrumentModelPacket,Deprecated],True]||LessDateQ[Lookup[instrumentModelPacket,DateSunset],Now],
+								MatchQ[replacementInstrumentModelPacket,ObjectP[]]
+							],
+							replacementInstrumentModelPacket,
+							
+							instrumentModelPacket
+						]
+					],
+					{instrumentModelPacketList,replacementInstrumentModelPacketList}
+				]
+			],
+			{allModelInstrumentPackets, allReplacementModelInstrumentPackets}
+		],
+		allModelInstrumentPackets
+	];
+	
+	(* this is a list of lists that is index matched with the input protocols *)
+	(* each nested list is index matched with the instrument resource above *)
+	
 
 	(* get the status of all the instrument resource packets *)
 	allInstrumentResourceStatuses=Lookup[#, Status, {}]& /@ allInstrumentResourcePackets;
@@ -5036,7 +5188,7 @@ priceInstrumentTimeProtocols[
 	(* get the instrument models of only the fulfilled instrument resources *)
 	allFulfilledModelInstrumentPackets=MapThread[
 		Cases[PickList[#1, #2, Fulfilled], PacketP[Model[Instrument]]]&,
-		{allModelInstrumentPackets, allInstrumentResourceStatuses}
+		{allModelInstrumentPacketsWithReplacement, allInstrumentResourceStatuses}
 	];
 
 	(* find the protocols that are Subprotocols *)
@@ -5092,6 +5244,25 @@ priceInstrumentTimeProtocols[
 		ConstantArray[#1, Length[#2]]&,
 		{Lookup[myProtocolPackets, Object, {}], allFulfilledInstrumentResourcePackets}
 	]];
+
+	(* get the root protocol index matched with the rest *)
+	indexMatchedRootProtocols=Flatten[MapThread[
+		ConstantArray[#1, Length[#2]]&,
+		{Lookup[myRootProtocolPackets, Object, {}], allFulfilledInstrumentResourcePackets}
+	]];
+
+	(* get the subprotocols index matched with the rest *)
+	indexMatchedSubprotocols=Flatten[MapThread[
+		ConstantArray[#1, Length[#2]]&,
+		{mySubProtocols, allFulfilledInstrumentResourcePackets}
+	],1];
+
+	(* get the root protocol status log index matched with the rest *)
+	indexMatchedRootProtocolStatusLog=Flatten[MapThread[
+		ConstantArray[#1, Length[#2]]&,
+		{Lookup[myRootProtocolPackets, StatusLog, {}], allFulfilledInstrumentResourcePackets}
+	],1];
+
 
 	(* get the protocol's date completed matched with the rest *)
 	indexMatchedDateCompleted=Flatten[MapThread[
@@ -5161,21 +5332,305 @@ priceInstrumentTimeProtocols[
 	(* throw an error if we don't have pricing info for some of the entries that should be priced based on the financing Model *)
 	If[Length[missingBillsQ]>0, Message[Pricing::NoPricingInfo]];
 
+	(* get the relationship between support ticket waiting time and the root protocol so we can use it to calculate the real usage time *)
+	rootProtocolSupportTicketWaitingTimes = If[MatchQ[timeSource, EstimatedTime],
+		(* Skip this completely if we don't need to report the real usage *)
+		{},
+		MapThread[
+			Function[
+				{protocolPacket, ticketsPacket},
+				Module[
+					{dateRanges,waitingTimeAssoc},
+					dateRanges = Plot`Private`supportTicketWaitingTime[protocolPacket, ticketsPacket, OutputFormat -> DateRange];
+					waitingTimeAssoc = Map[
+						<|Status->SupportTicketWaiting,StartDate->#[[1]],EndDate->#[[2]]|>&,
+						dateRanges
+					];
+					(* Rule from protocol to waiting time *)
+					Lookup[protocolPacket, Object] -> waitingTimeAssoc
+				]
+			],
+			TransposeOrEmpty[
+				DeleteDuplicatesBy[
+					Transpose[{myRootProtocolPackets,myTSTicketPackets}],
+					First
+				],
+				2
+			]
+		]
+	];
+
+	(* now figure out how long we really used each instrument resource *)
+	opProcessingTimeTuples = If[MatchQ[timeSource, EstimatedTime],
+		(* Skip this completely if we don't need to report the real usage *)
+		ConstantArray[{}, Length[flatInstResourcePackets]],
+		MapThread[
+			Function[
+				{protocol, instResourcePacket, statusLog},
+				Module[
+					{resource, dateInUse, dateFulfilled, protocolStatusTimeAssociation, inRangeOpProcessingAssoc, opProcessingTimeTuples},
+
+					(* per instrument resource *)
+					resource = Lookup[instResourcePacket, Object];
+
+					(* we need to convert to America/Chicago for consistency *)
+					dateFulfilled = Lookup[instResourcePacket, DateFulfilled];
+					dateInUse = Lookup[instResourcePacket, DateInUse];
+
+					(*create protocolStatusTimeTuple: {Status, date Status starts, date Status ends}*)
+					protocolStatusTimeAssociation=Cases[
+						If[MatchQ[statusLog,Except[{}]],
+							MapThread[
+								<|Status->#1[[2]],StartDate->#1[[1]],EndDate->#2[[1]]|>&,
+								{Most[statusLog],Rest[statusLog]}
+							],
+							{}
+						],
+						KeyValuePattern[{Status->OperatorProcessing}]
+					];
+
+					(* Get the OpProcessing tubes {protocol, start, end} *)
+					opProcessingTimeTuples = If[MatchQ[protocolStatusTimeAssociation, {}],
+						{},
+						Map[
+							Which[
+								(*StartDate before dateInUse and EndDate before dateFulfilled - get dateInUse up to EndDate range*)
+								LessDateQ[Lookup[#,StartDate],dateInUse]&&LessDateQ[Lookup[#,EndDate],dateFulfilled],
+								{protocol, dateInUse, Lookup[#,EndDate]},
+
+								(*StartDate after dateInUse and EndDate before dateFulfilled - get StartDate up to EndDate range*)
+								GreaterDateQ[Lookup[#,StartDate],dateInUse]&&LessDateQ[Lookup[#,EndDate],dateFulfilled],
+								{protocol, Lookup[#,StartDate], Lookup[#,EndDate]},
+
+								(*StartDate after dateInUse and EndDate after dateFulfilled - get StartDate up to datefulfilled range*)
+								GreaterDateQ[Lookup[#,StartDate],dateInUse]&&GreaterDateQ[Lookup[#,EndDate],dateFulfilled],
+								{protocol, Lookup[#,StartDate], dateFulfilled},
+
+								(*StartDate before dateInUse and EndDate after dateFulfilled - get dateInUse up to datefulfilled range*)
+								LessDateQ[Lookup[#,StartDate],dateInUse]&&GreaterDateQ[Lookup[#,EndDate],dateFulfilled],
+								{protocol, dateInUse, dateFulfilled},
+
+								True,
+								Nothing
+							]&,
+							protocolStatusTimeAssociation
+						]
+					];
+
+					opProcessingTimeTuples
+				]
+			],
+			{
+				indexMatchedProtocols,
+				flatInstResourcePackets,
+				indexMatchedRootProtocolStatusLog
+			}
+		]
+	];
+
+	(* group by protocol *)
+	groupedOpProcessingTimeTuples = GatherBy[Flatten[opProcessingTimeTuples, 1], First];
+
+	(* make rules from protocol to subprotocols *)
+	protocolToSubprotocolsRule = MapThread[
+		(Lookup[#1, Object] -> Join[{Lookup[#1, Object]}, Download[#2, Object]])&,
+		{myProtocolPackets, mySubProtocols}
+	];
+
+	(* Call procedureLogTime one time per protocol *)
+	effectiveOpProcessingTimesRule = Flatten[Map[
+		Function[
+			{protocolTimeTuples},
+			Module[
+				{uniqueProtocolTimeTuples, effectiveOpProcessingTime},
+				uniqueProtocolTimeTuples = DeleteDuplicates[protocolTimeTuples];
+
+				(* For OpProcessing time, check on the time it is supposed to take by excluding any long task or suspicious task, same as what we do in PriceOperatorTime *)
+				effectiveOpProcessingTime = procedureLogTime[
+					protocolTimeTuples[[1,1]],
+					uniqueProtocolTimeTuples[[All, 2;;3]],
+					aveTimeAssoc,
+					Protocols -> Lookup[protocolToSubprotocolsRule, protocolTimeTuples[[1,1]]],
+					Cache -> cache
+				];
+				MapThread[
+					(#1 -> #2)&,
+					{uniqueProtocolTimeTuples, effectiveOpProcessingTime}
+				]
+			]
+		],
+		groupedOpProcessingTimeTuples
+	]];
+
+	realTimesUsed = If[MatchQ[timeSource, EstimatedTime],
+		(* Skip this completely if we don't need to report the real usage *)
+		ConstantArray[Null, Length[flatInstResourcePackets]],
+		MapThread[
+			Function[
+				{protocol, instResourcePacket, rootProtocol, statusLog, subProtocols, opProcessingTuples},
+				Module[
+					{resource, dateInUse, dateFulfilled, time,
+					protocolStatusTimeAssociation, inRangeSciSupportAssoc, inRangeRepairAssoc, inRangeShippingAssoc, inRangeSupportTicketWaitingAssoc, inRageOpReadyAssoc, inRangeOpProcessingAssoc,
+					sciSupportTime, instrRepairTime, shippingMatTime, supportTicketWaitingTime, opReadyTime,opProcessingTime,effectiveOpProcessingTime, activeTime},
+
+					(* per instrument resource *)
+					resource = Lookup[instResourcePacket, Object];
+
+					(* we need to convert to America/Chicago for consistency *)
+					dateFulfilled = Lookup[instResourcePacket, DateFulfilled];
+					dateInUse = Lookup[instResourcePacket, DateInUse];
+
+					(* get time before applying any corrections from protocol status *)
+					time=If[
+						(* use the time between DateInUse and DateFulfilled *)
+						DateObjectQ[dateFulfilled]&&DateObjectQ[dateInUse],
+						dateFulfilled-dateInUse,
+
+						(* Otherwise, set to 0 Hour *)
+						0 Hour
+					];
+
+					(*create protocolStatusTimeTuple: {Status, date Status starts, date Status ends}*)
+					protocolStatusTimeAssociation=Join[
+						Cases[
+							If[MatchQ[statusLog,Except[{}]],
+								MapThread[
+									<|Status->#1[[2]],StartDate->#1[[1]],EndDate->#2[[1]]|>&,
+									{Most[statusLog],Rest[statusLog]}
+								],
+								{}
+							],
+							KeyValuePattern[{Status->(ScientificSupport|RepairingInstrumentation|ShippingMaterials|OperatorReady|OperatorProcessing)}]
+						],
+						(* Also include SupportTicketWaiting time *)
+						Lookup[rootProtocolSupportTicketWaitingTimes, rootProtocol]
+					];
+
+					(*get status time associations that have some overlap with period between dateInUse and dateFulfilled of the resource by excluding any tuple that ends before dateInUse or starts after dateFulfilled*)
+					{
+						inRangeSciSupportAssoc,
+						inRangeRepairAssoc,
+						inRangeShippingAssoc,
+						inRangeSupportTicketWaitingAssoc,
+						inRageOpReadyAssoc,
+						inRangeOpProcessingAssoc
+					}=Map[
+						Function[{status},
+							Select[
+								protocolStatusTimeAssociation,
+								And[
+									Not[LessDateQ[Lookup[#,EndDate],dateInUse]||GreaterDateQ[Lookup[#,StartDate],dateFulfilled]],
+									MatchQ[Lookup[#,Status],status]
+								]&
+							]
+						],
+						{
+							ScientificSupport,
+							RepairingInstrumentation,
+							ShippingMaterials,
+							SupportTicketWaiting,
+							OperatorReady,
+							OperatorProcessing
+						}
+					];
+
+					(* get the amount of time overlap for each status with the resource time *)
+					{
+						sciSupportTime,
+						instrRepairTime,
+						shippingMatTime,
+						supportTicketWaitingTime,
+						opReadyTime,
+						opProcessingTime
+					} = Map[
+						Function[{assocList},
+							If[MatchQ[assocList,{}],
+								(*if inRangeBLAHAssoc is empty, time overlap is just 0 Hour*)
+								0 Hour,
+								(*if there is overlap, calculate based on nature of overlap per assoc then add together*)
+								Map[
+									Which[
+										(*StartDate before dateInUse and EndDate before dateFulfilled - get dateInUse up to EndDate range*)
+										LessDateQ[Lookup[#,StartDate],dateInUse]&&LessDateQ[Lookup[#,EndDate],dateFulfilled],
+										(Lookup[#,EndDate]-dateInUse),
+
+										(*StartDate after dateInUse and EndDate before dateFulfilled - get StartDate up to EndDate range*)
+										GreaterDateQ[Lookup[#,StartDate],dateInUse]&&LessDateQ[Lookup[#,EndDate],dateFulfilled],
+										(Lookup[#,EndDate]-Lookup[#,StartDate]),
+
+										(*StartDate after dateInUse and EndDate after dateFulfilled - get StartDate up to datefulfilled range*)
+										GreaterDateQ[Lookup[#,StartDate],dateInUse]&&GreaterDateQ[Lookup[#,EndDate],dateFulfilled],
+										(dateFulfilled-Lookup[#,StartDate]),
+
+										(*StartDate before dateInUse and EndDate after dateFulfilled - get dateInUse up to datefulfilled range*)
+										LessDateQ[Lookup[#,StartDate],dateInUse]&&GreaterDateQ[Lookup[#,EndDate],dateFulfilled],
+										(dateFulfilled-dateInUse),
+
+										True,
+										0 Hour
+									]&,
+									assocList
+								]//Total
+							]
+						],
+						{
+							inRangeSciSupportAssoc,
+							inRangeRepairAssoc,
+							inRangeShippingAssoc,
+							inRangeSupportTicketWaitingAssoc,
+							inRageOpReadyAssoc,
+							inRangeOpProcessingAssoc
+						}
+					];
+
+					(* For OpProcessing time, check on the time it is supposed to take by excluding any long task or suspicious task, same as what we do in PriceOperatorTime *)
+					effectiveOpProcessingTime = If[MatchQ[opProcessingTuples, {}],
+						0 Hour,
+						Total[Map[
+							Lookup[effectiveOpProcessingTimesRule, Key[#]]&,
+							opProcessingTuples
+						]]
+					];
+
+					(* Time minus all support time needed *)
+					(* supportTicketWaitingTime is not used here for now as it definitely overlaps with OperatorProcessing time. *)
+					activeTime = (time-Total[Cases[{sciSupportTime,instrRepairTime,shippingMatTime,opReadyTime,(opProcessingTime-effectiveOpProcessingTime)},_?QuantityQ]]);
+
+					(* Because of rounding we may get 0 sec or slightly negative value due to very brief instrument usage (like water purifier, we select and release immediately. Convert to 1 second to show it and show the charge *)
+					If[MatchQ[activeTime, LessEqualP[0Second]],
+						1 Second,
+						activeTime
+					]
+				]
+			],
+			{
+				indexMatchedProtocols,
+				flatInstResourcePackets,
+				indexMatchedRootProtocols,
+				indexMatchedRootProtocolStatusLog,
+				indexMatchedSubprotocols,
+				opProcessingTimeTuples
+			}
+		]
+	];
+
 	(* note that if we have an estimated time, just use that estimated time; if we have no estimated time but a real time, then divide the total time by 2, and if neither, use Null *)
 	(* note that this also depends on the Time option, where we are going to divide by 2 if we want to use EstimatedTime but don't actually have it *)
-	timeUsed=Map[
+	timeUsedToReport=MapThread[
 		Which[
-			MatchQ[timeSource, Automatic] && (MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]] || MatchQ[Lookup[#, Time], UnitsP[Minute]]), Min[DeleteCases[Lookup[#, {Time, EstimatedTime}], Null]],
-			MatchQ[timeSource, Time], Lookup[#, Time],
+			MatchQ[timeSource, Automatic] && (MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]] && MatchQ[#2, UnitsP[Minute]]), Min[{Lookup[#, EstimatedTime], #2}],
+			MatchQ[timeSource, Automatic] && MatchQ[#2, UnitsP[Minute]], #2,
+			MatchQ[timeSource, Automatic] && MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]], Lookup[#, EstimatedTime],
+			MatchQ[timeSource, Time], #2,
 			MatchQ[timeSource, EstimatedTime] && MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]], Lookup[#, EstimatedTime],
-			MatchQ[timeSource, EstimatedTime] && MatchQ[Lookup[#, Time], UnitsP[Minute]], Lookup[#, Time] / 2.,
+			MatchQ[timeSource, EstimatedTime] && MatchQ[#2, UnitsP[Minute]], #2,
 			True, Null
 		]&,
-		flatInstResourcePackets
+		{flatInstResourcePackets, realTimesUsed}
 	];
 
 
-	(* note that this is considered an estimated until a bill is closed since SyncBilling only runs once a day and charges within a day may not yet be refelcted *)
+	(* note that this is considered an estimated until a bill is closed since SyncBilling only runs once a day and charges within a day may not yet be reflected *)
 	pricingRateDiscounted=MapThread[
 		Function[{instrResourcePacket,modelInstrPacket,valueRate,billPacket},
 			Module[{instModel,instRootProtocol,loggedInstrTimeCharge},
@@ -5242,7 +5697,7 @@ priceInstrumentTimeProtocols[
 			Null,
 			#1 * #2
 		]&,
-		{pricingRate, timeUsed}
+		{pricingRate, timeUsedToReport}
 	];
 
 	(* get the discounted price for each entry; if Time is Null for a given resource, then that protocol is not yet completed, and so we will use Null here *)
@@ -5251,7 +5706,7 @@ priceInstrumentTimeProtocols[
 			Null,
 			#1 * #2
 		]&,
-		{pricingRateDiscounted, timeUsed}
+		{pricingRateDiscounted, timeUsedToReport}
 	];
 
 
@@ -5269,7 +5724,7 @@ priceInstrumentTimeProtocols[
 		indexMatchedProtocols];
 
 	(* return the info required to make the price tables *)
-	{indexMatchedNotebooks, indexMatchedProtocols, indexMatchedDateCompleted, instObjs, modelInst, modelInstName, UnitScale[timeUsed, Simplify -> False], pricingRate, nonDiscountedPricing, pricingCategory, pricingLevel, indexMatchedSites,pricingRateDiscounted,discountedPricing}
+	{indexMatchedNotebooks, indexMatchedProtocols, indexMatchedDateCompleted, instObjs, modelInst, modelInstName, UnitScale[timeUsedToReport, Simplify -> False], pricingRate, nonDiscountedPricing, pricingCategory, pricingLevel, indexMatchedSites,pricingRateDiscounted,discountedPricing}
 ];
 
 
@@ -5314,8 +5769,8 @@ DefineOptions[PriceOperatorTime,
 			Widget -> Widget[
 				Type -> Enumeration,
 				Pattern :> EstimatedTime | Time | Automatic],
-			Description -> "Determines whether the price provided is based on the Estimated or actual amount of time used.",
-			ResolutionDescription -> "Automatically picks the smaller time between Estimated and a real time.",
+			Description -> "Determines whether the price provided is based on the estimated or actual amount of time used.",
+			ResolutionDescription -> "Automatically resolved to use the real time.",
 			Category -> "General"
 		},
 		CacheOption
@@ -5456,6 +5911,225 @@ PriceOperatorTime[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Span
 
 
 (* ::Subsubsection::Closed:: *)
+(*averageTaskTime (private)*)
+
+(* This helper is to find out the average running time for each task based on previous record *)
+Warning::NoEnoughEvents = "There is not enough events to calculate valid average time for task `1`.";
+
+averageTaskTime[taskID_] := averageTaskTime[taskID] = Module[
+	{allEventsToConsider, allEventsTuples, allEventsTuplesByProtocol, timeList, averageTime, averageTimeSD},
+
+	If[!MemberQ[$Memoization, ExperimentUtilities`Private`averageTaskTime], AppendTo[$Memoization, ExperimentUtilities`Private`averageTaskTime]];
+
+	(* Search for procedure events for the task ID. Limit to recent events (up to 800 - this is a randomly selected arbitrary number to provide some sort of statistical significance). This number means 400 times that the task was run *)
+	allEventsToConsider = Search[Object[Program, ProcedureEvent], DateCreated > (Now - 6 Month) && TaskID == taskID && EventType == (TaskEnd | TaskStart), MaxResults -> 800];
+
+	(* Download and group by protocol *)
+	allEventsTuples = Download[allEventsToConsider, {Object, EventType, DateCreated, Protocol[Object], NumberOfItems}];
+	allEventsTuplesByProtocol = GatherBy[allEventsTuples, #[[4]] &];
+
+	(* Start a list to track all times *)
+	timeList = {};
+	Map[
+		Function[{eventsByProtocol},
+			Module[{splitedEvents, time, timePerItem},
+				(* The events are already sorted by creation time from Search, split by TaskStart so we can get the events associated with each time the task is run. It is done this way because the same task may be validly run multiple times in a single protocol due to looping *)
+				splitedEvents = Split[eventsByProtocol, MatchQ[#[[2]], TaskStart] &];
+				(* If we have a TaskStart/TaskEnd tuple (meaning the task was completed successfully), get the time spent on the task *)
+				If[Length[#] == 2 && #[[All, 2]] == {TaskStart, TaskEnd},
+					time = Abs[#[[2, 3]] - #[[1, 3]]];
+					(* check if TaskEnd has a valid NumberOfItems, Tasks like Branch do not have it *)
+					timePerItem = If[MatchQ[#[[2, 5]], GreaterP[0]],
+						time/(#[[2, 5]]),
+						time
+					];
+					AppendTo[timeList, timePerItem]
+				]& /@ splitedEvents;
+			]
+		],
+		allEventsTuplesByProtocol
+	];
+
+	(* Throw a warning if we just don't have enough events to be significant, but we will still use the data *)
+	(* Only gives this warning if function is called by developer *)
+	If[Length[timeList] < 6 && MatchQ[$PersonID, ObjectP[Object[User, Emerald, Developer]]], Message[Warning::NoEnoughEvents, taskID]];
+
+	(* less than 2 element; just return Null because we cannot calculate SD with 1 element and average only cannot give us a reasonable range to compare *)
+	If[Length[timeList] < 2 , Return[{Null, Null}]];
+
+	(* Return Average and Standard Deviation *)
+	averageTime = Mean[timeList];
+	averageTimeSD = StandardDeviation[timeList];
+
+	Unitless[{averageTime, averageTimeSD}, Second]
+];
+
+(* ::Subsubsection::Closed:: *)
+(*procedureLogTime (private)*)
+
+DefineOptions[procedureLogTime,
+	Options :> {
+		{
+			OptionName -> Protocols,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Adder[Widget[Type->Object,Pattern:>ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}]]],
+			Description -> "The full list of protocols to consider for procedure logs.",
+			ResolutionDescription -> "Automatically resolved to all subprotocols of the input protocol.",
+			Category -> "General"
+		},
+		CacheOption
+	}
+];
+
+(* Single time tuple overload *)
+procedureLogTime[myProtocol: ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}], startEndTimeTuple: {_?DateObjectQ, _?DateObjectQ}, aveTimeAssoc_Association, ops:OptionsPattern[]]:=procedureLogTime[myProtocol, {startEndTimeTuple}, aveTimeAssoc, ops][[1]];
+
+(* This helper is to find out the actual total time of given protocol *)
+(* Download of ProcedureLog happens in this helper function rather than the parent function because ProcedureLog is super large, and handling of ProcedureLog for each subprotocols and parent protocol and be very complicated if all combined into one huge download section *)
+procedureLogTime[myProtocol: ObjectP[{Object[Protocol], Object[Qualification], Object[Maintenance]}], startEndTimeTuples: {{_?DateObjectQ, _?DateObjectQ}..}, aveTimeAssoc_Association, ops:OptionsPattern[]] := Module[
+	{safeOps, cache, providedProtocols, allProtocols, allDownloads, allProcedureEventPackets, inRangeProcedureEventPacketsPerTuple, groupedInRangeByProtocolPerTuple, userPositionPackets, positionRules, allTimes},
+
+	(* get the safe options and pull out the OutputFormat option *)
+	safeOps = SafeOptions[procedureLogTime, ToList[ops]];
+	cache = Lookup[safeOps, Cache];
+	providedProtocols = Lookup[safeOps, Protocols];
+
+	(* Download all events info from all subs. Two downloads are done here because we cannot do Repeated download of packets for sub fields *)
+	allProtocols = If[MatchQ[providedProtocols, Automatic],
+		Download[Flatten[{myProtocol, Quiet[Download[myProtocol, Repeated[Subprotocols], Cache -> cache], Download::MissingCacheField]}], Object],
+		DeleteDuplicates[Download[Flatten[{myProtocol, providedProtocols}], Object]]
+	];
+	allDownloads = Quiet[
+		Download[
+			allProtocols,
+			{
+				Packet[ProcedureLog[{EventType, DateCreated, Protocol, CreatedBy,TaskID, NumberOfItems}]],
+				Packet[ProcedureLog[CreatedBy][{Position}]]
+			},
+			Cache -> cache
+		],
+		{Download::ObjectDoesNotExist, Download::FieldDoesntExist, Download::NotLinkField, Download::MissingCacheField}
+	];
+
+	allProcedureEventPackets = Flatten[allDownloads[[All, 1]]];
+
+	(* Point from user to their position *)
+	userPositionPackets = DeleteDuplicatesBy[Flatten[allDownloads[[All, 2]]], Lookup[#, Object] &];
+	positionRules = Map[Lookup[#, Object] -> Lookup[#, Position] &, userPositionPackets];
+
+	(* ONLY consider the TaskStart/TaskEnd events in the valid time range and created by operator.
+	If SciOps/SM are in the protocol, something has gone wrong and we don't count that time. Consider the LabOps that may have changed their team to LabDev *)
+	inRangeProcedureEventPacketsPerTuple = Map[
+		Function[
+			{timeTuple},
+			Module[
+				{startTime, endTime},
+				{startTime, endTime} = timeTuple;
+				Select[
+					allProcedureEventPackets,
+					GreaterEqualDateQ[Lookup[#, DateCreated], startTime]
+						&& LessEqualDateQ[Lookup[#, DateCreated], endTime]
+						&& MatchQ[Lookup[#, EventType], TaskStart | TaskEnd]
+						&& MatchQ[Lookup[positionRules, Lookup[#, CreatedBy][Object]], ("Laboratory Operator"|"Laboratory Development Intern"|"Laboratory Development Technician")]&
+				]
+			]
+		],
+		startEndTimeTuples
+	];
+
+	(* Group by protocol and Task ID *)
+	groupedInRangeByProtocolPerTuple = Map[
+		Function[
+			{events},
+			GatherBy[events, {Download[Lookup[#, Protocol], Object], Lookup[#, TaskID]} &]
+		],
+		inRangeProcedureEventPacketsPerTuple
+	];
+
+	allTimes = Map[
+		Function[{eventsByProtocolAndTask},
+			Module[{splitedEvents, averageTime, time, taskStartTime, taskEndTime, taskID, trueTime, taskItemCounts, averageTimePerItem, averageTimeLookup},
+
+				taskID = Lookup[eventsByProtocolAndTask, TaskID][[1]];
+
+				(* The events are already sorted by creation time from Download, split by TaskStart so we can get the events associated with each time the task is run. It is done this way because the same task may be validly run multiple times in a single protocol due to looping *)
+				splitedEvents = Split[eventsByProtocolAndTask, MatchQ[Lookup[#, EventType], TaskStart] &];
+
+				Total[Map[
+					Function[{eventList},
+						If[MemberQ[Lookup[eventList, EventType], TaskStart] && MemberQ[Lookup[eventList, EventType], TaskEnd],
+							(* TaskEnd - TaskStart is the task time *)
+							taskStartTime = Lookup[FirstCase[eventList, KeyValuePattern[{EventType -> TaskStart}]], DateCreated];
+							{taskEndTime, taskItemCounts} = Lookup[FirstCase[eventList, KeyValuePattern[{EventType -> TaskEnd}]], {DateCreated, NumberOfItems}];
+
+							time = taskEndTime - taskStartTime;
+							(* Set some thresholds for real task time. These are arbitrarily chosen based on LabOps SOP *)
+							If[time < 10 Minute || NullQ[taskID],
+								(* If it takes less than 10 Minutes, take actual value to avoid calling helper *)
+								time,
+
+								(* Otherwise get the average time per item for the task *)
+								averageTimeLookup = Lookup[aveTimeAssoc, taskID, {Null, Null}];
+
+								(* if there is no result of this task from cloud file -- possibly because this is a newly added task ID, or we don't have enough historical data *)
+								averageTimePerItem = If[MemberQ[averageTimeLookup, Null],
+									(* calculate based on search result *)
+									ExperimentUtilities`Private`averageTaskTime[taskID],
+									(* otherwise, use the lookup result*)
+									averageTimeLookup
+								];
+								(* Calculate the average time based on task type and number of items *)
+								(* NumberOfItems for Instruction, VerifyObject... is always 1 *)
+								averageTime = If[NullQ[taskItemCounts],
+									(* if number of task item is missing, use 1 *)
+									averageTimePerItem * Second,
+									(* otherwise, multiply by the counts*)
+									averageTimePerItem * taskItemCounts * Second
+								];
+
+								(* find out true time to return *)
+								trueTime = Which[
+									(* if no valid average time returned, just use the real time *)
+									MatchQ[averageTime[[1]], Except[TimeP]]||MatchQ[averageTime[[2]], Except[TimeP]],
+									time,
+
+									(* If the task time is significantly different from other protocols (for normal distribution, average + 2*S.D.
+									is 95% confidence), use the average time *)
+									time > averageTime[[1]] + averageTime[[2]]*2,
+									averageTime[[1]],
+
+									(* If the task time is NOT significantly different from other protocols, use it directly, since that is more accurate *)
+									True,
+									time
+								];
+
+								trueTime
+							],
+							(* If we don't have pairs of TaskStart/TaskEnd, just do 0 Minute *)
+							0 Minute
+						]
+					],
+					splitedEvents
+				]]
+			]
+		],
+		groupedInRangeByProtocolPerTuple,
+		{2}
+	];
+
+
+	(* Return the time list, totaled by each time tuple *)
+	Map[
+		If[MatchQ[#, {}],
+			0 Minute,
+			Total[#]
+		]&,
+		allTimes
+	]
+];
+
+(* ::Subsubsection::Closed:: *)
 (*priceOperatorTimeCore (private)*)
 
 
@@ -5473,16 +6147,16 @@ PriceOperatorTime[myTeams:{ObjectP[Object[Team, Financing]]..}, myDateRange:Span
 (* core function that all PriceOperatorTime overloads call *)
 priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]...}, myDateRange:(Null | Span[_?DateObjectQ, _?DateObjectQ]), ops:OptionsPattern[]]:=Module[
 	{
-		safeOps,output,consolidation,cache,now,
-		allDownloadValues,protocolPackets,tsReportPackets,allResourcePackets,operatorModelPackets,
+		safeOps,output,consolidation,cache,updatedCache,now,
+		allProtocols, allDownloadValues,allProtocolDownloadValues,protocolPackets,tsReportPackets,allResourcePackets,operatorModelPackets,repeatedSubprotocols,protocolToSubprotocolsRule,
 		pricingLists,notebooks,protocols,datesCompleted,operatorObjects,modelOperatorNames,usageTimes,pricingRates,nonDiscountedPricings, chargingRates,discountedPricings,
-		nonDiscountedTotalPrice, discountedTotalPrice,allDataTable,dataTableDateCompleted,associationOutput,noNotebookDataTable,noProtocolDataTable, allDataTablePre,noNotebookDataTablePre,noProtocolDataTablePre,
+		nonDiscountedTotalPrice, discountedTotalPrice,allDataTable,dataTableDateCompleted,associationOutput,noNotebookDataTable,noProtocolDataTable, allDataTablePre,
 		gatheredByNotebook,notebookConsolidatedPreTotal,notebookConsolidatedTotals,notebookConsolidatedTable,
 		gatheredByProtocol,protocolConsolidatedPreTotal,protocolConsolidatedTotals,protocolConsolidatedTable,
 		gatheredByOperatorModel,operatorConsolidatedPreTotal,operatorConsolidatedTotals,operatorConsolidatedTable,
 		numNotebooks,numProts,dataTableToUse,subtotalRows,columnHeaders,singleTableTitle,dataWithSubtotal,tableOutput,
 		startDate,endDate,timeSource,objectBillPackets,operatorModelPacketsFromObject,
-		requestedUserObjectPositions,requestedUserObjectModelPackets,objectModelReplacementRules,finalOperatorModelPackets,sites, alignments, dividerPositions, dividers, namePackets, nameLookups},
+		requestedUserObjectPositions,requestedUserObjectModelPackets,objectModelReplacementRules,finalOperatorModelPackets,sites, alignments, dividerPositions, dividers, namePackets, nameLookups, allDataTableEstimated, gatheredEstimatedTime, gatheredProtocols, gatheredReportTime , gatheredValueRate, gatheredActualValue, gatheredChargeRate, gatheredActualCharge, gatheredDates, gatheredNotebooks, gatheredOperatorName, gatheredValue, gatheredCharge, updatedDataTableToUse, cloudFile, tempFile, importAveTaskTime, aveTaskTimeAssoc, averageTaskTimeDownload, latestComputation},
 
 	(* get the safe options and pull out the OutputFormat option *)
 	safeOps=SafeOptions[PriceOperatorTime, ToList[ops]];
@@ -5497,20 +6171,49 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 	(* Set Now now so it doesn't change during the running of the protocol*)
 	now=Now;
 
+	(* Download all subprotocols. Two downloads are done here because we cannot do Repeated download of packets for sub fields *)
+	allProtocols = Download[Flatten[{myProtocols, Download[myProtocols, Repeated[Subprotocols], Cache -> cache]}], Object];
+
+	(* Depending on the length of allSubProtocols, we may download everything here as Cache, or just do Download in procedureLogTime (slower but less RAM required) *)
+	subProtocolFields = If[Length[allProtocols]<=50,
+		{
+			Packet[ProcedureLog],
+			Packet[ProcedureLog[{EventType, DateCreated, Protocol, CreatedBy,TaskID, NumberOfItems}]],
+			Packet[ProcedureLog[CreatedBy][{Position}]]
+		},
+		{Packet[Object]}
+	];
+
 	(* Download the information about the the instruments used by this protocol and all its subs, the pricing rates of those instruments, the name of the models of these instruments, and the notebook of the protocol *)
 	(* need to quiet the FieldDoesntExist and NotLinkField messages because some resources are not instrument resources and we need to distinguish these cases *)
-	allDownloadValues=Quiet[
+	{
+		allDownloadValues,
+		allProtocolDownloadValues,
+		averageTaskTimeDownload
+	}=Quiet[
 		Download[
-			myProtocols,
 			{
-				Packet[Notebook, ParentProtocol, Status, DateCompleted, Priority, Site],
-				Packet[UserCommunications[Refund]],
-				Packet[SubprotocolRequiredResources[{Time, EstimatedTime, Operator, Status}]],
-				Packet[SubprotocolRequiredResources[RequestedOperators][{Name, QualificationLevel}]],
-				Packet[SubprotocolRequiredResources[RequestedOperators][Model][{Name, QualificationLevel}]],
-				Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, OperatorTimePrice, OperatorPriorityTimePrice, OperatorModelPrice,Site}]],
-				Packet[Notebook[Name]],
-				Packet[Site[Name]]
+				myProtocols,
+				allProtocols,
+				{Object[Notebook, Job, "Average Task Time Weekly Report"]}
+			},
+			{
+				{
+					Packet[Notebook, ParentProtocol, Status, DateCompleted, Priority, Site, StatusLog, ProcedureLog],
+					Packet[UserCommunications[Refund]],
+					Packet[SubprotocolRequiredResources[{Time, EstimatedTime, Operator, Status}]],
+					Packet[SubprotocolRequiredResources[RequestedOperators][{Name, QualificationLevel}]],
+					Packet[SubprotocolRequiredResources[RequestedOperators][Model][{Name, QualificationLevel}]],
+					Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, OperatorTimePrice, OperatorPriorityTimePrice, OperatorModelPrice,Site}]],
+					Packet[Notebook[Name]],
+					Packet[Site[Name]],
+					Repeated[Subprotocols]
+				},
+				subProtocolFields,
+				{
+				(* It is possible that the current computation is running, then its result is empty list, so take all of them and find the last completed one.*)
+					Packet[Computations[{History, Status}]]
+				}
 			},
 			Cache -> cache,
 			SquashResponses -> True,
@@ -5526,17 +6229,39 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 	operatorModelPackets=allDownloadValues[[All, 4]];
 	operatorModelPacketsFromObject=allDownloadValues[[All, 5]];
 	objectBillPackets=allDownloadValues[[All, 6]];
+	repeatedSubprotocols=allDownloadValues[[All, -1]];
 
 	(*get the name of the Notebook and Site*)
 	namePackets = DeleteCases[Flatten[allDownloadValues[[All, 7;;8]]], $Failed|Null];
 	(*generate Association for Name replacement in tables*)
 	nameLookups = AssociationThread[Lookup[namePackets, Object], Lookup[namePackets, Name]];
 
+	(* update cache *)
+	updatedCache = If[Length[allProtocols]<=50,
+		Experiment`Private`FlattenCachePackets[{cache,  allDownloadValues[[All,;;-2]], allProtocolDownloadValues}],
+		Experiment`Private`FlattenCachePackets[{cache,  allDownloadValues[[All,;;-2]]}]
+	];
+
+	(* make rules from protocol to subprotocols *)
+	protocolToSubprotocolsRule = MapThread[
+		(Download[#1, Object] -> Join[{Download[#1, Object]}, Download[Flatten[#2], Object]])&,
+		{myProtocols, repeatedSubprotocols}
+	];
+
 	(* if we have ever requested Object for Operator, convert to packet for a Model *)
 	requestedUserObjectPositions = Position[operatorModelPackets, PacketP[Object[User]]];
 	requestedUserObjectModelPackets =  operatorModelPacketsFromObject[[Sequence @@ #]] & /@ requestedUserObjectPositions;
 	objectModelReplacementRules = Rule @@@ Transpose@{requestedUserObjectPositions, requestedUserObjectModelPackets};
 	finalOperatorModelPackets = ReplacePart[operatorModelPackets, objectModelReplacementRules];
+
+	(* == prepare the average task time to use == *)
+	latestComputation = Last[PickList[Lookup[Flatten[averageTaskTimeDownload], History], Lookup[Flatten[averageTaskTimeDownload], Status], Completed]];
+	cloudFile = Lookup[latestComputation, ObjectsGenerated] /. {Hold[x_] :> x};
+	(* download latest cloud file to use *)
+	tempFile = DownloadCloudFile[First[Flatten[cloudFile]], FileNameJoin[{$TemporaryDirectory, "AverageTimeResult.txt"}]];
+	importAveTaskTime = FastImport[tempFile, "Text"];
+	(* transform to Expression for later calculation *)
+	aveTaskTimeAssoc = Quiet[ToExpression[importAveTaskTime]];
 
 	(* get the info required for pricing table generation from a core helper; might return a failure *)
 	pricingLists=priceOperatorTimeProtocols[
@@ -5556,47 +6281,108 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 
 	(* generate a list with the DateCompleted of each row in the DataTable generated above, with the rows with null Time or Rates removed *)
 	dataTableDateCompleted=MapThread[
-		Function[{date, nonDiscountedTime, rate},
-			If[NullQ[nonDiscountedTime] || NullQ[rate],
+		Function[{date, rate},
+			If[NullQ[rate],
 				Nothing,
 				date
 			]
 		],
-		{datesCompleted, usageTimes, pricingRates}
+		{datesCompleted, pricingRates}
+	];
+
+	allDataTablePre = Transpose[{dataTableDateCompleted, notebooks, protocols, modelOperatorNames, usageTimes, pricingRates, nonDiscountedPricings, chargingRates, discountedPricings}];
+
+	(* collapse all protocols into one line so that only one line per protocol shows up - price per operator is the same *)
+	allDataTableEstimated = Map[
+		Join[
+			#[[1, 1;;4]],
+			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
+				{Total[#[[All, 5]]]},
+				{Total[#[[All, 5]]]}
+			],
+			{#[[1,6]]},
+			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
+				{Total[#[[All, 7]]]},
+				{Total[#[[All, 7]]]}
+			],
+			#[[1, 8;;9]]
+		]&,
+		GatherBy[allDataTablePre, #[[3;;4]]&]
+	];
+
+	(* == Update the operator time based on previous records ==*)
+
+	(* extract required information *)
+	{gatheredDates, gatheredNotebooks, gatheredProtocols, gatheredOperatorName, gatheredEstimatedTime, gatheredValueRate, gatheredValue, gatheredChargeRate, gatheredCharge} = TransposeOrEmpty[9] @ allDataTableEstimated;
+
+	(* find out the actual time of each protocol *)
+	gatheredReportTime  = If[MatchQ[timeSource, EstimatedTime],
+		gatheredEstimatedTime,
+		Map[
+			Function[{protocol},
+				Module[{statusLog, pairedStatuses, startEndProcessingTuples,
+					processingUsers, userPositions, positionRules, trueOperatorsTuples,
+					processingTimes},
+					(* Start by TotalOperatorTime definition (using StatusLog in protocol) *)
+					statusLog = Lookup[Experiment`Private`fetchPacketFromCache[protocol, protocolPackets], StatusLog];
+					pairedStatuses = Cases[Transpose[{Most[statusLog], Rest[statusLog]}], {{_, OperatorProcessing, _}, ___}];
+
+					(* Get the time for each period *)
+					startEndProcessingTuples = {#[[1, 1]], #[[2, 1]], #[[1, 3]][Object]} & /@ pairedStatuses;
+
+					(* Filter out any status by SciOps/SM. If SciOps/SM are in the protocol, something has gone wrong and we don't count that time. Consider the LabOps that may have changed their team to LabDev *)
+					processingUsers = DeleteDuplicates[Download[startEndProcessingTuples[[All, 3]], Object]];
+					userPositions = Download[processingUsers, Position];
+					positionRules = AssociationThread[processingUsers, userPositions];
+					trueOperatorsTuples = Select[startEndProcessingTuples, MatchQ[#[[3]] /. positionRules, ("Laboratory Operator"|"Laboratory Development Intern"|"Laboratory Development Technician")] &];
+
+					(* Call procedureLogTime to see the true processing time for each period *)
+					processingTimes = If[MatchQ[trueOperatorsTuples, {}],
+						{0 Hour},
+						procedureLogTime[
+							protocol,
+							trueOperatorsTuples[[All,{1,2}]],
+							aveTaskTimeAssoc,
+							Cache -> updatedCache,
+							Protocols -> Lookup[protocolToSubprotocolsRule, protocol]
+						]
+					];
+
+					UnitScale[Total[processingTimes], Simplify -> False]
+				]
+			],
+			gatheredProtocols
+		]
+	];
+	gatheredActualValue = MapThread[
+		If[NullQ[#1]||NullQ[#2],
+			Null,
+			#1 * #2
+		]&,
+		{gatheredReportTime , gatheredValueRate}
+	];
+	gatheredActualCharge = MapThread[
+		If[NullQ[#1]||NullQ[#2],
+			Null,
+			#1 * #2
+		]&,
+		{gatheredReportTime , gatheredChargeRate}
 	];
 
 	(* generate the table of items that will be displayed in a table or provided as an association *)
 	(* delete all the cases where the amount of time used or pricing rate is Null *)
 	(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
 	(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
-	allDataTablePre=MapThread[
-		Function[{notebook, protocol, operatorModel, rate, nonDiscountedTime, value, charge, date, chargeRate},
+	allDataTable=MapThread[
+		Function[{date, notebook, protocol, operatorModel, nonDiscountedTime, rate, value, chargeRate, charge},
 			Switch[{nonDiscountedTime, rate, output, consolidation},
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
-				{_, _, Table, Null}, {date, notebook, protocol, operatorModel, nonDiscountedTime, NumberForm[rate, {\[Infinity], 2}],  value, NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
+				{_, _, Table, Null}, {date, notebook, protocol, operatorModel, NumberForm[UnitScale[nonDiscountedTime, Simplify -> False], {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  NumberForm[Round[value, 0.01], {\[Infinity], 2}], NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
 				{_, _, _, _}, {date, notebook, protocol, operatorModel, nonDiscountedTime, rate, value, chargeRate, charge}
 			]
 		],
-		{notebooks, protocols, modelOperatorNames, pricingRates, usageTimes, nonDiscountedPricings,discountedPricings, dataTableDateCompleted, chargingRates}
-	];
-
-	(* collapse all protocols into one line so that only one line per protocol shows up - price per operator is the same *)
-	allDataTable = Map[
-		Join[
-			#[[1, 1;;4]],
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[UnitScale[Total[#[[All, 5]]], Simplify -> False], {\[Infinity], 2}]},
-				{Total[#[[All, 5]]]}
-			],
-			{#[[1,6]]},
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[Total[#[[All, 7]]], {\[Infinity], 2}]},
-				{Total[#[[All, 7]]]}
-			],
-			#[[1, 8;;9]]
-		]&,
-		GatherBy[allDataTablePre, #[[3;;4]]&]
+		{gatheredDates, gatheredNotebooks, gatheredProtocols, gatheredOperatorName, gatheredReportTime , gatheredValueRate, gatheredActualValue, gatheredChargeRate, gatheredActualCharge}
 	];
 
 	(* generate the output association; this will be returned if OutputFormat -> Association *)
@@ -5607,65 +6393,29 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 	];
 
 	(* generate the table of items that will be displayed that also omits the Notebook column (because all items belong to the same notebook) *)
-	noNotebookDataTablePre=MapThread[
+	noNotebookDataTable=MapThread[
 		Function[{protocol, operatorModel, rate, nonDiscountedTime, value, charge, date, chargeRate},
 			Switch[{nonDiscountedTime, rate, output, consolidation},
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
-				{_, _, Table, Null}, {date, protocol, operatorModel,nonDiscountedTime, NumberForm[rate, {\[Infinity], 2}], value, NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
+				{_, _, Table, Null}, {date, protocol, operatorModel, NumberForm[UnitScale[nonDiscountedTime, Simplify -> False], {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], value, NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
 				{_, _, _, _}, {date, protocol, operatorModel, nonDiscountedTime, rate, value, chargeRate, charge}
 			]
 		],
-		{protocols, modelOperatorNames, pricingRates, usageTimes, nonDiscountedPricings,discountedPricings, dataTableDateCompleted, chargingRates}
-	];
-
-	(* collapse all protocols into one line so that only one line per protocol shows up - price per operator is the same *)
-	noNotebookDataTable = Map[
-		Join[
-			#[[1, 1;;3]],
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[UnitScale[Total[#[[All, 4]]], Simplify -> False], {\[Infinity], 2}]},
-				{Total[#[[All, 4]]]}
-			],
-			{#[[1,5]]},
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[Total[#[[All, 6]]], {\[Infinity], 2}]},
-				{Total[#[[All, 6]]]}
-			],
-			#[[1, 7;;8]]
-		]&,
-		GatherBy[noNotebookDataTablePre, #[[2;;3]]&]
+		{gatheredProtocols, gatheredOperatorName, gatheredValueRate, gatheredReportTime , gatheredActualValue, gatheredActualCharge, gatheredDates, gatheredChargeRate}
 	];
 
 	(* generate the table of items that will be displayed that also omits the Notebook and Protocol columns (because all items belong to the same notebook and protocol) *)
-	noProtocolDataTablePre=MapThread[
+	noProtocolDataTable=MapThread[
 		Function[{operatorModel, rate, nonDiscountedTime, value, charge, date, chargeRate},
 			Switch[{nonDiscountedTime, rate, output, consolidation},
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
-				{_, _, Table, Null}, {date, operatorModel, nonDiscountedTime, NumberForm[rate, {\[Infinity], 2}], value, NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
+				{_, _, Table, Null}, {date, operatorModel, NumberForm[UnitScale[nonDiscountedTime, Simplify -> False], {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], value, NumberForm[chargeRate, {\[Infinity], 2}], NumberForm[Round[charge, 0.01], {\[Infinity], 2}]},
 				{_, _, _, _}, {date, operatorModel, nonDiscountedTime, rate, value, chargeRate, charge}
 			]
 		],
-		{modelOperatorNames, pricingRates, usageTimes, nonDiscountedPricings,discountedPricings, dataTableDateCompleted, chargingRates}
-	];
-
-	(* collapse all protocols into one line so that only one line per protocol shows up - price per operator is the same *)
-	noProtocolDataTable = Map[
-		Join[
-			#[[1, 1;;2]],
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[UnitScale[Total[#[[All, 3]]], Simplify -> False], {\[Infinity], 2}]},
-				{Total[#[[All, 3]]]}
-			],
-			{#[[1,4]]},
-			If[MatchQ[output, Table]&&MatchQ[consolidation, Null],
-				{NumberForm[Total[#[[All, 5]]], {\[Infinity], 2}]},
-				{Total[#[[All, 5]]]}
-			],
-			#[[1, 6;;7]]
-		]&,
-		GatherBy[noProtocolDataTablePre, #[[2]]&]
+		{gatheredOperatorName, gatheredValueRate, gatheredReportTime , gatheredActualValue, gatheredActualCharge, gatheredDates, gatheredChargeRate}
 	];
 
 	(* --- Generate the consolidated data tables, depending on what/whether the Consolidation option was specified --- *)
@@ -5755,47 +6505,61 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 	];
 
 	(* get the nonDiscounted total price for the entire input; this will be returned if OutputFormat -> Price *)
-	nonDiscountedTotalPrice=If[MatchQ[DeleteCases[nonDiscountedPricings, Null], {}],
+	nonDiscountedTotalPrice=If[MatchQ[DeleteCases[gatheredActualValue, Null], {}],
 		0 * USD,
-		Total[DeleteCases[nonDiscountedPricings, Null]]
+		Total[DeleteCases[gatheredActualValue, Null]]
 	];
 
 	(* get the discounted total price for the entire input; *)
-	discountedTotalPrice=If[MatchQ[DeleteCases[discountedPricings, Null], {}],
+	discountedTotalPrice=If[MatchQ[DeleteCases[gatheredActualCharge, Null], {}],
 		0 * USD,
-		Total[DeleteCases[discountedPricings, Null]]
+		Total[DeleteCases[gatheredActualCharge, Null]]
+	];
+
+	(* omit the column of operator model *)
+	updatedDataTableToUse=Switch[{consolidation, numNotebooks, numProts},
+		{Notebook | Protocol | Operator, _, _},
+		dataTableToUse,
+
+		{_, 1, 1},
+		Join[{#[[1]]}, #[[3 ;;]]] & /@ dataTableToUse,
+
+		{_, 1, _},
+		Join[#[[1;;2]], #[[4 ;;]]] & /@ dataTableToUse,
+
+		{_, _, _},
+		Join[#[[1;;3]], #[[5 ;;]]] & /@ dataTableToUse
 	];
 
 	(* generate the subtotal row with the appropriate number of columns *)
 	subtotalRows=Switch[{consolidation, numNotebooks, numProts},
 		{Notebook | Protocol | Operator, _, _}, {{"", "",""}, {"Total", nonDiscountedTotalPrice,Round[discountedTotalPrice,0.01]}},
-		{_, 1, 1}, {{"", "", "", "", "", "", ""}, {"", "", "", "Total Value", nonDiscountedTotalPrice,"Total Charge", Round[discountedTotalPrice,0.01]}},
-		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value",nonDiscountedTotalPrice, "Total Charge", Round[discountedTotalPrice,0.01]}},
-		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value",nonDiscountedTotalPrice, "Total Charge", Round[discountedTotalPrice,0.01]}}
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", nonDiscountedTotalPrice,"Total Charge", Round[discountedTotalPrice,0.01]}},
+		{_, 1, _}, {{"", "", "", "", "", "", ""}, {"", "", "", "Total Value",nonDiscountedTotalPrice, "Total Charge", Round[discountedTotalPrice,0.01]}},
+		{_, _, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value",nonDiscountedTotalPrice, "Total Charge", Round[discountedTotalPrice,0.01]}}
 	];
 
 	(* generate the column header row with the appropriate number of columns *)
-
 	columnHeaders=Switch[{consolidation, numNotebooks, numProts},
 		{Notebook, _, _}, {"Notebook", Tooltip["Value","Price before any discounts are applied."],Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
 		{Protocol, _, _}, {"Source Protocol", Tooltip["Value","Price before any discounts are applied."],Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
 		{Operator, _, _}, {"Operator Model Name", Tooltip["Value","Price before any discounts are applied."],Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
-		{_, 1, 1}, {"Date Completed", "Model Name", Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
-		{_, 1, _}, {"Date Completed", "Source Protocol", "Model Name", Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
-		{_, _, _}, {"Date Completed", "Notebook", "Source Protocol", "Model Name",Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]}
+		{_, 1, 1}, {"Date Completed", Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
+		{_, 1, _}, {"Date Completed", "Source Protocol", Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]},
+		{_, _, _}, {"Date Completed", "Notebook", "Source Protocol", Tooltip["Usage Time","Amount of time operator works on a protocol"], Tooltip["Rate","Price (per hour) based on Operator Model specified in OperatorModelPrice of associated Model[Pricing]"], Tooltip["Value","Price before any discounts are applied."], Tooltip["Rate","Price (per hour) after any discounts are applied."], Tooltip["Charge","Price after any discounts are applied. Operator labor is free and OperatorTimeCharges are set to 0 USD at billing."]}
 	];
 
 	(* make the title for the table for the case where we have a single table*)
 	singleTableTitle="Operator Time Pricing";
 
 	(* get the whole data table with the subtotal row appended to it *)
-	dataWithSubtotal=Join[dataTableToUse, subtotalRows];
+	dataWithSubtotal=Join[updatedDataTableToUse, subtotalRows];
 
 	alignments = Switch[{consolidation, numNotebooks, numProts},
 		{Notebook|Protocol|Operator, _, _}, {Left, Center},
-		{_, 1, 1}, {Left, Left, Center},
-		{_, 1, _}, {Left, Left, Left, Center},
-		{_, _, _}, {Left, Left, Left, Left, Center}
+		{_, 1, 1}, {Left, Center},
+		{_, 1, _}, {Left, Left, Center},
+		{_, _, _}, {Left, Left, Left, Center}
 	];
 	dividerPositions = If[MatchQ[consolidation, Notebook|Protocol|Operator],
 		{1, -1, -3},
@@ -5827,7 +6591,7 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 
 	(* generate the table output; this will be returned if OutputFormat -> Table (the Default) *)
 	(* if dataTableToUse is {}, then just return {} *)
-	tableOutput=If[MatchQ[dataTableToUse, {}],
+	tableOutput=If[MatchQ[updatedDataTableToUse, {}],
 		{},
 		Grid[
 			Join[
@@ -5898,7 +6662,7 @@ priceOperatorTimeCore[myProtocols:{ObjectP[{Object[Protocol], Object[Maintenance
 DefineOptions[priceOperatorTimeProtocols,
 	Options :> {
 		{AllowSubprotocols -> False, BooleanP, "Indicates if subprotocols are allowed to be considered for operator time pricing."},
-		{Time -> EstimatedTime, EstimatedTime | Time | Automatic, "Determines whether the price provided is based on the Estimated or actual amount of time used.", Category -> Hidden}
+		{Time -> EstimatedTime, EstimatedTime | Time | Automatic, "Determines whether the price provided is based on the estimated or actual amount of time used.", Category -> Hidden}
 	}
 ];
 
@@ -6136,18 +6900,20 @@ priceOperatorTimeProtocols[
 	(* throw and error if we don't have bill info for some entries *)
 	If[Length[missingBillsQ]>1,Message[Pricing::NoPricingInfo]];
 
-	(* note that if we have an estimated time, just use that estimated time; if we have no estimated time but a real time, then divide the total time by 2, and if neither, use Null *)
-	(* note that this also depends on the Time option, where we are going to divide by 2 if we want to use EstimatedTime but don't actually have it *)
-
 	timeUsed=Map[
 		Which[
-			(* automatically grab the lowest number between Time and EstimatedTime in case both are populated *)
-			MatchQ[timeSource, Automatic] && (MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]] && MatchQ[Lookup[#, Time], UnitsP[Minute]]), Min[DeleteCases[Lookup[#, {Time, EstimatedTime}], Null]],
-			MatchQ[timeSource, Automatic] && (NullQ[Lookup[#, EstimatedTime]] && MatchQ[Lookup[#, Time], UnitsP[Minute]]), Lookup[#, Time] / 2.,
-			MatchQ[timeSource, Time], Lookup[#, Time],
-			MatchQ[timeSource, EstimatedTime] && MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]], Lookup[#, EstimatedTime],
-			MatchQ[timeSource, EstimatedTime] && MatchQ[Lookup[#, Time], UnitsP[Minute]], Lookup[#, Time] / 2., (*TODO modify to be more accurate instead of Time/2 *)
-			True, Null
+			(* If EstimatedTime is asked and we have an estimated time for this operator resource, just use that estimated time *)
+			MatchQ[timeSource, EstimatedTime] && MatchQ[Lookup[#, EstimatedTime], UnitsP[Minute]],
+			Lookup[#, EstimatedTime],
+
+			(* If EstimatedTime is asked and we don't have an estimated time but a real time for this operator resource, divide the total time by 2 *)
+			MatchQ[timeSource, EstimatedTime] && (NullQ[Lookup[#, EstimatedTime]] && MatchQ[Lookup[#, Time], UnitsP[Minute]]),
+			Lookup[#, Time] / 2.,
+
+			(* Otherwise, if estimated time is requested but neither of EstimatedTime or Time of resource is populated, leave it as Null *)
+			(* If timeSource is not EstimatedTime, leave it as Null for now as we will later track the ProcedureLog to fetch the real time of each protocol *)
+			True,
+			Null
 		]&,
 		flatOperatorResourcePackets
 	];
@@ -6192,7 +6958,7 @@ priceOperatorTimeProtocols[
 		indexMatchedProtocols];
 
 	(* return the info required to make the price tables *)
-	{indexMatchedNotebooks, indexMatchedProtocols, indexMatchedDateCompleted, operatorObjects, modelOperatorNames, UnitScale[timeUsed, Simplify -> False], pricingRate, nonDiscountedPricing, indexMatchedSites,discountedRates,discountedPricing}
+	{indexMatchedNotebooks, indexMatchedProtocols, indexMatchedDateCompleted, operatorObjects, modelOperatorNames, timeUsed, pricingRate, nonDiscountedPricing, indexMatchedSites,discountedRates,discountedPricing}
 ];
 
 
@@ -6228,6 +6994,16 @@ DefineOptions[PriceMaterials,
 				Type -> Enumeration,
 				Pattern :> Null | MaterialsPricingConsolidationP],
 			Description -> "Determines whether the output table of this function consolidates all pricing information by Notebook, Protocol, Material, or not at all.",
+			Category -> "General"
+		},
+		{
+			OptionName -> Split,
+			Default -> True,
+			AllowNull -> True,
+			Widget -> Widget[
+				Type -> Enumeration,
+				Pattern :> BooleanP],
+			Description -> "Determines whether the output of this function is shows separate tables for Purchased vs Consumed materials.",
 			Category -> "General"
 		},
 		CacheOption
@@ -6421,30 +7197,36 @@ priceMaterialsCore[
 	ops:OptionsPattern[]
 ]:=Module[
 	{
-		safeOps, output, cache, consolidation, allProtocols, allTransactionsOrders,
+		safeOps, output, cache, consolidation, split, allProtocols, allTransactionsOrders,
 		allProtocolValues, allTransactionValues,
 		uniqueModels, uniqueProducts, uniqueContainers, uniqueSites, uniqueDefaultContainers,
 		allProtocolsDownloadPacketsRaw, packetRulesProtocols, resourceProducts,
-		protocolPackets, resourcePackets, resourceProductPackets,
+		protocolPackets, resourcePackets, updatedResourcePackets, resourceProductPackets,
 		resourceSamplePackets, resourceSampleModelPackets, resourceSampleContainerModelPackets, resourceContainerModelPackets, defaultStorageConditionPackets,
-		containerResourcePackets, siteModelPackets, troubleshootingReportPackets, outputTransactionsOrders, outputProtocols, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedTags,
-		joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedNamesNoNull, outputListsSortedBySources, outputListsSortedByMaterials, pricingOutputOrderPriority,
+		containerResourcePackets, siteModelPackets,splitPackets, troubleshootingReportPackets, outputTransactionsOrders, outputProtocols, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedTags,
+		joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedNamesNoNull, outputListsSortedBySources, outputListsSortedBySourcesLeftoverInventory, outputListsSortedBySourcesConsumed, outputListsSortedByMaterials, outputListsSortedByMaterialsLeftoverInventory, outputListsSortedByMaterialsConsumed, pricingOutputOrderPriority,
 		outputListsSortedByPricing, sortedNotebooks, sortedSources, sortedSamples, sortedNames, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate,
-		sortedTags, transposedOutputs, allDataTable, associationDataTable, associationOutput, tableOutput, noNotebookDataTable, noProtocolDataTable,
-		gatheredByNotebook, notebookConsolidatedPreTotal, notebookConsolidatedTotals, notebookConsolidatedTable, gatheredByProtocol, protocolConsolidatedPreTotal,
-		protocolConsolidatedTotals, protocolConsolidatedTable, gatheredByMaterial, materialConsolidatedPreTotal, materialConsolidatedTotals, materialConsolidatedTable,
-		numNotebooks, numProts, dataTableToUse, totalInputPrice, subtotalRows, dataWithSubtotal, columnHeaders, tableTitle,
-		sortedFlattenedData, filteredResourceSampleContentsPackets, joinedSite, sortedSite, outputListsTax, totalTax, namePackets, nameLookups, taxExemptPackets, updatedOutputListsTax,
+		sortedTags, transposedOutputs, allDataTableLeftoverInventory, allDataTableConsumed, associationDataTable, associationOutput, summaryAssociationOutput, tableOutputLeftoverInventory, tableOutputConsumed,totalTable, finalTable, noNotebookDataTableLeftoverInventory, noNotebookDataTableConsumed, noProtocolDataTableLeftoverInventory, noProtocolDataTableConsumed,
+		gatheredByNotebookLeftoverInventory, gatheredByNotebookConsumed, notebookConsolidatedPreTotalLeftoverInventory, notebookConsolidatedPreTotalConsumed, notebookConsolidatedTotalsLeftoverInventory, notebookConsolidatedTotalsConsumed, notebookConsolidatedTableLeftoverInventory, notebookConsolidatedTableConsumed, gatheredByProtocol, gatheredByProtocolLeftoverInventory, gatheredByProtocolConsumed, protocolConsolidatedPreTotalLeftoverInventory, protocolConsolidatedPreTotalConsumed,
+		protocolConsolidatedTotalsLeftoverInventory, protocolConsolidatedTotalsConsumed, protocolConsolidatedTableLeftoverInventory, protocolConsolidatedTableConsumed, gatheredByMaterialLeftoverInventory, gatheredByMaterialConsumed, materialConsolidatedPreTotalLeftoverInventory, materialConsolidatedPreTotalConsumed, materialConsolidatedTotalsLeftoverInventory, materialConsolidatedTotalsConsumed, materialConsolidatedTableLeftoverInventory, materialConsolidatedTableConsumed,
+		numNotebooksLeftoverInventory, numProtsLeftoverInventory, numNotebooksConsumed, numProtsConsumed, dataTableToUseLeftoverInventory, dataTableToUseConsumed,totalInputPriceValue, totalInputPriceLeftoverInventoryValue, totalInputPriceConsumedValue, totalInputPriceCharged, totalInputPriceLeftoverInventoryCharge, totalInputPriceConsumedCharge, subtotalRowsLeftoverInventory, subtotalRowsConsumed, dataWithSubtotalLeftoverInventory, dataWithSubtotalConsumed, columnHeadersLeftoverInventory, columnHeadersConsumed, tableTitleLeftoverInventory, tableTitleConsumed,
+		sortedFlattenedData, filteredResourceSampleContentsPackets, joinedSite, joinedCharged, joinedPurchaseType,
+		joinedSamplesLeftoverInventory, joinedNotebooksLeftoverInventory, joinedSourcesLeftoverInventory, joinedNamesNoNullLeftoverInventory, joinedTagsLeftoverInventory, joinedAmountsLeftoverInventory, joinedPricingRateLeftoverInventory, joinedPriceLeftoverInventory, joinedDateLeftoverInventory, joinedSiteLeftoverInventory, joinedChargedLeftoverInventory, joinedSamplesConsumed, joinedNotebooksConsumed, joinedSourcesConsumed, joinedNamesNoNullConsumed, joinedTagsConsumed, joinedAmountsConsumed, joinedPricingRateConsumed, joinedPriceConsumed, joinedDateConsumed, joinedSiteConsumed,  joinedChargedConsumed,
+		allDataTable, tableOutput, noNotebookDataTable,  noProtocolDataTable,
+		gatheredByNotebook, notebookConsolidatedPreTotal, notebookConsolidatedTotals,  notebookConsolidatedTable, protocolConsolidatedPreTotal,
+		protocolConsolidatedTotals, protocolConsolidatedTable,  gatheredByMaterial, materialConsolidatedPreTotal,  materialConsolidatedTotals,  materialConsolidatedTable,
+		numNotebooks, numProts,  dataTableToUse,  subtotalRows,  dataWithSubtotal,  columnHeaders,  tableTitle,
+		sortedSite, sortedCharged, sortedPurchaseType, sortedSamplesLeftoverInventory, sortedNotebooksLeftoverInventory, sortedSourcesLeftoverInventory, sortedNamesLeftoverInventory, sortedTagsLeftoverInventory, sortedAmountsLeftoverInventory, sortedPricingRateLeftoverInventory, sortedPriceLeftoverInventory, sortedDateLeftoverInventory, sortedSiteLeftoverInventory,sortedChargedLeftoverInventory, sortedSamplesConsumed, sortedNotebooksConsumed, sortedSourcesConsumed, sortedNamesConsumed, sortedTagsConsumed, sortedAmountsConsumed, sortedPricingRateConsumed, sortedPriceConsumed, sortedDateConsumed, sortedSiteConsumed, sortedChargedConsumed,  outputListsTax, outputListsTaxLeftoverInventory, outputListsTaxConsumed, totalTax, totalTaxLeftoverInventory, totalTaxConsumed, namePackets, nameLookups, taxExemptPackets, updatedOutputListsTax, updatedOutputListsTaxLeftoverInventory, updatedOutputListsTaxConsumed,
 
 		(* error checking *)
 		likelyNoAccessObjects, veryLikelyNoAccessObjects, noAccessObjectPositions,
 		filteredResourcePackets, filteredResourceSamplePackets, filteredModels, filteredContainers, filteredDefaultContainers,
-		processedModels, fastAssoc, alignments, dividerPositions, dividers
+		processedModels, fastAssoc, alignments, alignmentsLeftoverInventory, alignmentsConsumed, dividerPositions, dividers
 	},
 
 	(* get the safe options and pull out the OutputFormat option *)
 	safeOps=SafeOptions[PriceMaterials, ToList[ops]];
-	{output, consolidation, cache}=Lookup[safeOps, {OutputFormat, Consolidation, Cache}];
+	{output, consolidation, cache, split}=Lookup[safeOps, {OutputFormat, Consolidation, Cache, Split}];
 
 	(* split the input by protocols and transactions *)
 	allProtocols=Cases[mySources, ObjectP[{Object[Protocol], Object[Maintenance], Object[Qualification]}]];
@@ -6459,17 +7241,17 @@ priceMaterialsCore[
 			{allProtocols, allTransactionsOrders},
 			{
 				{
-					Packet[Notebook, ParentProtocol, Status, DateCompleted, Author, Site],
+					Packet[Notebook, ParentProtocol, Status, DateCompleted, Author, Site, SamplesOut, ContainersOut],
 					Packet[UserCommunications[Refund]],
-					Packet[SubprotocolRequiredResources[{Status, Models, Amount, Purchase, Sample, Requestor, RootProtocol}]],
-					Packet[SubprotocolRequiredResources[Sample][{Product, KitComponents, Model, Contents}]],
+					Packet[SubprotocolRequiredResources[{Status, Models, Amount, Purchase, Sample, Requestor, RootProtocol, DateFulfilled, DateInUse, NumberOfUses, VolumeOfUses, Preparation}]],
+					Packet[SubprotocolRequiredResources[Sample][{Product, KitComponents, Model, Contents, Count, CountLog, VolumeLog, MassLog, Notebook, NumberOfUses, NumberOfHours, NumberOfInjections, Volume, Mass, Reusable, VolumeOfUses, CleaningMethod}]],
 					Packet[OrdersFulfilled[UserCommunications][Refund]],
 					SubprotocolRequiredResources[Models][Object],
 					SubprotocolRequiredResources[ContainerResource][Sample][Model][Object],
 					Site[Object],
 					SubprotocolRequiredResources[Sample][Product][DefaultContainerModel][Object],
-					Packet[SubprotocolRequiredResources[Sample][Contents][[All, 2]][{Product, KitComponents, Model}]],
-					Packet[SubprotocolRequiredResources[Sample][Model][{ProductsContained, KitProductsContainers}]],
+					Packet[SubprotocolRequiredResources[Sample][Contents][[All, 2]][{Product, KitComponents, Model, VolumeLog, MassLog, CountLog}]],
+					Packet[SubprotocolRequiredResources[Sample][Model][{ProductsContained, KitProductsContainers, MaxNumberOfUses,MaxNumberOfHours, MaxVolumeOfUses, Products}]],
 					Packet[Site[Name]],
 					Packet[Notebook[Name]],
 					Packet[Notebook[Financers][TaxExempt]],
@@ -6534,7 +7316,8 @@ priceMaterialsCore[
 	uniqueModels=DeleteDuplicates@Cases[filteredModels, ObjectReferenceP[], Infinity];
 	uniqueProducts=DeleteDuplicates[Flatten[{
 		Cases[Lookup[Cases[filteredResourceSamplePackets, PacketP[], Infinity], Product], x:LinkP[] :> Download[x, Object]],
-		Cases[Lookup[Cases[filteredResourceSampleContentsPackets, PacketP[], Infinity], Product], x:LinkP[] :> Download[x, Object]]
+		Cases[Lookup[Cases[filteredResourceSampleContentsPackets, PacketP[], Infinity], Product], x:LinkP[] :> Download[x, Object]],
+		Cases[Flatten[Lookup[Cases[Flatten[allProtocolValues[[All, 11]]], PacketP[], Infinity], Products]], x:LinkP[] :> Download[x, Object]]
 	}]];
 	uniqueContainers=DeleteDuplicates@Cases[filteredContainers, ObjectReferenceP[], Infinity];
 	uniqueSites=DeleteDuplicates@Cases[allProtocolValues[[All, 8]], ObjectReferenceP[]];
@@ -6553,7 +7336,7 @@ priceMaterialsCore[
 			},
 			{
 				{Packet[Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents]},
-				{Packet[Name, DefaultStorageCondition, Price, Reusable]},
+				{Packet[Name, DefaultStorageCondition, Price, Reusable, Counted, MaxNumberOfUses, MaxNumberOfInjections, MaxNumberOfHours, MaxVolumeOfUses, Products, CleaningMethod, Density]},
 				{Packet[Dimensions]},
 				{Packet[ProductModel[Dimensions]]},
 				{Packet[DefaultStorageCondition[StockingPrices]]},
@@ -6613,21 +7396,47 @@ priceMaterialsCore[
 				MatchQ[filteredResourceSamplePacket, PacketP[]] && MatchQ[Lookup[filteredResourceSamplePacket, Product], ObjectP[]],
 					Lookup[filteredResourceSamplePacket, Product, Null] /. x : LinkP[] :> Download[x, Object],
 				MatchQ[filteredResourceSamplePacket, PacketP[Object[Container]]],
-					Module[{contentsPackets, potentialProduct, containerModelPacket},
+					Module[{contentsPackets, potentialProduct, potentialProductPacket, containerModelPacket},
 						(* first get the packets of the contents inside this container.  Then figure out if those contents have a product *)
 						contentsPackets = Experiment`Private`fetchPacketFromFastAssoc[#, fastAssoc]& /@ Lookup[filteredResourceSamplePacket, Contents][[All, 2]];
 						potentialProduct = FirstCase[Lookup[contentsPackets, Product, Null], ObjectP[Object[Product]], Null] /. x : LinkP[] :> Download[x, Object];
+						potentialProductPacket = potentialProduct/. packetRulesProtocols[[1]];
 
 						(* finally, make sure the container we're considering is the DefaultContainerModel (kit or not) of the product we are considering*)
 						containerModelPacket = Experiment`Private`fetchPacketFromFastAssoc[Lookup[filteredResourceSamplePacket, Model], fastAssoc];
 
-						If[MemberQ[Flatten[Lookup[containerModelPacket, {ProductsContained, KitProductsContainers}]], ObjectP[potentialProduct]],
+						If[
+							And[
+								!NullQ[potentialProduct],
+								Or[
+									MemberQ[Flatten[Lookup[containerModelPacket, {ProductsContained, KitProductsContainers}]], ObjectP[potentialProduct]],
+									MemberQ[
+										Lookup[Lookup[potentialProductPacket, KitComponents, {}],DefaultContainerModel,{}],
+										ObjectP[Lookup[containerModelPacket,Object]]
+									]
+								]
+							],
 							potentialProduct,
 							Null
 						]
 					],
 				MatchQ[filteredResourceSamplePacket, PacketP[]],
-					Lookup[filteredResourceSamplePacket, Product, Null],
+					Module[{resourceProduct, resourceModel, resourceModelProducts},
+						resourceProduct = Lookup[filteredResourceSamplePacket, Product, Null];
+						If[NullQ[resourceProduct],
+							(*if object's Product is Null, check if its Model has Products *)
+							resourceModel = Lookup[filteredResourceSamplePacket, Model, Null];
+							If[NullQ[resourceModel],
+								Null,
+								resourceModelProducts = Lookup[Experiment`Private`fetchPacketFromFastAssoc[resourceModel, fastAssoc], Products, {}];
+								If[Length[resourceModelProducts]>0,
+									Download[Last[resourceModelProducts], Object],
+									Null
+								]
+							],
+							resourceProduct
+						]
+					],
 				True, filteredResourceSamplePacket
 			]
 		],
@@ -6661,19 +7470,245 @@ priceMaterialsCore[
 	];
 	containerResourcePackets=filteredContainers /. packetRulesProtocols[[6]];
 	siteModelPackets=allProtocolValues[[All, 8]] /. packetRulesProtocols[[7]];
+	
+	(* update all resourcePackets to include values that would enable to split purchases into Consumed and LeftOver *)
+	updatedResourcePackets = MapThread[
+		Function[{resourcePacketsPerProtocol, samplePacketsPerProtocol, modelPacketsPerProtocol, productPacketsPerProtocol},
+			MapThread[
+				Function[{resourcePacket, samplePacket, modelPacket, productPacket},
+					Join[
+						resourcePacket,
+						<|
+							Model -> If[MatchQ[modelPacket,_Association],
+								Lookup[modelPacket,Object],
+								Null
+							],
+							Notebook->If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,Notebook],
+								Null
+							],
+							Product -> If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,Product],
+								Null
+							],
+							Reusable -> Which[
+								(* if we are dealing with a cover, we need to determine if it is reusable based on if it can be cleaned *)
+								MatchQ[Lookup[resourcePacket, Sample], CoverObjectP],
+								(* if a cover can be cleaned -- has a CleaningMethod, we assume it is reusable *)
+									!NullQ[Experiment`Private`fastAssocLookup[fastAssoc, Download[Lookup[resourcePacket, Sample], Object], {Model, CleaningMethod}]],
+								(* otherwise, fetch the Reusable field from model or object packet *)
+								MatchQ[modelPacket,_Association],
+									Lookup[modelPacket,Reusable, Null],
+								MatchQ[samplePacket,_Association],
+									Lookup[samplePacket,Reusable, Null],
+								True,
+									Null
+							],
+							MaxNumberOfUses -> If[MatchQ[modelPacket,_Association],
+								Lookup[modelPacket,MaxNumberOfUses,Null],
+								Null
+							],
+							Counted ->  If[MatchQ[modelPacket,_Association],
+								Lookup[modelPacket,Counted,Null],
+								Null
+							],
+							MaxVolumeOfUses ->If[MatchQ[modelPacket,_Association],
+								Lookup[modelPacket,MaxVolumeOfUses, Null],
+								Null
+							],
+							(* describes the current Count of the object  *)
+							Count ->  If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,Count,0]/.Null->0,
+								0
+							],
+							(* describes the current NumberOfUses of the object  *)
+							SampleNumberOfUses ->  If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,NumberOfUses,0]/.Null->0,
+								0
+							],
+							(* describes the current VolumeOfUses of the object  *)
+							SampleVolumeOfUses ->If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,VolumeOfUses, 0 Liter]/.Null->0 Liter,
+								Null
+							],
+							KitComponents -> If[MatchQ[samplePacket,_Association],
+								Lookup[samplePacket,KitComponents,{}],
+								Null
+							],
+							
+							Product -> If[MatchQ[productPacket, _Association],
+								Lookup[productPacket, Object, Null],
+								Null
+							],
+							
+							(*we need to identify if this resource pertains to a kit component that is being consumed *)
+							KitComponentUsage -> Module[{resourceSample, resourceSampleModel, resourceProductComponentPackets, resourceProductComponentModels, resourceSampleContents, resourceSampleContentsToModelLookup, kitSampleModel, kitSample, kitProduct, productComponentPacket, resourceAmountPerKit, resourceAmountUsed,  resourceSampleContentsModels, rootProtocol},
+								(* if the resource refers to a kit component, create the Association, if not - set as Null *)
+								If[MatchQ[samplePacket, Except[$Failed|Null]]&&MatchQ[Lookup[samplePacket,KitComponents,{}],Except[{}|$Failed]],
+									resourceSample = Lookup[samplePacket, Object];
+									resourceSampleModel = Lookup[modelPacket, Object];
+									resourceProductComponentPackets = If[MatchQ[productPacket,Except[Null|$Failed]],
+										Lookup[productPacket, KitComponents,{}],
+										{}
+									];
+									resourceProductComponentModels = Download[DeleteCases[Lookup[resourceProductComponentPackets, ProductModel, {}], Null],Object];
+									resourceSampleContents = If[MatchQ[Lookup[samplePacket, Contents, {}], Except[{}|$Failed]],
+										Download[Lookup[samplePacket, Contents][[All,2]],Object],
+										{}
+									];
+									
+									resourceSampleContentsToModelLookup =If[MatchQ[resourceSampleContents,Except[{}]],
+										Map[
+											{#, Download[Experiment`Private`fastAssocLookup[fastAssoc, #, Model], Object]}&,
+											resourceSampleContents
+										],
+										{}
+									];
+
+									resourceSampleContentsModels = DeleteCases[resourceSampleContentsToModelLookup[[All,2]],Null];
+									
+									(* identify the relevant model that is actually consumed *)
+									(* if we have container object for a resource sample, check if the Contents of the Container contain a Model that is included in the KitComponents of the associated product *)
+									(* otherwise, we just use model of the sample *)
+									kitSampleModel = If[IntersectingQ[resourceProductComponentModels, resourceSampleContentsModels],
+										First[Intersection[resourceProductComponentModels,resourceSampleContentsModels]],
+										resourceSampleModel
+									];
+
+									kitSample = FirstCase[resourceSampleContentsToModelLookup, {_, kitSampleModel}, {resourceSample,Null}][[1]];
+									
+									kitProduct = If[MatchQ[productPacket, Except[Null|$Failed]],
+										Lookup[productPacket, Object, Null],
+										Null
+									];
+									
+									(* identify the product component packet that describes the model (eg ProductModel, NumberOfItems, Amount) *)
+									productComponentPacket = FirstCase[
+										resourceProductComponentPackets,
+										KeyValuePattern[ProductModel->ObjectP[kitSampleModel]],
+										<||>
+									];
+									
+									resourceAmountPerKit = Which[
+										MatchQ[Lookup[productComponentPacket, Amount, Null], Except[Null|$Failed]]&&MatchQ[Lookup[productComponentPacket, NumberOfItems, Null], Except[Null|$Failed]],
+										Lookup[productComponentPacket, Amount]*Lookup[productComponentPacket, NumberOfItems],
+										
+										MatchQ[Lookup[productComponentPacket, Amount, Null], Except[Null|$Failed]],
+										Lookup[productComponentPacket, Amount],
+										
+										MatchQ[Lookup[productComponentPacket, NumberOfItems, Null], Except[Null|$Failed]],
+										Lookup[productComponentPacket, NumberOfItems],
+										
+										True,
+										Null
+									];
+									
+									getAmountFromLogs[sample:ObjectP[{Object[Sample], Object[Item]}], field:Alternatives[CountLog, MassLog, VolumeLog]] := Module[{log, logsBeforeResource, logsAfterResource, sampleInUseDate, sampleFulfilledDate, amountBeforeResource, amountAfterResource},
+										log = Experiment`Private`fastAssocLookup[fastAssoc, sample, field]/.$Failed->Null;
+										sampleInUseDate = Lookup[resourcePacket, DateInUse];
+										sampleFulfilledDate = Lookup[resourcePacket,DateFulfilled];
+										(* if the items belong to user, fetch the log to extract the amount before this usage*)
+										logsBeforeResource = Cases[log, {LessP[sampleInUseDate], ___}];
+										logsAfterResource = Prepend[
+											Cases[log, {GreaterP[sampleFulfilledDate], ___}],
+											LastOrDefault[Cases[log, {LessEqualP[sampleFulfilledDate], ___}], Nothing]
+										];
+										
+										(* we should always have a valid count log before usage, but in case if the log is missing, do not report un-used counted items amount*)
+										amountBeforeResource = If[MatchQ[logsBeforeResource,Except[{}]],
+											Last[logsBeforeResource][[2]],
+											Null
+										];
+										amountAfterResource = If[MatchQ[logsAfterResource,Except[{}]],
+											First[logsBeforeResource][[2]],
+											Null
+										];
+										
+										Which[
+											MatchQ[Unitless[amountBeforeResource-amountAfterResource], GreaterP[0]],
+											amountBeforeResource-amountAfterResource,
+											MatchQ[resourceAmountPerKit,Except[Null]],
+											resourceAmountPerKit,
+											True,
+											Null
+										
+										]
+									];
+									
+									
+									resourceAmountUsed = Which[
+										MatchQ[Lookup[resourcePacket, Amount, Null], Except[Null|$Failed]],
+										Lookup[resourcePacket, Amount],
+										
+										(* For cases where we have container sample but the amount is Null, this is likely for cases where we need the container with the sample, but we are not consuming its contents - eg. ImageSample *)
+										Or[
+											MatchQ[Lookup[resourcePacket, Amount, Null], Null|$Failed]&&MatchQ[resourceSample, ObjectP[Object[Container]]]&&MatchQ[Experiment`Private`fastAssocLookup[fastAssoc, kitSample, Volume],_Quantity],
+											MatchQ[resourceSample, ObjectP[Object[Sample]]]&&MatchQ[Lookup[resourcePacket, Amount, Null], Null|$Failed]
+										],
+										0 Milliliter,
+										Or[
+											MatchQ[Lookup[resourcePacket, Amount, Null], Null|$Failed]&&MatchQ[resourceSample, ObjectP[Object[Container]]]&&MatchQ[Experiment`Private`fastAssocLookup[fastAssoc, kitSample, Mass],_Quantity],
+											MatchQ[resourceSample, ObjectP[Object[Sample]]]&&MatchQ[Lookup[resourcePacket, Amount, Null], Null|$Failed]
+										],
+										0 Gram,
+										
+										(* for cases where Amount is Null but we have a sample, we should check the logs *)
+										MatchQ[Experiment`Private`fastAssocLookup[fastAssoc, kitSample, Volume],_Quantity],
+										getAmountFromLogs[kitSample, VolumeLog],
+										MatchQ[Experiment`Private`fastAssocLookup[fastAssoc, kitSample, Mass],_Quantity],
+										getAmountFromLogs[kitSample, MassLog],
+										
+										(* if we cant't get a calculated value, we assume it gets used up *)
+										True,
+										resourceAmountPerKit
+									];
+									
+									rootProtocol = Download[Lookup[resourcePacket, RootProtocol, Null],Object];
+									
+									(* put together all information we need for consolidation later *)
+									{
+										KitSample -> kitSample,
+										KitModel -> kitSampleModel,
+										KitProduct -> kitProduct,
+										AmountPerKit -> resourceAmountPerKit,
+										AmountUsed -> resourceAmountUsed,
+										RootProtocol -> rootProtocol,
+										Resource -> Lookup[resourcePacket, Object]
+									},
+									Null
+								]
+							]
+						|>
+					]
+				],
+				{
+					resourcePacketsPerProtocol,
+					samplePacketsPerProtocol,
+					modelPacketsPerProtocol,
+					productPacketsPerProtocol
+				}
+			]
+		],
+		{
+			resourcePackets,
+			resourceSamplePackets,
+			resourceSampleModelPackets,
+			resourceProductPackets
+		}
+	];
 
 	(* get the output lists from priceMaterialsProtocols and outputTransactionsOrders if there are any*)
 	(* the output contains the following lists in that exact order: notebooks, sources, objects, names, price-categories, amounts, pricePerUnits, prices, and dates *)
 	outputProtocols=If[MatchQ[allProtocolValues, {}],
-		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
+		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
 		priceMaterialsProtocols[
-			protocolPackets, troubleshootingReportPackets, resourcePackets, resourceProductPackets, resourceSamplePackets, resourceSampleModelPackets,
+			protocolPackets, troubleshootingReportPackets, updatedResourcePackets, resourceProductPackets, resourceSamplePackets, resourceSampleModelPackets,
 			resourceSampleContainerModelPackets, resourceContainerModelPackets, defaultStorageConditionPackets, containerResourcePackets, siteModelPackets
 		]
 	];
 
 	outputTransactionsOrders=If[MatchQ[allTransactionValues, {}],
-		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
+		{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
 		priceMaterialsTransactionOrder[allTransactionValues]
 	];
 
@@ -6691,7 +7726,7 @@ priceMaterialsCore[
 	transposedOutputs=Transpose[{outputProtocols, outputTransactionsOrders}];
 
 	(* extract the individual output lists that will serve as input for the output table *)
-	{joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite}=Map[
+	{joinedNotebooks, joinedSources, joinedSamples, joinedNames, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite, joinedCharged, joinedPurchaseType}=Map[
 		Flatten[transposedOutputs[[#]]] &, Range[Length[outputProtocols]]];
 
 	(* add the Model ID instead of the name in case we don't have a Name *)
@@ -6704,10 +7739,74 @@ priceMaterialsCore[
 	];
 
 	(* transpose all output lists and gather by the sources (joinedSources) *)
-	outputListsSortedBySources=GatherBy[Transpose[{joinedSamples, joinedNotebooks, joinedSources, joinedNamesNoNull, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite}], Part[#, 3]&];
+	{
+		joinedSamplesConsumed,
+		joinedNotebooksConsumed,
+		joinedSourcesConsumed,
+		joinedNamesNoNullConsumed,
+		joinedTagsConsumed,
+		joinedAmountsConsumed,
+		joinedPricingRateConsumed,
+		joinedPriceConsumed,
+		joinedDateConsumed,
+		joinedSiteConsumed,
+		joinedChargedConsumed
+	}=Map[
+		PickList[#, joinedPurchaseType, Consumed]&,
+		{
+			joinedSamples,
+			joinedNotebooks,
+			joinedSources,
+			joinedNamesNoNull,
+			joinedTags,
+			joinedAmounts,
+			joinedPricingRate,
+			joinedPrice,
+			joinedDate,
+			joinedSite,
+			joinedCharged
+		}
+	];
+	
+	{
+		joinedSamplesLeftoverInventory,
+		joinedNotebooksLeftoverInventory,
+		joinedSourcesLeftoverInventory,
+		joinedNamesNoNullLeftoverInventory,
+		joinedTagsLeftoverInventory,
+		joinedAmountsLeftoverInventory,
+		joinedPricingRateLeftoverInventory,
+		joinedPriceLeftoverInventory,
+		joinedDateLeftoverInventory,
+		joinedSiteLeftoverInventory,
+		joinedChargedLeftoverInventory
+	}=Map[
+		PickList[#, joinedPurchaseType, LeftoverInventory]&,
+		{
+			joinedSamples,
+			joinedNotebooks,
+			joinedSources,
+			joinedNamesNoNull,
+			joinedTags,
+			joinedAmounts,
+			joinedPricingRate,
+			joinedPrice,
+			joinedDate,
+			joinedSite,
+			joinedCharged
+		}
+	];
+	
+	outputListsSortedBySources=GatherBy[Transpose[{joinedSamples, joinedNotebooks, joinedSources, joinedNamesNoNull, joinedTags, joinedAmounts, joinedPricingRate, joinedPrice, joinedDate, joinedSite, joinedCharged, joinedPurchaseType}], Part[#, 3]&];
+	
+	outputListsSortedBySourcesLeftoverInventory=GatherBy[Transpose[{joinedSamplesLeftoverInventory, joinedNotebooksLeftoverInventory, joinedSourcesLeftoverInventory, joinedNamesNoNullLeftoverInventory, joinedTagsLeftoverInventory, joinedAmountsLeftoverInventory, joinedPricingRateLeftoverInventory, joinedPriceLeftoverInventory, joinedDateLeftoverInventory, joinedSiteLeftoverInventory, joinedChargedLeftoverInventory, Cases[joinedPurchaseType,LeftoverInventory]}], Part[#, 3]&];
+	
+	outputListsSortedBySourcesConsumed=GatherBy[Transpose[{joinedSamplesConsumed, joinedNotebooksConsumed, joinedSourcesConsumed, joinedNamesNoNullConsumed, joinedTagsConsumed, joinedAmountsConsumed, joinedPricingRateConsumed, joinedPriceConsumed, joinedDateConsumed, joinedSiteConsumed, joinedChargedConsumed, Cases[joinedPurchaseType,Consumed]}], Part[#, 3]&];
 
 	(* gather the protocol-gathered lists by materials (joinedSamples) *)
 	outputListsSortedByMaterials=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySources], 1];
+	outputListsSortedByMaterialsLeftoverInventory=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySourcesLeftoverInventory], 1];
+	outputListsSortedByMaterialsConsumed=Flatten[Map[GatherBy[#, First] &, outputListsSortedBySourcesConsumed], 1];
 
 
 	(* We used to report all the "Product List Price" and "Product Tax" of each sample/protocol:
@@ -6734,6 +7833,11 @@ priceMaterialsCore[
 	(* Pick the lines of "Product Tax" to add up *)
 	outputListsTax=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
 		outputListsSortedByMaterials];
+	outputListsTaxLeftoverInventory=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
+		outputListsSortedByMaterialsLeftoverInventory];
+	outputListsTaxConsumed=Map[Cases[#, _?(MatchQ[#[[5]], "Product Tax"] &)] &,
+		outputListsSortedByMaterialsConsumed];
+	
 	(* if taxExempt is True, we do not charge the tax. *)
 	updatedOutputListsTax = Map[
 		Function[{outputList},
@@ -6760,61 +7864,209 @@ priceMaterialsCore[
 		],
 		Flatten[outputListsTax, 1]
 	];
+	
+	updatedOutputListsTaxLeftoverInventory = Map[
+		Function[{outputList},
+			Module[{notebook, teams, taxExempts},
+				(* get the corresponding notebook *)
+				notebook = outputList[[2]];
+				(* find out the financers of this notebook *)
+				teams = If[NullQ[notebook],
+					{},
+					Download[Lookup[fetchPacketFromCache[notebook, taxExemptPackets], Financers], Object]
+				];
+				(* we allow multiple financers for one notebook, so get the taxExempt of all the financing teams *)
+				taxExempts = If[teams == {},
+					{},
+					Lookup[fetchPacketFromCache[#, taxExemptPackets], TaxExempt]&/@teams
+				];
+				If[MemberQ[taxExempts, True],
+					(* if taxExempt is True, we update this line so tax is 0 *)
+					Join[outputList[[1;;7]], {0 USD}, outputList[[9;;10]]],
+					(* Otherwise, keep it *)
+					outputList
+				]
+			]
+		],
+		Flatten[outputListsTaxLeftoverInventory, 1]
+	];
+	
+	updatedOutputListsTaxConsumed = Map[
+		Function[{outputList},
+			Module[{notebook, teams, taxExempts},
+				(* get the corresponding notebook *)
+				notebook = outputList[[2]];
+				(* find out the financers of this notebook *)
+				teams = If[NullQ[notebook],
+					{},
+					Download[Lookup[fetchPacketFromCache[notebook, taxExemptPackets], Financers], Object]
+				];
+				(* we allow multiple financers for one notebook, so get the taxExempt of all the financing teams *)
+				taxExempts = If[teams == {},
+					{},
+					Lookup[fetchPacketFromCache[#, taxExemptPackets], TaxExempt]&/@teams
+				];
+				If[MemberQ[taxExempts, True],
+					(* if taxExempt is True, we update this line so tax is 0 *)
+					Join[outputList[[1;;7]], {0 USD}, outputList[[9;;10]]],
+					(* Otherwise, keep it *)
+					outputList
+				]
+			]
+		],
+		Flatten[outputListsTaxConsumed, 1]
+	];
 
 	(* add up all the tax to report *)
 	totalTax = If[Flatten[updatedOutputListsTax] == {},
 		0 USD,
-		Total[updatedOutputListsTax[[All, -3]]]
+		Total[updatedOutputListsTax[[All, -5]]]
+	];
+	totalTaxLeftoverInventory = If[Flatten[updatedOutputListsTaxLeftoverInventory] == {},
+		0 USD,
+		Total[updatedOutputListsTaxLeftoverInventory[[All, -5]]]
+	];
+	totalTaxConsumed = If[Flatten[updatedOutputListsTaxConsumed] == {},
+		0 USD,
+		Total[updatedOutputListsTaxConsumed[[All, -5]]]
 	];
 
 	(* extract the values after filtering our items that are priced by weight/volume but have Amount not in those units *)
 	(* we achieve this by checking if units are compatible after inverting price rate and removing USD from it *)
-	{sortedSamples, sortedNotebooks, sortedSources, sortedNames, sortedTags, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate, sortedSite}=If[
-		MatchQ[sortedFlattenedData, ConstantArray[{}, 10]],
-		ConstantArray[{}, 10],
+	{sortedSamples, sortedNotebooks, sortedSources, sortedNames, sortedTags, sortedAmounts, sortedPricingRate, sortedPrice, sortedDate, sortedSite, sortedCharged, sortedPurchaseType}=If[
+		MatchQ[sortedFlattenedData, ConstantArray[{}, 12]],
+		ConstantArray[{}, 12],
 		Transpose[
 			DeleteCases[
 				Transpose[sortedFlattenedData],
-				_?(!CompatibleUnitQ[#[[6]], 1 * USD * Power[#[[7]], -1]]&)
+				_?(!EqualQ[#[[7]], 0 USD] && !CompatibleUnitQ[#[[6]], 1*USD*Power[#[[7]], -1]] &)
 			]
 		]
 	];
-
+	
+	{
+		sortedSamplesLeftoverInventory,
+		sortedNotebooksLeftoverInventory,
+		sortedSourcesLeftoverInventory,
+		sortedNamesLeftoverInventory,
+		sortedTagsLeftoverInventory,
+		sortedAmountsLeftoverInventory,
+		sortedPricingRateLeftoverInventory,
+		sortedPriceLeftoverInventory,
+		sortedDateLeftoverInventory,
+		sortedSiteLeftoverInventory,
+		sortedChargedLeftoverInventory
+	} = Map[
+		PickList[#,sortedPurchaseType,LeftoverInventory]&,
+		{
+			sortedSamples,
+			sortedNotebooks,
+			sortedSources,
+			sortedNames,
+			sortedTags,
+			sortedAmounts,
+			sortedPricingRate,
+			sortedPrice,
+			sortedDate,
+			sortedSite,
+			sortedCharged
+		}
+	];
+	
+	{
+		sortedSamplesConsumed,
+		sortedNotebooksConsumed,
+		sortedSourcesConsumed,
+		sortedNamesConsumed,
+		sortedTagsConsumed,
+		sortedAmountsConsumed,
+		sortedPricingRateConsumed,
+		sortedPriceConsumed,
+		sortedDateConsumed,
+		sortedSiteConsumed,
+		sortedChargedConsumed
+	} = Map[
+		PickList[#,sortedPurchaseType,Consumed]&,
+		{
+			sortedSamples,
+			sortedNotebooks,
+			sortedSources,
+			sortedNames,
+			sortedTags,
+			sortedAmounts,
+			sortedPricingRate,
+			sortedPrice,
+			sortedDate,
+			sortedSite,
+			sortedCharged
+		}
+	];
+	
+	
 	(* generate the table of items that will be displayed in a table *)
 	(* Note: We do not have discount for PriceMaterials to apply. In order to plot table similarly as other price functions, which is to report Value and Charge, we will list the rate and price twice. *)
 	allDataTable=MapThread[
-		Function[{notebook, source, sample, amount, rate, price, site},
+		Function[{notebook, source, sample, amount, rate, price, site, chargedBool},
 			Switch[{amount, rate, output, consolidation},
 				(* delete all the cases where the amount used or pricing rate is Null *)
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
 				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
-				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
 				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
-				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, price}
+				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
 			]
 		],
-		{sortedNotebooks, sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite}
+		{sortedNotebooks, sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite, sortedCharged}
+	];
+	
+	allDataTableLeftoverInventory=MapThread[
+		Function[{notebook, source, sample, amount, rate, price, site, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* delete all the cases where the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedNotebooksLeftoverInventory, sortedSourcesLeftoverInventory, sortedNamesLeftoverInventory, UnitScale[sortedAmountsLeftoverInventory, Simplify -> False], sortedPricingRateLeftoverInventory, sortedPriceLeftoverInventory, sortedSiteLeftoverInventory, sortedChargedLeftoverInventory}
+	];
+	
+	allDataTableConsumed=MapThread[
+		Function[{notebook, source, sample, amount, rate, price, site, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* delete all the cases where the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {notebook, source, site, sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {notebook, source, site, sample, amount, rate,  price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedNotebooksConsumed, sortedSourcesConsumed, sortedNamesConsumed, UnitScale[sortedAmountsConsumed, Simplify -> False], sortedPricingRateConsumed, sortedPriceConsumed, sortedSiteConsumed, sortedChargedConsumed}
 	];
 
 	(* generate the table of items that will be displayed in an association. *)
 	(* Note: We do not have discount for PriceMaterials to apply. In order to plot table similarly as other price functions, which is to report Value and Charge, we will list the rate and price twice. *)
 	associationDataTable=MapThread[
-		Function[{notebook, source, modelName, amount, rate, price, site, sample},
+		Function[{notebook, source, modelName, amount, rate, price, site, sample, chargedBool},
 			Switch[{amount, rate},
 				(* the below 2 cases are when the amount used or pricing rate is Null *)
 				{Null, _}, Nothing,
 				{_, Null}, Nothing,
-				{_, _}, {notebook, source, site, modelName, sample, amount, rate, price, rate, price}
+				{_, _}, {notebook, source, site, modelName, sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
 			]
 		],
-		{sortedNotebooks, sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite, sortedSamples}
+		{sortedNotebooks, sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite, sortedSamples, sortedCharged}
 	];
 
 	(* generate the output association; this will be returned if OutputFormat -> Association *)
 	(* each entry of this output will match MaterialsPriceTableP *)
-	associationOutput=
-		If[output == Association,
+	associationOutput= If[MatchQ[output, Association],
 			Map[
 				AssociationThread[{Notebook, Protocol, Site, MaterialName, Material, Amount, ValueRate, Value, ChargeRate, Charge}, #]&,
 				associationDataTable
@@ -6825,34 +8077,94 @@ priceMaterialsCore[
 	(* generate the table of items that will be displayed that also omits the Notebook column (because all items belong to the same notebook) *)
 	(* Note: We do not have discount for PriceMaterials to apply. In order to plot table similarly as other price functions, which is to report Value and Charge, we will list the rate and price twice. *)
 	noNotebookDataTable=MapThread[
-		Function[{source, sample, amount, rate, price, site},
+		Function[{source, sample, amount, rate, price, site, chargedBool},
 			Switch[{amount, rate, output, consolidation},
 				(* the below 2 cases are when the amount used or pricing rate is Null *)
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
 				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
-				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}]},
+				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
 				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
-				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, price}
+				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
 			]
 		],
-		{sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite}
+		{sortedSources, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedSite, sortedCharged}
+	];
+	
+	noNotebookDataTableLeftoverInventory=MapThread[
+		Function[{source, sample, amount, rate, price, site, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedSourcesLeftoverInventory, sortedNamesLeftoverInventory, UnitScale[sortedAmountsLeftoverInventory, Simplify -> False], sortedPricingRateLeftoverInventory, sortedPriceLeftoverInventory, sortedSiteLeftoverInventory, sortedChargedLeftoverInventory}
+	];
+	
+	noNotebookDataTableConsumed=MapThread[
+		Function[{source, sample, amount, rate, price, site, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {source, site, sample, NumberForm[amount, {\[Infinity], 1}],NumberForm[rate, {\[Infinity], 2}],  NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}],  If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {source, site, sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedSourcesConsumed, sortedNamesConsumed, UnitScale[sortedAmountsConsumed, Simplify -> False], sortedPricingRateConsumed, sortedPriceConsumed, sortedSiteConsumed, sortedChargedConsumed}
 	];
 
 	(* generate the table of items that will be displayed that also omits the Notebook and Protocol columns (because all items belong to the same notebook and protocol) *)
 	noProtocolDataTable=MapThread[
-		Function[{tag, sample, amount, rate, price},
+		Function[{tag, sample, amount, rate, price, chargedBool},
 			Switch[{amount, rate, output, consolidation},
 				(* the below 2 cases are when the amount used or pricing rate is Null *)
 				{Null, _, _, _}, Nothing,
 				{_, Null, _, _}, Nothing,
 				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
-				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}]},
+				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
 				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
-				{_, _, _, _}, {sample, amount, rate, price, rate, price}
+				{_, _, _, _}, {sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
 			]
 		],
-		{sortedTags, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice}
+		{sortedTags, sortedNames, UnitScale[sortedAmounts, Simplify -> False], sortedPricingRate, sortedPrice, sortedCharged}
+	];
+	
+	noProtocolDataTableLeftoverInventory=MapThread[
+		Function[{tag, sample, amount, rate, price, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedTagsLeftoverInventory, sortedNamesLeftoverInventory, UnitScale[sortedAmountsLeftoverInventory, Simplify -> False], sortedPricingRateLeftoverInventory, sortedPriceLeftoverInventory, sortedChargedLeftoverInventory}
+	];
+	
+	noProtocolDataTableConsumed=MapThread[
+		Function[{tag, sample, amount, rate, price, chargedBool},
+			Switch[{amount, rate, output, consolidation},
+				(* the below 2 cases are when the amount used or pricing rate is Null *)
+				{Null, _, _, _}, Nothing,
+				{_, Null, _, _}, Nothing,
+				(* need to do NumberForm shenanigans if OutputFormat -> Table and Consolidation -> Null because that allows the correct number of decimal points *)
+				{_, _, Table, Null}, {sample, NumberForm[amount, {\[Infinity], 1}], NumberForm[rate, {\[Infinity], 2}], NumberForm[price, {\[Infinity], 2}], NumberForm[rate, {\[Infinity], 2}], If[chargedBool,NumberForm[price, {\[Infinity], 2}], Quantity[0.00, "USDollars"]]},
+				(* if Consolidation -> Except[Null], then we're going to do the NumberForm shenanigans below so we shouldn't do them here *)
+				{_, _, _, _}, {sample, amount, rate, price, rate, If[chargedBool, price, Quantity[0.00, "USDollars"]]}
+			]
+		],
+		{sortedTagsConsumed, sortedNamesConsumed, UnitScale[sortedAmountsConsumed, Simplify -> False], sortedPricingRateConsumed, sortedPriceConsumed, sortedChargedConsumed}
 	];
 
 	(* --- Generate the consolidated data tables, depending on what/whether the Consolidation option was specified --- *)
@@ -6860,18 +8172,40 @@ priceMaterialsCore[
 	(* group all the rows in the data table by Notebook *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByNotebook=GatherBy[allDataTable, #[[1]]&];
+	gatheredByNotebookLeftoverInventory=GatherBy[allDataTableLeftoverInventory, #[[1]]&];
+	gatheredByNotebookConsumed=GatherBy[allDataTableConsumed, #[[1]]&];
 
 	(* make a simplified table for pricing grouped by notebook, before we do the Total call *)
 	notebookConsolidatedPreTotal=Map[
 		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByNotebook
 	];
+	notebookConsolidatedPreTotalLeftoverInventory=Map[
+		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByNotebookLeftoverInventory
+	];
+	
+	notebookConsolidatedPreTotalConsumed=Map[
+		{#[[1, 1]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByNotebookConsumed
+	];
 
 	(* get the total for each notebook *)
 	(* the NumberForm is there to ensure that each total always has 2 decimal points *)
+	(* strip any NumberForm wrappers from elements before summing so Total can evaluate them *)
 	notebookConsolidatedTotals=Map[
-		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
 		notebookConsolidatedPreTotal
+	];
+
+	notebookConsolidatedTotalsLeftoverInventory=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		notebookConsolidatedPreTotalLeftoverInventory
+	];
+
+	notebookConsolidatedTotalsConsumed=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		notebookConsolidatedPreTotalConsumed
 	];
 
 	(* generate the simplified-by-notebook table *)
@@ -6879,22 +8213,49 @@ priceMaterialsCore[
 		Join[{First[#1]}, #2]&,
 		{notebookConsolidatedPreTotal, notebookConsolidatedTotals}
 	];
-
+	notebookConsolidatedTableLeftoverInventory=MapThread[
+		Join[{First[#1]}, #2]&,
+		{notebookConsolidatedPreTotalLeftoverInventory, notebookConsolidatedTotalsLeftoverInventory}
+	];
+	
+	notebookConsolidatedTableConsumed=MapThread[
+		Join[{First[#1]}, #2]&,
+		{notebookConsolidatedPreTotalConsumed, notebookConsolidatedTotalsConsumed}
+	];
 	(* group all the rows in the data table by source *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByProtocol=GatherBy[allDataTable, #[[2]]&];
+	gatheredByProtocolLeftoverInventory=GatherBy[allDataTableLeftoverInventory, #[[2]]&];
+	gatheredByProtocolConsumed=GatherBy[allDataTableConsumed, #[[2]]&];
 
 	(* make a simplified table for pricing grouped by protocol, before we do the Total call *)
 	protocolConsolidatedPreTotal=Map[
 		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByProtocol
 	];
+	protocolConsolidatedPreTotalLeftoverInventory=Map[
+		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByProtocolLeftoverInventory
+	];
+	protocolConsolidatedPreTotalConsumed=Map[
+		{#[[1, 2]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByProtocolConsumed
+	];
 
 	(* get the total for each source *)
 	(* the NumberForm is there to ensure that each total always has 2 decimal points *)
 	protocolConsolidatedTotals=Map[
-		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
 		protocolConsolidatedPreTotal
+	];
+	protocolConsolidatedTotalsLeftoverInventory=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		protocolConsolidatedPreTotalLeftoverInventory
+	];
+	
+	protocolConsolidatedTotalsConsumed=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		protocolConsolidatedPreTotalConsumed
 	];
 
 	(* generate the simplified-by-protocol table *)
@@ -6902,22 +8263,49 @@ priceMaterialsCore[
 		Join[{First[#1]}, #2]&,
 		{protocolConsolidatedPreTotal, protocolConsolidatedTotals}
 	];
+	protocolConsolidatedTableLeftoverInventory=MapThread[
+		Join[{First[#1]}, #2]&,
+		{protocolConsolidatedPreTotalLeftoverInventory, protocolConsolidatedTotalsLeftoverInventory}
+	];
+	
+	protocolConsolidatedTableConsumed=MapThread[
+		Join[{First[#1]}, #2]&,
+		{protocolConsolidatedPreTotalConsumed, protocolConsolidatedTotalsConsumed}
+	];
 
 	(* group all the rows in the data table by material *)
 	(*{Notebook, Protocol, Site, MaterialName, Amount, ValueRate, Value, ChargeRate, Charge}*)
 	gatheredByMaterial=GatherBy[allDataTable, #[[4]]&];
+	gatheredByMaterialLeftoverInventory=GatherBy[allDataTableLeftoverInventory, #[[4]]&];
+	gatheredByMaterialConsumed=GatherBy[allDataTableConsumed, #[[4]]&];
 
 	(* make a simplified table for pricing grouped by material, before we do the Total call *)
 	materialConsolidatedPreTotal=Map[
 		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
 		gatheredByMaterial
 	];
+	materialConsolidatedPreTotalLeftoverInventory=Map[
+		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByMaterialLeftoverInventory
+	];
+	materialConsolidatedPreTotalConsumed=Map[
+		{#[[1, 4]], DeleteCases[#[[All, 7]], Null],DeleteCases[#[[All, 9]], Null]}&,
+		gatheredByMaterialConsumed
+	];
 
 	(* get the total for each material *)
 	(* the NumberForm is there to ensure that each total always has 2 decimal points *)
 	materialConsolidatedTotals=Map[
-		{NumberForm[Total[#[[2]]], {\[Infinity], 2}], NumberForm[Total[#[[3]]], {\[Infinity], 2}]}&,
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
 		materialConsolidatedPreTotal
+	];
+	materialConsolidatedTotalsLeftoverInventory=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		materialConsolidatedPreTotalLeftoverInventory
+	];
+	materialConsolidatedTotalsConsumed=Map[
+		{NumberForm[Total[#[[2]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}], NumberForm[Total[#[[3]] /. NumberForm[x_, __] :> x], {\[Infinity], 2}]}&,
+		materialConsolidatedPreTotalConsumed
 	];
 
 	(* generate the simplified-by-protocol table *)
@@ -6925,12 +8313,25 @@ priceMaterialsCore[
 		Join[{First[#1]}, #2]&,
 		{materialConsolidatedPreTotal, materialConsolidatedTotals}
 	];
+	materialConsolidatedTableLeftoverInventory=MapThread[
+		Join[{First[#1]}, #2]&,
+		{materialConsolidatedPreTotalLeftoverInventory, materialConsolidatedTotalsLeftoverInventory}
+	];
+	materialConsolidatedTableConsumed=MapThread[
+		Join[{First[#1]}, #2]&,
+		{materialConsolidatedPreTotalConsumed, materialConsolidatedTotalsConsumed}
+	];
 
 	(* --- Construct the tables --- *)
 
 	(* get the number of notebooks and number of sources specified in this function *)
 	numNotebooks=Length[DeleteDuplicates[sortedNotebooks]];
 	numProts=Length[DeleteDuplicates[sortedSources]];
+	numNotebooksLeftoverInventory=Length[DeleteDuplicates[sortedNotebooksLeftoverInventory]];
+	numProtsLeftoverInventory=Length[DeleteDuplicates[sortedSourcesLeftoverInventory]];
+	
+	numNotebooksConsumed=Length[DeleteDuplicates[sortedNotebooksConsumed]];
+	numProtsConsumed=Length[DeleteDuplicates[sortedSourcesConsumed]];
 
 	(* generate the data table we are going to output (i.e., pick the one that has the appropriate number of columns, omitting the Notebook and/Or Source columns as necessary, or the one that goes with what was specified in the Consolidation option) *)
 	dataTableToUse=Switch[{consolidation, numNotebooks, numProts},
@@ -6945,24 +8346,95 @@ priceMaterialsCore[
 		(* in all other cases, display the entire DataTable *)
 		{_, _, _}, ReverseSortBy[allDataTable,Last]
 	];
+	
+	(* Use the same numNotebooks/numProts as the primary table to determine column structure,
+	   so all three sub-tables always have the same columns and visually align. *)
+	dataTableToUseLeftoverInventory=Switch[{consolidation, numNotebooks, numProts},
+		(* the below 3 cases are the different consolidated datatables when the Consolidation -> Notebook, Source or Material *)
+		{Notebook, _, _}, ReverseSortBy[notebookConsolidatedTableLeftoverInventory,Last],
+		{Protocol, _, _}, ReverseSortBy[protocolConsolidatedTableLeftoverInventory,Last],
+		{Material, _, _}, ReverseSortBy[materialConsolidatedTableLeftoverInventory,Last],
+		(* when no Consolidation is chosen and only a single Notebook and a single Source are present, omit the notebook and Source column *)
+		{_, 1, 1}, ReverseSortBy[noProtocolDataTableLeftoverInventory,Last],
+		(* when no Consolidation is chosen and only a single Notebook (with several Sources) are present, omit the notebook column *)
+		{_, 1, _}, ReverseSortBy[noNotebookDataTableLeftoverInventory,Last],
+		(* in all other cases, display the entire DataTable *)
+		{_, _, _}, ReverseSortBy[allDataTableLeftoverInventory,Last]
+	];
+
+	dataTableToUseConsumed=Switch[{consolidation, numNotebooks, numProts},
+		(* the below 3 cases are the different consolidated datatables when the Consolidation -> Notebook, Source or Material *)
+		{Notebook, _, _}, ReverseSortBy[notebookConsolidatedTableConsumed,Last],
+		{Protocol, _, _}, ReverseSortBy[protocolConsolidatedTableConsumed,Last],
+		{Material, _, _}, ReverseSortBy[materialConsolidatedTableConsumed,Last],
+		(* when no Consolidation is chosen and only a single Notebook and a single Source are present, omit the notebook and Source column *)
+		{_, 1, 1}, ReverseSortBy[noProtocolDataTableConsumed,Last],
+		(* when no Consolidation is chosen and only a single Notebook (with several Sources) are present, omit the notebook column *)
+		{_, 1, _}, ReverseSortBy[noNotebookDataTableConsumed,Last],
+		(* in all other cases, display the entire DataTable *)
+		{_, _, _}, ReverseSortBy[allDataTableConsumed,Last]
+	];
 
 	(* get the total price for the entire input; this will be returned if OutputFormat -> Price *)
-	totalInputPrice=If[MatchQ[DeleteCases[sortedPrice, Null], {}],
+	totalInputPriceCharged=If[MatchQ[DeleteCases[PickList[sortedPrice, sortedCharged], Null], {}],
+		0 * USD,
+		Total[DeleteCases[PickList[sortedPrice, sortedCharged], Null]]
+	];
+	totalInputPriceLeftoverInventoryCharge=If[MatchQ[DeleteCases[PickList[sortedPriceLeftoverInventory, sortedChargedLeftoverInventory], Null], {}],
+		0 * USD,
+		Total[DeleteCases[PickList[sortedPriceLeftoverInventory, sortedChargedLeftoverInventory], Null]]
+	];
+	totalInputPriceConsumedCharge=If[MatchQ[DeleteCases[PickList[sortedPriceConsumed,sortedChargedConsumed], Null], {}],
+		0 * USD,
+		Total[DeleteCases[PickList[sortedPriceConsumed,sortedChargedConsumed], Null]]
+	];
+	totalInputPriceValue=If[MatchQ[DeleteCases[sortedPrice, Null], {}],
 		0 * USD,
 		Total[DeleteCases[sortedPrice, Null]]
+	];
+	totalInputPriceLeftoverInventoryValue=If[MatchQ[DeleteCases[sortedPriceLeftoverInventory, Null], {}],
+		0 * USD,
+		Total[DeleteCases[sortedPriceLeftoverInventory, Null]]
+	];
+	totalInputPriceConsumedValue=If[MatchQ[DeleteCases[sortedPriceConsumed, Null], {}],
+		0 * USD,
+		Total[DeleteCases[sortedPriceConsumed, Null]]
 	];
 
 	(* generate the subtotal row with the appropriate number of columns *)
 	(* use myStartDate as an indicator whether we are dealing with the team/notebook overload or not *)
 	subtotalRows=Switch[{consolidation, numNotebooks, numProts},
 		(* when Consolidation -> Notebook, Source, or Material *)
-		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPrice, totalInputPrice}, {"", "Total Tax", totalTax}, {"", "Total Price with Tax", totalTax + totalInputPrice}},
+		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPriceValue, totalInputPriceCharged}, {"", "Total Tax", totalTax}, {"", Style["Total Price\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTax + totalInputPriceCharged}},
 		(* when the output is single notebook and a single protocol and both the notebook and protocol columns are omitted *)
-		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPrice, "Total Charge", totalInputPrice}, {"", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "Total Charge with Tax", totalTax + totalInputPrice}},
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPriceValue, "Total Charge", totalInputPriceCharged}, {"", "", "", "", "Total Tax", totalTax}, {"", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTax + totalInputPriceCharged}},
 		(* for protocol overload, when the output is single notebook and the notebook column is omitted *)
-		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPrice, "Total Charge", totalInputPrice}, {"", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", "Total Charge with Tax", totalTax + totalInputPrice}},
+		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPriceValue, "Total Charge", totalInputPriceCharged}, {"", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTax + totalInputPriceCharged}},
 		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
-		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPrice, "Total Charge", totalInputPrice}, {"", "", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", "", "Total Charge with Tax", totalTax + totalInputPrice}}
+		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPriceValue, "Total Charge", totalInputPriceCharged}, {"", "", "", "", "", "", "", "Total Tax", totalTax}, {"", "", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTax + totalInputPriceCharged}}
+	];
+	
+	
+	subtotalRowsLeftoverInventory=Switch[{consolidation, numNotebooks, numProts},
+		(* when Consolidation -> Notebook, Source, or Material *)
+		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPriceLeftoverInventoryCharge, totalInputPriceLeftoverInventoryCharge}, {"", "Total Tax", totalTaxLeftoverInventory}, {"", Style["Total Price\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxLeftoverInventory + totalInputPriceLeftoverInventoryCharge}},
+		(* when the output is single notebook and a single protocol and both the notebook and protocol columns are omitted *)
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPriceLeftoverInventoryValue, "Total Charge", totalInputPriceLeftoverInventoryCharge}, {"", "", "", "", "Total Tax", totalTaxLeftoverInventory}, {"", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxLeftoverInventory + totalInputPriceLeftoverInventoryCharge}},
+		(* for protocol overload, when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPriceLeftoverInventoryValue, "Total Charge", totalInputPriceLeftoverInventoryCharge}, {"", "", "", "", "", "", "Total Tax", totalTaxLeftoverInventory}, {"", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxLeftoverInventory + totalInputPriceLeftoverInventoryCharge}},
+		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPriceLeftoverInventoryValue, "Total Charge", totalInputPriceLeftoverInventoryCharge}, {"", "", "", "", "", "", "", "Total Tax", totalTaxLeftoverInventory}, {"", "", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxLeftoverInventory + totalInputPriceLeftoverInventoryCharge}}
+	];
+
+	subtotalRowsConsumed=Switch[{consolidation, numNotebooks, numProts},
+		(* when Consolidation -> Notebook, Source, or Material *)
+		{Notebook | Protocol | Material, _, _}, {{"", "", ""}, {"Total", totalInputPriceConsumedValue, totalInputPriceConsumedCharge}, {"", "Total Tax", totalTaxConsumed}, {"", Style["Total Price\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxConsumed + totalInputPriceConsumedCharge}},
+		(* when the output is single notebook and a single protocol and both the notebook and protocol columns are omitted *)
+		{_, 1, 1}, {{"", "", "", "", "", ""}, {"", "", "Total Value", totalInputPriceConsumedValue, "Total Charge", totalInputPriceConsumedCharge}, {"", "", "", "", "Total Tax", totalTaxConsumed}, {"", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxConsumed + totalInputPriceConsumedCharge}},
+		(* for protocol overload, when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {{"", "", "", "", "", "", "", ""}, {"", "", "", "", "Total Value", totalInputPriceConsumedValue, "Total Charge", totalInputPriceConsumedCharge}, {"", "", "", "", "", "", "Total Tax", totalTaxConsumed}, {"", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxConsumed + totalInputPriceConsumedCharge}},
+		(* for protocol overload, when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {{"", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "Total Value", totalInputPriceConsumedValue, "Total Charge", totalInputPriceConsumedCharge}, {"", "", "", "", "", "", "", "Total Tax", totalTaxConsumed}, {"", "", "", "", "", "", "", Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center], totalTaxConsumed + totalInputPriceConsumedCharge}}
 	];
 
 	(* generate the column header row with the appropriate number of columns *)
@@ -6981,23 +8453,74 @@ priceMaterialsCore[
 		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
 			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
 	];
+	
+	columnHeadersLeftoverInventory=Switch[{consolidation, numNotebooks, numProts},
+		(* the below 3 cases are when Consolidation -> Notebook, Source, or Material *)
+		{Notebook, _, _}, {"Notebook", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Protocol, _, _}, {"Source", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Material, _, _}, {"Material Name", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and a single Source and both the notebook and Source columns are omitted *)
+		{_, 1, 1}, {"Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {"Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
+	];
+
+	columnHeadersConsumed=Switch[{consolidation, numNotebooks, numProts},
+		(* the below 3 cases are when Consolidation -> Notebook, Source, or Material *)
+		{Notebook, _, _}, {"Notebook", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Protocol, _, _}, {"Source", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		{Material, _, _}, {"Material Name", Tooltip["Value","Price of the materials before any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and a single Source and both the notebook and Source columns are omitted *)
+		{_, 1, 1}, {"Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the output is single notebook and the notebook column is omitted *)
+		{_, 1, _}, {"Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]},
+		(* when the entire data table is displayed without omitting any columns *)
+		{_, _, _}, {"Notebook", "Source Protocol", "Site", "Material Name", Tooltip["Amount", "The amount of material"], Tooltip["Rate","Pricing rate according to Material before any discount is applied"], Tooltip["Value","Price of the materials before any discount is applied"],
+			Tooltip["Rate","Pricing rate according to Material after any discount is applied"], Tooltip["Charge","Price of the materials after any discount is applied"]}
+	];
 
 	(* make the title for the table *)
-	tableTitle="Material Pricing";
+	tableTitle="Material Pricing: Consumed and Automatic Inventory Purchased";
+	tableTitleLeftoverInventory=Tooltip["Material Pricing: Automatic Inventory Purchased","Added to inventory, it will be automatically used in the future"];
+	tableTitleConsumed="Material Pricing: Consumed";
 
 	(* get the whole data table with the subtotal row appended to it *)
 	dataWithSubtotal=Join[dataTableToUse, subtotalRows];
-
+	dataWithSubtotalLeftoverInventory=Join[dataTableToUseLeftoverInventory, subtotalRowsLeftoverInventory];
+	dataWithSubtotalConsumed=Join[dataTableToUseConsumed, subtotalRowsConsumed];
+	
 	alignments = Switch[{consolidation, numNotebooks, numProts},
 		{Notebook|Protocol|Material, _, _}, {Left, Center},
 		{_, 1, 1}, {Left, Center},
 		{_, 1, _}, {Left, Left, Left, Center},
 		{_, _, _}, {Left, Left, Left, Left, Center}
 	];
+	
+	alignmentsLeftoverInventory = Switch[{consolidation, numNotebooks, numProts},
+		{Notebook|Protocol|Material, _, _}, {Left, Center},
+		{_, 1, 1}, {Left, Center},
+		{_, 1, _}, {Left, Left, Left, Center},
+		{_, _, _}, {Left, Left, Left, Left, Center}
+	];
+	alignmentsConsumed = Switch[{consolidation, numNotebooks, numProts},
+		{Notebook|Protocol|Material, _, _}, {Left, Center},
+		{_, 1, 1}, {Left, Center},
+		{_, 1, _}, {Left, Left, Left, Center},
+		{_, _, _}, {Left, Left, Left, Left, Center}
+	];
+	
 	dividerPositions = If[MatchQ[consolidation, Notebook|Protocol|Material],
 		{1, -1, -3},
 		{1, -1, -3, -5}
 	];
+	
 	dividers = {
 		{
 			{{Directive[GrayLevel[0.8]]}}, #1 ->
@@ -7043,7 +8566,8 @@ priceMaterialsCore[
 							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
 								FontFamily -> "Helvetica"], Alignment -> Center],
 							SpanFromLeft}]},
-					{}
+					{{Item[Style[tableTitle, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
 				],
 				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeaders},
 				dataWithSubtotal/.nameLookups
@@ -7066,15 +8590,199 @@ priceMaterialsCore[
 					}
 		]
 	];
+	tableOutputLeftoverInventory=If[MatchQ[dataTableToUseLeftoverInventory, {}],
+		"",
+		Grid[
+			Join[
+				If[NullQ[consolidation],
+					{Join[
+						{Item[Style[tableTitleLeftoverInventory, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center]},
+						ConstantArray[SpanFromLeft, Max[Length[columnHeadersLeftoverInventory] - 5, 0]],
+						{Item[Style["Value", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft,
+							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+								FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft}]},
+					{{Item[Style[tableTitleLeftoverInventory, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
+				],
+				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeadersLeftoverInventory},
+				dataWithSubtotalLeftoverInventory/.nameLookups
+			],
+			Alignment -> {alignmentsLeftoverInventory, Center},
+			Frame -> All,
+			Spacings -> 1,
+			Dividers -> dividers,
+			ItemStyle -> {{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}},
+				{Directive[FontWeight -> Bold, FontSize -> 10]},
+				{{-1, -1} -> Bold}
+			},
+			ItemSize->Switch[{consolidation, numNotebooksConsumed, numProtsConsumed},
+				{Notebook|Protocol|Material,_,_}, {{28 (*consolidation type*),8 (*value*),8 (*charge*)},Automatic},
+				{_, 1, 1},{{28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+				{_,1,_},{{28,5,28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+				{_, _, _},{{20,28,5,28,5,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic}
+			],
+			Background ->
+					{None,
+						If[NullQ[consolidation],
+							{RGBColor["#E2E2E2"], {RGBColor["#E2E2E2"],None}},
+							{{RGBColor["#E2E2E2"],None}}]
+					}
+		]
+	];
+
+	tableOutputConsumed=If[MatchQ[dataTableToUseConsumed, {}],
+		"",
+		Grid[
+			Join[
+				If[NullQ[consolidation],
+					{Join[
+						{Item[Style[tableTitleConsumed, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center]},
+						ConstantArray[SpanFromLeft, Max[Length[columnHeadersConsumed] - 5, 0]],
+						{Item[Style["Value", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+							FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft,
+							Item[Style["Charge", FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+								FontFamily -> "Helvetica"], Alignment -> Center],
+							SpanFromLeft}]},
+					{{Item[Style[tableTitleConsumed, FontWeight -> Bold, FontColor -> RGBColor["#4A4A4A"],
+						FontFamily -> "Helvetica"], Alignment -> Center]}}
+				],
+				{Item[Style[#, FontWeight -> Bold, FontFamily -> "Helvetica"], Alignment -> Center] & /@ columnHeadersConsumed},
+				dataWithSubtotalConsumed/.nameLookups
+			],
+			Alignment -> {alignmentsConsumed, Center},
+			Frame -> All,
+			Spacings -> 1,
+			Dividers -> dividers,
+			ItemStyle -> {{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}},
+				{Directive[FontWeight -> Bold, FontSize -> 10]},
+				{{-1, -1} -> Bold}
+			},
+			ItemSize->Switch[{consolidation, numNotebooksConsumed, numProtsConsumed},
+				{Notebook|Protocol|Material,_,_}, {{28 (*consolidation type*),8 (*value*),8 (*charge*)},Automatic},
+				{_, 1, 1},{{28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+				{_,1,_},{{28,5,28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+				{_, _, _},{{20,28,5,28,5,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic}
+			],
+			Background ->
+				{None,
+					If[NullQ[consolidation],
+						{RGBColor["#E2E2E2"], {RGBColor["#E2E2E2"],None}},
+						{{RGBColor["#E2E2E2"],None}}]
+				}
+		]
+	];
+	
+	totalTable=Grid[
+		Switch[{consolidation, numNotebooks, numProts},
+			{Notebook|Protocol|Material,_,_},
+				{
+					{"","Consumed",totalInputPriceConsumedCharge+totalTaxConsumed},
+					{"","Purchased",totalInputPriceLeftoverInventoryCharge+totalTaxLeftoverInventory},
+					{"TOTAL (Consumed and Purchased)",Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center],totalInputPriceCharged+totalTax}
+				},
+			{_, 1, 1},
+				{
+					{"",Sequence@@ConstantArray["",3],"Consumed",totalInputPriceConsumedCharge+totalTaxConsumed},
+					{"",Sequence@@ConstantArray["",3],"Purchased",totalInputPriceLeftoverInventoryCharge+totalTaxLeftoverInventory},
+					{"TOTAL (Consumed and Purchased)",Sequence@@ConstantArray["",3],Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center],totalInputPriceCharged+totalTax}
+				},
+			{_,1,_},
+				{
+					{"",Sequence@@ConstantArray["",5],"Consumed",totalInputPriceConsumedCharge+totalTaxConsumed},
+					{"",Sequence@@ConstantArray["",5],"Purchased",totalInputPriceLeftoverInventoryCharge+totalTaxLeftoverInventory},
+					{"TOTAL (Consumed and Purchased)",Sequence@@ConstantArray["",5],Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center],totalInputPriceCharged+totalTax}
+				},
+			{_, _, _},
+				{
+					{"",Sequence@@ConstantArray["",6],"Consumed",totalInputPriceConsumedCharge+totalTaxConsumed},
+					{"",Sequence@@ConstantArray["",6],"Purchased",totalInputPriceLeftoverInventoryCharge+totalTaxLeftoverInventory},
+					{"TOTAL (Consumed and Purchased)",Sequence@@ConstantArray["",6],Style["Total Charge\nwith Tax", FontWeight -> Bold, FontFamily -> "Helvetica", TextAlignment->Center],totalInputPriceCharged+totalTax}
+				}
+		],
+		ItemSize->Switch[{consolidation, numNotebooks, numProts},
+			{Notebook|Protocol|Material,_,_}, {{28 (*consolidation type*),8 (*value*),8 (*charge*)},Automatic},
+			{_, 1, 1},{{28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+			{_,1,_},{{28,5,28,8,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic},
+			{_, _, _},{{20,28,5,28,5,10(*rate*),8(*value*),10(*rate*),8(*charge*)},Automatic}
+		],
+		Alignment -> {{Left,Center}, Center},
+		Frame -> All,
+		Spacings -> 1,
+		ItemStyle -> {
+			{
+				{Directive[FontFamily -> "Helvetica", FontSize -> 10]},
+				{Directive[FontFamily -> "Arial", FontSize -> 10]}
+			},
+			{
+				None,
+				None,
+				Directive[FontWeight -> Bold, FontSize -> 10]
+			},
+			{
+				{-1, -1} -> Bold,
+				{-1, -2} -> Bold
+			}
+		},
+		Dividers -> {
+			{
+				Directive[GrayLevel[0.5], Thickness[2]],
+				{Directive[GrayLevel[0.9]]},
+				Directive[GrayLevel[0.5], Thickness[2]],
+				Directive[GrayLevel[0.9]],
+				Directive[GrayLevel[0.5], Thickness[2]]
+			},
+			{
+				Directive[GrayLevel[0.5], Thickness[2]],
+				{Directive[GrayLevel[0.9]]},
+				Directive[GrayLevel[0.5], Thickness[2]]
+			}
+		},
+		Background ->
+			{None,
+				
+				{{RGBColor["#E2E2E2"],None}}
+			}
+	];
+	
+	finalTable = If[MatchQ[split,True]&&MatchQ[tableOutput, Except[{}]],
+		Grid[{{tableOutputConsumed}, {tableOutputLeftoverInventory}, {totalTable}}, Alignment -> Left, Spacings -> 0],
+		tableOutput
+	];
+
+	(* generate the summary association output; returned if OutputFormat -> SummaryAssociation *)
+	(* Consumed = non-LeftoverInventory materials; Consumed = LeftoverInventory materials; Charge = Value since PriceMaterials applies no discounts *)
+	summaryAssociationOutput = If[MatchQ[split, True],
+		(* Split -> True: separate entries for Consumed (non-LeftoverInventory) and Consumed (LeftoverInventory) *)
+		{
+			<|PurchaseType -> Consumed, Value -> totalInputPriceConsumedValue, Charge -> totalInputPriceConsumedCharge, Tax -> totalTaxConsumed|>,
+			<|PurchaseType -> LeftoverInventory, Value -> totalInputPriceLeftoverInventoryValue, Charge -> totalInputPriceLeftoverInventoryCharge, Tax -> totalTaxLeftoverInventory|>
+		},
+		(* Split -> False/Null: single combined entry *)
+		{
+			<|PurchaseType -> All, Value -> totalInputPriceValue, Charge -> totalInputPriceCharged, Tax -> totalTax|>
+		}
+	];
 
 	(* use the OutputFormat option to provide the output *)
 	Switch[output,
 		(* when OutputFormat -> Table *)
-		Table, tableOutput,
+		Table, finalTable,
 		(* when OutputFormat -> Association *)
 		Association, associationOutput,
 		(* when OutputFormat -> TotalPrice *)
-		TotalPrice, totalInputPrice + totalTax
+		TotalPrice, totalInputPriceCharged + totalTax,
+		(* when OutputFormat -> SummaryAssociation *)
+		SummaryAssociation, summaryAssociationOutput
 	]
 ];
 
@@ -7095,6 +8803,22 @@ priceMaterialsCore[
 (* The outputs are lists of information about notebook, samples, names, prices, etc for the PriceMaterials output table *)
 
 (* NOTE: this helper is also called directly by priceTransactionsToUser in PriceTransactions *)
+
+(* These kits are color references for ImageSample and are infinitely reusable *)
+(*
+{Object[Product, "Color Reference Solutions, Yellow (Y1 to Y7)"],
+ Object[Product, "Color Reference Solutions, Red (R1 to R7)"],
+ Object[Product, "Color Reference Solutions, Brown (B1 to B9)"],
+ Object[Product, "Color Reference Solutions, Brownish Yellow (BY1 to BY7)"],
+ Object[Product, "Color Reference Solutions, Greenish Yellow (GY1 to GY7)"]}
+*)
+$InfinitelyReusableKits={
+	Object[Product, "id:8qZ1VWzj9AbA"],
+	Object[Product, "id:n0k9mGKkbmrr"],
+	Object[Product, "id:3em6ZvAm8Z38"],
+	Object[Product, "id:1ZA60vPAK0kE"],
+	Object[Product, "id:zGj91aAjK1zO"]
+};
 
 DefineOptions[priceMaterialsProtocols,
 	Options :> {
@@ -7120,30 +8844,37 @@ priceMaterialsProtocols[
 	payableSampleProducts, productExistsBool, nullSamples, nullSamplesModels, noWaterNullSamples, payableSamplePackets, payableSamples, payableSamplesKitComponents,
 	kitSampleTuples, nonRedundantKitSampleTuples, nonRedundantKitDuplicatesBool, sampleFromKitBool,
 	flatSampleResourcePackets, flatSampleProductPackets, resourceStatus, excludeResourceBool, excludedResourcePackets, flatFulfilledProductPackets,
-	flatFulfilledResourcePackets, flatFulfilledModelPackets, purchasableProductPackets, purchasableResourcePackets, purchasableModelPackets, payableSampleModelPackets, productPricePerUnit,
-	noSiteProtocols, indexMatchedSiteSalesTax, fulfilledSiteSalesTax, payableSiteSalesTax, productSamplesPerItem, productAmount,
+	flatFulfilledResourcePackets, updatedFlatFulfilledResourcePackets, flatFulfilledModelPackets, flatFulfilledSamplePackets, purchasableProductPackets, purchasableResourcePackets, purchasableModelPackets, purchasableSamplePackets, allProductKits, productKitConsolidationListPerKit, updatedProductKitConsolidationListPerKitLookup, consolidatedByKitResourceToPurchaseTypeAssoc, protocolConsolidationLookup, resourceToPurchaseTypeAssoc, expandedSampleFromKitBool,  expandedPurchasableResourcePackets, expandedPurchasableProductPackets,
+	expandedPurchasableModelPackets, expandedPurchasableSamplePackets, payableSampleModelPackets, productPricePerUnit,
+	noSiteProtocols, resourceSalesTaxTuple, indexMatchedSiteSalesTax, fulfilledSiteSalesTax, payableSiteSalesTax, productSamplesPerItem, productAmount,
 	productName, productCountPerSample, nonNullproductCountPerSample, nonNullProductPricePerUnit, productPricingRate, productListPrice, productTaxPricingRate,
-	productTaxPrice, resourcePurchaseBool, resourceAmountUsed, stockSolutionPricePerUnit, resourceSampleAndNonMaintenanceBool,
-	indexmatchFilterForProtocols, fulfilledAndIncludedBool, onlySampleProductPackets,
-	payableNotebooks, payableProtocols, payableSampleModel, payableModelName, payableAmounts, payableDateCompleted,
+	productTaxPrice, resourcePurchaseBool, resourceOwnedBool, resourcePurchasedOrOwnedBool, resourceAmountUsed, stockSolutionPricePerUnit, payableDensities, resourceSampleAndNonMaintenanceBool,
+	indexmatchFilterForProtocols, fulfilledAndIncludedBool, onlySampleProductPackets, resourceNotebookLookup,
+	resourceProtocolLookup,
+	recourceDateCompletedLookup,
+	resourceSiteLookup,
+	payableNotebooks, payableProtocols, payableSampleModel, payableModelName, payableAmounts, payableCharged, payablePurchaseType, payableDateCompleted,
 	allIncludedSampleResourcePackets, totalProtocolPrices, totalProtocolPricePerUnit, totalProtocolNotebooks, totalProtocolObjects, totalProtocolSamplesObjects,
 	totalProtocolSampleNames, totalProtocolSampleAmounts, totalProtocolSampleAmountsMixed, totalProtocolDateCompleted, totalProtocolTags, transposedProtocolsAndObjects, gatheredObjects, gatheredProtocols, gatheredTags,
 	gatherByObjectAndProtocolAndTag, gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocolPrices, gatheredProtocolPricePerUnit, gatheredProtocolSampleAmounts,
-	gatheredProtocolDateCompleted, consolidatedProtocolNotebooks, consolidatedProtocolNames, consolidatedProtocols, consolidatedObjects, consolidatedProtocolTags,
+	gatheredProtocolDateCompleted, consolidateData, consolidatedProtocolNotebooks, consolidatedProtocolNames, consolidatedProtocols, consolidatedObjects, consolidatedProtocolTags,
 	consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatedProtocolSampleAmounts, consolidatedProtocolPrices, totalProtocolOutput, excludedSampleResourceBool,
 	refundedProtocols, refundStatus, refundedResourceBool, reusabilityLookup, sampleToModelLookup, protocolSites, payableSites,
-	totalProtocolSites, gatheredInformation, gatheredSite, consolidatesSite, invalidAmountResourcePackets
+	totalProtocolSites, totalCharged, totalPurchaseType, gatheredInformation, gatheredSite, gatheredCharged, gatheredPurchaseType, consolidatesSite, consolidatedCharged, consolidatedPurchaseType, invalidAmountResourcePackets, totalSamplePurchased, samplePurchased, updatedTable, kitPurchasedLines, rawTable, fastAssoc, sampleWithKitAllComponents, gatheredKitSampleTuples, updatedProductListPrice, updatedProductPricingRate, updatedProductTaxPrice, updatedProductTaxPricingRate, reusabilityTipsUpdated, countsPurchasedNotUsed , unUsedCountsPricingRate, unUsedCountsTaxPricingRate, unUsedCountsPrice, unUsedCountsTaxPrice, countsPurchasedLines, productListPriceWithUnUsedTips, productPricingRateWithUnUsedTips, productTaxPriceWithUnUsedTips, productTaxPricingRateWithUnUsedTips, payableSampleObjectKit, kitAllConsumedBoolAssoc, gatheredKitAllConsumedBool, noWaterNullSamplesToReport, allSamplesContainersOut
 	},
 
 	(* default the unspecified or incorrectly specified options; pull out AllowSubprotocols *)
 	safeOptions=SafeOptions[priceMaterialsProtocols, ToList[myOptions]];
 	allowSubprotocolsQ=Lookup[safeOptions, AllowSubprotocols];
 
+	fastAssoc = Experiment`Private`makeFastAssocFromCache[Experiment`Private`FlattenCachePackets[{myProtocolPackets, myTSReportPackets, myResourcePackets, myResourceProductPackets, myResourceSamplePackets, myResourceSampleModelPackets, mySampleContainerModelPackets, myProductModelPackets, myDefaultStorageConditionPackets, myContainerResourcePackets, mySiteModelPackets}]];
+
 	(* pull out the Object value for each protocol, the Notebook, and the DateCompleted. These lists are indexmatched with the input protocols *)
-	protocolObjects=Lookup[myProtocolPackets , Object, {}];
+	protocolObjects=Lookup[myProtocolPackets, Object, {}];
 	protocolNotebooks=Download[Lookup[myProtocolPackets , Notebook, {}], Object];
 	protocolDates=Lookup[myProtocolPackets, DateCompleted, {}];
 	protocolSites=Download[Lookup[myProtocolPackets,Site],Object];
+	allSamplesContainersOut = Download[DeleteDuplicates[Flatten[Lookup[myProtocolPackets, {ContainersOut, SamplesOut}, {}]/. {$Failed -> {}}]], Object];
 
 	(* find the Protocols that are Subprotocols (as in, they have a ParentProtocol) *)
 	subprotocols=Select[myProtocolPackets, Not[NullQ[Lookup[#, ParentProtocol]]]&];
@@ -7167,7 +8898,7 @@ priceMaterialsProtocols[
 		)
 	];
 
-	(*this is not really reliable, though in this case because we are only refunding things that are reusable items, it should not cause an issue. The more robust thing to do would be to use the model from the resource rather than the Sample[Model]*)
+	(*this is not really reliable, though in this case because we are only refunding things that are LeftoverInventory items, it should not cause an issue. The more robust thing to do would be to use the model from the resource rather than the Sample[Model]*)
 	(* sample to model lookup *)
 	sampleToModelLookup=DeleteDuplicates[
 		Map[
@@ -7180,7 +8911,7 @@ priceMaterialsProtocols[
 	reusabilityLookup=DeleteDuplicates[
 		Map[
 			(#[[1]] -> #[[2]])&,
-			Lookup[DeleteDuplicates[Cases[Flatten[myResourceSampleModelPackets], PacketP[]]], {Object, Reusable}]
+			Lookup[DeleteDuplicates[Cases[Flatten[myResourceSamplePackets], PacketP[]]], {Object, Reusable}]
 		]
 	];
 
@@ -7205,18 +8936,25 @@ priceMaterialsProtocols[
 	(* Public/standalone maintenance will still be priced *)
 	excludeResourceBool=Map[
 		Function[resourcePacket,
-			Module[{rootProtocol,maintenanceRequestors,rootProtocolPacket},
+			Module[{rootProtocol,maintenanceRequestors,rootProtocolPacket, resourceSample, resourcePreparation},
 				rootProtocol = Download[Lookup[resourcePacket, RootProtocol, Null],Object];
 				maintenanceRequestors = DeleteDuplicates[Download[Cases[Lookup[resourcePacket, Requestor, {}], LinkP[Object[Maintenance]]],Object]];
 				rootProtocolPacket = Experiment`Private`fetchPacketFromCache[rootProtocol,myProtocolPackets];
+				resourceSample = Download[Lookup[resourcePacket, Sample, Null],Object];
+				resourcePreparation = Lookup[resourcePacket, Preparation, Null];
 
-				(* Don't charge if private root protocol (not qual/maintenance) and requested by maintenance which is not the root *)
-				And[
-					MatchQ[rootProtocol,ObjectP[Object[Protocol]]],
-					MatchQ[Lookup[rootProtocolPacket,Notebook],ObjectP[]],
-					!MemberQ[maintenanceRequestors,Lookup[rootProtocolPacket,Object]],
-					!MatchQ[maintenanceRequestors,{}]
-				]
+				Or[
+					(* Don't charge if private root protocol (not qual/maintenance) and requested by maintenance which is not the root *)
+					And[
+						MatchQ[rootProtocol,ObjectP[Object[Protocol]]],
+						MatchQ[Lookup[rootProtocolPacket,Notebook],ObjectP[]],
+						!MemberQ[maintenanceRequestors,Lookup[rootProtocolPacket,Object]],
+						!MatchQ[maintenanceRequestors,{}]
+					],
+					(* if resource is prepared in this protocol -- its price is calculated by one of the subprotocols *)
+					!NullQ[resourcePreparation],
+					(* if resource sample is samples out or containers out of one of the listed protocols -- its price is calculated by that protocol*)
+					MemberQ[allSamplesContainersOut, ObjectP[resourceSample]]]
 			]
 		],
 		Flatten[allResourcePackets]
@@ -7263,10 +9001,13 @@ priceMaterialsProtocols[
 					MatchQ[productPacket,Null], {$Failed,$Failed},
 					MatchQ[Lookup[productPacket, KitComponents,{}],{}], Lookup[productPacket, {Amount,CountPerSample}],
 					(* We have a hideous kit product and need to find the amount/count there *)
-					True, Module[{kitEntry},
-						kitEntry=SelectFirst[Lookup[productPacket, KitComponents],MatchQ[Lookup[#,ProductModel],ObjectP[First[requestedModels]]]&,<||>];
-						(* Kits have no option for CountPerSample *)
-						{Lookup[kitEntry,Amount,Null], Null}
+					True, If[Length[requestedModels] > 0,
+						Module[{kitEntry},
+							kitEntry=SelectFirst[Lookup[productPacket, KitComponents],MatchQ[Lookup[#,ProductModel],ObjectP[First[requestedModels]]]&,<||>];
+							(* Kits have no option for CountPerSample *)
+							{Lookup[kitEntry,Amount,Null], Null}
+						],
+						{Null, Null}
 					]
 				];
 
@@ -7320,12 +9061,70 @@ priceMaterialsProtocols[
 		PickList[Flatten[myResourceSampleModelPackets], resourceSampleAndNonMaintenanceBool],
 		PickList[fulfilledAndIncludedBool, excludedSampleResourceBool]
 	];
+	
+	flatFulfilledSamplePackets=PickList[
+		PickList[Flatten[myResourceSamplePackets], resourceSampleAndNonMaintenanceBool],
+		PickList[fulfilledAndIncludedBool, excludedSampleResourceBool]
+	];
 
 	(* --- Calculate resource pricing --- *)
 
-	(* get the information which of the materials are being purchased *)
-	(* if Purchase is Null for a given Resource, then that Resource is either a reusable item and thus not charged, or the resource has been purchased previously by the user or the user's team *)
-	resourcePurchaseBool=Lookup[flatFulfilledResourcePackets, Purchase, {}];
+	(* get the information which of the materials are being purchased OR owned and consumed/used *)
+	
+	(* we need to track resources that are 1) Purchased or 2) used in the protocol but have already been purchased previously (for Consumed vs LeftOver tracking) AND either a) infinitely Reusable (Reusable True and Null for all indicators of consumption (MaxNumberOfUses,Counted,MaxVolumeOfUses)), OR  b) has a consumption indicator, OR c) part of a kit *)
+	{
+		resourcePurchaseBool,
+		resourceOwnedBool,
+		resourcePurchasedOrOwnedBool,
+		updatedFlatFulfilledResourcePackets
+	}=If[MatchQ[flatFulfilledResourcePackets,{}],
+		{{},{},{},{}},
+		Transpose[
+			MapThread[
+				Function[{resourcePacket, samplePacket},
+					Module[{purchased, owned, purchasedOrOwned},
+						purchased = Lookup[resourcePacket, Purchase, False];
+						owned = And[
+							!MatchQ[Lookup[resourcePacket,Purchase,Null],True],
+							MatchQ[Lookup[resourcePacket,Notebook],ObjectP[]],
+							Or[
+								And[
+									MatchQ[Lookup[resourcePacket,Reusable],True],
+									!MemberQ[
+										Join[
+											Lookup[resourcePacket,{MaxNumberOfUses,Counted,MaxVolumeOfUses},Null],
+											Lookup[samplePacket,{Volume, Mass},Null]
+										],
+										Except[Null|$Failed]
+									]
+								],
+								MemberQ[
+									Join[
+										Lookup[resourcePacket,{MaxNumberOfUses,Counted,MaxVolumeOfUses},Null],
+										Lookup[samplePacket,{Volume, Mass},Null]
+									],
+									Except[Null|$Failed]
+								],
+								MatchQ[
+									Lookup[resourcePacket, KitComponents,{}]/.$Failed|Null->{},
+									Except[{}]
+								]
+							]
+						];
+
+						purchasedOrOwned = Or[purchased, owned];
+
+						{purchased, owned, purchasedOrOwned, Join[resourcePacket, <|Purchased -> purchased, Owned-> owned|>]}
+					]
+				],
+				{
+					flatFulfilledResourcePackets,
+					flatFulfilledSamplePackets
+				}
+			]
+		]
+	];
+	
 
 	(* filter out the $Failed entries from the Sample Packets originating from Resources other than Samples and filter for the fulfilled resources *)
 	(* also do the same for the product packets *)
@@ -7343,10 +9142,10 @@ priceMaterialsProtocols[
 	(* Note that we're assuming that the the myProductModelPackets has this information already passed down so we're relying on that being accurate *)
 
 	(* extract from the Sample Packets the list of associated products *)
-	payableSampleProducts=PickList[onlySampleProductPackets, resourcePurchaseBool, True];
+	payableSampleProducts=PickList[onlySampleProductPackets, resourcePurchasedOrOwnedBool, True];
 
-	(* filter for those Sample Model Packets that are to be purchased *)
-	payableSampleModelPackets=PickList[flatFulfilledModelPackets, resourcePurchaseBool, True];
+	(* filter for those Sample Model Packets that are to be purchased/owned *)
+	payableSampleModelPackets=PickList[flatFulfilledModelPackets, resourcePurchasedOrOwnedBool, True];
 
 	(* get a Boolean list for whether the Sample has a Product associated with it (True) or not (False).  Note that if it is a StockSolution, we are saying Yes only if Price is populated in that stock solution *)
 	productExistsBool=MapThread[
@@ -7358,54 +9157,457 @@ priceMaterialsProtocols[
 	];
 
 	(* get the Samples that don't have any Product associated with them *)
-	nullSamples=PickList[PickList[Download[onlySamplePackets, Object], resourcePurchaseBool, True], productExistsBool, False];
+	nullSamples=PickList[PickList[Download[onlySamplePackets, Object], resourcePurchasedOrOwnedBool, True], productExistsBool, False];
 
 	(* filter for samples that don't have a product associated with them *)
-	nullSamplesModels=Lookup[PickList[payableSampleModelPackets, productExistsBool, False], Object, {}];
+	(* some samples do not have associated models so we filter them out as well *)
+	nullSamplesModels=Lookup[PickList[payableSampleModelPackets, productExistsBool, False]/.Null-><|Object->Null|>, Object, {}];
+	
 
 	(* filter the nullSamples (samples with no product associated) for samples that are not water sources coming from the pipes (WaterModelP) *)
 	(* any water sample matching the pattern WaterModelP is not purchased from a supplier but produced in the lab *)
 	noWaterNullSamples=PickList[nullSamples, nullSamplesModels, Except[WaterModelP]];
 
+	(* exclude the samples that were prepared in earlier protocols -- without Model, or Model does not have Products *)
+	noWaterNullSamplesToReport = Module[{model, modelProducts},
+		model = Lookup[Experiment`Private`fetchPacketFromFastAssoc[#, fastAssoc], Model];
+		If[NullQ[model],
+			Nothing,
+			modelProducts = Lookup[Experiment`Private`fetchPacketFromFastAssoc[model, fastAssoc], Products, {}];
+			If[Length[modelProducts] > 0,
+				#,
+				Nothing
+			]
+		]
+	]&/@noWaterNullSamples;
+
 	(* if there are Samples that don't have any Product associated with them (except water), throw a soft message *)
-	If[Not[MatchQ[noWaterNullSamples, {}]],
-		Message[PriceMaterials::MissingProductInformation, DeleteDuplicates[noWaterNullSamples]]; (*missingProductTask[DeleteDuplicates[noWaterNullSamples]];*)
+	If[Not[MatchQ[noWaterNullSamplesToReport, {}]],
+		Message[PriceMaterials::MissingProductInformation, DeleteDuplicates[noWaterNullSamplesToReport]]; (*missingProductTask[DeleteDuplicates[noWaterNullSamples]];*)
 	];
 
-	(* The next part is going to filter out resources pointing to samples that come from the same kit
-		This is because the entire kit is purchased the moment the protocol requests any of it.
-		So if within the same protocol another sample from that same kit is requested, we would double charge  unless we filter out those resource *)
+	(* filter the Sample Packets for materials that are being purchased/already owned, and have a product affiliated and no kit-duplicates *)
+	purchasableProductPackets=PickList[PickList[flatFulfilledProductPackets, resourcePurchasedOrOwnedBool], productExistsBool, True];
 
-	(* filter the sample packets for those that we will purchase and those that have a product associated with them *)
-	payableSamplePackets=PickList[PickList[onlySamplePackets, resourcePurchaseBool, True], productExistsBool, True];
+	(* filter the Product Packets for materials that are being purchased/ already owned and have a product affiliated *)
+	purchasableResourcePackets=PickList[PickList[updatedFlatFulfilledResourcePackets, resourcePurchasedOrOwnedBool], productExistsBool, True];
 
-	(* get the samples the resource is pointing to, as well as its corresponding KitComponents (all other samples from the same kit) that each sample is point to. If the sample is not from a kit, this is going to be an empty list *)
-	payableSamples=Lookup[payableSamplePackets, Object, {}];
-	payableSamplesKitComponents=Download[#, Object]& /@ Lookup[payableSamplePackets, KitComponents, {}];
-
-	(* make tuples of the form {{sample,kitComponents}..} *)
-	kitSampleTuples=Transpose[{payableSamples, payableSamplesKitComponents}];
-
-	(* delete entries for which the union of sample and kitComponents occurs more than once *)
-	nonRedundantKitSampleTuples=DeleteDuplicatesBy[kitSampleTuples, Sort[Flatten[#]]&];
-
-	(* get a boolean list for whichever samples we are kicking out because they are samples from the same kit *)
-	nonRedundantKitDuplicatesBool=Map[
-		If[MemberQ[nonRedundantKitSampleTuples, #], True, False]&, kitSampleTuples
+	(* filter the Model Packets for materials that are being purchased/already owned, and have a product affiliated *)
+	purchasableModelPackets=PickList[PickList[flatFulfilledModelPackets, resourcePurchasedOrOwnedBool], productExistsBool, True];
+	
+	(* filter the Sample Packets for materials that are being purchased/already owned, and have a product affiliated *)
+	purchasableSamplePackets=PickList[PickList[flatFulfilledSamplePackets, resourcePurchasedOrOwnedBool], productExistsBool, True];
+	
+	(* consolidate various Packets based on Kits *)
+	
+	(* collect all resources belonging to the same kit and identify which ones are limiting components *)
+	(* identify all product kits in the packets *)
+	allProductKits = DeleteDuplicates[DeleteCases[
+		Lookup[
+			Cases[purchasableProductPackets, KeyValuePattern[KitComponents->Except[{}|$Failed]]],
+			Object,
+			{}
+		],
+	Null]/.Null->{}];
+	
+	(* create association for each product kit that describes the consolidated usage per component for all input protocols, and identify which is the limiting component *)
+	productKitConsolidationListPerKit = Map[
+		Function[{productKit},
+			Module[{kitResourcePackets, allKitComponentUsageAssoc, associationBySample, gatherAssociationsByModel},
+				(* identify all resourcePackets that involve the product *)
+				kitResourcePackets = Cases[
+					purchasableResourcePackets,
+					KeyValuePattern[Product->ObjectP[productKit]]
+				];
+				
+				allKitComponentUsageAssoc = Lookup[
+					kitResourcePackets,
+					KitComponentUsage,
+					Null
+				];
+				
+				associationBySample = Module[{gatheredBySample},
+					(* Sub-group this batch by KitSample and only if it is a container - we don't want to double count containers but we want to make sure to add all resource amounts for samples *)
+					gatheredBySample = GatherBy[allKitComponentUsageAssoc, Lookup[#, KitSample] &];
+					
+					 Map[
+						Function[{packetsGatheredBySample},
+							Module[{totalAmount},
+								totalAmount = If[MatchQ[First[Lookup[packetsGatheredBySample, KitSample]],ObjectP[Object[Container]]],
+									1,
+									(* if we are dealing with samples or other types, we generally add the usage *)
+									Total[DeleteCases[Lookup[packetsGatheredBySample, AmountUsed, Null],Null]]
+								];
+								
+								<|
+									KitModel -> First[Lookup[packetsGatheredBySample, KitModel, Null]],
+									KitProduct -> First[Lookup[packetsGatheredBySample, KitProduct, Null]],
+									RootProtocol -> First[Lookup[packetsGatheredBySample, RootProtocol, Null]],
+									AmountPerKit -> First[Lookup[packetsGatheredBySample, AmountPerKit, Null]],
+									AmountUsed -> totalAmount
+								|>
+								
+							]
+						],
+						gatheredBySample
+					]
+				];
+				
+				gatherAssociationsByModel = GatherBy[associationBySample, Download[Lookup[#, KitModel],Object]&];
+				
+				Map[
+					<|
+						KitModel -> First[Lookup[#, KitModel, Null]],
+						KitProduct -> First[Lookup[#, KitProduct, Null]],
+						RootProtocol -> First[Lookup[#, RootProtocol, Null]],
+						AmountPerKit -> First[Lookup[#, AmountPerKit, Null]],
+						AmountUsed -> Total[DeleteCases[Lookup[#, AmountUsed, Null],Null]],
+						NumberOfKits -> Total[DeleteCases[Lookup[#, AmountUsed, Null],Null]]/First[Lookup[#, AmountPerKit, Null]]
+					|>&,
+					gatherAssociationsByModel
+				]
+			]
+		],
+		allProductKits
 	];
+	
+	(* now that we have tentative # of kits per component, we can now identify which one is the limiting component *)
+	updatedProductKitConsolidationListPerKitLookup = Map[
+		Function[{consolidatedListPerKit},
+			Module[{limitingComponentModel},
+				limitingComponentModel = Lookup[First[MaximalBy[consolidatedListPerKit, Lookup[#, NumberOfKits] &]],KitModel];
+				
+				Map[
+					If[MatchQ[Lookup[#, KitModel], ObjectP[limitingComponentModel]],
+						Lookup[#, KitModel] -> Append[#, LimitingComponent -> True],
+						Lookup[#, KitModel] -> Append[#, LimitingComponent -> False]
+					]&,
+					consolidatedListPerKit
+				]
+			]
+		],
+		productKitConsolidationListPerKit
+	]//Flatten;
+	
+	(* check out resource packets and assign PurchaseType - sometimes this would require to duplicate the resource packet in a Consumed and LeftOver *)
+	resourceToPurchaseTypeAssoc = MapThread[
+		Function[{resourcePacket, samplePacket, modelPacket},
+			Module[{purchasedBool, ownedBool, consumableBool, kitBool, infinitelyReusableBool, chargeBool, kitProductAssoc, amountConsumed, amountLeftover, purchaseType, finalAssoc},
+				(* Identify if this resource is consumable in some way, which means it could be split between Consumed and LeftoverInventory - this is indicated by values in consumption indicator fields such as MaxNumberOfUses,Counted,MaxVolumeOfUses OR if it is part of a Kit *)
+				purchasedBool = Lookup[resourcePacket, Purchased]/.{Null->False};
+				ownedBool = Lookup[resourcePacket, Owned]/.{Null->False};
+				consumableBool = Or[
+					(* can be consumed case 1: if it has a max number of uses, eg. columns *)
+					MemberQ[Lookup[resourcePacket,{MaxNumberOfUses,MaxVolumeOfUses},Null], Except[Null|$Failed]],
 
-	(* construct a bool for whether the resource stems from a kit or not. We filter out resources pointing to samples from the same kit since we only charge once the full price of the whole kit with all its affiliated items *)
-	sampleFromKitBool=PickList[MatchQ[#, {ObjectP[]..}]& /@ payableSamplesKitComponents, nonRedundantKitDuplicatesBool, True];
+					(* can be consumed case 2: if it counted or it has volume/mass and user purchased the whole case, eg. a whole box of tips are purchased but used only 1 tip this time; a whole 4 L of acetone are purchased but only 20 mL used this time *)
+					And[
+						MemberQ[
+							Join[
+								Lookup[resourcePacket,{Counted},Null],
+								Lookup[samplePacket,{Volume, Mass},Null]
+							],
+							Except[Null|$Failed]
+						],
+						MatchQ[Lookup[resourcePacket, Notebook, Null], Except[Null|$Failed]]
+					],
+					(* part of a kit *)
+					MatchQ[Lookup[resourcePacket,KitComponents,{}]/.$Failed->{},Except[{}]]
+				];
 
-	(* filter the Sample Packets for materials that are being purchased and have a product affiliated and no kit-duplicates *)
-	purchasableProductPackets=PickList[PickList[PickList[flatFulfilledProductPackets, resourcePurchaseBool], productExistsBool, True], nonRedundantKitDuplicatesBool, True];
+				kitBool = MatchQ[Lookup[resourcePacket, KitComponents, {}],Except[{}]];
+				chargeBool = Lookup[resourcePacket, Purchase, False]/.$Failed|Null->False;
 
-	(* filter the Product Packets for materials that are being purchased and have a product affiliated *)
-	purchasableResourcePackets=PickList[PickList[PickList[flatFulfilledResourcePackets, resourcePurchaseBool], productExistsBool, True], nonRedundantKitDuplicatesBool, True];
+				(* reusable and not consumable *)
+				infinitelyReusableBool = Or[
+					And[
+						MatchQ[Lookup[resourcePacket, Reusable, Null], True],
+						Not[consumableBool],
+						!MatchQ[samplePacket,ObjectP[Object[Item,Tips]]]
+					],
+					(* Color Reference Kit is one-time charge only *)
+					And[
+						kitBool,
+						MatchQ[Lookup[resourcePacket, Amount, Null], Null|EqualP[0 Milliliter]],
+						MatchQ[Lookup[samplePacket, Product, Null], ObjectP[$InfinitelyReusableKits]]
+					]
+				];
+				
+				(* for kit products, we need to get the consolidated amounts *)
+				kitProductAssoc = If[MatchQ[updatedProductKitConsolidationListPerKitLookup, Except[{}|Null]],
+					Lookup[updatedProductKitConsolidationListPerKitLookup, Lookup[Lookup[resourcePacket, KitComponentUsage, {}]/.Null->{}, KitModel, {}], {}],
+					<||>
+				];
+				
+				(* If we don't it want it to appear in Consumed Table, amountConsumed is set to Null *)
+				amountConsumed =  Which[
+					infinitelyReusableBool,
+					Null,
+					(* if we are looking at a resource that is from a kit and is considered the LimitingComponent, we get the NumberOfKits for the limiting component as the amount consumed *)
+					consumableBool&&kitBool,
+					If[MatchQ[Lookup[kitProductAssoc, LimitingComponent, False], True],
+						Lookup[kitProductAssoc, NumberOfKits, 0],
+						Null
+					],
+					(* applicable to Columns *)
+					consumableBool&& MatchQ[Lookup[resourcePacket, MaxNumberOfUses, Null], Except[Null|$Failed]]&&MatchQ[Lookup[resourcePacket, Counted, Null],Except[True]],
+					(* NumberOfUses is not a reliable field in the resource object, sometimes it is populated, sometimes it is not, so we have multiple failsafes here *)
+					Which[
+						(* use NumberOfUses if populated in the resource *)
+						MatchQ[Lookup[resourcePacket, NumberOfUses],Except[Null|$Failed]],
+						Lookup[resourcePacket, NumberOfUses],
+						
+						(* use Amount if the unit matches MaxNumberOfUses *)
+						MatchQ[QuantityUnit[Lookup[resourcePacket, MaxNumberOfUses, Null]],QuantityUnit[Lookup[resourcePacket, Amount, Null]]]&&MatchQ[Lookup[resourcePacket, Amount, Null],Except[Null|$Failed]],
+						Lookup[resourcePacket, Amount],
+						(* default to 1 if no NumberOfUses or Amount is specified but we have a MaxNumberOfUses *)
+						True,
+						1
+					],
+					
+					(* applicable to certain Filters *)
+					consumableBool&& MatchQ[Lookup[resourcePacket, MaxVolumeOfUses, Null], Except[Null|$Failed]],
+						Which[
+							MatchQ[Lookup[resourcePacket, VolumeOfUses, Null], Except[Null|$Failed]],
+							Lookup[resourcePacket, VolumeOfUses],
+							(* we might have the Volume used  in the Amount field, so we use that *)
+							MatchQ[Lookup[resourcePacket, Amount, Null], Except[Null|$Failed]],
+							Lookup[resourcePacket, Amount],
+							
+							(* If both VolumeOfUses  and Amount are not populated, we can't really account for it so we assume *)
+							True,
+							0 Milliliter
+						],
+					
+					consumableBool&&MatchQ[Lookup[samplePacket,Volume,Null],Except[Null|$Failed]]&&MatchQ[Lookup[resourcePacket, Amount], Null],
+						Lookup[resourcePacket, Amount, Null],
+					
+					consumableBool&&MatchQ[Lookup[samplePacket,Mass,Null],Except[Null|$Failed]]&&MatchQ[Lookup[resourcePacket, Amount], Null],
+						Lookup[resourcePacket, Amount, Null],
+					
+					(* At this point we've accounted for all other sources of amount consumed other than Amount so- *)
+					(* if resource amount is Null, for example, serological pipets, we take one count per resource *)
+					MatchQ[Lookup[resourcePacket, Amount], Null],
+						1,
+					
+					(* Otherwise, we expect an Amount and we use it *)
+					True,
+					Lookup[resourcePacket, Amount]
+				];
+				
+				(* helper function to calculate leftover from logs *)
+				getLeftoverFromLogs[field:Alternatives[CountLog, MassLog, VolumeLog],usedAmount:(_Integer|_Quantity)] := Module[{log, logsBeforeResource, sampleInUseDate, amountBeforeResource, amountAfterResource},
+					log = Lookup[samplePacket, field, Null]/.$Failed->Null;
+					sampleInUseDate = Lookup[resourcePacket, DateInUse];
+					(* if the counted items belong to user, fetch the count log to extract the amount before this usage*)
+					logsBeforeResource = Cases[log, {LessP[sampleInUseDate], _, _}];
+					(* we should always have a valid count log before usage, but in case if the log is missing, do not report un-used counted items amount*)
+					If[Length[logsBeforeResource] > 1,
+						(* the last record should be the log right before this sample usage*)
+						amountBeforeResource = Last[logsBeforeResource][[2]];
+						(* calcualte the amount left *)
+						amountAfterResource = amountBeforeResource - usedAmount;
+						(* If there is any count left after this usage? *)
+						If[amountAfterResource > 0,
+							(* report the count purchased but not used *)
+							amountAfterResource,
+							(* if all the counts are used, we don't need an extra line to report *)
+							Null
+						],
+						(* do not track the amount if no valid log is found*)
+						Null
+					]
+				];
+				
+				
+				(* If we don't it want it to appear in LeftoverInventory Table, amountLeftover is set to Null *)
+				amountLeftover =  Which[
+					(* if we are looking at a purchased kit, we subtract the leftover from the integer since we count kits by integer - if we accounted for 1.5 Kits consumed, the leftover is 0.5 *)
+					purchasedBool&&consumableBool&&kitBool&&MatchQ[(Ceiling[amountConsumed]-amountConsumed),GreaterP[0]],
+						Ceiling[amountConsumed]-amountConsumed,
+					(* anything previously purchased even if they have left over will not be shown *)
+					ownedBool,
+						Null,
+					(* anything  infinitelyReusable is essentially counted as one (eg bottles)*)
+					purchasedBool&&infinitelyReusableBool,
+						Lookup[resourcePacket, Amount]/.Null->1,
+					(* if something is consumable, we calculate leftover*)
+					purchasedBool&&consumableBool,
+					(* get the original value of the purchased sample and subtract amount use - we may need to use logs or Max amounts  here*)
+						Which[
+							MatchQ[Lookup[resourcePacket, MaxNumberOfUses, Null],Except[Null|$Failed]]&&MatchQ[Lookup[resourcePacket, Counted, Null],Except[True]],
+								Lookup[resourcePacket, MaxNumberOfUses] - amountConsumed,
+							MatchQ[Lookup[resourcePacket, MaxVolumeOfUses, Null],Except[Null|$Failed]],
+								Lookup[resourcePacket, MaxVolumeOfUses] - amountConsumed,
+							MatchQ[Lookup[resourcePacket, Counted, Null],True],
+								getLeftoverFromLogs[CountLog, amountConsumed],
+							MatchQ[Lookup[samplePacket, Volume, Null],_Quantity],
+								getLeftoverFromLogs[VolumeLog, amountConsumed],
+							MatchQ[Lookup[samplePacket, Mass, Null],_Quantity],
+								getLeftoverFromLogs[MassLog, amountConsumed]
+						]
+				];
 
-	(* filter the Model Packets for materials that are being purchased and have a product affiliated *)
-	purchasableModelPackets=PickList[PickList[PickList[flatFulfilledModelPackets, resourcePurchaseBool], productExistsBool, True], nonRedundantKitDuplicatesBool, True];
-
+				purchaseType  = Which[
+					(* if it is owned,  we only need to show anything consumed *)
+					ownedBool&&MatchQ[amountConsumed, Except[Null]],
+						Consumed,
+					ownedBool,
+						Null,
+					(* if an infinitely reusable item is bought during the protocol, show it in Leftover section *)
+					purchasedBool&&infinitelyReusableBool,
+						LeftoverInventory,
+					purchasedBool&&MatchQ[amountConsumed, Except[Null]]&&MatchQ[Unitless[amountLeftover], GreaterP[0]],
+						{Consumed, LeftoverInventory},
+					purchasedBool&&MatchQ[amountConsumed, Except[Null]],
+						Consumed,
+					purchasedBool&&MatchQ[Unitless[amountLeftover], GreaterP[0]],
+						LeftoverInventory,
+					True,
+						Consumed
+				];
+				
+				finalAssoc = Switch[purchaseType,
+					Consumed,
+						{
+							<|
+								Resource -> Lookup[resourcePacket, Object],
+								Product -> Lookup[resourcePacket, Product],
+								PurchaseType -> Consumed,
+								Amount -> amountConsumed,
+								Charged -> chargeBool,
+								Kit -> kitBool
+							|>
+						},
+					LeftoverInventory,
+						{
+							<|
+								Resource -> Lookup[resourcePacket, Object],
+								Product -> Lookup[resourcePacket, Product],
+								PurchaseType -> LeftoverInventory,
+								Amount -> amountLeftover,
+								Charged -> chargeBool,
+								Kit -> kitBool
+							|>
+						},
+					{Consumed,LeftoverInventory},
+						{
+							<|
+								Resource -> Lookup[resourcePacket, Object],
+								Product -> Lookup[resourcePacket, Product],
+								PurchaseType -> Consumed,
+								Amount -> amountConsumed,
+								Charged -> chargeBool,
+								Kit -> kitBool
+							|>,
+							<|
+								Resource -> Lookup[resourcePacket, Object],
+								Product -> Lookup[resourcePacket, Product],
+								PurchaseType -> LeftoverInventory,
+								Amount -> amountLeftover,
+								Charged -> chargeBool,
+								Kit -> kitBool
+							|>
+						},
+					Null,
+						{
+						}
+				]
+				
+			]
+		],
+		{
+			purchasableResourcePackets,
+			purchasableSamplePackets,
+			purchasableModelPackets
+		}
+	];
+	
+	(* we replace any sublists resourceToPurchaseTypeAssoc with {} if it is from the same product kit since we only want the kit resource represented by the limiting component *)
+	consolidatedByKitResourceToPurchaseTypeAssoc=MapIndexed[
+		Which[
+			(* Empty or not a kit → keep *)
+			Or[MemberQ[ToList[Lookup[#1, Kit, False]], False], MatchQ[#1, {}]],
+			#1,
+			
+			(* First occurrence, Charged True, has Consumed → keep *)
+			And[
+				!MemberQ[Lookup[Flatten[DeleteCases[Take[resourceToPurchaseTypeAssoc, #2[[1]] - 1], {}]], Product], Lookup[#1, Product][[1]]],
+				MemberQ[ToList[Lookup[#1, Charged]], True],
+				MemberQ[Lookup[#1, PurchaseType], Consumed]
+			],
+			#1,
+			
+			(* First occurrence, Charged False, but a later same-product has Charged True → drop *)
+			And[
+				!MemberQ[Lookup[Flatten[DeleteCases[Take[resourceToPurchaseTypeAssoc, #2[[1]] - 1], {}]], Product], Lookup[#1, Product][[1]]],
+				MemberQ[Lookup[Cases[Flatten[DeleteCases[Drop[resourceToPurchaseTypeAssoc, #2[[1]]], {}]], KeyValuePattern[Charged -> True]], Product], Lookup[#1, Product][[1]]]
+			],
+			{},
+			
+			(* First occurrence (catch-all) → keep *)
+			!MemberQ[Lookup[Flatten[DeleteCases[Take[resourceToPurchaseTypeAssoc, #2[[1]] - 1], {}]], Product], Lookup[#1, Product][[1]]],
+			#1,
+			
+			(* Not first, but I'm Charged True and no earlier same-product was Charged True → keep *)
+			And[
+				MemberQ[ToList[Lookup[#1, Charged]], True],
+				!MemberQ[
+					Lookup[
+						Cases[
+							Flatten[DeleteCases[Take[resourceToPurchaseTypeAssoc, #2[[1]] - 1], {}]],
+							KeyValuePattern[{Product -> Lookup[#1, Product][[1]], Charged -> True}]
+						],
+						Product
+					],
+					Lookup[#1, Product][[1]]
+				]
+			],
+			#1,
+			
+			(* Default → drop *)
+			True, {}
+		] &,
+		resourceToPurchaseTypeAssoc
+	];
+	
+	{
+		expandedPurchasableResourcePackets,
+		expandedPurchasableProductPackets,
+		expandedPurchasableModelPackets,
+		expandedPurchasableSamplePackets
+	} = Map[
+		Function[{valueList},
+			Flatten[MapThread[
+				Function[{nonExpandedValues, length},
+					If[MatchQ[length,0],
+						{},
+						ConstantArray[nonExpandedValues, length]
+					]
+				],
+				{
+					valueList,
+					Length[#]&/@consolidatedByKitResourceToPurchaseTypeAssoc
+				}
+			]]
+		],
+		{
+			purchasableResourcePackets,
+			purchasableProductPackets,
+			purchasableModelPackets,
+			purchasableSamplePackets
+		}
+	];
+	
+	expandedSampleFromKitBool = Map[
+		If[MatchQ[Lookup[#, KitComponents,{}], Except[{}|Null|$Failed]],
+			True,
+			False
+		]&,
+		expandedPurchasableResourcePackets
+	];
+	
+	
 	(* extract the Model of the samples to be purchased *)
 	(*TODO: In cases where the Object[Sample] has been transferred into with a sample of a different Model, its Model will be severed, so we may have to look at the product instead*)
 	(*it seems like a bad idea to look in the resource, as that may not have a model either, so its best to fall back on the product*)
@@ -7421,7 +9623,7 @@ priceMaterialsProtocols[
 				]
 			]
 		],
-		{sampleFromKitBool, purchasableProductPackets, purchasableModelPackets}
+		{expandedSampleFromKitBool, expandedPurchasableProductPackets, expandedPurchasableModelPackets}
 	];
 
 	(* refund bool *)
@@ -7431,40 +9633,55 @@ priceMaterialsProtocols[
 		(*check if the root protocol was refunded - if it was not skip to the end with False*)
 		If[MatchQ[Lookup[#, RootProtocol, {}], LinkP[refundedProtocols]],
 			(*for refunded protocol, get the Sample key and navigate back to Reusable in the Model*)
-			Module[{sample, model, reusabilityBool},
+			Module[{sample, model},
 
 				(*navigate from sample to Reusable*)
 				sample=Download[Lookup[#, Sample, Null], Object];
 
 				model=Lookup[sampleToModelLookup, sample, Null];
-				(*if anything has gone wrong, we need to set Reusable to false and err on the side of caution for refunding*)
-				reusabilityBool=Lookup[reusabilityLookup, model, False];
 
-				(*if the model is reusable do not refund it*)
-				If[And[MatchQ[reusabilityBool, True], MatchQ[model, ObjectP[Model[Item, Column]]]],
+				(*if the model is reusable OR something that  can have multiple uses OR part of a kit, do not refund it *)
+				If[
+					And[
+						MatchQ[Lookup[#, Purchased, Null], True],
+						Or[
+							MatchQ[Lookup[#, Reusable, Null], True],
+							MemberQ[
+								Lookup[#,{MaxNumberOfUses, Counted, MaxVolumeOfUses, Volume, Mass},Null],
+								Except[Null|$Failed]
+							],
+							MatchQ[
+								Lookup[#, KitComponents,{}]/.$Failed|Null->{},
+								Except[{}]
+							]
+						]
+					],
 					False,
 					True
 				]
 			],
 			False
 		]&,
-		purchasableResourcePackets
+		expandedPurchasableResourcePackets
 	];
 
 	(* for all Materials to be purchased, extract the amount used and its unit *)
 	(* The Unit unit is internal and shouldn't be shown to users - drop it since it doesn't have an effect *)
-	resourceAmountUsed=MapThread[
-		Function[{amount, refundQ},
-			Switch[{amount, refundQ},
-				(* refunding *)
-				{_?(UnitsQ[#, Unit]&), True}, 0,
-				{_, True}, 0 * Units[amount],
-				(* purchasing *)
-				{_?(UnitsQ[#, Unit]&), False}, Unitless[amount],
-				{_, False}, amount
-			]
+	payableAmounts=If[MatchQ[consolidatedByKitResourceToPurchaseTypeAssoc, Except[{}]],
+		MapThread[
+			Function[{amount, refundQ},
+				Switch[{amount, refundQ},
+					(* refunding *)
+					{_?(UnitsQ[#, Unit]&), True}, 0,
+					{_, True}, 0 * Units[amount],
+					(* purchasing *)
+					{_?(UnitsQ[#, Unit]&), False}, Unitless[amount],
+					{_, False}, amount
+				]
+			],
+			{Lookup[Flatten[consolidatedByKitResourceToPurchaseTypeAssoc], Amount,{}], refundedResourceBool}
 		],
-		{Lookup[purchasableResourcePackets, Amount, {}], refundedResourceBool}
+		{}
 	];
 
 	(* for all Materials to be purchased, extract all product information. This includes: *)
@@ -7475,19 +9692,49 @@ priceMaterialsProtocols[
 	(* 6) name of the product - this is needed for kit items where we don't want to display the name of the model of the sample, but rather the  *)
 	{productPricePerUnit, productSamplesPerItem, productAmount, productCountPerSample, productName}=Map[
 		Function[{optionName},
-			Map[
-				If[NullQ[#],
-					Null,
-					Lookup[#, optionName]
-				]&,
-				purchasableProductPackets
+			MapThread[
+				Function[{productPacket, resourcePacket},
+					If[NullQ[productPacket],
+						Null,
+						
+						Which[
+							(* for products with both CountPerSample and MaxNumberOfUses, prioritize CountPerSample value *)
+							MatchQ[optionName, CountPerSample]&&MatchQ[Lookup[productPacket, CountPerSample, Null],Except[(Null|$Failed)]]&&MatchQ[Lookup[resourcePacket,MaxNumberOfUses,Null],Except[Null|$Failed]],
+							Lookup[resourcePacket, MaxNumberOfUses],
+
+							(* for kits, we need to fetch the AmountPerKit from resource packet *)
+							(* Note: AmountPerKit is the total amount per kit, for example, if we have 3 tubes of sample in kit and each tube has 4 mL, AmountPerKit is 12 mL.*)
+							MatchQ[optionName, Amount],
+							If[MatchQ[Lookup[productPacket, KitComponents, {}], {}],
+								(*if not a kit, fetch Amount from product *)
+								Lookup[productPacket, optionName],
+								(* for kit, check KitComponentUsage *)
+								Lookup[Lookup[resourcePacket, KitComponentUsage], AmountPerKit]
+							],
+
+
+							True,
+							Lookup[productPacket, optionName]
+						]
+					]
+				],
+				{
+					expandedPurchasableProductPackets,
+					expandedPurchasableResourcePackets
+				}
 			]
 		],
 		{Price, NumberOfItems, Amount, CountPerSample, Name}
 	];
 
 	(* also pull out the stock solution price information; this will be $Failed if not a stock solution *)
-	stockSolutionPricePerUnit=Lookup[purchasableModelPackets, Price, {}];
+	stockSolutionPricePerUnit=Lookup[expandedPurchasableModelPackets/.Null-><||>, Price, {}];
+
+	(* pull out the Density for each purchasable model, used when pricing rate and amount units are dimensionally incompatible (e.g., USD/g with mL amount) *)
+	payableDensities=If[MatchQ[expandedPurchasableModelPackets,{}],
+		{},
+		Lookup[expandedPurchasableModelPackets/.Null-><||>, Density, 1 Gram/Milliliter]
+	];
 
 	(* make sure there is no Nulls in the price list (originating from StockSolutions that are not yet priced at this point in time but will in the future) *)
 	nonNullProductPricePerUnit=Map[
@@ -7516,21 +9763,28 @@ priceMaterialsProtocols[
 	];
 
 	(* get the SalesTaxRate from the SiteModelPackets and index match them with the flat Resource and flat Product packets *)
-	indexMatchedSiteSalesTax=Flatten[MapThread[
-		ConstantArray[#1, Length[#2]]&,
-		{Lookup[mySiteModelPackets, SalesTaxRate, {}], allSampleResourcePackets}]];
-
-	(* filter for entries that contain samples whose Resource status is fulfilled *)
-	fulfilledSiteSalesTax=PickList[
-		PickList[indexMatchedSiteSalesTax, excludedSampleResourceBool],
-		PickList[fulfilledAndIncludedBool, excludedSampleResourceBool]
-	];
-
+	resourceSalesTaxTuple=Flatten[MapThread[
+		Function[{taxRate,resourcePackets},
+			Map[
+				{#,taxRate}&,
+				Lookup[resourcePackets, Object]
+			]
+		],
+		{
+			Lookup[mySiteModelPackets, SalesTaxRate, {}],
+			allSampleResourcePackets
+		}
+	],1];
+	
 	(* filter for entries that contain resources to be purchased and have a product affiliated *)
-	payableSiteSalesTax=PickList[
-		PickList[PickList[fulfilledSiteSalesTax, resourcePurchaseBool, True], productExistsBool, True],
-		nonRedundantKitDuplicatesBool,
-		True
+	payableSiteSalesTax=If[MatchQ[expandedPurchasableResourcePackets,{}],
+		{},
+		Map[
+			Function[{resourceObject},
+				FirstCase[resourceSalesTaxTuple,{ObjectP[resourceObject],_}][[2]]
+			],
+			Lookup[expandedPurchasableResourcePackets,Object]
+		]
 	];
 
 	(* calculate the pricing rate for each entry (in $/unit for non-self-contained samples or $/1 count for self-contained samples) for the product list price*)
@@ -7559,152 +9813,205 @@ priceMaterialsProtocols[
 					price / (samplesPerItem * amount)
 			]
 		],
-		{resourceAmountUsed, nonNullproductCountPerSample, nonNullProductPricePerUnit, productSamplesPerItem, productAmount, sampleFromKitBool, stockSolutionPricePerUnit}
+		{payableAmounts, nonNullproductCountPerSample, nonNullProductPricePerUnit, productSamplesPerItem, productAmount, expandedSampleFromKitBool, stockSolutionPricePerUnit}
 	];
 
 	(* calculate the tax pricing rate for each Material to be purchased, prorated for the volume and mass used *)
 	(* this is the sales tax rate multiplied by the productPricingRate *)
 	productTaxPricingRate=productPricingRate * Map[Convert[#, 1] &, payableSiteSalesTax];
-
+	
 	(* calculate the list price for each Material to to be purchased by prorating for the volume and mass used *)
 	productListPrice=MapThread[
-		Function[{productcount, amountused, pricingrate, kitBool},
+		Function[{productcount, amountused, pricingrate, kitBool, density},
 			Which[
-				(* we always charge the whole kit so it's simply the price *)
+				(* we always charge the whole kit but we are not multiplying it with amountUsed since that reflects the number of kits needed *)
 				kitBool,
-					1 * pricingrate,
+					pricingrate * amountused,
 				(* if the material is self-contained and has Amount->Null, the entire object is purchased and the pricing rate is multiplied by the productcount *)
 				NullQ[amountused],
 					pricingrate * productcount,
 				(* if the material is self-contained and an Amount, the pricingrate is multiplied by the count used *)
 				MatchQ[amountused, UnitsP[Unit]],
 					pricingrate * amountused,
+				(* if the material is non-selfcontained, the pricing rate and amount units may not directly cancel to USD.
+				   Case 1 - same dimension, different units (e.g., USD/mg with amount in g): convert amount to the pricing rate's unit.
+				   Case 2 - different dimensions (e.g., USD/g with amount in mL, or USD/mL with amount in g):
+				     use the model's Density to interconvert mass and volume; fall back to 1 g/mL if unavailable. *)
+				!MatchQ[QuantityUnit[pricingrate * amountused], QuantityUnit[USD]],
+				Module[{pricingRateUnit, amountUsedUnit, resolvedDensity, convertedAmountUsed},
+					pricingRateUnit = QuantityUnit[pricingrate] /. ("USDollars"/x_) :> x;
+					amountUsedUnit = QuantityUnit[amountused];
+
+					convertedAmountUsed = If[
+						(* Case 1: same physical dimension - just convert units (e.g., g to mg) *)
+						CompatibleUnitQ[Quantity[1, pricingRateUnit], Quantity[1, amountUsedUnit]],
+						Convert[amountused, pricingRateUnit],
+
+						(* Case 2: mass vs volume mismatch - need density *)
+						resolvedDensity = If[MatchQ[density, UnitsP[Gram/Milliliter]],
+							density,
+							1 Gram/Milliliter
+						];
+						If[
+							(* pricing rate is per-mass (e.g., USD/g), amount is volume -> multiply by density to get mass *)
+							CompatibleUnitQ[Quantity[1, pricingRateUnit], 1 Gram],
+							Convert[amountused * resolvedDensity, pricingRateUnit],
+							(* pricing rate is per-volume (e.g., USD/mL), amount is mass -> divide by density to get volume *)
+							Convert[amountused / resolvedDensity, pricingRateUnit]
+						]
+					];
+					pricingrate * convertedAmountUsed
+				],
 				(* if the material non-selfcontained, there has to be an Amount specified. The pricing is the pricingrate multiplied by the amount*)
 				True,
 					(pricingrate * amountused)
 			]
 		],
-		{nonNullproductCountPerSample, resourceAmountUsed, productPricingRate, sampleFromKitBool}
+		{nonNullproductCountPerSample, payableAmounts, productPricingRate, expandedSampleFromKitBool, payableDensities}
 	];
 
 	(*calculate the tax price for each Material to to be purchased by prorating for the volume and mass used *)
 	(* this is the sales tax rate multiplied by the productListPrice *)
 	productTaxPrice=productListPrice * Map[Convert[#, 1] &, payableSiteSalesTax];
 
-	(* extract the amounts used *)
-	payableAmounts=MapThread[
-		Function[{amountused, productcount, kitBool},
-			Which[
-				(* for samples from kits we don't want to prorate since we purchase the entire kit, so the amount will always be 1 *)
-				kitBool, 1,
-				(* for materials that don't have an associated amount, return the CountPerSample of the product *)
-				NullQ[amountused], productcount,
-				(* for materials that have an amount but no unit associated (self-contained samples), return the amount (count) that was used, without a unit *)
-				MatchQ[amountused, UnitsP[Unit]], amountused,
-				(* for materials that have an amount with a unit associated with it, return the amount that was used*)
-				True, amountused
-			]
-		],
-		{resourceAmountUsed, nonNullproductCountPerSample, sampleFromKitBool}
-	];
-
 	(* --- PART 2: Get all the remaining information for the protocol output table --- *)
-
-	(* ==define Function:indexmatchFilterForProtocols == *)
-	(* Use this helper function to indexmatch all lists that indexmatch with protocols, with the list of sample resources that are used by these protocols *)
-	(* Then filter them for samples with an affiliated product, fulfilled resources, and that are to be purchased *)
-	indexmatchFilterForProtocols[myMultipleListsOfObjects_List]:=Module[
-		{indexMatchedLists, fulfilledLists, payableLists, productExistsLists, noKitRedundanciesLists},
-
-		(*get the objects and index match them with the flat Resource and Product packets*)
-		indexMatchedLists=Map[
-			Function[{myobject},
-				Flatten[MapThread[ConstantArray[#1, Length[#2]]&, {myobject, allIncludedSampleResourcePackets}]]
-			],
-			myMultipleListsOfObjects
-		];
-
-		(*filter for items that contain samples with fulfilled resources*)
-		fulfilledLists=Map[
-			PickList[
-				#,
-				PickList[fulfilledAndIncludedBool,excludedSampleResourceBool]
-			]&,
-			indexMatchedLists
-		];
-
-		(*filter for items that contain resources to be purchased*)
-		payableLists=Map[PickList[#, resourcePurchaseBool, True]&, fulfilledLists];
-
-		(*filter for items tha contain samples that are affiliated with products*)
-		productExistsLists=Map[PickList[#, productExistsBool, True]&, payableLists];
-
-		(*filter for items that contain samples from the same kits only once *)
-		noKitRedundanciesLists=Map[PickList[#, nonRedundantKitDuplicatesBool, True]&, productExistsLists]
+	
+	(* create lookup Notebook, Protocol, DateCompleted, Site for each resource *)
+	{
+		resourceNotebookLookup,
+		resourceProtocolLookup,
+		recourceDateCompletedLookup,
+		resourceSiteLookup
+	} = Map[
+		Function[{list},
+			Flatten[MapThread[
+				Function[{value,resourcePackets},
+					Map[
+						#->value&,
+						Lookup[resourcePackets, Object, {}]
+					]
+				],
+				{
+					list,
+					allSampleResourcePackets
+				}
+			],1]
+		],
+		{
+			protocolNotebooks, protocolObjects, protocolDates, protocolSites
+		}
 	];
-
-	(* apply this helper function to the notebooks, protocols, and protocols dates which are all indexmatched with the input protocols and unfiltered at this point *)
-	{payableNotebooks, payableProtocols, payableDateCompleted, payableSites}=indexmatchFilterForProtocols[{protocolNotebooks, protocolObjects, protocolDates, protocolSites}];
+	
+	{payableNotebooks, payableProtocols, payableDateCompleted, payableSites}=Map[
+		Function[{lookup},
+			Map[
+				Lookup[lookup,#, Null]&,
+				Lookup[expandedPurchasableResourcePackets,Object, {}]
+			]
+		
+		],
+		{
+			resourceNotebookLookup,
+			resourceProtocolLookup,
+			recourceDateCompletedLookup,
+			resourceSiteLookup
+		}
+	];
 
 	(* for all Materials to be purchased, extract the appropriate name *)
 	payableModelName=MapThread[
 		If[#,
 			(* if the sample is from a kit, we want to display the name of the product (which is the kit) rather than the name of the model of the sample *)
-			Lookup[#2, Name],
-			Lookup[#3, Name]
+			If[NullQ[#2],
+				Null,
+				Lookup[#2, Name, Null]
+			],
+			If[NullQ[#3],
+				Null,
+				Lookup[#3, Name, Null]
+			]
 		]&,
-		{sampleFromKitBool, purchasableProductPackets, purchasableModelPackets}
+		{expandedSampleFromKitBool, expandedPurchasableProductPackets, expandedPurchasableModelPackets}
 	];
 
-	(* --- construct the individual row entries for product price, and tax price of the protocols --- *)
+	(* construct a raw table for each  resource to included in the output *)
+	(* we need Charged and PurchaseType keys to be able to identify which table a resource belongs to, and if the value will be charged or not *)
+	{
+		payableCharged, payablePurchaseType
+	} = Transpose[Lookup[Flatten[consolidatedByKitResourceToPurchaseTypeAssoc],{Charged, PurchaseType},{}]]/.{}->{{},{}};
+	
+	rawTable = Transpose[{payableNotebooks, payableProtocols, payableSampleModel, payableModelName, payableAmounts, payableDateCompleted, payableSites, payableCharged, payablePurchaseType}];
 
+	(* --- construct the individual row entries for product price, and tax price of the protocols --- *)
+	
 	(* join all price lists:product price,tax price,and stocking price *)
 	totalProtocolPrices=Join[productListPrice, productTaxPrice];
 	totalProtocolPricePerUnit=Join[productPricingRate, productTaxPricingRate];
 
 	(* join all notebooks, protocols, resource objects, names and amounts. These are identical for both lists (1 for product, 1 for tax price) *)
-	{totalProtocolNotebooks, totalProtocolObjects, totalProtocolSamplesObjects, totalProtocolSampleNames, totalProtocolSampleAmountsMixed, totalProtocolDateCompleted, totalProtocolSites}=Map[
-		Join[#, #]&, {payableNotebooks, payableProtocols, payableSampleModel, payableModelName, payableAmounts, payableDateCompleted, payableSites}];
-
-	(* make sure that the counts are rounded to integers *)
-	totalProtocolSampleAmounts=Map[If[QuantityQ[#], #, Round[#]] &, totalProtocolSampleAmountsMixed];
+	{totalProtocolNotebooks, totalProtocolObjects, totalProtocolSamplesObjects, totalProtocolSampleNames, totalProtocolSampleAmountsMixed, totalProtocolDateCompleted, totalProtocolSites, totalCharged, totalPurchaseType}=If[Length[rawTable]>0,
+		Map[
+			Join[#, #]&,
+			Transpose[rawTable]
+		],
+		ConstantArray[{},9]
+	];
+	
+	(* to  account for kit fractions, we need to include at least one position past decimal point *)
+	totalProtocolSampleAmounts=Map[If[QuantityQ[#], #, Round[#, 0.1]] &, totalProtocolSampleAmountsMixed];
 
 	(* make the protocol tags for the output table indicating the pricing category for each line *)
 	totalProtocolTags=Join[ConstantArray["Product List Price", Length[productListPrice]], ConstantArray["Product Tax", Length[productTaxPrice]]];
-
-	(*---in the next part, list items are gathered and consolidated into one list entry if they originate from the same protocol, plus if the associated objects are from the same model, plus if the price tag is identical ---*)
-	(*in the first step bring the protocol, object, site, and price tag together into one*)
-	transposedProtocolsAndObjects=Transpose[{totalProtocolSamplesObjects, totalProtocolObjects, totalProtocolTags, totalProtocolSites}];
-
-	(*in the second step gather them if list entries (protocol, material object, and tag)) are identical,and extract back the gathered protocol, object, and tag lists *)
-	gatheredInformation=Gather[transposedProtocolsAndObjects];
-	gatheredObjects=gatheredInformation[[All, All, 1]];
-	gatheredProtocols=gatheredInformation[[All, All, 2]];
-	gatheredTags=gatheredInformation[[All, All, 3]];
-	gatheredSite=gatheredInformation[[All,All,4]];
-
-	(* ==Define Function:gatherByObjectAndProtocolAndTag==*)
+		
+		(* ==Define Function:gatherByObjectAndProtocolAndTag==*)
 	(*Use this helper function to consolidate the lists by sample objects that originate from the same protocol and are from the same model*)
-	gatherByObjectAndProtocolAndTag[myflatlists_List]:=Module[{objects, protocols, tags, transposedLists},
+	gatherByObjectAndProtocolAndTag[myflatlists_List]:=Module[{objects, protocols, tags, purchaseType, transposedLists},
 		(*get the model, protocol and tags *)
-		objects=totalProtocolSamplesObjects;
+		objects=totalProtocolSampleNames;
 		protocols=totalProtocolObjects;
 		tags=totalProtocolTags;
+		purchaseType = totalPurchaseType;
 		(*transpose lists with all three *)
-		transposedLists=Map[Transpose[{objects, protocols, tags, #}]&, myflatlists];
+		transposedLists=Map[Transpose[{objects, protocols, tags, purchaseType, #}]&, myflatlists];
 		(*gather the lists if object, protocol and tags are identical, and extract the gathered list*)
-		Map[GatherBy[#, Most][[All, All, 4]]&, transposedLists]
+		Map[GatherBy[#, Most][[All, All, 5]]&, transposedLists]
 	];
 
 	(*using the helper function, gather notebook,name,prices, date and tag lists*)
-	{gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocolPrices, gatheredProtocolPricePerUnit, gatheredProtocolSampleAmounts, gatheredProtocolDateCompleted}=
-		gatherByObjectAndProtocolAndTag[{totalProtocolNotebooks, totalProtocolSampleNames, totalProtocolPrices, totalProtocolPricePerUnit, totalProtocolSampleAmounts, totalProtocolDateCompleted}];
+	{
+		gatheredProtocolNotebooks,
+		gatheredProtocolSampleNames,
+		gatheredProtocolPrices,
+		gatheredProtocolPricePerUnit,
+		gatheredProtocolSampleAmounts,
+		gatheredProtocolDateCompleted,
+		gatheredObjects,
+		gatheredProtocols,
+		gatheredTags,
+		gatheredSite,
+		gatheredCharged,
+		gatheredPurchaseType
+	}=
+		gatherByObjectAndProtocolAndTag[{
+			totalProtocolNotebooks,
+			totalProtocolSampleNames,
+			totalProtocolPrices,
+			totalProtocolPricePerUnit,
+			totalProtocolSampleAmounts,
+			totalProtocolDateCompleted,
+			totalProtocolSamplesObjects,
+			totalProtocolObjects,
+			totalProtocolTags,
+			totalProtocolSites,
+			totalCharged,
+			totalPurchaseType
+		}];
 
 	(*consolidate the gathered notebook,objects,models,names,dates, priceperunit and tags list so that there is one item per list. Since they should be identical,the first entry can be taken*)
 	{
 		consolidatedProtocolNotebooks, consolidatedProtocolNames, consolidatedProtocols, consolidatedObjects,
-		consolidatedProtocolTags, consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatesSite
-	}=Map[First /@ #&, {gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocols, gatheredObjects, gatheredTags, gatheredProtocolPricePerUnit, gatheredProtocolDateCompleted, gatheredSite}];
+		consolidatedProtocolTags, consolidatedProtocolPricePerUnit, consolidatedProtocolDates, consolidatesSite, consolidatedCharged, consolidatedPurchaseType
+	}=Map[First /@ #&, {gatheredProtocolNotebooks, gatheredProtocolSampleNames, gatheredProtocols, gatheredObjects, gatheredTags, gatheredProtocolPricePerUnit, gatheredProtocolDateCompleted, gatheredSite, gatheredCharged,gatheredPurchaseType}];
 
 	(*consolidate the gathered price and amount lists, by summing up the list entries *)
 	{consolidatedProtocolSampleAmounts, consolidatedProtocolPrices}=Map[
@@ -7717,13 +10024,12 @@ priceMaterialsProtocols[
 			]
 		], {gatheredProtocolSampleAmounts, gatheredProtocolPrices}
 	];
-
+	
 	(* put together the output lists in the correct order for the output table *)
 	totalProtocolOutput={
 		consolidatedProtocolNotebooks, consolidatedProtocols, consolidatedObjects, consolidatedProtocolNames, consolidatedProtocolTags, consolidatedProtocolSampleAmounts,
-		consolidatedProtocolPricePerUnit, consolidatedProtocolPrices, consolidatedProtocolDates, consolidatesSite
+		consolidatedProtocolPricePerUnit, consolidatedProtocolPrices, consolidatedProtocolDates, consolidatesSite, consolidatedCharged, consolidatedPurchaseType
 		}
-
 ];
 
 
@@ -7745,20 +10051,20 @@ priceMaterialsProtocols[
 priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[], Model[]}] | Null)...} | PacketP[{Object[], Model[]}] ... | {Null} | Null) ...} ...}]:=Module[{
 	allTransactionPackets, transactionCanceledBool, allSupplierTransactionPackets, transactionHasSupplierBool, toBeIgnoredBool,
 	toBePricedTransactionPackets, fulfillmentBool, allTransactionOrderPackets,
-	orderQuantities, allTransactionOrderProductPackets, productModels, samplesPerItemInOrders, indexMatchedProductPackets, allTransactionModelPackets,
+	orderQuantities, allTransactionOrderProductPackets, productModels, samplesPerItemInOrders, modelReusableLookup, productReusableLookup, indexMatchedProductPackets, allTransactionModelPackets,
 	flatTransactionModelNames, transactionObjects, indexMatchedTransactionObjects, transactionNotebooks, indexMatchedTransactionNotebooks, transactionDates,
 	indexMatchedTransactionDates, indexMatchedProducts, gatheredProducts, indexMatchedOrderProductPackets,
 	transactionOrderProductPricePerUnit, transactionOrderSamplesPerItem, transactionOrderListPrice, allTransactionOrderSitePackets, transactionOrderTaxrate,
 	indexMatchedTaxrate, transactionOrderTaxPrice, flatCancelledTransactionBool, allCancelledTransactionModels, flatFulfilledTransactionBool,
 	indexmatchFilterForTransactions, transactionProductPricing, transactionTaxPricing, flatTransactionMaterialObject, recTransactionNotebooks,
 	recTransactionObjects, recTransactionMaterialObject, recTransactionNames, recTransactionDates, filtTransactionNotebooks, filtTransactionObjects,
-	filtTransactionMaterialObject, filtTransactionNames, filtTransactionDates, transposedTransactionProducts, gatheredTransactionMaterial,
+	filtTransactionMaterialObject, filtTransactionNames, filtTransactionDates, transposedTransactionProducts, gatheredTransactionMaterial,gatheredReusable,
 	gatheredTransactionObjects, gatherByModelAndObject, gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice,
 	gatheredTransactionTaxPrice, gatheredTransactionDates, consolidatedTransactionNotebooks, consolidatedTransactionNames,
-	consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates, consolidatedTransactionProductPrice,
+	consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedReusable, consolidatedTransactionDates, consolidatedTransactionProductPrice,
 	consolidatedTransactionTaxPrice, consolidatedTransactionAmounts, consolidatedTransactionProductPricingRate, consolidatedTransactionTaxPricingRate,
 	allTransactionPrices, transactionPriceNotNullBool, totalTransactionPrices, totalTransactionPricePerUnit, totalTransactionNotebooks,
-	totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalTransactionTags,
+	totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalReusable, totalTransactionTags,
 	totalTransactionOutput, orderModels, refundBool, totalTransactionSites
 },
 
@@ -7812,7 +10118,32 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	allTransactionOrderProductPackets=myTransactionOrderPackets[[All, 3]];
 	productModels=Map[Download[Lookup[#, ProductModel], Object]&, allTransactionOrderProductPackets];
 	samplesPerItemInOrders=Map[Lookup[#, NumberOfItems]&, allTransactionOrderProductPackets];
-
+	
+	(* We need to do a Download here to create an association of Model->Reusable *)
+	modelReusableLookup = Map[
+		If[NullQ[#],
+			Nothing,
+			(* Null means NOT reusable *)
+			#[[1]] -> (#[[2]]/.(Null->False))
+		]&,
+		Quiet[Download[
+			Lookup[Flatten[allTransactionOrderProductPackets, 1], ProductModel],
+			{Object, Reusable}
+		],Download::FieldDoesntExist] /. $Failed -> Null
+	];
+	
+	productReusableLookup = Map[
+		Function[{productPacket},
+			Lookup[productPacket,Object]->Lookup[
+				modelReusableLookup,
+				Download[Lookup[productPacket,ProductModel],Object],
+				(* This is currently treating kit as non-reusable *)
+				False
+			]
+		],
+		Flatten[allTransactionOrderProductPackets,1]
+	];
+	
 	(* expand the Product packets of ordered transactions with the samples ordered *)
 	(* need to multiple by the number of samples per product and by the quantity ordered *)
 	indexMatchedProductPackets=MapThread[
@@ -7839,7 +10170,7 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 		],
 		{productModels, orderQuantities, samplesPerItemInOrders}
 	];
-
+	
 	(* get the model packets from Transaction Order Packet *)
 	(* since we are getting this via the ProductModel, need to expand the list by multiplying the quantity order and the samples per item *)
 	allTransactionModelPackets=
@@ -7971,14 +10302,14 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	];
 
 	(* using the helper function, gather notebook,name, prices, date and tag lists *)
-	{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice, gatheredTransactionTaxPrice, gatheredTransactionDates, gatheredTransactionMaterial}=
-		gatherByModelAndObject[{Download[filtTransactionNotebooks, Object], filtTransactionNames, transactionProductPricing, transactionTaxPricing, filtTransactionDates, filtTransactionMaterialObject}];
+	{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionProductPrice, gatheredTransactionTaxPrice, gatheredTransactionDates, gatheredTransactionMaterial, gatheredReusable}=
+		gatherByModelAndObject[{Download[filtTransactionNotebooks, Object], filtTransactionNames, transactionProductPricing, transactionTaxPricing, filtTransactionDates, filtTransactionMaterialObject, Lookup[productReusableLookup,filtTransactionMaterialObject]}];
 
 	(* consolidate the gathered notebook,objects,models,names, dates,and tags list so that there is one item per list. Since they should be identical, the first entry can be taken *)
 	(* this can also be done for the receiving pricing since only one receiving cost is applied for each model. The other price lists will be treated differently (see below) *)
-	{consolidatedTransactionNotebooks, consolidatedTransactionNames, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates}=Map[
+	{consolidatedTransactionNotebooks, consolidatedTransactionNames, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionDates, consolidatedReusable}=Map[
 		First /@ # &,
-		{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionObjects, gatheredTransactionMaterial, gatheredTransactionDates}
+		{gatheredTransactionNotebooks, gatheredTransactionName, gatheredTransactionObjects, gatheredTransactionMaterial, gatheredTransactionDates, gatheredReusable}
 	];
 
 	(*sum up the price for each consolidated transaction entry *)
@@ -8019,9 +10350,9 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	totalTransactionPricePerUnit=PickList[Join[consolidatedTransactionProductPricingRate, consolidatedTransactionTaxPricingRate], transactionPriceNotNullBool, True];
 
 	(*join all transaction notebooks,objects,product models,model names.These are identical for all 2 lists (1 list for the product price, 1 list for the tax price).Filter for those entries where the price is not Null*)
-	{totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates}=Map[
+	{totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionAmounts, totalTransactionDates, totalReusable}=Map[
 		PickList[Join[#, #], transactionPriceNotNullBool, True]&,
-		{consolidatedTransactionNotebooks, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionNames, consolidatedTransactionAmounts, consolidatedTransactionDates}
+		{consolidatedTransactionNotebooks, consolidatedTransactionObjects, consolidatedTransactionMaterial, consolidatedTransactionNames, consolidatedTransactionAmounts, consolidatedTransactionDates, consolidatedReusable}
 	];
 
 	(*construct the tag list,which consists of a list of Product strings,tax strings *)
@@ -8044,7 +10375,9 @@ priceMaterialsTransactionOrder[myTransactionOrderPackets:{{({(PacketP[{Object[],
 	(* join all the lists into one output *)
 	totalTransactionOutput={
 		totalTransactionNotebooks, totalTransactionObjects, totalTransactionMaterial, totalTransactionNames, totalTransactionTags, totalTransactionAmounts,
-		totalTransactionPricePerUnit, totalTransactionPrices, totalTransactionDates, totalTransactionSites
+		totalTransactionPricePerUnit, totalTransactionPrices, totalTransactionDates, totalTransactionSites, totalReusable,
+		(* For Transaction, everything is saved for future inventory *)
+		ConstantArray[LeftoverInventory, Length[totalTransactionMaterial]]
 		}
 
 ];
@@ -8323,7 +10656,9 @@ priceTransactionsCore[
 		transactionConsolidatedTotals,transactionConsolidatedTable,gatheredByMaterial,materialConsolidatedPreTotal,materialConsolidatedTotals,materialConsolidatedTable,
 		numNotebooks,numTrans,dataTableToUse,totalInputPrice,subtotalRows,dataWithSubtotal,columnHeaders,dataTableDateCompleted,tableTitle,
 		allTransactionShipToUserDownloadValues,startDate,endDate,now,joinedWeight,joinedTax,
-		allTransactionsSiteToSite,allTransactionSiteToSiteDownloadValues,joinedSites, objectBillPackets, shippingCharges, flattenTransposedOutput, outputGatherByTransaction, outputCombinedTransaction, allTransactionsToECL, allTransactionShippingPackets, shippingDates, shippingNotebooks, shippingTransactions, shippingWeights, shippingPrices, shippingSpeeds, shippingTypes, shippingDestinations, shippingSuppliers, alignments, dividerPositions, dividers, totalValue,rawNamePackets, namePackets, nameLookups},
+		allTransactionsSiteToSite,allTransactionSiteToSiteDownloadValues,joinedSites, objectBillPackets, shippingCharges, flattenTransposedOutput, outputGatherByTransaction, outputCombinedTransaction, allTransactionsToECL, allTransactionShippingPackets, shippingDates, shippingNotebooks, shippingTransactions, shippingWeights, shippingPrices, shippingSpeeds, shippingTypes, shippingDestinations, shippingSuppliers, alignments, dividerPositions, dividers, totalValue,rawNamePackets, namePackets, nameLookups,
+		averageTaskTimeDownload, latestComputation, cloudFile, tempFile, importAveTaskTime, aveTaskTimeAssoc
+	},
 
 	(* ------------ *)
 	(* -- Set up -- *)
@@ -8370,7 +10705,8 @@ priceTransactionsCore[
 				allTransactionsToECL,
 				allTransactions,
 				allTransactions,
-				allTransactions
+				allTransactions,
+				{Object[Notebook, Job, "Average Task Time Weekly Report"]}
 			},
 			{
 				(*SHIPTOUSER PACKETS*)
@@ -8425,12 +10761,20 @@ priceTransactionsCore[
 						have to manually find resource packets in all places they may be, including Aliquot-specific program objects. *)
 					(* protocol packets we will need to send any aliquot prep protocols to PriceMaterials (NOTE we also get WasteGenerated for PriceWaste) *)
 
-					(* -- A. General packet for Sub (25) --*)
+					(* -- A. General packet for Sub (25 - 28) --*)
 					(*25 - 1*)Packet[SamplePreparationProtocols[{Notebook, ParentProtocol, Status, DateCompleted, WasteGenerated, Site}]],
 
-					(* -- B. Site tax rate (26) -- *)
+					(* RootProtocol information *)
+					(*26 - 2*)Packet[SamplePreparationProtocols[RootProtocol][{DateCompleted, CompletedTasks, StatusLog, InternalCommunications}]],
+
+					(*27 - 3*)Packet[SamplePreparationProtocols[RootProtocol][InternalCommunications][{CreatedBy, DateCreated, StatusLog}]],
+
+					(* Subprotocols information *)
+					(*28 - 4*)Packet[SamplePreparationProtocols[Repeated[Subprotocols]]],
+
+					(* -- B. Site tax rate (29) -- *)
 					(* site model packets *)
-					(*26 - 2*)Packet[SamplePreparationProtocols[Site][Model][{SalesTaxRate}]],
+					(*29 - 5*)Packet[SamplePreparationProtocols[Site][Model][{SalesTaxRate}]],
 
 					(* =============================== *)
 					(* == SP packets == *)
@@ -8438,45 +10782,46 @@ priceTransactionsCore[
 
 					(* -- B. Resources details (XX - XX) -- *)
 					(* resource packets themselves (NOTE we are also getting extra fields for PriceInstrumentTime here which also wants the resource packets) *)
-					(*27 - 1*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument, RootProtocol}]],
-					(*28 - 2*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument}]],
+					(*30 - 1*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument, RootProtocol, DateInUse, DateFulfilled}]],
+					(*31 - 2*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument, RootProtocol, DateInUse, DateFulfilled}]],
 
 					(* resource product packets *)
-					(*29 - 3*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
-					(*30 - 4*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
+					(*32 - 3*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
+					(*33 - 4*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
 
 
 					(* resource sample packets *)
-					(*31 - 5*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][{Product}]],
-					(*32 - 6*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][{Product}]],
+					(*34 - 5*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][{Product}]],
+					(*35 - 6*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][{Product}]],
 
 					(* resource sample model packets *)
-					(*33 - 7*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
-					(*34 - 8*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
+					(*36 - 7*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
+					(*37 - 8*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
 
 					(* product container model packets *)
-					(*35 - 9*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
-					(*36 - 10*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
+					(*38 - 9*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
+					(*39 - 10*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
 
 
 					(* product model packets *)
-					(*37 - 11*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
-					(*38 - 12*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
+					(*40 - 11*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
+					(*41 - 12*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
 
 					(* default storage condition packets *)
-					(*39 - 13*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
-					(*40- 14*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
+					(*42 - 13*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
+					(*43- 14*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
 
 					(* -- D.  for PriceInstrumentTime on the Aliquot subprotocols (41 - 42) --- *)
 
 					(* we already got all protocol packets, ts report packets, and resource packets for PriceMaterials; need instrument model packets from resources only *)
-					(*41 - 15*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
-					(*42 - 16*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
-
+					(*44 - 15*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*45 - 16*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*46 - 17*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][ReplacementInstrumentModel][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*47 - 18*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][ReplacementInstrumentModel][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
 
 					(* -- Bill fields --- *)
 					(*these are needed for priceInstrumentTimeProtocols*)
-					(*43*)Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, InstrumentTimeCharges, IncludedInstrumentHours, Site}]]
+					(*48*)Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, InstrumentTimeCharges, IncludedInstrumentHours, Site}]]
 				},
 
 				(* == ORDER PACKETS ==*)
@@ -8564,12 +10909,20 @@ priceTransactionsCore[
 						have to manually find resource packets in all places they may be, including Aliquot-specific program objects. *)
 					(* protocol packets we will need to send any aliquot prep protocols to PriceMaterials (NOTE we also get WasteGenerated for PriceWaste) *)
 
-					(* -- A. General packet for Sub (25) --*)
+					(* -- A. General packet for Sub (25 - 28) --*)
 					(*25 - 1*)Packet[SamplePreparationProtocols[{Notebook, ParentProtocol, Status, DateCompleted, WasteGenerated, Site}]],
 
-					(* -- B. Site tax rate (54) -- *)
+					(* RootProtocol information *)
+					(*26 - 2*)Packet[SamplePreparationProtocols[RootProtocol][{DateCompleted, CompletedTasks, StatusLog, InternalCommunications}]],
+
+					(*27 - 3*)Packet[SamplePreparationProtocols[RootProtocol][InternalCommunications][{CreatedBy, DateCreated, StatusLog}]],
+
+					(* Subprotocols information *)
+					(*28 - 4*)Packet[SamplePreparationProtocols[Repeated[Subprotocols]]],
+
+					(* -- B. Site tax rate (29) -- *)
 					(* site model packets *)
-					(*26 - 2*)Packet[SamplePreparationProtocols[Site][Model][{SalesTaxRate}]],
+					(*29 - 5*)Packet[SamplePreparationProtocols[Site][Model][{SalesTaxRate}]],
 
 					(* =============================== *)
 					(* == SP packets == *)
@@ -8577,52 +10930,53 @@ priceTransactionsCore[
 
 					(* -- B. Resources details (XX - XX) -- *)
 					(* resource packets themselves (NOTE we are also getting extra fields for PriceInstrumentTime here which also wants the resource packets) *)
-					(*27 - 1*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument}]],
-					(*28 - 2*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument}]],
+					(*30 - 1*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument, RootProtocol, DateInUse, DateFulfilled}]],
+					(*31 - 2*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][{Status, Amount, Purchase, Sample, Time, EstimatedTime, Instrument, RootProtocol, DateInUse, DateFulfilled}]],
 
 					(* resource product packets *)
-					(*29 - 3*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
-					(*30 - 4*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
+					(*32 - 3*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
+					(*33 - 4*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][{Name, CatalogNumber, Price, NumberOfItems, Amount, CountPerSample, UsageFrequency, DefaultContainerModel, KitComponents}]],
 
 
 					(* resource sample packets *)
-					(*31 - 5*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][{Product}]],
-					(*32 - 6*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][{Product}]],
+					(*34 - 5*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][{Product}]],
+					(*35 - 6*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][{Product}]],
 
 					(* resource sample model packets *)
-					(*33 - 7*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
-					(*34 - 8*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
+					(*36 - 7*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
+					(*37 - 8*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][{Name, DefaultStorageCondition}]],
 
 					(* product container model packets *)
-					(*35 - 9*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
-					(*36 - 10*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
+					(*38 - 9*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
+					(*39 - 10*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][DefaultContainerModel][{Dimensions}]],
 
 
 					(* product model packets *)
-					(*37 - 11*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
-					(*38 - 12*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
+					(*40 - 11*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
+					(*41 - 12*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Product][ProductModel][{Dimensions}]],
 
 					(* default storage condition packets *)
-					(*39 - 13*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
-					(*40- 14*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
+					(*42 - 13*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
+					(*43- 14*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Sample][Model][DefaultStorageCondition][{StockingPrices}]],
 
 					(* -- D.  for PriceInstrumentTime on the Aliquot subprotocols (41 - 42) --- *)
 
 					(* we already got all protocol packets, ts report packets, and resource packets for PriceMaterials; need instrument model packets from resources only *)
-					(*41 - 15*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
-					(*42 - 16*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
-
+					(*44 - 15*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*45 - 16*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*46 - 17*)Packet[SamplePreparationProtocols[RequiredResources][[All, 1]][Instrument][Model][ReplacementInstrumentModel][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
+					(*47 - 18*)Packet[SamplePreparationProtocols[Subprotocols..][RequiredResources][[All, 1]][Instrument][Model][ReplacementInstrumentModel][{Name, PricingRate, PricingCategory, PricingLevel, Objects}]],
 
 					(* -- Bill fields --- *)
 					(*these are needed for priceInstrumentTimeProtocols*)
-					(*43*)Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, IncludedInstrumentHours, Site}]],
+					(*48*)Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, InstrumentPricing, IncludedInstrumentHours, Site}]],
 
-					(*44*)Packet[SamplesOut[Model][{State, Name, Tablet}]],
-					(*45*)Packet[SamplesOut[Model]],
-					(*46*)Packet[ContainersOut[Model]],
-					(*47*)Packet[ContainersOut[Model][{Name}]],
-					(*48*)Packet[ReceivedSamples[Model]],
-					(*49*)Packet[ReceivedSamples[Model][{Name}]]
+					(*49*)Packet[SamplesOut[Model][{State, Name, Tablet}]],
+					(*50*)Packet[SamplesOut[Model]],
+					(*51*)Packet[ContainersOut[Model]],
+					(*52*)Packet[ContainersOut[Model][{Name}]],
+					(*53*)Packet[ReceivedSamples[Model]],
+					(*54*)Packet[ReceivedSamples[Model][{Name}]]
 				},
 
 				(* == GENERAL TRANSACTION PACKETS == *)
@@ -8656,8 +11010,13 @@ priceTransactionsCore[
 					Packet[Source[Name]],
 					Packet[Provider[Name]],
 					Packet[Notebook[Name]]
-				}
+				},
 
+				(* == Average Task Time Weekly Report Packets == *)
+				{
+					(* It is possible that the current computation is running, then its result is empty list, so take all of them and find the last completed one.*)
+					Packet[Computations[{History, Status}]]
+				}
 			},
 			Cache -> cache,
 			SquashResponses -> True,
@@ -8678,6 +11037,16 @@ priceTransactionsCore[
 	rawNamePackets = DeleteCases[Flatten[Part[allDownloadValues, 9]], $Failed|Null];
 	(* We should have name for all the sites, but if name is not specified, use "UnNamed Site" in table*)
 	namePackets = rawNamePackets /. {Null -> "UnNamed Site"};
+
+	(* == prepare the average task time to use == *)
+	averageTaskTimeDownload = Part[allDownloadValues, -1];
+	latestComputation = Last[PickList[Lookup[Flatten[averageTaskTimeDownload], History], Lookup[Flatten[averageTaskTimeDownload], Status], Completed]];
+	cloudFile = Lookup[latestComputation, ObjectsGenerated] /. {Hold[x_] :> x};
+	(* download latest cloud file to use *)
+	tempFile = DownloadCloudFile[First[Flatten[cloudFile]], FileNameJoin[{$TemporaryDirectory, "AverageTimeResult.txt"}]];
+	importAveTaskTime = FastImport[tempFile, "Text"];
+	(* transform to Expression for later calculation *)
+	aveTaskTimeAssoc = Quiet[ToExpression[importAveTaskTime]];
 
 	(*generate Association for Name replacement in tables*)
 	nameLookups = AssociationThread[Lookup[namePackets, Object], Lookup[namePackets, Name]];
@@ -8727,7 +11096,9 @@ priceTransactionsCore[
 		Module[{pricedData},
 			pricedData=priceTransactionsToUser[
 				Join[allTransactionShipToUserDownloadValues,allTransactionSiteToSiteDownloadValues],
-				allTransactionDownloadValues];
+				allTransactionDownloadValues,
+				TaskTimeAssociation -> aveTaskTimeAssoc
+			];
 			If[MatchQ[pricedData, {}],
 				ConstantArray[{},11],
 				Transpose[
@@ -9223,17 +11594,25 @@ priceTransactionsCore[
 (* ::Subsubsection::Closed:: *)
 (*priceTransactionsToUser (private) *)
 
+DefineOptions[priceTransactionsToUser,
+	Options :> {
+		{TaskTimeAssociation -> <||>, _Association, "The association with average task times for different procedure task IDs imported from \"Average Task Time Weekly Report\"."}
+	},
+	SharedOptions :> {PriceTransactions}
+];
+
 (*because we recursively download Subprotocol, packets may come at any nestedness*)
 priceTransactionsToUser[
 	(*myTransactionShipToUserPackets:{{({{(PacketP[{Object[], Model[]}] | Null | $Failed)...}} | {(PacketP[{Object[], Model[]}] | Null | $Failed)|_...} | PacketP[{Object[], Model[]}]... | {Null} | Null | $Failed | (___))...}...|___},*)
 	myTransactionShipToUserPackets_,
 	myTransactionsPackets_,
 	ops:OptionsPattern[]
-]:=Module[{safeOps,cache,transactionPackets,tsReportPackets,pendingPriceAssociations,shippedPriceAssociations,allPriceAssociations},
+]:=Module[{safeOps,cache,aveTaskTimeAssoc,transactionPackets,tsReportPackets,pendingPriceAssociations,shippedPriceAssociations,allPriceAssociations},
 
 	(* get the safe options and pull out the Cache option *)
-	safeOps=SafeOptions[PriceTransactions, ToList[ops]];
+	safeOps=SafeOptions[priceTransactionsToUser, ToList[ops]];
 	cache=Lookup[safeOps, Cache];
+	aveTaskTimeAssoc=Lookup[safeOps, TaskTimeAssociation];
 
 	(* get out all of the core transaction packets and ts report packets, first and second index of each tuple *)
 	transactionPackets=myTransactionShipToUserPackets[[All, 1]];
@@ -9456,13 +11835,13 @@ priceTransactionsToUser[
 	shippedPriceAssociations=Module[
 		{
 			shippedTransactionsToPricePositions,shippedTransactionPackets,
-			shippedUniqueSamplePackets,shippedUniqueProductPackets,shippedModelMaintenancePackets,shippedAliquotPrepTuples,shippedSPAliquotPrepTuples,aliquotProtocolPackets,
+			shippedUniqueSamplePackets,shippedUniqueProductPackets,shippedModelMaintenancePackets,shippedAliquotPrepTuples,shippedSPAliquotPrepTuples,aliquotProtocolPackets,rootProtocolPackets,aliquotProtocolSubprotocols,rootProtocolTicketPackets,
 			requiredResourceTraversalFunctionForSubs,requiredResourceTraversalFunction,
 			aliquotSiteModelPacketsByTransaction,
 			productPacketForSampleFunction,standaloneMaterialPrices,byAmountMaterialPrices,totalShippingMaterialPrices,handlingPrices,
 			aliquotPrices,shippingPrices,spAliquotResourcePacketsByTransaction,spAliquotResourceProductPacketsByTransaction,spAliquotResourceSamplePacketsByTransaction,spAliquotResourceSampleModelPacketsByTransaction,
 			spAliquotResourceProductContainerModelPacketsByTransaction,spAliquotResourceProductModelPacketsByTransaction,spAliquotResourceDefaultStorageConditionPacketsByTransaction,
-			spAliquotResourceInstrumentModelPacketsByTransaction,billInfo,shippedTransactionSites
+			spAliquotResourceInstrumentModelPacketsByTransaction,spAliquotResourceInstrumentReplacementModelPacketsByTransaction,billInfo,shippedTransactionSites
 		},
 
 		(* get the positions of Shipped transactions that do not have any troubleshooting reports with Refund->True against them *)
@@ -9492,12 +11871,20 @@ priceTransactionsToUser[
 		(* -- Shared Packets for SP -- *)
 
 		(* get the tuples full of aliquot-resource-related packets for only those transactions that shipped (should be all empty for non-shipped stuff anyways) *)
-		shippedAliquotPrepTuples=Extract[myTransactionShipToUserPackets[[All, 25;;26]], shippedTransactionsToPricePositions];
-		shippedSPAliquotPrepTuples = Extract[myTransactionShipToUserPackets[[All, 27;;42]], shippedTransactionsToPricePositions];
-		billInfo = Extract[myTransactionShipToUserPackets[[All, 43]], shippedTransactionsToPricePositions];
+		shippedAliquotPrepTuples=Extract[myTransactionShipToUserPackets[[All, 25;;29]], shippedTransactionsToPricePositions];
+		shippedSPAliquotPrepTuples = Extract[myTransactionShipToUserPackets[[All, 30;;47]], shippedTransactionsToPricePositions];
+		billInfo = Extract[myTransactionShipToUserPackets[[All, 48]], shippedTransactionsToPricePositions];
 
 		(* pull out the aliquot protocol packets; this will be a list of protocol packets for each transaction *)
 		aliquotProtocolPackets=shippedAliquotPrepTuples[[All, 1]];
+		rootProtocolPackets=shippedAliquotPrepTuples[[All, 2]];
+		rootProtocolTicketPackets=shippedAliquotPrepTuples[[All, 3]];
+		aliquotProtocolSubprotocols=Map[
+			Lookup[Flatten[#], Object, {}]&,
+			(* This is in transaction list of sample prep protocol lists so Map at level 2 *)
+			shippedAliquotPrepTuples[[All,4]],
+			{2}
+		];
 
 
 		(* -- sort out the Aliquot packets -- *)
@@ -9517,7 +11904,7 @@ priceTransactionsToUser[
 
 		(*Shared packets RSP/MSP*)
 		(* also slice out the site model packets *)
-		aliquotSiteModelPacketsByTransaction=shippedAliquotPrepTuples[[All, 2]];
+		aliquotSiteModelPacketsByTransaction=shippedAliquotPrepTuples[[All, -1]];
 
 		(* -- sort out the MSP and RSP packets -- *)
 
@@ -9542,6 +11929,7 @@ priceTransactionsToUser[
 		spAliquotResourceDefaultStorageConditionPacketsByTransaction=requiredResourceTraversalFunctionForSubs[shippedSPAliquotPrepTuples[[All, 13;;14]]];
 		(* and finally, some stuff for InstrumentTime/WasteGenerated *)
 		spAliquotResourceInstrumentModelPacketsByTransaction=requiredResourceTraversalFunctionForSubs[shippedSPAliquotPrepTuples[[All, 15;;16]]];
+		spAliquotResourceInstrumentReplacementModelPacketsByTransaction=requiredResourceTraversalFunctionForSubs[shippedSPAliquotPrepTuples[[All, 17;;18]]];
 
 
 		(* --- still with us? alright now we can actually price --- *)
@@ -9632,37 +12020,41 @@ priceTransactionsToUser[
 				{
 					(* these are all by transaction but still multiple (may have multiple aliquots per transaction, they will all be SP) *)
 					(*shared packets*)
-					(*1*)aliquotProtocolPackets,
-					(*2*)siteModelPackets,
-					(*3*)billPackets,
+					(*1*)transactionAliquotProtocolPackets,
+					(*2*)transactionRootProtocolPackets,
+					(*3*)subprotocols,
+					(*4*)ticketPackets,
+					(*5*)siteModelPackets,
+					(*6*)billPackets,
 
 					(*SP packets*)
-					(*4*)spaliquotResourcePackets,
-					(*5*)spresourceProductPackets,
-					(*6*)spresourceSamplePackets,
-					(*7*)spresourceModelPackets,
-					(*8*)spproductContainerModelPackets,
-					(*9*)spproductModelPackets,
-					(*10*)spproductModelDefaultStorageConditionPackets,
-					(*11*)spresourceInstrumentModelPackets
+					(*7*)spaliquotResourcePackets,
+					(*8*)spresourceProductPackets,
+					(*9*)spresourceSamplePackets,
+					(*10*)spresourceModelPackets,
+					(*11*)spproductContainerModelPackets,
+					(*12*)spproductModelPackets,
+					(*13*)spproductModelDefaultStorageConditionPackets,
+					(*14*)spresourceInstrumentModelPackets,
+					(*15*)spresourceInstrumentReplacementModelPackets
 				},
 
 				(* determine what to do based on if we have aliquot protocols *)
 				Which[
 					(* no aliquotting happened, skip this *)
-					MatchQ[aliquotProtocolPackets, {}],
+					MatchQ[transactionAliquotProtocolPackets, {}],
 					0 USD,
 
 					(*-- We have aliquotting subprotocols using SP -- *)
-					MatchQ[aliquotProtocolPackets, {PacketP[Object[Protocol]]..}],
+					MatchQ[transactionAliquotProtocolPackets, {PacketP[Object[Protocol]]..}],
 					Module[{aliquotMaterialsPrices, aliquotMaterialsPrice, aliquotInstrumentTimePrices, aliquotInstrumentTimePrice,
 						aliquotWastePrice},
 
 						(* call the helper from PriceMaterials, priceMaterialsProtocols, to get the price of materials from the aliquot protocols for this transaction;
 							 we just want to extract the total prices, which are stored at the second to last index of the fat return *)
 						aliquotMaterialsPrices=priceMaterialsProtocols[
-							aliquotProtocolPackets,
-							ConstantArray[{}, Length[aliquotProtocolPackets]], (* subprotocols can't have user coms; just pass nothing here *)
+							transactionAliquotProtocolPackets,
+							ConstantArray[{}, Length[transactionAliquotProtocolPackets]], (* subprotocols can't have user coms; just pass nothing here *)
 							Cases[#, PacketP[]]&/@spaliquotResourcePackets,
 							spresourceProductPackets,
 							spresourceSamplePackets,
@@ -9673,23 +12065,30 @@ priceTransactionsToUser[
 							spproductContainerModelPackets,
 							siteModelPackets,
 							AllowSubprotocols -> True (* pass option to ensure this core helper doesn't freak out if it sees a subprotocol *)
-						][[-3]];
+						][[-5]];
 						aliquotMaterialsPrice=Total[DeleteCases[aliquotMaterialsPrices, Null]];
 
 						(* get the instrument time price for the aliquot protocols, need to call the core private function that has the special AllowSubprotocols option *)
 						aliquotInstrumentTimePrices=priceInstrumentTimeProtocols[
-							aliquotProtocolPackets,
-							ConstantArray[{}, Length[aliquotProtocolPackets]], (* subprotocols can't have user coms; just pass nothing here *)
+							transactionAliquotProtocolPackets,
+							transactionRootProtocolPackets,
+							subprotocols,
+							ConstantArray[{}, Length[transactionAliquotProtocolPackets]], (* subprotocols can't have user coms; just pass nothing here *)
+							ticketPackets,
 							spaliquotResourcePackets,
 							spresourceInstrumentModelPackets,
-							ConstantArray[billPackets, Length[aliquotProtocolPackets]],
+							spresourceInstrumentReplacementModelPackets,
+							ConstantArray[billPackets, Length[transactionAliquotProtocolPackets]],
+							aveTaskTimeAssoc,
+							Time -> Time,
 							AllowSubprotocols -> True (* pass option to ensure this core helper doesn't freak out if it sees a subprotocol *)
+							(* Note we are not passing in the cache here as we the cache can be very large passed down from parent function and we are only downloading information about few quick Aliquot protocols *)
 						][[-6]];
 						aliquotInstrumentTimePrice=Total[DeleteCases[aliquotInstrumentTimePrices, Null]];
 
 						(* get the waste generated price for the aliquot protocols; PriceWaste doesn't need SubprotocolRequiredResources,
 							  so we can call the parent function directly *)
-						aliquotWastePrice=PriceWaste[Lookup[aliquotProtocolPackets, Object, {}], Cache -> {}, FastTrack -> True, OutputFormat -> TotalPrice];
+						aliquotWastePrice=PriceWaste[Lookup[transactionAliquotProtocolPackets, Object, {}], Cache -> {}, FastTrack -> True, OutputFormat -> TotalPrice];
 
 						(* sum up for the total aliquot price *)
 						aliquotMaterialsPrice + aliquotInstrumentTimePrice + aliquotWastePrice
@@ -9703,18 +12102,22 @@ priceTransactionsToUser[
 			{
 				(*shared packets - site, bill, all subprotocol waste*)
 				(*1*)aliquotProtocolPackets,
-				(*2*)aliquotSiteModelPacketsByTransaction,
+				(*2*)rootProtocolPackets,
+				(*3*)aliquotProtocolSubprotocols,
+				(*4*)rootProtocolTicketPackets,
+				(*5*)aliquotSiteModelPacketsByTransaction,
 				(*6*)billInfo,
 
 				(*SP packets*)
-				(*15*)spAliquotResourcePacketsByTransaction,
-				(*16*)spAliquotResourceProductPacketsByTransaction,
-				(*17*)spAliquotResourceSamplePacketsByTransaction,
-				(*18*)spAliquotResourceSampleModelPacketsByTransaction,
-				(*19*)spAliquotResourceProductContainerModelPacketsByTransaction,
-				(*20*)spAliquotResourceProductModelPacketsByTransaction,
-				(*21*)spAliquotResourceDefaultStorageConditionPacketsByTransaction,
-				(*22*)spAliquotResourceInstrumentModelPacketsByTransaction
+				(*7*)spAliquotResourcePacketsByTransaction,
+				(*8*)spAliquotResourceProductPacketsByTransaction,
+				(*9*)spAliquotResourceSamplePacketsByTransaction,
+				(*10*)spAliquotResourceSampleModelPacketsByTransaction,
+				(*11*)spAliquotResourceProductContainerModelPacketsByTransaction,
+				(*12*)spAliquotResourceProductModelPacketsByTransaction,
+				(*13*)spAliquotResourceDefaultStorageConditionPacketsByTransaction,
+				(*14*)spAliquotResourceInstrumentModelPacketsByTransaction,
+				(*15*)spAliquotResourceInstrumentReplacementModelPacketsByTransaction
 			}
 		];
 
@@ -9930,7 +12333,7 @@ priceTransactionsToECL[
 				Cases[containerPackets, PacketP[Object[Container]]],
 				Cases[receivedItemPackets, PacketP[Object[Item]]]
 			]],
-		{mySiteToSitePackets[[All,46]],mySiteToSitePackets[[All,48]]}];
+		{mySiteToSitePackets[[All,51]],mySiteToSitePackets[[All,53]]}];
 
 	(* get the models of SiteToSite transactions *)
 	siteToSiteModels=Map[Download[Lookup[#, Model, {}], Object]&, allSiteToSiteContainerOutPackets];
@@ -9965,7 +12368,7 @@ priceTransactionsToECL[
 				Cases[containerPackets, PacketP[Model[Container]]],
 				Cases[receivedItemPackets, PacketP[Model[Item]]]
 			]],
-		{mySiteToSitePackets[[All, 47]], mySiteToSitePackets[[All, 49]]}];
+		{mySiteToSitePackets[[All, 52]], mySiteToSitePackets[[All, 54]]}];
 
 	(* construct a flat list of the name of the models shipped with each transaction, for Transaction Orders use the product name instead since Model name can be ambiguous (in cases where there are multiple products per Model) *)
 	flatTransactionModelNames=Flatten[Map[Lookup[#, Name, {}]&, Join[allTransactionDropShippingModelPackets, indexMatchedProductPackets, allTransactionSendingModelPackets, allSiteToSiteModelPackets]]];
@@ -11731,7 +14134,7 @@ priceCleaningCore[
 		(* downloads and helper outputs *)
 		allDownloadValues,objectBillPackets,allModelPackets,allResourcePackets,allObjectPackets,tsReportPackets,protocolPackets,
 		notebooks,protocols,datesCompleted,objs,modelNames,cleaningMethod,cleaningCategory,pricing,pricingLists, charging,
-		namePackets, nameLookups,
+		namePackets, nameLookups, allSampleObjects, containerSampleObjects, containerSampleObjectPackets,
 
 		(*table and association variables*)
 		allDataTable,associationOutput,totalPrice,totalValue, tableOutput,numProts,
@@ -11773,12 +14176,13 @@ priceCleaningCore[
 			{
 				Packet[Notebook, ParentProtocol, Status, DateCompleted, Site],
 				Packet[UserCommunications[Refund]],
-				Packet[SubprotocolRequiredResources[{Sample, Status}]],
+				Packet[SubprotocolRequiredResources[{Sample, Status, DateInUse}]],
 				Packet[SubprotocolRequiredResources[Sample][{Reusable, Model}]],
 				Packet[SubprotocolRequiredResources[Sample][Model][{Reusable, CleaningMethod, Sterile, Name}]],
 				Packet[Notebook[Financers][BillingHistory][[All, 2]][{DateStarted, DateCompleted, Status, CleanUpPricing, CleanUpCharges, IncludedCleaningFees, Site}]],
 				Packet[Notebook[Name]],
-				Packet[Site[Name]]
+				Packet[Site[Name]],
+				SubprotocolRequiredResources[Sample]
 			},
 			Cache -> cache,
 			SquashResponses -> True,
@@ -11795,6 +14199,22 @@ priceCleaningCore[
 	allModelPackets=allDownloadValues[[All, 5]];
 	objectBillPackets=allDownloadValues[[All, 6]];
 	namePackets = DeleteCases[Flatten[allDownloadValues[[All, 7;;8]]], $Failed|Null];
+	allSampleObjects = allDownloadValues[[All, 9]];
+
+	(* split download of container object *)
+	containerSampleObjects = DeleteDuplicates[Flatten[Cases[Flatten[allSampleObjects], ObjectP[Object[Container, Vessel]]]]];
+
+	(* StatusLog and ContentsLog can be very large and download all of them can be time-consuming *)
+	containerSampleObjectPackets = Quiet[
+		Download[
+			containerSampleObjects,
+			Packet[ContentsLog, StatusLog],
+			Cache -> cache,
+			SquashResponses -> True,
+			Date -> Now
+		],
+		{Download::FieldDoesntExist, Download::NotLinkField}
+	];
 
 	(* generate Association for Name replacement in tables *)
 	nameLookups = AssociationThread[Lookup[namePackets, Object], Lookup[namePackets, Name]];
@@ -11824,7 +14244,8 @@ priceCleaningCore[
 		allResourcePacketsFiltered,
 		allObjectPacketsFiltered,
 		allModelPacketsFiltered,
-		objectBillPackets
+		objectBillPackets,
+		containerSampleObjectPackets
 	];
 	If[MatchQ[pricingLists, $Failed],
 		Return[$Failed]
@@ -12155,17 +14576,18 @@ priceCleaningProtocols[
 			({PacketP[Object[Bill]]...} | $Failed | Null)...
 		} | Null)...
 	},
+	myObjectContainerPackets:{(PacketP[Object[Container]] | $Failed | Null)...},
 	myOptions:OptionsPattern[]
 ]:=Module[
 	{
 		safeOptions, allowSubprotocolsQ, refundStatus, nonRefundedProtPackets, protocolObjects, protocolNotebooks,
 
 		(* filtering out the washable packets *)
-		allWashableObjectPackets, allWashableModelPackets, allWashedObjectStatuses, washableObjectsP,
+		allWashableObjectPackets, allWashableModelPackets, allWashedObjectStatuses, washableObjectsP, excludedWashableObjectsP, washablePattern,
 		allAutoclavedObjectPackets, allAutoclavedModelPackets,
 		allWashedModelPackets, allWashedObjectPackets, allWashableThingsTuples,
 		allFulfilledWashedObjectPackets, allFulfilledWashedModelPackets, allAutoclavedObjectStatuses,
-		allFulfilledAutoclavedObjectPackets, allFulfilledAutoclavedModelPackets,
+		allFulfilledAutoclavedObjectPackets, allFulfilledAutoclavedModelPackets, updatedWashableObjectPackets, updatedWashableModelPackets, updatedWashableResourcePackets,
 
 		(* index matching lists *)
 		billForEachProtocol,
@@ -12218,30 +14640,89 @@ priceCleaningProtocols[
 	(* autoclaving is based on the Sterile Field of the Model (Sterile -> True) means it will get autoclaved after dishwashing *)
 
 	(* make a pattern for washable types in case this needs to get updated in the future *)
-	washableObjectsP=ObjectP[{Object[Container], Object[Item], Object[Part]}];
+	washableObjectsP=ObjectP[{Object[Container], Object[Item], Object[Part], Object[Wiring], Object[Plumbing]}];
+	(* covers are always washed with bottles no matter of the resource request. exclude them from pricing *)
+	excludedWashableObjectsP=ObjectP[CoverObjectTypes];
+	washablePattern=_?((MatchQ[#, washableObjectsP]&&!MatchQ[#,excludedWashableObjectsP])&);
 
 	(* this is a list of lists that is index matched with the input protocols *)
 	allWashableObjectPackets=Map[
-		Cases[#, washableObjectsP]&,
+		Cases[#, washablePattern]&,
 		myObjectPackets
 	];
 
 	(* extract the matching model packets for each washable object *)
 	allWashableModelPackets=MapThread[
-		PickList[#2, #1, washableObjectsP]&,
+		PickList[#2, #1, washablePattern]&,
 		{myObjectPackets, myModelPackets}
 	];
 
 	(* extract the resources *)
 	allWashableResourcePackets=MapThread[
-		PickList[#2, #1, washableObjectsP]&,
+		PickList[#2, #1, washablePattern]&,
 		{myObjectPackets, myResourcePackets}
+	];
+
+	(* Filter out the containers whose Contents are not empty list by the resource used *)
+	(* This step is to make sure bottles are not double charged (eg. pick a bottle to prepare stock solution and then use pick the solution in other experiments) -- We only charge cleaning when empty bottle is used *)
+	{updatedWashableObjectPackets, updatedWashableModelPackets, updatedWashableResourcePackets} = If[MatchQ[Flatten[allWashableObjectPackets], {}],
+		{allWashableObjectPackets, allWashableModelPackets, allWashableResourcePackets},
+		Transpose@MapThread[
+			(* The outer layer is to map over protocols *)
+			Function[{protocolObjectPackets, protocolModelPackets, protocolResourcePackets},
+				If[protocolObjectPackets == {},
+					{protocolObjectPackets, protocolModelPackets, protocolResourcePackets},
+					Transpose@MapThread[
+						Function[{objectPacket, modelPacket, ResourcePacket},
+							Module[{resourceInUseDate, objectContentsLog, objectStatusLog, contentsLogByUse, statusLogByUse, objectType, objectContainerPacket},
+								(* fetch required information *)
+								resourceInUseDate = Lookup[ResourcePacket, DateInUse];
+								objectType = Lookup[objectPacket, Type];
+
+								(* check if the container already has contents *)
+								If[MatchQ[objectType, Object[Container, Vessel]],
+									(* fetch the container packet *)
+									objectContainerPacket = Experiment`Private`fetchPacketFromCache[Lookup[objectPacket, Object],myObjectContainerPackets];
+									objectContentsLog = Lookup[objectContainerPacket, ContentsLog, {}];
+									objectStatusLog = Lookup[objectContainerPacket, StatusLog, {}];
+
+									(* Check the last time the bottle is cleaned -- Discarded *)
+									statusLogByUse = Cases[objectStatusLog, {LessP[resourceInUseDate], Discarded, _}];
+
+									(* Check if there is any records of sample transfers into the container before resource picking *)
+									(* if the container is a plate, we cannot clean only one well. So if any position is occupied, the plate is treated as having contents  *)
+									contentsLogByUse = If[Length[statusLogByUse] > 0,
+										(* If there is a clean up record, fetch the transfer in record between clean up and current resource picking *)
+										Cases[objectContentsLog, {RangeP[Last[statusLogByUse][[1]], resourceInUseDate], In, ObjectP[Object[Sample]], _, _}],
+										(* otherwise, fetch the record of transfer in before current resource picking *)
+										Cases[objectContentsLog, {LessP[resourceInUseDate], In, ObjectP[Object[Sample]], _, _}]
+									];
+
+									(* Check if the bottle is already occupied *)
+									If[Length[contentsLogByUse] > 0,
+										(* this is not the first time this container is used -- should not charge cleaning *)
+										{{}, {}, {}},
+										(* otherwise, this is the first time to use this container -- should charge for cleaning *)
+										{objectPacket, modelPacket, ResourcePacket}
+									],
+
+									(* if the sample is not container, do not need to make update *)
+									{objectPacket, modelPacket, ResourcePacket}
+								]
+							]
+						],
+						{protocolObjectPackets, protocolModelPackets, protocolResourcePackets}
+					]
+				]
+			],
+			{allWashableObjectPackets, allWashableModelPackets, allWashableResourcePackets}
+		]
 	];
 
 	(* from the washable packets, determine which ones were actually washed *)
 	allWashableThingsTuples=MapThread[
-		Transpose[{#1, #2, #3}]&,
-		{allWashableObjectPackets, allWashableModelPackets, allWashableResourcePackets}
+		DeleteDuplicatesBy[Transpose[{#1, #2, #3}],Lookup[#[[1]],Object]&]&,
+		{updatedWashableObjectPackets, updatedWashableModelPackets, updatedWashableResourcePackets}
 	];
 
 	(* -- dishwash -- *)

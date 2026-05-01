@@ -2670,9 +2670,15 @@ DefineTests[AnalyzePeaks, {
 	],
 
 	Example[{Messages,"InputContainsTemporalLinks","Warn the user if any of the inputs contain temporal links:"},
-		AnalyzePeaks[
-			Link[Object[Data, Chromatography, "id:XnlV5jmbk0rn"],DateObject["Now"]]
-		][Position],
+		With[{dateCreated = Download[Object[Data, Chromatography, "id:XnlV5jmbk0rn"], DateCreated]},
+			Download[
+				AnalyzePeaks[
+					(* this is a super old data object so going back a whole day is fine*)
+					Link[Object[Data, Chromatography, "id:XnlV5jmbk0rn"], Now - 1 Day]
+				],
+				Position
+			]
+		],
 		{20.193333`,25.366667`},
 		Messages :> {Warning::InputContainsTemporalLinks}
 	],

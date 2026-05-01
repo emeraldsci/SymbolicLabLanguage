@@ -44,8 +44,8 @@ DefineUsage[Inspect, {
 			}
 		},
 		{
-			Definition -> {"Inspect[type]", "table"},
-			Description -> "displays all of the possible information a given 'type' could store in a formatted grid with its fields and descriptions of the fields.",
+			Definition -> {"Inspect[type]", "nbObj"},
+			Description -> "Opens a Type Definitions Viewer in a separate window.",
 			Inputs :> {
 				{
 					InputName -> "type",
@@ -60,9 +60,9 @@ DefineUsage[Inspect, {
 			},
 			Outputs :> {
 				{
-					OutputName -> "table",
-					Description -> "A formatted version of the input object's database information placed in a grid for display.",
-					Pattern :> _Grid
+					OutputName -> "nbObj",
+					Description -> "The Emerald Cloud Lab Type Definitions Viewer notebook object",
+					Pattern :> _NotebookObject
 				}
 			}
 		}

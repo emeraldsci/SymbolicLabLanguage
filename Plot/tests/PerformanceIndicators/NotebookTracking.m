@@ -154,6 +154,7 @@ DefineTests[PlotContainerCoverNotebookMismatches,
 			Upload[
 				<|
 					Object->newCloudFile,
+					Object->newCloudFile,
 					Name->"Container-Cover Mismatches Per Day",
 					FileName->"Container-Cover Mismatches Per Day"
 				|>

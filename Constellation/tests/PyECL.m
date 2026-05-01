@@ -62,8 +62,8 @@ DefineTests[PyECLRequest,
 			"pong"
 		],
 		Example[{Additional, "Test live protected ping endpoint:"},
-			StringQ[Lookup[PyECLRequest["pping"], "token"]],
-			True
+			PyECLRequest["pping"],
+			"pong"
 		],
 		Example[{Additional, "Test live engine/locations endpoint with JSON:"},
 			Module[{result},

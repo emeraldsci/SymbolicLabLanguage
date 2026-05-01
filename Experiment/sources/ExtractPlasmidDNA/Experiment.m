@@ -1983,7 +1983,7 @@ resolveExperimentExtractPlasmidDNAOptions[mySamples : {ObjectP[Object[Sample]]..
         ];
 
         (* Resolve the Purification option. *)
-        (* NOTE: This is resolved later, however we need this info to determine where to integrate ContainerOut, so *)
+        (* NOTE: This is resolved later; however, we need this info to determine where to integrate ContainerOut, so *)
         (* it's also resolved here to be used locally in the mapthread.*)
         purification = Which[
           (* Is the purification options already specified by the user? *)

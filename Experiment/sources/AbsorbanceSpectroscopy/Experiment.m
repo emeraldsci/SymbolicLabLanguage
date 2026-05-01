@@ -46,13 +46,24 @@ DefineOptions[ExperimentAbsorbanceSpectroscopy,
 				}
 			]
 		},
-
+		{
+			OptionName->MaxLoadingRetries,
+			Default->Automatic,
+			Description->"The maximum number of repeated measurements that can be performed when valid data cannot be obtained due to unsuccessful absorbance readings by the instrument. Only samples lacking valid data are re-measured, and each repeat will be performed using a new microfluidic chip. This option only applies to the Microfluidic plate readers.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to 2. Otherwise set to Null.",
+			AllowNull->True,
+			Category->"General",
+			Widget->Widget[
+				Type->Number,
+				Pattern:>RangeP[1,10]
+			]
+		},
 		{
 			OptionName->MicrofluidicChipLoading,
 			Default->Automatic,
 			AllowNull->True,
-			Description->"Indicates whether the SamplesIn are loaded by a robotic liquid handler or manually.",
-			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic.",
+			Description->"When using the Microfluidic plate readers, indicates if the Microfluidic Chips are loaded by a robotic liquid handler or manually.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to Robotic. Otherwise set to Null.",
 			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[Robotic, Manual]],
 			Category->"General"
 		},
@@ -215,7 +226,76 @@ DefineOptions[ExperimentAbsorbanceSpectroscopy,
 				IndexMatchingInput -> "experiment samples"
 		],
 		AbsorbanceSharedOptions,
-		SamplesOutStorageOptions
+		(* Currently Standards is only supported on Lunatic instrument *)
+		IndexMatching[
+			IndexMatchingParent -> Standards,
+			{
+				OptionName -> Standards,
+				(* Default no standard *)
+				Default -> Null,
+				Description -> "The reference samples with known absorbance to run in parallel with the unknown samples, often used to check internal measurement consistency.",
+				AllowNull -> True,
+				Category -> "Standards",
+				Widget -> Widget[Type -> Object, Pattern:>ObjectP[{Model[Sample], Object[Sample]}]]
+			},
+			(* For Lunatic, this volume must be 2.1 Microliter *)
+			{
+				OptionName -> StandardVolumes,
+				Default -> Automatic,
+				Description -> "The amount of liquid of the Standards that should be transferred out and used to perform standard measurements.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the value of AssayVolume if that was specified, or maximum volume of the container otherwise.",
+				AllowNull -> True,
+				Category -> "Standards",
+				Widget -> Widget[Type->Quantity, Pattern:>RangeP[1 Microliter, 4000*Microliter],Units:>{1, {Microliter, {Microliter, Milliliter}}}]
+			},
+			{
+				OptionName -> StandardLabel,
+				Default -> Automatic,
+				AllowNull->True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+				Description->"A user defined word or phrase used to identify the Standards samples, for use in downstream unit operations.",
+				Category->"General",
+				UnitOperation->True
+			},
+			{
+				OptionName -> StandardBlanks,
+				Default -> Automatic,
+				AllowNull -> True,
+				Description -> "The object or source used to generate a blank sample (i.e. buffer only, water only, etc.) whose absorbance is subtracted as background from the absorbance readings of the Standards to take account for any artifacts.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the first sample in Blanks.",
+				Category -> "Standards",
+				Widget -> Widget[Type -> Object, Pattern:>ObjectP[{Model[Sample], Object[Sample]}]]
+			},
+			(* For Lunatic, this volume must be 2.1 Microliter *)
+			{
+				OptionName -> StandardBlankVolumes,
+				Default -> Automatic,
+				AllowNull -> True,
+				Description->"The amount of liquid of the StandardBlanks that should be transferred out and used to blank measurements.",
+				ResolutionDescription -> "If Standards is specified, automatically set to the first value of BlankVolumes if that was specified, or maximum volume of the container otherwise.",
+				Category -> "Standards",
+				Widget -> Widget[Type->Quantity, Pattern:>RangeP[1 Microliter, 4000*Microliter],Units:>{1, {Microliter, {Microliter, Milliliter}}}]
+			},
+			{
+				OptionName -> StandardBlankLabel,
+				Default -> Automatic,
+				AllowNull->True,
+				Widget -> Widget[Type -> String, Pattern :> _String, Size -> Line],
+				Description->"A user defined word or phrase used to identify the StandardBlanks samples, for use in downstream unit operations.",
+				Category -> "Standards",
+				UnitOperation -> True
+			}
+		],
+		SamplesOutStorageOptions,
+		{
+			OptionName->ImageMicrofluidicPlate,
+			Default->Automatic,
+			AllowNull->True,
+			Description->"When using the Microfluidic plate readers, indicates when the Microfluidic Chips containing the loaded samples are imaged. PreRead indicates imaging occurs before the Microfluidic Chips are analyzed on the Instrument. PostRead indicates imaging occurs after the Microfluidic Chips are analyzed on the Instrument. All indicates imaging occurs both before and after the chips are analyzed on the instrument.",
+			ResolutionDescription -> "When using the Microfluidic plate readers, automatically set to PostRead. Otherwise set to Null.",
+			Widget-> Widget[Type->Enumeration,Pattern:>Alternatives[PreRead, PostRead, All]],
+			Category->"Post Processing"
+		}
 	}
 ];
 
@@ -244,13 +324,16 @@ Error::AbsorbanceSpectroscopyCuvetteVolumeOutOfRange="For the following sample(s
 Error::AbsSpecSamplesOutStorageConditionConflict="For the following sample(s), `1`, the SamplesOutStorageCondition was set to Disposal while the ContainerOut was also specified (`2`) or RecoupSample is True. Please set SamplesOutStorageCondition to SampleStorageTypeP or only set ContainerOut and RecoupSample to True for samples that are not being disposed.";
 
 (* these options happen during/after option resolution *)
+Error::UnsupportedStandardMeasurement = "The Standards option and related options are currently only supported on the Lunatic plate reader. Please remove these options or select Model[Instrument, PlateReader, \"Lunatic\"] as Instrument.";
 Error::IncompatibleBlankOptions = "The specified blank options (BlankAbsorbance, Blanks, or BlankVolumes) are incompatible with each other.  Blanks and BlankVolumes may only be specified if BlankAbsorbance -> True, and must not be specified if BlankAbsorbance -> False.";
+Error::IncompatibleStandardOptions = "The specified standard options `1` are incompatible with each other. Standard related options can only be specified if Standards is provided, and must not be specified if Standards is Null. StandardBlankVolumes and StandardBlankLabel can only be specified if StandardBlanks is provided, and must not be specified if StandardBlanks is Null.";
 Error::BlankVolumeNotRecommended = "The provided volume in the BlankVolumes option `1` does not match the allowed volume (`2`) for the provided instrument `3`.  Please specify `2` for BlankVolume, or leave as Automatic.";
+Error::StandardVolumeNotRecommended = "The provided volume in the StandardVolumes and StandardBlankVolumes options `1` do not match the allowed volume (`2`) for the provided instrument `3`.  Please specify `2` for StandardVolumes and StandardBlankVolumes, or leave as Automatic.";
 Error::QuantificationRequiresBlanking = "If QuantifyConcentration -> True, BlankAbsorbance cannot be False.  Please set BlankAbsorbance -> True if you wish to calculate the concentration of your samples.";
-Error::AbsSpecTooManySamples = "The number of input samples and blanks times the NumberOfReplicates cannot fit on `1` in a single protocol.  Please select less than or equal to `2` samples when using `1`, or use the BMG plate readers, which are unrestricted by number of samples.";
+Error::AbsSpecTooManySamples = "The number of input samples, blanks and standards times the NumberOfReplicates cannot fit on `1` in a single protocol.  Please select less than or equal to `2` samples when using `1`, or use the BMG plate readers, which are unrestricted by number of samples.";
 Error::TooManyBlanks = "The specified Blanks, `1`, cannot be used simultaneously because when using cuvette method, all input samples can only share 1 blank sample. Please adjust the number of blanks and try again.";
 Warning::AbsSpecInsufficientSampleVolume = "The specified sample volumes `1` are below the minimum required volume for the specified instrument type of `2`. Please consider using larger sample volumes or select an instrument that can read samples of this size.";
-Warning::BlankStateWarning = "The blanks (`1`) do not have a state of liquid. If this is not intended, please check the blank samples (`1`).";
+Error::InvalidBlankStandardState = "The blank and standard samples `1` do not have a state of liquid and cannot be tested. Please specify liquid Blanks and Standards.";
 Warning::NotEqualBlankVolumes = "The blank volume (`1`) is not equal to the volume of the sample (`2`). We recommend a blank volume that equals to the sample volume, or let the BlankVolumes resolve automatically.";
 Error::InjectionSampleStateError = "The injection samples (`1`) do not have a state of liquid. The instrument can only inject liquid samples. Please make sure the injection samples have a state of liquid.";
 Error::SkippedInjectionError = "Injection options (`1`) are not specified before the use of injection option (`2`). Please make sure the injections are specified in order. For example, secondary injection can be specified only if the primary injection is already specified.";
@@ -266,7 +349,7 @@ Error::InvalidCuvettePlateReaderOptions = "`1` does not support specification of
 Error::InvalidCuvetteSamplingOptions = "`1` does not support specification of Sampling options.  Please specify a different Instrument if you wish to specify these options.";
 Error::InvalidAcquisitionMixRateRange = "The option MinAcquisitionMixRate has been specified to `1` which is greater than the MaxAcquisitionMixRate (`2`). Please modify the range such that MinAcquisitionMixRate is smaller or equal to MaxAcquisitionMixRate.";
 
-Warning::ReplicateChipSpace="When concentration is being quantified, 3 replicates are recommended, however there is insufficient space in the chip to do this. NumberOfReplicates will be set to `1`, the largest possible value, but you may wish to consider splitting this into multiple experiments.";
+Warning::ReplicateChipSpace="When concentration is being quantified, 3 replicates are recommended; however, there is insufficient space in the chip to do this. NumberOfReplicates will be set to `1`, the largest possible value, but you may wish to consider splitting this into multiple experiments.";
 Error::InvalidBlankContainer="BlankVolume must be provided if a blank is not an existing sample which is already in `1`. For each of the following blank samples, please specify the volume which should be transferred into a compatible container in order to do the reading: `2`";
 Warning::UnnecessaryBlankTransfer="Although they are already in compatible containers, blanks wil be transferred from their current container into new containers. If you don't wish for these samples to be transferred set BlankVolumes->Null for `1`";
 
@@ -276,6 +359,8 @@ Error::TooManyWavelength="The number of discrete `1` (`2`) cannot exceed the ins
 Warning::SpanWavelengthOrder="The span wavelength (`1`) is specified from high-wavelength to low-wavelength. The instrument will automatically adjust and scan the samples from low-wavelength to high-wavelength.";
 
 Error::MicrofluidicChipLoading="The specified MicrofluidicChipLoading (`1`) must be set to Robotic or Manual when using Lunatic or, otherwise, to Null. Please make sure this option is set accordingly or consider setting it to Automatic.";
+Error::InvalidImageMicrofluidicPlate="The specified ImageMicrofluidicPlate (`1`) must be Null when Lunatic plate reader is not used. Please make sure this option is set accordingly or consider setting it to Automatic.";
+Error::InvalidMaxLoadingRetries="The specified MaxLoadingRetries (`1`) must be Null when Lunatic plate reader is not used. Please make sure this option is set accordingly or consider setting it to Automatic.";
 Warning::TemperatureNoEquilibration = "The Temperature option is specified as `1` while EquilibrationTime is specified as `2`. The instrument might not reach the set temperature before starting the temperature-controlled assay, potentially leading to inaccurate results";
 
 (* these are the currently supported plates and plate reader models; using ObjectP below, but not making these patterns themselves because then the error messages will look ugly *)
@@ -359,7 +444,7 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 		confirm, canaryBranch, fastTrack, parentProt, unresolvedOptions, unresolvedOptionsTests, combinedOptions, resolveOptionsResult,
 		resolvedOptionsNoHidden, allTests, estimatedRunTime,
 		resourcePackets, resourcePacketTests, simulatedProtocol, simulation,
-		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, protocolObject,
+		resolvedOptions, resolutionTests, returnEarlyQ, performSimulationQ, validLengths, validLengthTests, expandedCombinedOptions, specifiedInstruments, specifiedBlankAnsStandardObjects, specifiedBlankAnsStandardModels, protocolObject,
 		cache, newCache, allPackets, listedSamples, validSamplePreparationResult, mySamplesWithPreparedSamples, myOptionsWithPreparedSamples,
 		samplePreparationSimulation, downloadFields, mySamplesWithPreparedSamplesNamed, safeOptionsNamed, myOptionsWithPreparedSamplesNamed
 	},
@@ -458,12 +543,40 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 	(* get all specified instruments *)
 	specifiedInstruments = DeleteDuplicates[Cases[Flatten[Lookup[combinedOptions, {Instrument}]], ObjectP[{Object[Instrument], Model[Instrument]}]]];
 
+	(* get all objects from blank and standard options *)
+	specifiedBlankAnsStandardObjects = DeleteDuplicates[
+		Download[
+			Cases[
+				Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+				ObjectP[Object]
+			],
+			Object
+		]
+	];
+
+	specifiedBlankAnsStandardModels = DeleteDuplicates[
+		Join[
+			Download[
+				Cases[
+					Flatten[Lookup[expandedCombinedOptions, {Blanks, Standards, StandardBlanks}, {}]],
+					ObjectP[Model]
+				],
+				Object
+			],
+			(* Default blank - Milli-Q water *)
+			{Model[Sample, "id:8qZ1VWNmdLBD"]}
+		]
+	];
+
+
 	(* get all the Download fields *)
 	downloadFields = {
 		{
 			Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 			Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-			Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]]
+			Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
+			Packet[Field[Container[Contents][[All,2]][{State,Volume,Container,CellType}]]],
+			Packet[Solvent[{State}]]
 		},
 		{
 			Packet[Model, Status, IntegratedLiquidHandler, WettedMaterials, PlateReaderMode, SamplingPatterns, IntegratedLiquidHandlers],
@@ -471,7 +584,15 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			Packet[IntegratedLiquidHandler[Model]],
 			Packet[IntegratedLiquidHandler[Model][Object]],
 			Packet[IntegratedLiquidHandlers[Object]]
-		}
+		},
+		(* Blank and Standard Object *)
+		{
+			Packet[Container, State, Volume],
+			Packet[Container[{Model}]],
+			Packet[Container[Model][{MaxVolume,RecommendedFillVolume}]]
+		},
+		(* Blank and Standard Model *)
+		{Packet[State]}
 	};
 
 	(* make the up front Download call *)
@@ -480,7 +601,9 @@ ExperimentAbsorbanceSpectroscopy[mySamples : ListableP[ObjectP[Object[Sample]]],
 			Download[
 				{
 					mySamplesWithPreparedSamples,
-					specifiedInstruments
+					specifiedInstruments,
+					specifiedBlankAnsStandardObjects,
+					specifiedBlankAnsStandardModels
 				},
 				Evaluate[downloadFields],
 				Cache -> cache,
@@ -1003,6 +1126,10 @@ resolveReadPlateMethod[
 			"the following samples are liquid handler incompatible "<>ObjectToString[Lookup[Cases[Cases[Flatten[samplePackets,1],PacketP[]], KeyValuePattern[LiquidHandlerIncompatible->True]], Object], Cache->allPackets],
 			Nothing
 		],
+		If[MatchQ[Lookup[allOptions, WorkCell], Null],
+			"The WorkCell option is set to Null",
+			Nothing
+		],
 		If[MatchQ[Lookup[allOptions, Preparation], Manual],
 			"the Preparation option is set to Manual by the user",
 			Nothing
@@ -1011,6 +1138,10 @@ resolveReadPlateMethod[
 
 	(* Create a list of reasons why we need Preparation->Robotic. *)
 	roboticRequirementStrings={
+		If[MatchQ[Lookup[allOptions, WorkCell], WorkCellP],
+			"The WorkCell option is specified (only robotic preparation supports using a work cell)",
+			Nothing
+		],
 		If[MatchQ[Lookup[allOptions, Preparation], Robotic],
 			"the Preparation option is set to Robotic by the user",
 			Nothing
@@ -1178,11 +1309,11 @@ resolveAbsorbanceOptions[
 		mismatchCuvettePlateSamplingValidQ,mismatchCuvettePlateSamplingTestString,mismatchCuvettePlateSamplingTest,mismatchCuvettePlateSamplingOptions,
 		specifiedTemp,specifiedPlateReaderMixRate,specifiedPlateReaderMixTime,specifiedPlateReaderMix,specifiedPlateReaderMixMode,
 		specifiedPlateReaderMixSchedule,specifiedEquilibrationTime,specifiedMoatBuffer,specifiedMoatVolume,specifiedMoatSize,
-		specifiedReadDirection,injectionOptionNames,injectionOptions,bmgRequired,instrument,uniqueInjectionSamples,uniqueBlankSamples,
-		preresolvedInstrument,potentialAnalytesToUse,possibleAliquotContainers,listedSampleContainerPackets,listedContainerInPackets,listedInjectionSamplePackets,listedBlankPackets,
-		parentProt,specifiedQuantifyConcentration,specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel,
+		specifiedReadDirection,injectionOptionNames,injectionOptions,bmgRequired,instrument,uniqueInjectionSamples,uniqueBlankAndStandardObjects,uniqueBlankAndStandardModels,
+		preresolvedInstrument,potentialAnalytesToUse,possibleAliquotContainers,listedSampleContainerPackets,listedContainerInPackets,listedInjectionSamplePackets,listedBlankAndStandardPackets, listedBlankAndStandardModelPackets,
+		parentProt,specifiedQuantifyConcentration,specifiedTargetCarbonDioxideLevel, specifiedTargetOxygenLevel, specifiedImageMicrofluidicPlate, specifiedMaxLoadingRetries,
 		listedInstrumentPackets,listedAliquotContainerPackets,samplePackets,containerPackets,
-		sampleContainerModelPackets,containerInPackets,injectionSamplePackets,blankSamplePackets,blankContainerPackets,suppliedInstrumentPacket,suppliedModelInstrumentPacket,instrumentPacket,
+		sampleContainerModelPackets,containerInPackets,injectionSamplePackets,blankAndStandardSamplePackets,blankAndStandardContainerPackets,blankAndStandardModelPackets,suppliedInstrumentPacket,suppliedModelInstrumentPacket,instrumentPacket,
 		modelInstrumentPacket,allInstrumentPacketLists,allPlateReaderModelPackets,aliquotContainerModelPacket,discardedSamplePackets,discardedInvalidInputs,discardedTest,
 		cuvetteQ,spectralBandwidthValidQ,spectralBandwidthTestString,spectralBandwidthIncompatibleTest,spectralBandwidthIncompatibleInvalidOptions,acquisitionMixValidQ,acquisitionMixTestString,
 		acquisitionMixIncompatibleTest,acquisitionMixIncompatibleInvalidOptions,acquisitionMixQ,acquisitionMixDependentOptionsValidQ,acquisitionMixDependentOptionsTestString,acquisitionMixDependentOptionsIncompatibleTest,acquisitionMixDependentOptionsInvalidOptions,
@@ -1215,23 +1346,30 @@ resolveAbsorbanceOptions[
 		blankSpaceError,blankSpaceWarning,aliquotContainerTest,replicatesAliquotTest,sampleRepeatTest,blankSpaceTest,invalidAliquotOption,mapThreadFriendlyOptions,
 		quantificationWavelengths,preferredWavelengths,quantifyConcentrations,blanks,blankVolumes,concInvalidOptionsErrors,extCoefficientNotFoundWarnings,
 		incompatibleBlankOptionsErrors,blankVolumeNotAllowedErrors,blankContainerErrors,blankContainerWarnings,
-		blankObjects,numBlanks,numOfBlankAdditions,totalNumSamples,resolvedNumberOfReplicates,tooFewReplicatesWarning,tooFewReplicatesTest,intNumReplicates,
+		listedStandards,invalidStandardOptionError,invalidStandardInstrumentOption,invalidStandardInstrumentTest,
+		standardOptions,expandedStandardOptions,resolvedStandardVolumes,resolvedStandardLabels, resolvedStandardBlanks, resolvedStandardBlankVolumes, resolvedStandardWavelengths, incompatibleStandardOptionErrors,incompatibleStandardBlankOptionErrors,
+		standardVolumeNotAllowedErrors, standardBlankVolumeNotAllowedErrors,
+		blankObjects,standardBlankObjects,numBlanks,numOfBlankAdditions,totalNumSamples,resolvedNumberOfReplicates,tooFewReplicatesWarning,tooFewReplicatesTest,intNumReplicates,
 		missingExtCoefficientErrors,specifiedAnalytes,quantificationAnalytes,resolvedNumberOfReadings,specifiedNumReadings,specifiedMicrofluidicChipLoading,
 		sampleCompositionPackets,sampleContainsAnalyteErrors,sampleContainsAnalyteOptions,sampleContainsAnalyteOptionTests,
 		preResolvedQuantifyConcentration,preResolvedQuantAnalyte,resolvedConsolidateAliquots,simulation,
 		plateReaderNumberOfReadingsErrorQ,plateReaderNumberOfReadingsNullQ,plateReaderNumberOfReadingsErrorTest,plateReaderNumberOfReadingsInvalidOptions,
-		tooManySamplesError,tooManySamplesOptions,tooManySamplesTest,tooManyBlanksError,tooManyBlanksOptions,blankAliquotError,tooManyBlanksTest,blankContainerErrorTest,incompatibleBlankVolumesInvalidOptions,
-		blankContainerWarningTest,incompatibleBlankInvalidOptions,incompatibleBlankOptionTests,selectedBlanks,nonLiquidBlanksBoolean,nonLiquidBlanks,blankStateWarning,blankStateWarningTest,sampleVolumes,sampleObjs,notEqualBlankVolumes,notEqualSamples,notEqualBlankVolumesWarning,notEqualBlankVolumesWarningTest,skippedInjectionError,injectionQList,injectionOptionList,skippedInjectionIndex,invalidSkippedInjection,skippedInjectionErrorTest,blankVolumeNotAllowedInvalidOptions,blankVolumeNotAllowedTests,
+		tooManySamplesError,tooManySamplesOptions,tooManySamplesTest,tooManyBlanksError,tooManyBlanksOptions,blankAliquotError,tooManyBlanksTest,blankContainerErrorTest,incompatibleBlankVolumesInvalidOptions, blankContainerWarningTest,incompatibleBlankInvalidOptions,incompatibleBlankOptionTests,
+		incompatibleStandardOptionErrorOptions, incompatibleStandardOptionTest, standardVolumeNotAllowedInvalidOptions, standardVolumeNotAllowedTest,
+		selectedBlanksAndStandards,nonLiquidBlanksAndStandardsBoolean,nonLiquidBlanksAndStandards,blanksAnsStandardsStateError,blanksAnsStandardsStateErrorOptions,blanksAnsStandardsStateErrorTest,
+		sampleVolumes,sampleObjs,notEqualBlankVolumes,notEqualSamples,notEqualBlankVolumesWarning,notEqualBlankVolumesWarningTest,skippedInjectionError,injectionQList,injectionOptionList,skippedInjectionIndex,invalidSkippedInjection,skippedInjectionErrorTest,blankVolumeNotAllowedInvalidOptions,blankVolumeNotAllowedTests,
 		quantRequiresBlankingInvalidOptions,quantRequiresBlankingTest,concInvalidOptions,concInvalidOptionsTests,extCoefficientNotFoundTests,
 		missingExtinctionCoefficientOptions,missingExtinctionCoefficientOptionTests,invalidMoatOptions,moatTests,moatError,moatInstrumentInvalidOptions,
 		preresolvedAliquot,validPlateModelsList,resolutionAliquotContainer,requiredAliquotContainers,suppliedDestinationWells,
 		plateWells,moatWells,suppliedDestinationWellsNoAutomatic,duplicateDestinationWells,duplicateDestinationWellError,duplicateDestinationWellOption,duplicateDestinationWellTest,invalidDestinationWellLengthQ,invalidDestinationWellLengthOption,invalidDestinationWellLengthTest,resolvedDestinationWells,requiredAliquotAmounts,aliquotWarningMessage,preresolvedAliquotOptions,
 		resolvedSamplingDistance,resolvedSamplingDimension,resolvedAliquotOptions,resolveAliquotOptionsTests,assayContainerModelPacket,invalidInjectionOptions,validInjectionTests,
 		resolvedMicrofluidicChipLoading,microfluidicChipLoadingErrorQ,microfluidicChipLoadingErrorTest,microfluidicChipLoadingInvalidOptions,
+		resolvedImageMicrofluidicPlate,imageMicrofluidicPlateErrorQ,imageMicrofluidicPlateTest,imageMicrofluidicPlateInvalidOptions,
+		resolvedMaxLoadingRetries, maxLoadingRetriesErrorQ, maxLoadingRetriesTest, maxLoadingRetriesInvalidOptions,
 		resolvedPostProcessingOptions,email,invalidOptions,invalidInputs,roundedWavelengths,resolvedWavelengths,resolvedOptions,allTests,testsRule,resultRule,
 		sampleVolumesTooSmallQ,tooSmallSampleVolumes,sampleVolumesTest,tooSmallSamples,liquidHandlerRequiredDefault,
 		resolvedSampleLabels,resolvedSampleContainerLabels,
-		resolvedBlankLabels,resolvedTemperatureMonitor,allowedCuvettes,mainDownloadResult,cacheBall,fastCacheBall
+		resolvedBlankLabels,resolvedStandardBlankLabels,resolvedTemperatureMonitor,allowedCuvettes,mainDownloadResult,cacheBall,fastCacheBall
 	},
 
 	(* --- Setup our user specified options and cache --- *)
@@ -1324,7 +1462,9 @@ resolveAbsorbanceOptions[
 		specifiedMicrofluidicChipLoading,
 		specifiedQuantifyConcentration,
 		specifiedTargetCarbonDioxideLevel,
-		specifiedTargetOxygenLevel
+		specifiedTargetOxygenLevel,
+		specifiedImageMicrofluidicPlate,
+		specifiedMaxLoadingRetries
 	} = Lookup[
 		absSpecOptionsAssoc,
 		{
@@ -1365,7 +1505,9 @@ resolveAbsorbanceOptions[
 			MicrofluidicChipLoading,
 			QuantifyConcentration,
 			TargetCarbonDioxideLevel,
-			TargetOxygenLevel
+			TargetOxygenLevel,
+			ImageMicrofluidicPlate,
+			MaxLoadingRetries
 		},
 		Automatic
 	];
@@ -1471,14 +1613,15 @@ resolveAbsorbanceOptions[
 	(* If StirBar/AcquisitionMixRate/AdjustMixRate/MinAcquisitionMixRate/MaxAcquisitionMixRate/AcquisitionMixRateIncrements/MaxStirAttempts is set for any sample, Cuvette *)
 	(* If ReadDirection/SamplingPattern/SamplingDistance/SamplingDimension/any PlateReaderMixOptions is set, PlateReader *)
 	(* If PrimaryInjectionSample/PrimaryInjectionVolume/SecondaryInjectionSample/SecondaryInjectionVolume/PrimaryInjectionFlowRate/SecondaryInjectionFlowRate/InjectionSampleStorageCondition is set for any sample, PlateReader *)
+	(* If ImageMicrofluidicPlate or ImageMicrofluidicPlate is set, Microfluidic *)
 	(* Otherwise, Lunatic since it is the safest option *)
 	resolvedMethods = Which[
 		Not[MatchQ[specifiedMethods, Automatic]], specifiedMethods,
 		(* set to Lunatic if instrument is Lunatic model or object *)
 		MatchQ[specifiedInstrumentModel, ObjectP[Model[Instrument, PlateReader, "id:N80DNj1lbD66"](* Lunatic *)]], Microfluidic,
 		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, PlateReader], Model[Instrument, PlateReader]}]], PlateReader,
-		Not[MatchQ[specifiedMicrofluidicChipLoading, Automatic | Null]], Microfluidic,
 		MatchQ[specifiedInstrument, ObjectP[{Object[Instrument, Spectrophotometer], Model[Instrument, Spectrophotometer]}]], Cuvette,
+		Not[MatchQ[specifiedMicrofluidicChipLoading, Automatic | Null]], Microfluidic,
 		Not[MatchQ[specifiedSpectralBandwidth, Automatic | Null]], Cuvette,
 		Not[ContainsOnly[Flatten[{specifiedAcquisitionMix}], {Automatic, Null}]], Cuvette,
 		MemberQ[
@@ -1498,6 +1641,9 @@ resolveAbsorbanceOptions[
 		MatchQ[resolvedPreparation, Robotic], PlateReader,
 		Not[MatchQ[specifiedEquilibrationTime, Automatic | Null]] || Not[MatchQ[specifiedTemp, Automatic | Null]], If[MemberQ[Map[(# >= 400 Microliter)&, Download[simulatedSamples, Volume, Simulation -> updatedSimulation]], True], Cuvette, PlateReader],
 		bmgRequired, PlateReader,
+		(* These are low-priority options *)
+		Not[MatchQ[specifiedImageMicrofluidicPlate, Automatic | Null]], Microfluidic,
+		Not[MatchQ[specifiedMaxLoadingRetries, Automatic | Null]], Microfluidic,
 		True, Microfluidic
 	];
 
@@ -1538,8 +1684,29 @@ resolveAbsorbanceOptions[
 		]
 	];
 
-	(* Get our unique injection blank for download *)
-	uniqueBlankSamples=DeleteDuplicates[Download[Cases[Lookup[absSpecOptionsAssoc,Blanks],ObjectP[Object]],Object]];
+	(* Get our unique blanks and standards for download *)
+	uniqueBlankAndStandardObjects=DeleteDuplicates[
+		Download[
+			Cases[
+				Flatten[Lookup[absSpecOptionsAssoc, {Blanks, Standards, StandardBlanks}, {}]],
+				ObjectP[Object]
+			],
+			Object
+		]
+	];
+	uniqueBlankAndStandardModels=DeleteDuplicates[
+		Join[
+			Download[
+				Cases[
+					Flatten[Lookup[absSpecOptionsAssoc, {Blanks, Standards, StandardBlanks}, {}]],
+					ObjectP[Model]
+				],
+				Object
+			],
+			(* Default blank - Milli-Q water *)
+			{Model[Sample, "id:8qZ1VWNmdLBD"]}
+		]
+	];
 
 	(* Get the container we'll use for any aliquots - either the user's or we'll default to first compatible *)
 	possibleAliquotContainers=Join[
@@ -1558,7 +1725,8 @@ resolveAbsorbanceOptions[
 				simulatedSamples,
 				mySamples,
 				uniqueInjectionSamples,
-				uniqueBlankSamples,
+				uniqueBlankAndStandardObjects,
+				uniqueBlankAndStandardModels,
 				{preresolvedInstrument},
 				allInstrumentModels,
 				allowedCuvettes,
@@ -1569,16 +1737,23 @@ resolveAbsorbanceOptions[
 					Packet[IncompatibleMaterials, Well, Volume, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 					Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
 					Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]]
+					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]],
+					Packet[Field[Container[Contents][[All,2]][{State,CellType}]]],
+					Packet[Solvent[{State}]]
 				},
 				{
 					Packet[IncompatibleMaterials, Well, Volume, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]],
 					Packet[Field[Composition[[All, 2]][{CellType, Molecule, ExtinctionCoefficients, PolymerType, MolecularWeight}]]],
 					Packet[Container[SamplePreparationCacheFields[Object[Container]]]],
-					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]]
+					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]],
+					Packet[Field[Container[Contents][[All,2]][{State,CellType}]]],
+					Packet[Solvent[{State}]]
 				},
 				{Packet[IncompatibleMaterials, Well, RequestedResources, SamplePreparationCacheFields[Object[Sample], Format -> Sequence]]},
-				{Packet[Container],Packet[Container[{Model}]],Packet[Container[Model][{MaxVolume,RecommendedFillVolume}]]},
+				(* Blank and Standard Object *)
+				{Packet[Container, State],Packet[Container[{Model}]],Packet[Container[Model][{MaxVolume,RecommendedFillVolume}]]},
+				(* Blank and Standard Model *)
+				{Packet[State]},
 				(* Download info as if we're working with an object and as if we're working with a model *)
 				{Packet[Model, Status], Packet[Model[{WettedMaterials, PlateReaderMode, SamplingPatterns}]], Packet[WettedMaterials, PlateReaderMode, SamplingPatterns]},
 				{Packet[WettedMaterials, PlateReaderMode, SamplingPatterns]},
@@ -1599,7 +1774,7 @@ resolveAbsorbanceOptions[
 	fastCacheBall = makeFastAssocFromCache[cacheBall];
 
 	(* extract out the packets *)
-	{listedSampleContainerPackets, listedContainerInPackets,listedInjectionSamplePackets, listedBlankPackets, listedInstrumentPackets, allInstrumentPacketLists, cuvettePackets,listedAliquotContainerPackets}=mainDownloadResult;
+	{listedSampleContainerPackets, listedContainerInPackets,listedInjectionSamplePackets, listedBlankAndStandardPackets, listedBlankAndStandardModelPackets, listedInstrumentPackets, allInstrumentPacketLists, cuvettePackets,listedAliquotContainerPackets}=mainDownloadResult;
 	samplePackets = listedSampleContainerPackets[[All, 1]];
 	sampleCompositionPackets = listedSampleContainerPackets[[All, 2]];
 	containerPackets = listedSampleContainerPackets[[All, 3]];
@@ -1610,9 +1785,10 @@ resolveAbsorbanceOptions[
 	(* extract injection packets *)
 	injectionSamplePackets=listedInjectionSamplePackets[[All,1]];
 
-	(* extract blank packets *)
-	blankSamplePackets=listedBlankPackets[[All,1]];
-	blankContainerPackets=listedBlankPackets[[All,2]];
+	(* extract blank and standard packets *)
+	blankAndStandardSamplePackets=listedBlankAndStandardPackets[[All,1]];
+	blankAndStandardContainerPackets=listedBlankAndStandardPackets[[All,2]];
+	blankAndStandardModelPackets=listedBlankAndStandardModelPackets[[All,1]];
 
 	(* extract relevant packets - first two assume instrument, last assumes model *)
 	{suppliedInstrumentPacket, suppliedModelInstrumentPacket} = Which[
@@ -1993,7 +2169,13 @@ resolveAbsorbanceOptions[
 		{MoatVolume,1 Microliter},
 		{PlateReaderMixTime,1 Second},
 		{wavelengthOptionName, 1 Nanometer},
+		If[MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+			{StandardWavelength, 1 Nanometer},
+			Nothing
+		],
 		{BlankVolumes, 10^-1 Microliter},
+		{StandardVolumes, 10^-1 Microliter},
+		{StandardBlankVolumes, 10^-1 Microliter},
 		{PlateReaderMixRate, 100 RPM},
 		{SamplingDistance, 1 Millimeter},
 		{SpectralBandwidth, 10^-1 Nanometer},
@@ -2047,7 +2229,13 @@ resolveAbsorbanceOptions[
 	(* note that in this case I am deliberately NOT using simulated samples since this depends on what the user specifies for the blanks vis a vis the samples they specify *)
 	separateSamplesAndBlanksQ = If[MatchQ[Lookup[roundedOptionsAssoc, Blanks], ListableP[Null | Automatic] | {}],
 		True,
-		ContainsNone[Lookup[blankSamplePackets,Object,{}], Lookup[samplePackets, Object]]
+		ContainsNone[
+			Download[
+				Cases[ToList[Lookup[roundedOptionsAssoc, Blanks]], ObjectP[Object]],
+				Object
+			],
+			Lookup[samplePackets, Object]
+		]
 	];
 
 	(* generate tests for cases where some of the specified samples are also the specified blanks *)
@@ -2063,7 +2251,16 @@ resolveAbsorbanceOptions[
 	(* note that we are returning $Failed below because we need _something_ for the resolved options *)
 	blanksInvalidOptions = If[Not[separateSamplesAndBlanksQ] && messages,
 		(
-			Message[Error::BlanksContainSamplesIn, ObjectToString[Select[Lookup[samplePackets, Object], MemberQ[Lookup[blankSamplePackets, Object], #]&],Cache->cacheBall]];
+			Message[
+				Error::BlanksContainSamplesIn,
+				Intersection[
+					Download[
+						Cases[ToList[Lookup[roundedOptionsAssoc, Blanks]], ObjectP[Object]],
+						Object
+					],
+					Lookup[samplePackets, Object]
+				]
+			];
 			{Blanks}
 		),
 		{}
@@ -3036,7 +3233,7 @@ resolveAbsorbanceOptions[
 		Function[{blank,blankVolume,samplePacket},
 			Module[{blankPacket,blankContainer},
 				(* Find the sample packet for our blank, then get its container *)
-				blankPacket=SelectFirst[blankSamplePackets,MatchQ[Lookup[#,Object],ObjectP[blank]]&,<||>];
+				blankPacket=SelectFirst[blankAndStandardSamplePackets,MatchQ[Lookup[#,Object],ObjectP[blank]]&,<||>];
 				blankContainer=Lookup[blankPacket,Container,Null];
 
 				(* Count as needing transfer if a volume has been specified or if left Automatic and we detect transfer is needed *)
@@ -3065,6 +3262,7 @@ resolveAbsorbanceOptions[
 	];
 
 	(* Check Aliquot and BlankVolumes for a conflict *)
+	(* Note: We currently don't allow Standards for non-Lunatic instruments so the checks below for Blanks related to aliquoting won't apply to Standards *)
 
 	blankSpaceError=MemberQ[suppliedAliquotBooleans,False]&&insufficientBlankSpace;
 	blankSpaceWarning=MemberQ[automaticAliquotingBooleans,True]&&!blankSpaceError&&insufficientBlankSpace;
@@ -3094,7 +3292,8 @@ resolveAbsorbanceOptions[
 	(* For AbsorbanceKinetics we have to aliquot if samples are being aliquoted since everything goes in the same plate *)
 	(* For others we only need to aliquot if we have to make replicate samples *)
 	blankAliquotRequired=Which[
-		cuvetteQ,If[MatchQ[Lookup[blankSamplePackets,Container],ObjectP[Model[Container,Cuvette]]],
+		(* Cuvette only has one blank and no standard (we will otherwise error out elsewhere. Get the first blank container to check on aliquoting *)
+		cuvetteQ,If[MatchQ[FirstOrDefault[Lookup[blankAndStandardSamplePackets, Container, {}]],ObjectP[Model[Container,Cuvette]]],
 			False,
 			True
 			],
@@ -3364,6 +3563,13 @@ resolveAbsorbanceOptions[
 						{
 							Lookup[cuvetteMixPackets[[1]],RecommendedFillVolume],
 							Lookup[cuvetteMixPackets[[1]],Object]
+						},
+
+						(* we will not aliquot the samples, take the Volume of the Sample and null for cuvetteContainerModel *)
+						MatchQ[Lookup[options,Aliquot],False],
+						{
+							Lookup[samplePacket,Volume],
+							Null
 						}
 					]];
 
@@ -3557,8 +3763,8 @@ resolveAbsorbanceOptions[
 				(* BMG blank objects must be in a supported container if they aren't going to be moved into one (i.e. if BlankVolume->Null) *)
 				(* For the blank container to be valid in AbsorbanceKinetics, it must match sample container since we only allow one plate *)
 				(* Just check the container - we'll do a global check below to see if any aliquoting needs to happen *)
-				blankSamplePacket=SelectFirst[blankSamplePackets,MatchQ[Lookup[#,Object],ObjectP[blank]]&,<||>];
-				blankContainerPacket=SelectFirst[blankContainerPackets,MatchQ[Lookup[#,Object],ObjectP[Lookup[blankSamplePacket,Container]]]&,<||>];
+				blankSamplePacket=SelectFirst[blankAndStandardSamplePackets,MatchQ[Lookup[#,Object],ObjectP[blank]]&,<||>];
+				blankContainerPacket=SelectFirst[blankAndStandardContainerPackets,MatchQ[Lookup[#,Object],ObjectP[Lookup[blankSamplePacket,Container]]]&,<||>];
 				badBlankContainer=If[MatchQ[specifiedBlank,ObjectP[Object]],
 					Or[
 						(* If we are doing aliquot on sample, then always say we need to move the blank *)
@@ -3719,6 +3925,222 @@ resolveAbsorbanceOptions[
 		{samplePackets, containerPackets, containerInPackets,sampleCompositionPackets, potentialAnalytesToUse, mapThreadFriendlyOptions, preresolvedAliquot}
 	]];
 
+	(* Get wavelength specification after rounding *)
+	roundedWavelengths=Lookup[roundedOptionsAssoc,Wavelength];
+
+	(* Finalize wavelength resolution *)
+	resolvedWavelengths=Which[
+		(* AbsSpec/AbsIntensity have already resolved *)
+		!MatchQ[myType,Object[Protocol,AbsorbanceKinetics]],quantificationWavelengths,
+
+		(* Use user value *)
+		(* TODO the default of the AbsorbanceKinetics is All. Why do we even bother doing this? *)
+		!MatchQ[roundedWavelengths,Automatic],roundedWavelengths,
+
+		(* Read the full spectrum whenever possible *)
+		MatchQ[specifiedReadOrder,Parallel]&&!MatchQ[resolvedSamplingPattern,Matrix],All,
+
+		(* In Serial mode, can only read one wavelength so pick one of the extinction coefficient wavelengths *)
+		MatchQ[specifiedReadOrder,Serial],FirstOrDefault[preferredWavelengths]/.{Null->260*Nanometer},
+
+		(* In Matrix SamplingPattern, can only read up to 8 discrete wavelengths *)
+		MatchQ[resolvedSamplingPattern,Matrix],PadRight[Sort[DeleteDuplicates[preferredWavelengths]],8,Nothing],
+
+		(* We should never get here but just in case we do, give a default *)
+		True,260*Nanometer
+	];
+
+	(* --- Standard resolution --- *)
+	(* Note that Standard is NOT an index-matching option for input samples *)
+	(* Standard defaults to Null and it is the index matching parent *)
+	listedStandards = If[NullQ[Lookup[roundedOptionsAssoc, Standards, Null]],
+		{},
+		ToList[Lookup[roundedOptionsAssoc, Standards]]
+	];
+
+	(* Standard is only supported on Lunatic as of now *)
+	invalidStandardOptionError = !NullQ[Lookup[roundedOptionsAssoc, Standards, Null]] && !lunaticQ;
+
+	invalidStandardInstrumentOption = If[invalidStandardOptionError && messages,
+		Message[Error::UnsupportedStandardMeasurement];
+		{Standards},
+		{}
+	];
+
+	(* Make a test for unsupported Standard measurement *)
+	invalidStandardInstrumentTest = If[gatherTests,
+		Test["The Standards option and related options are only supported on the Lunatic plate reader:",
+			invalidStandardOptionError,
+			False
+		],
+		Null
+	];
+
+	(* We need to expand out Standard Options respectively because it may not be expanded yet if we were given singleton *)
+	standardOptions = {
+		StandardVolumes, StandardLabel, StandardBlanks, StandardBlankVolumes, StandardBlankLabel,
+		If[MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+			StandardWavelength,
+			Nothing
+		]
+	};
+	expandedStandardOptions = If[lunaticQ && !MatchQ[listedStandards, {}],
+		(* We need to wrap all the values in list if not already *)
+		Last[ExpandIndexMatchedInputs[
+			If[MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+				ExperimentAbsorbanceIntensity,
+				ExperimentAbsorbanceSpectroscopy
+			],
+			{simulatedSamples},
+			Normal@Append[
+				KeyTake[roundedOptionsAssoc, standardOptions],
+				Standards -> listedStandards
+			],
+			Messages -> False
+		]],
+		Association[# -> {}& /@ standardOptions]
+	];
+
+	(* Resolve the Standard options *)
+	(* Note: Standards option is currently supported on Lunatic only so the resolutions below are designed to support Lunatic only for now *)
+	{
+		resolvedStandardVolumes,
+		resolvedStandardLabels,
+		resolvedStandardBlanks,
+		resolvedStandardBlankVolumes,
+		resolvedStandardWavelengths,
+		(* Note that we will resolve StandardBlankLabel later combining with BlankLabel *)
+		incompatibleStandardOptionErrors,
+		incompatibleStandardBlankOptionErrors,
+		standardVolumeNotAllowedErrors,
+		standardBlankVolumeNotAllowedErrors
+	} = If[lunaticQ && !MatchQ[listedStandards, {}],
+		(* Do resolution when we are using Standards on Lunatic *)
+		Transpose[
+			MapThread[
+				Function[
+					{standard, suppliedVolume, suppliedLabel, suppliedWavelength, suppliedStandardBlank, suppliedStandardBlankVolume, suppliedStandardBlankLabel},
+					Module[
+						{standardVolume, standardLabel, standardWavelength, standardBlank, standardBlankVolume, incompatibleStandardOptionError, incompatibleStandardBlankOptionError, standardVolumeNotAllowedError, standardBlankVolumeNotAllowedError},
+						(* Volume is determined by instrument (Lunatic only now) *)
+						standardVolume = If[MatchQ[suppliedVolume, Automatic],
+							2.1*Microliter,
+							suppliedVolume
+						];
+						(* Error if volume is not 2.1 Microliter for Lunatic - Error::StandardVolumeNotRecommended *)
+						standardVolumeNotAllowedError = And[
+							(* Null will be handled by Error::IncompatibleStandardOptions *)
+							!NullQ[standardVolume],
+							!MatchQ[standardVolume, EqualP[2.1*Microliter]]
+						];
+						(* Label is unique for each sample. Note that we do NOT delete duplicates in Standard. They should always be treated as separate samples *)
+						standardLabel = If[MatchQ[suppliedLabel, Automatic],
+							CreateUniqueLabel["standard sample"],
+							suppliedLabel
+						];
+						(* Wavelength is only for AbsorbanceIntensity *)
+						standardWavelength = Which[
+							!MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+							Null,
+							!MatchQ[suppliedWavelength, Automatic],
+							suppliedWavelength,
+							True,
+							First[resolvedWavelengths]
+						];
+						(* Blank is resolved to the first sample blank (which can be Null) *)
+						standardBlank = If[MatchQ[suppliedStandardBlank, Automatic],
+							FirstOrDefault[blanks],
+							suppliedStandardBlank
+						];
+						standardBlankVolume = Which[
+							MatchQ[suppliedStandardBlankVolume, Except[Automatic]],
+							suppliedStandardBlankVolume,
+							NullQ[standardBlank],
+							Null,
+							True,
+							2.1*Microliter
+						];
+						(* Error if volume is not 2.1 Microliter for Lunatic - Error::StandardVolumeNotRecommended *)
+						standardBlankVolumeNotAllowedError = And[
+							!NullQ[standardBlank],
+							(* Null will be handled by Error::IncompatibleStandardOptions *)
+							!NullQ[standardBlankVolume],
+							!MatchQ[standardBlankVolume, EqualP[2.1*Microliter]]
+						];
+
+						(* Do a final check of incompatible Standard options *)
+						incompatibleStandardOptionError = Or[
+							(* Standard options that must be specified (not Null *)
+							NullQ[standardVolume],
+							NullQ[standardLabel],
+							(* For AbsIntensity, StandardWavelength cannot be Null *)
+							If[!MatchQ[myType, Object[Protocol, AbsorbanceIntensity]],
+								False,
+								NullQ[standardWavelength]
+							]
+						];
+						incompatibleStandardBlankOptionError = Or[
+							And[
+								!NullQ[standardBlank],
+								(* StandardBlank options that must be specified if there is a standard blank *)
+								Or[
+									NullQ[standardBlankVolume],
+									NullQ[suppliedStandardBlankLabel]
+								]
+							],
+							And[
+								NullQ[standardBlank],
+								(* StandardBlank options that cannot be specified if there is no standard blank *)
+								Or[
+									!NullQ[standardBlankVolume],
+									!MatchQ[suppliedStandardBlankLabel,(Null|Automatic)]
+								]
+							]
+						];
+
+						(* Return everything *)
+						{standardVolume, standardLabel, standardBlank, standardBlankVolume, standardWavelength, incompatibleStandardOptionError, incompatibleStandardBlankOptionError, standardVolumeNotAllowedError, standardBlankVolumeNotAllowedError}
+
+					]
+				],
+				{
+					listedStandards,
+					Lookup[expandedStandardOptions, StandardVolumes],
+					Lookup[expandedStandardOptions, StandardLabel],
+					Lookup[expandedStandardOptions, StandardWavelength, ConstantArray[Null, Length[listedStandards]]],
+					Lookup[expandedStandardOptions, StandardBlanks],
+					Lookup[expandedStandardOptions, StandardBlankVolumes],
+					Lookup[expandedStandardOptions, StandardBlankLabel]
+				}
+			]
+		],
+		(* If we don't use Lunatic or don't have standards, just default all options to Null *)
+		{
+			Lookup[roundedOptionsAssoc, StandardVolumes, Null]/.{Automatic->Null},
+			Lookup[roundedOptionsAssoc, StandardLabel, Null]/.{Automatic->Null},
+			Lookup[roundedOptionsAssoc, StandardBlanks, Null]/.{Automatic->Null},
+			Lookup[roundedOptionsAssoc, StandardBlankVolumes, Null]/.{Automatic->Null},
+			Lookup[roundedOptionsAssoc, StandardWavelength, Null]/.{Automatic->Null},
+			(* If there is no standard, no Standard options should be specified *)
+			{
+				MemberQ[
+					{
+						Lookup[roundedOptionsAssoc, StandardVolumes, Null],
+						Lookup[roundedOptionsAssoc, StandardLabel, Null],
+						Lookup[roundedOptionsAssoc, StandardWavelength, Null],
+						Lookup[roundedOptionsAssoc, StandardBlanks, Null],
+						Lookup[roundedOptionsAssoc, StandardBlankVolumes, Null],
+						Lookup[expandedStandardOptions, StandardBlankLabel, Null]
+					},
+					Except[(ListableP[Alternatives[Automatic, Null]] | {})]
+				]
+			},
+			{},
+			{},
+			{}
+		}
+	];
+
 	(*-- Pre-resolve some of the aliquot options (we resolve the rest down the line) -- *)
 
 	(* Set Aliquot->True if some other action was requested that will require aliquots *)
@@ -3797,7 +4219,12 @@ resolveAbsorbanceOptions[
 	(* figure out how many unique blanks there are *)
 	(* for BMG assays we will have resolved different BlankVolumes based on sample volume *)
 	blankObjects=Download[blanks,Object];
-	numBlanks=Length[DeleteDuplicates[blankObjects]];
+	standardBlankObjects=If[lunaticQ&&!NullQ[resolvedStandardBlanks],
+		Download[resolvedStandardBlanks,Object],
+		{}
+	];
+	numBlanks=Length[DeleteDuplicates[Join[blankObjects, standardBlankObjects]]];
+	(* This is only used for non-Lunatic so no need to consider StandardBlanks *)
 	numOfBlankAdditions=Length[DeleteDuplicates[Transpose[{blankObjects,blankVolumes}]]];
 
 	(* Figure out if the combination of (NumberOfReplicates * number of samples) + (2* number of blanks) (if we're blanking), or NumberOfReplicates * Number of samples if we are not *)
@@ -3807,8 +4234,9 @@ resolveAbsorbanceOptions[
 		!blankAbsorbance,
 			preresolvedNumReplicates*Length[simulatedSamples],
 		(* Lunatic doesn't make replicate blanks *)
+		(* Lunatic may have standards *)
 		lunaticQ,
-			(preresolvedNumReplicates*Length[simulatedSamples])+numBlanks,
+			(preresolvedNumReplicates*Length[simulatedSamples])+numBlanks+Length[listedStandards],
 		(* cuvette only allows one blank sample, if numOfBlankAdditions is somehow larger than 1, Error::TooManyBlanks will be thrown *)
 		cuvetteQ,
 			(preresolvedNumReplicates*Length[simulatedSamples]) + numOfBlankAdditions,
@@ -4007,29 +4435,88 @@ resolveAbsorbanceOptions[
 		]
 	];
 
-	(* - Verify the state of Blanks if there is no incompatibleBlankOptionsError - *)
-	(* find object or model in blanks *)
-	selectedBlanks=Select[blanks,ObjectQ];
-
-	(* if there are blank objects, track the invalid ones that are not Liquid *)
-	nonLiquidBlanksBoolean=If[!MatchQ[selectedBlanks,{}],
-		(!MatchQ[#,Liquid])&/@Download[selectedBlanks, State, Cache ->inheritedCache, Simulation->updatedSimulation],
+	(* Standard Error Messages *)
+	(* IncompatibleStandardOptions *)
+	(* - Verify Standard options are not specified if Standards are not specified - *)
+	(* Throw message *)
+	incompatibleStandardOptionErrorOptions = If[(MemberQ[incompatibleStandardOptionErrors,True] || MemberQ[incompatibleStandardBlankOptionErrors,True]) && messages,
+		Message[Error::IncompatibleStandardOptions, standardOptions];
+		If[lunaticQ && !MatchQ[listedStandards, {}],
+			Join[
+				If[MemberQ[incompatibleStandardOptionErrors,True], {StandardVolumes, StandardLabel}, {}],
+				If[MemberQ[incompatibleStandardBlankOptionErrors,True], {StandardBlankVolumes, StandardBlankLabel}, {}]
+			],
+			standardOptions
+		],
 		{}
 	];
 
-	(* Track the invalid ones that are not liquid *)
-	nonLiquidBlanks=PickList[selectedBlanks,nonLiquidBlanksBoolean];
+	(* Create test *)
+	incompatibleStandardOptionTest=If[gatherTests,
+		Test["Standard related options can only be specified if Standards is provided, and must not be specified if Standards is Null. StandardBlankVolumes and StandardBlankLabel can only be specified if StandardBlanks is provided, and must not be specified if StandardBlanks is Null:",(MemberQ[incompatibleStandardOptionErrors,True] || MemberQ[incompatibleStandardBlankOptionErrors,True]),False]
+	];
 
-	blankStateWarning=Length[nonLiquidBlanks]>0;
+	(* Check to ensure that the wrong Standard or StandardBlank volume wasn't provided *)
+	(* StandardVolumeNotRecommended *)
+	standardVolumeNotAllowedInvalidOptions=If[(MemberQ[standardVolumeNotAllowedErrors, True] || MemberQ[standardBlankVolumeNotAllowedErrors, True])&&messages,
+		(
+			Message[
+				Error::StandardVolumeNotRecommended,
+				PickList[Join[resolvedStandardVolumes, resolvedStandardBlankVolumes], Join[standardVolumeNotAllowedErrors, standardBlankVolumeNotAllowedErrors], True],
+				2.1*Microliter,
+				instrument
+			];
+			{StandardVolumes, StandardBlankVolumes}
+		),
+		{}
+	];
+
+	(* generate the blankVolumeNotAllowed tests *)
+	standardVolumeNotAllowedTest=If[gatherTests,
+		Test["The provided volume in the StandardVolumes and StandardBlankVolumes options `1` do not match the allowed volume 2.1 Microliter for using "<>ObjectToString[instrument,Cache->cacheBall]<>":",
+			(MemberQ[standardVolumeNotAllowedErrors, True] || MemberQ[standardBlankVolumeNotAllowedErrors, True]),
+			False
+		]
+	];
+
+	(* - Verify the state of Blanks and Standards and make sure they are Liquid - *)
+	selectedBlanksAndStandards = Cases[#, ObjectP[]]&/@{blanks, listedStandards, resolvedStandardBlanks/.{Null->{}}};
+
+	(* Track the invalid samples that are not Liquid *)
+	nonLiquidBlanksAndStandardsBoolean = Map[
+		Function[
+			{sampleList},
+			Map[
+				!MatchQ[Lookup[fetchPacketFromCache[#,cacheBall], State], Liquid]&,
+				sampleList
+			]
+		],
+		selectedBlanksAndStandards
+	];
+
+	(* Track the invalid ones that are not liquid *)
+	nonLiquidBlanksAndStandards=MapThread[
+		PickList[#1,#2]&,
+		{selectedBlanksAndStandards, nonLiquidBlanksAndStandardsBoolean}
+	];
+
+	blanksAnsStandardsStateError=Length[Flatten[nonLiquidBlanksAndStandards]]>0;
 
 	(* Throw message *)
-	If[blankStateWarning&&messages&&Not[MatchQ[$ECLApplication, Engine]],
-		Message[Warning::BlankStateWarning,nonLiquidBlanks]
+	If[blanksAnsStandardsStateError&&messages,
+		Message[Error::InvalidBlankStandardState,nonLiquidBlanksAndStandards]
+	];
+
+	(* Track invalid option *)
+	blanksAnsStandardsStateErrorOptions=PickList[
+		{Blanks, Standard, StandardBlanks},
+		nonLiquidBlanksAndStandardsBoolean,
+		{___,True,___}
 	];
 
 	(* Create test *)
-	blankStateWarningTest=If[gatherTests,
-		Warning["The states of the blanks are Liquid:",blankStateWarning,False]
+	blanksAnsStandardsStateErrorTest=If[gatherTests,
+		Test["The states of the Blanks, Standard, and StandardBlanks are Liquid if provided:",blanksAnsStandardsStateError,False]
 	];
 
 	(* - Throw an error if the order of the injections are not correct. e.g. error out if it has a secondary injection without a primary injection. - *)
@@ -4662,11 +5149,78 @@ resolveAbsorbanceOptions[
 
 	(* Create test *)
 	microfluidicChipLoadingErrorTest = If[gatherTests,
-		Test["The MicrofluidicChipLoading option setting complies with the plate reader used in this experiment:",{lunaticQ,microfluidicChipLoadingErrorQ},Except[{True,Null}|{False,Alternatives[Robotic,Manual]}]]
+		Test["The MicrofluidicChipLoading option setting complies with the plate reader used in this experiment:",microfluidicChipLoadingErrorQ,False]
 	];
 
 	(* Track invalid option *)
 	microfluidicChipLoadingInvalidOptions = If[microfluidicChipLoadingErrorQ,MicrofluidicChipLoading];
+
+
+	(* - Resolve ImageMicrofluidicPlate - *)
+
+	(* Resolve the ImageMicrofluidicPlate based on which instrument we're using *)
+	resolvedImageMicrofluidicPlate = If[lunaticQ,
+		(* if using lunatic, we resolve to PostRead *)
+		If[MatchQ[specifiedImageMicrofluidicPlate, Automatic],
+			PostRead,
+			specifiedImageMicrofluidicPlate
+		],
+		(* if not using lunatic, we resolve to Null *)
+		If[MatchQ[specifiedImageMicrofluidicPlate, Automatic],
+			Null,
+			specifiedImageMicrofluidicPlate
+		]
+	];
+
+	(* Error if we're not using the lunatic and Null is specified for *)
+	imageMicrofluidicPlateErrorQ = And[!lunaticQ,MatchQ[resolvedImageMicrofluidicPlate,Except[Null]]];
+
+	If[imageMicrofluidicPlateErrorQ&&messages,
+		Message[Error::InvalidImageMicrofluidicPlate,resolvedImageMicrofluidicPlate]
+	];
+
+	(* Create test *)
+	imageMicrofluidicPlateTest = If[gatherTests,
+		Test["The ImageMicrofluidicPlate option setting complies with the plate reader used in this experiment:",imageMicrofluidicPlateErrorQ,False]
+	];
+
+	(* Track invalid option *)
+	imageMicrofluidicPlateInvalidOptions = If[imageMicrofluidicPlateErrorQ,ImageMicrofluidicPlate];
+
+
+	(* - Resolve MaxLoadingRetries - *)
+
+	(* Resolve the MaxLoadingRetries based on which instrument we're using *)
+	resolvedMaxLoadingRetries = If[lunaticQ,
+		(* if using lunatic, we resolve to 6 for quals and 2 for user protocols *)
+		If[MatchQ[specifiedMaxLoadingRetries, Automatic],
+			If[MatchQ[parentProt, ObjectP[Object[Qualification]]],
+				6,
+				2
+			],
+			specifiedMaxLoadingRetries
+		],
+		(* if not using lunatic, we resolve to Null *)
+		If[MatchQ[specifiedMaxLoadingRetries, Automatic],
+			Null,
+			specifiedMaxLoadingRetries
+		]
+	];
+
+	(* Error if we're not using the lunatic and Null is specified for *)
+	maxLoadingRetriesErrorQ = And[!lunaticQ,MatchQ[resolvedMaxLoadingRetries,Except[Null]]];
+
+	If[maxLoadingRetriesErrorQ&&messages,
+		Message[Error::InvalidMaxLoadingRetries,resolvedMaxLoadingRetries]
+	];
+
+	(* Create test *)
+	maxLoadingRetriesTest = If[gatherTests,
+		Test["The axLoadingRetries option setting complies with the plate reader used in this experiment:",maxLoadingRetriesErrorQ,False]
+	];
+
+	(* Track invalid option *)
+	maxLoadingRetriesInvalidOptions = If[maxLoadingRetriesErrorQ,MaxLoadingRetries];
 
 	(* -- Resolve label options -- *)
 	resolvedSampleLabels=Module[{suppliedSampleObjects, uniqueSamples, preResolvedSampleLabels, preResolvedSampleLabelRules},
@@ -4718,18 +5272,27 @@ resolveAbsorbanceOptions[
 		]
 	];
 
-	resolvedBlankLabels = Module[{suppliedBlankObjects, uniqueBlankVolumeTuples, preResolvedUniqueBlankLabels, preResolvedBlankLabelRules},
+	{resolvedBlankLabels, resolvedStandardBlankLabels} = Module[
+		{suppliedBlankObjects, suppliedStandardBlankObjects, standardBlankVolumesListed, uniqueBlankVolumeTuples, preResolvedUniqueBlankLabels, preResolvedBlankLabelRules, blankLabels, standardBlankLabels},
 		suppliedBlankObjects = Download[blanks,Object];
+		suppliedStandardBlankObjects = If[MatchQ[resolvedStandardBlanks, Null],
+			{},
+			Download[resolvedStandardBlanks, Object]
+		];
+		standardBlankVolumesListed =  If[MatchQ[resolvedStandardBlankVolumes, Null],
+			{},
+			resolvedStandardBlankVolumes
+		];
 		(* take volume into consideration when identifying if a blank is unique or not, blankVolumes here is always index matched to blanks so we should be good *)
 		(* this is the same logic as in blankVolumeLabelTuples and blankVolumeTuples *)
-		uniqueBlankVolumeTuples = DeleteDuplicates[Cases[Transpose[{suppliedBlankObjects, blankVolumes}], {ObjectP[], _}]];
+		uniqueBlankVolumeTuples = DeleteDuplicates[Cases[Transpose[{Join[suppliedBlankObjects, suppliedStandardBlankObjects], Join[blankVolumes, standardBlankVolumesListed]}], {ObjectP[], _}]];
 		preResolvedUniqueBlankLabels = Table[CreateUniqueLabel["blank sample"], Length[uniqueBlankVolumeTuples]];
 		preResolvedBlankLabelRules = MapThread[
 			(#1 -> #2)&,
 			{uniqueBlankVolumeTuples, preResolvedUniqueBlankLabels}
 		];
 
-		MapThread[
+		blankLabels = MapThread[
 			Function[{blankObject, blankVolume, blankLabel},
 				Which[
 					MatchQ[blankLabel, Except[Automatic]],
@@ -4743,7 +5306,28 @@ resolveAbsorbanceOptions[
 				]
 			],
 			{suppliedBlankObjects, blankVolumes, Lookup[roundedOptionsAssoc, BlankLabel]}
-		]
+		];
+
+		standardBlankLabels = If[lunaticQ && !MatchQ[listedStandards, {}],
+			MapThread[
+				Function[{blankObject, blankVolume, blankLabel},
+					Which[
+						MatchQ[blankLabel, Except[Automatic]],
+						blankLabel,
+						MatchQ[blankObject, Null],
+						Null,
+						MatchQ[simulation, SimulationP] && MatchQ[LookupObjectLabel[simulation, Download[blankObject, Object]], _String],
+						LookupObjectLabel[simulation, Download[blankObject, Object]],
+						True,
+						Replace[{blankObject, blankVolume}, preResolvedBlankLabelRules]
+					]
+				],
+				{suppliedStandardBlankObjects, standardBlankVolumesListed, Lookup[expandedStandardOptions, StandardBlankLabel]}
+			],
+			Null
+		];
+
+		{blankLabels, standardBlankLabels}
 	];
 
 	(* --- Throw error if user is trying to set more than one blank types for cuvette --- *)
@@ -4803,16 +5387,22 @@ resolveAbsorbanceOptions[
 			badContainerOutOptions,
 			plateReaderNumberOfReadingsInvalidOptions,
 			temperatureIncompatibleInvalidOptions,
+			invalidStandardInstrumentOption,
 			tooManySamplesOptions,
 			tooManyBlanksOptions,
 			incompatibleBlankVolumesInvalidOptions,
 			incompatibleBlankInvalidOptions,
+			incompatibleStandardOptionErrorOptions,
 			invalidSkippedInjection,
 			blankVolumeNotAllowedInvalidOptions,
+			standardVolumeNotAllowedInvalidOptions,
+			blanksAnsStandardsStateErrorOptions,
 			quantRequiresBlankingInvalidOptions,
 			missingExtinctionCoefficientOptions,
 			concInvalidOptions,
 			microfluidicChipLoadingInvalidOptions,
+			imageMicrofluidicPlateInvalidOptions,
+			maxLoadingRetriesInvalidOptions,
 			missingExtinctionCoefficientOptions,
 			duplicateDestinationWellOption,
 			invalidDestinationWellLengthOption,
@@ -4870,31 +5460,6 @@ resolveAbsorbanceOptions[
 
 	(* --- Combine the resolved options and tests together --- *)
 
-	(* Get wavelength specification after rounding *)
-	roundedWavelengths=Lookup[roundedOptionsAssoc,Wavelength];
-
-	(* Finalize wavelength resolution *)
-	resolvedWavelengths=Which[
-		(* AbsSpec/AbsIntensity have already resolved *)
-		!MatchQ[myType,Object[Protocol,AbsorbanceKinetics]],quantificationWavelengths,
-
-		(* Use user value *)
-		(* TODO the default of the AbsorbanceKinetics is All. Why do we even bother doing this? *)
-		!MatchQ[roundedWavelengths,Automatic],roundedWavelengths,
-
-		(* Read the full spectrum whenever possible *)
-		MatchQ[specifiedReadOrder,Parallel]&&!MatchQ[resolvedSamplingPattern,Matrix],All,
-
-		(* In Serial mode, can only read one wavelength so pick one of the extinction coefficient wavelengths *)
-		MatchQ[specifiedReadOrder,Serial],FirstOrDefault[preferredWavelengths]/.{Null->260*Nanometer},
-
-		(* In Matrix SamplingPattern, can only read up to 8 discrete wavelengths *)
-		MatchQ[resolvedSamplingPattern,Matrix],PadRight[Sort[DeleteDuplicates[preferredWavelengths]],8,Nothing],
-
-		(* We should never get here but just in case we do, give a default *)
-		True,260*Nanometer
-	];
-
 	(* get the final resolved options, pre-collapsed (that is only happening outside this function) *)
 	resolvedOptions=ReplaceRule[
 		(* Recreate full set of options - necessary since we're using Append->False *)
@@ -4930,6 +5495,10 @@ resolveAbsorbanceOptions[
 				BlankAbsorbance->blankAbsorbance,
 				Blanks->blanks,
 				BlankVolumes->blankVolumes,
+				StandardVolumes->resolvedStandardVolumes,
+				StandardWavelength->resolvedStandardWavelengths,
+				StandardBlanks->resolvedStandardBlanks,
+				StandardBlankVolumes->resolvedStandardBlankVolumes,
 				ContainerOut -> resolvedContainersOut,
 				RecoupSample -> resolvedRecoupSamples,
 				SamplesOutStorageCondition -> resolvedSamplesOutStorageCondition,
@@ -4944,9 +5513,13 @@ resolveAbsorbanceOptions[
 				SamplingDimension -> resolvedSamplingDimension,
 				NumberOfReadings -> resolvedNumberOfReadings,
 				MicrofluidicChipLoading -> resolvedMicrofluidicChipLoading,
+				ImageMicrofluidicPlate -> resolvedImageMicrofluidicPlate,
+				MaxLoadingRetries -> resolvedMaxLoadingRetries,
 				SampleLabel->resolvedSampleLabels,
 				SampleContainerLabel->resolvedSampleContainerLabels,
 				BlankLabel->resolvedBlankLabels,
+				StandardLabel->resolvedStandardLabels,
+				StandardBlankLabel->resolvedStandardBlankLabels,
 				Preparation->resolvedPreparation,
 				WorkCell->resolvedWorkCell,
 				Name->name,
@@ -5007,9 +5580,13 @@ resolveAbsorbanceOptions[
 			plateReaderNumberOfReadingsErrorTest,
 			blankContainerErrorTest,
 			temperatureIncompatibleTest,
+			invalidStandardInstrumentTest,
 			incompatibleBlankOptionTests,
+			incompatibleStandardOptionTest,
 			skippedInjectionErrorTest,
 			blankVolumeNotAllowedTests,
+			standardVolumeNotAllowedTest,
+			blanksAnsStandardsStateErrorTest,
 			quantRequiresBlankingTest,
 			resolveSamplePrepTests,
 			resolveAliquotOptionsTests,
@@ -5024,6 +5601,8 @@ resolveAbsorbanceOptions[
 			validInjectionTests,
 			sampleVolumesTest,
 			microfluidicChipLoadingErrorTest,
+			imageMicrofluidicPlateTest,
+			maxLoadingRetriesTest,
 			resolvedACUTests
 		}],
 		_EmeraldTest
@@ -5203,19 +5782,20 @@ selectAnalyteFromSample[mySamples:{ObjectP[{Object[Sample], Model[Sample]}]..}, 
 (* private function to generate the list of protocol packets containing resource blobs *)
 absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | Object[Protocol, AbsorbanceIntensity] | Object[Protocol, AbsorbanceKinetics]), mySamples : {ObjectP[Object[Sample]]..}, myUnresolvedOptions : {___Rule}, myResolvedOptions : {___Rule}] := Module[
 	{expandedResolvedOptions,outputSpecification,output,gatherTests,messages,numReplicates,samplesInWithReplicates,
-	lunaticQ,instrumentOpt,injectionObjects,uniqueInjectionSamples,resolvedBlanks,blanksWithReplicates,blankVolumesWithReplicates, blankPackets,
-	resolvedBlankVolumesFinal,resolvedBlankLabels,blankAbsorbance,maxNumBlankPlates,blankContainerModel,blankContainersResources,
+	lunaticQ,instrumentOpt,injectionObjects,uniqueInjectionSamples,resolvedBlanks,resolvedStandards, resolvedStandardBlanks, blanksWithReplicates,blankVolumesWithReplicates, blankPackets,
+	resolvedBlankVolumesFinal,resolvedBlankLabels,maxLoadingRetries,
+	blankAbsorbance,maxNumBlankPlates,blankContainerModel,blankContainersResources,
 	microfluidicChipRackResource,manualLoadingPipetteResource,manualLoadingTipsResource,
 	listedInstrumentPackets,instrumentModelPacket,instrumentModel,wavelengths,wavelengthsWithReplicates,quantConcsWithReplicates,
 	resolvedOptionsNoHidden,previewRule,optionsRule,testsRule,resultRule,allResourceBlobs,fulfillable,frqTests,
 	expandedInputs,containerPackets,plateModels,injectionContainers,injectionContainerModels,
 	quantAnalytesWithReplicates,injectionContainerLookup,containerModelLookup,aliquotQ,sampleVolumes,
 	cache,sampleVolumeRules,sampleResourceReplaceRules,samplesInResources,maxVolumeContainerModelPackets,downloadedInjectionValues,
-	blankContainerModelPackets,blankContainerModelPacket,numOccupiedWells,
+	blankContainerModelPacket,numOccupiedWells,
 	cuvetteQ,acquisitionMixQ,cuvettes,containerObjsWithReplicates,cuvetteMaxVolumes,cuvetteModelMaxVolumes,cuvetteResources,cuvetteRackResource,
 	cuvetteWasherResource,blowGunResource,referenceCuvetteResource,temperatureMonitor,temperatureProbeResource,stirBarResource,stirBarRetrieverResource,
 	recoupSampleBoolean,containersOut,containersOutWithReplicates,containersOutResources, samplesOutWithNumReplicates,
-	microfluidicChipResources,magnifyingGlassResource,containersIn,estimatedReadingTime,controlResource,allBlankResources,
+	microfluidicChipResources,magnifyingGlassResource,containersIn,estimatedReadingTime,controlResource,allBlankResources,allStandardBlankResources,allStandardResources,
 	numReplicatesNoNull,expandReplicatesFunction,finalizedPacket,pairedSamplesInAndVolumes,
 	aliquotQWithReplicates,aliquotVolumeWithReplicates,simulatedSamples,updatedSimulation,
 	listedSimulatedContainerPackets,listedSampleContainers,simulatedContainerPackets,containerObjs,
@@ -5264,7 +5844,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	{simulatedSamples, updatedSimulation} = simulateSamplesResourcePacketsNew[experimentFunction, mySamples, myResolvedOptions, Cache -> cache, Simulation->simulation];
 
 	(* pull out the resolved BlankAbsorbance, Blanks, and BlankVolumes options *)
-	{blankAbsorbance, resolvedBlanks, resolvedBlankVolumesFinal, resolvedBlankLabels} = Lookup[expandedResolvedOptions, {BlankAbsorbance, Blanks, BlankVolumes, BlankLabel}];
+	{blankAbsorbance, resolvedBlanks, resolvedStandards, resolvedStandardBlanks, resolvedBlankVolumesFinal, resolvedBlankLabels, maxLoadingRetries} = Lookup[expandedResolvedOptions, {BlankAbsorbance, Blanks, Standards, StandardBlanks, BlankVolumes, BlankLabel, MaxLoadingRetries}, Null];
 
 	(* make a Download call to get the sample, container, and instrument packets *)
 	{listedSimulatedContainerPackets, listedSampleContainers, listedInstrumentPackets, maxVolumeContainerModelPackets,downloadedInjectionValues, blankPackets} = Quiet[
@@ -5302,9 +5882,6 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 		instrumentOpt,
 		Lookup[instrumentModelPacket, Model]
 	];
-
-	(* get the blank container model packets *)
-	blankContainerModelPackets = Flatten[maxVolumeContainerModelPackets];
 
 	(* get the plate models that we are currently in; don't need to check for validity because that already happened in the options function *)
 	plateModels = Map[
@@ -5419,18 +5996,6 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 		{Null, Null}
 	];
 
-	(*
-
-	blankVolumes = MapThread[
-		If[VolumeQ[#1],
-			#1,
-			#2
-		]&,
-		{cuvetteMaxVolumes, cuvetteModelMaxVolumes}
-	];
-
-	*)
-
 	(* Make the resources for the cuvettes *)
 	cuvetteResources = If[cuvetteQ,
 		MapThread[
@@ -5522,7 +6087,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 		Null
 	];
 
-		(* 1way or 2way link depending on whether the user provide a model or an object *)
+	(* 1way or 2way link depending on whether the user provide a model or an object *)
 	containersOutResources = If[cuvetteQ,
 		Map[
 			If[NullQ[#],
@@ -5592,7 +6157,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	(* get the blank container model packet *)
 	blankContainerModelPacket = If[NullQ[blankContainerModel],
 		Null,
-		FirstCase[blankContainerModelPackets, ObjectP[blankContainerModel], Null]
+		FirstCase[Flatten[maxVolumeContainerModelPackets], ObjectP[blankContainerModel], Null]
 	];
 
 	(* make resources for the BlankContainers if we are using BMG; use whatever plate model we were already using *)
@@ -5669,122 +6234,171 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	];
 
 	(* make resources for the blanks; this could be different depending on if we are using the Lunatic or not *)
-	allBlankResources = If[lunaticQ,
+	{allBlankResources, allStandardBlankResources} = If[lunaticQ,
 
 		(* Lunatic *)
 		Module[
-			{talliedBlanks, blanksNoDupes, talliedBlankResources, blankPositions, blankResourceReplaceRules},
-
-			(* tally how many of each given blank we will be using *)
-			talliedBlanks = Tally[blanksWithReplicates];
+			{blanksNoDupes, blankResources, blankResourceReplaceRules},
 
 			(* get the blanks without the duplicates *)
-			blanksNoDupes = talliedBlanks[[All, 1]];
+			blanksNoDupes = DeleteDuplicates[Flatten[{Download[resolvedBlanks/.{Null->{}}, Object], Download[resolvedStandardBlanks/.{Null->{}}, Object]}]];
 
 			(* make a resource for each blank with the appropriate amount *)
-			talliedBlankResources = Map[
-				(* using the ID for Milli-Q water rather than the name because we already Downloaded object above in blanksWithReplicates *)
-				If[MatchQ[#[[1]], ObjectReferenceP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
+			blankResources = Map[
+				(* using the ID for Milli-Q water rather than the name because we already Downloaded object above *)
+				If[MatchQ[#, ObjectReferenceP[Model[Sample, "id:8qZ1VWNmdLBD"]]],
 					controlResource,
 					Resource[
-						Sample -> #[[1]],
-						(* removed AchievableResolution[#[[2]] * 2.1*Microliter * 1.1, Messages -> False], and hardcoded to 50uL since there is only 1 blank spotted and 50 microliter will work for all containers validModelsForLunaticLoading[] *)
+						Sample -> #,
+						(* removed AchievableResolution[#[[2]] * 2.1*Microliter * 1.1, Messages -> False], and hardcoded to 50uL since there is only 1 blank spotted and 50 microliter will work for all containers validModelsForLunaticLoading[]. This volume is enough for multiple retries *)
 						Amount -> 50 Microliter,
 						Container -> validModelsForLunaticLoading[],
 						Name -> ToString[Unique[]]
 					]
 				]&,
-				talliedBlanks
-			];
-
-			(* get the position of each of the models in the list of blanks *)
-			blankPositions = Map[
-				Position[blanksWithReplicates, #]&,
 				blanksNoDupes
 			];
 
 			(* make replace rules converting the blank models to their resources to be used in ReplacePart below *)
 			blankResourceReplaceRules = MapThread[
 				#1 -> #2&,
-				{blankPositions, talliedBlankResources}
+				{blanksNoDupes, blankResources}
 			];
 
-			(* use ReplacePart to return the blank resources *)
-			ReplacePart[blanksWithReplicates, blankResourceReplaceRules]
+			(* Return all Blanks *)
+			{
+				blanksWithReplicates/.blankResourceReplaceRules,
+				If[NullQ[resolvedStandardBlanks],
+					{},
+					ToList[Download[resolvedStandardBlanks, Object]]/.blankResourceReplaceRules
+				]
+			}
 
 		],
 
 		(* Plate Reader*)
-		Module[
-			{blankVolumeRules, mergedBlankVolumes, blanksNoDupes, talliedBlankResources, blankPositions,
-				blankResourceReplaceRules},
+		{
+			Module[
+				{blankVolumeRules, mergedBlankVolumes, blanksNoDupes, talliedBlankResources, blankPositions,
+					blankResourceReplaceRules},
 
-			(* need to combine the blanks and how much volume we need for each of them together *)
-			(* Remove any duplicate sample-volume pairs since we only need one instance for blanking *)
-			blankVolumeRules = DeleteDuplicates[
-				MapThread[
-					#1 -> #2&,
-					{Download[resolvedBlanks,Object],resolvedBlankVolumesFinal}
-				]
-			];
-
-			(* group and sum the volumes where the blank model is the same *)
-			(* oh man Hayley look I used Merge all by myself*)
-			mergedBlankVolumes = Merge[blankVolumeRules, Total];
-
-			(* get the blanks without dupes *)
-			blanksNoDupes = Keys[mergedBlankVolumes];
-
-			(* create a resource for each of the different kinds of blanks for each split protocol *)
-			talliedBlankResources = KeyValueMap[
-				(* doing this With call to ensure that I only have to call AchievableResolution once per loop since it is kind of slow *)
-				(* we're going to make as many blanks as replicates so must multiply volume by this amount *)
-				With[{achievableResolution = AchievableResolution[#2 * 1.1 * numReplicatesNoNull, Messages -> False]},
-					If[MatchQ[#1,Null],
-						#1,
-						Resource@@{
-							Sample -> #1,
-							(* For plate reader, we cannot simply request 1.1 x resolved blank volumes, because it is possible that we just resolve to use an existing sample on the same sample plate as our blank . We resolve the blank volume using sample volume, and it is a perfectly reasonable setup to have blank sample volume the same as the sample volume. In this case we request the whole sample. *)
-							Which[
-								And[
-									MatchQ[#1,ObjectP[Object[Sample]]],
-									MatchQ[#2, VolumeP],
-									MatchQ[Lookup[fetchPacketFromCache[#1, Flatten[blankPackets]], {Container, Volume}, Null], {ObjectP[Object[Container, Plate]], EqualP[#2]}]
-								],
-									Nothing,
-								MatchQ[achievableResolution,VolumeP],
-									Amount -> achievableResolution,
-								True,
-									Nothing
-							],
-							If[MatchQ[#1,ObjectP[Model]],
-								Container -> PreferredContainer[achievableResolution],
-								Nothing
-							],
-							Name -> ToString[Unique[]]
-						}
+				(* need to combine the blanks and how much volume we need for each of them together *)
+				(* Remove any duplicate sample-volume pairs since we only need one instance for blanking *)
+				blankVolumeRules = DeleteDuplicates[
+					MapThread[
+						#1 -> #2&,
+						{Download[resolvedBlanks,Object],resolvedBlankVolumesFinal}
 					]
-				]&,
-				mergedBlankVolumes
+				];
+
+				(* group and sum the volumes where the blank model is the same *)
+				(* oh man Hayley look I used Merge all by myself*)
+				mergedBlankVolumes = Merge[blankVolumeRules, Total];
+
+				(* get the blanks without dupes *)
+				blanksNoDupes = Keys[mergedBlankVolumes];
+
+				(* create a resource for each of the different kinds of blanks for each split protocol *)
+				talliedBlankResources = KeyValueMap[
+					(* doing this With call to ensure that I only have to call AchievableResolution once per loop since it is kind of slow *)
+					(* we're going to make as many blanks as replicates so must multiply volume by this amount *)
+					With[{achievableResolution = AchievableResolution[#2 * 1.1 * numReplicatesNoNull, Messages -> False]},
+						If[MatchQ[#1,Null],
+							#1,
+							Resource@@{
+								Sample -> #1,
+								(* For plate reader, we cannot simply request 1.1 x resolved blank volumes, because it is possible that we just resolve to use an existing sample on the same sample plate as our blank . We resolve the blank volume using sample volume, and it is a perfectly reasonable setup to have blank sample volume the same as the sample volume. In this case we request the whole sample. *)
+								Which[
+									And[
+										MatchQ[#1,ObjectP[Object[Sample]]],
+										MatchQ[#2, VolumeP],
+										MatchQ[Lookup[fetchPacketFromCache[#1, Flatten[blankPackets]], {Container, Volume}, Null], {ObjectP[Object[Container, Plate]], EqualP[#2]}]
+									],
+										Nothing,
+									MatchQ[achievableResolution,VolumeP],
+										Amount -> achievableResolution,
+									True,
+										Nothing
+								],
+								If[MatchQ[#1,ObjectP[Model]],
+									Container -> PreferredContainer[achievableResolution],
+									Nothing
+								],
+								Name -> ToString[Unique[]]
+							}
+						]
+					]&,
+					mergedBlankVolumes
+				];
+
+				(* get the position of each of the models in the list of blanks *)
+				blankPositions = Map[
+					Position[blanksWithReplicates, #]&,
+					blanksNoDupes
+				];
+
+				(* make replace rules converting the blank models to their resources to be used in ReplacePart below *)
+				blankResourceReplaceRules = MapThread[
+					#1 -> #2&,
+					{blankPositions, talliedBlankResources}
+				];
+
+				(* use ReplacePart to return the blank resources *)
+				ReplacePart[blanksWithReplicates, blankResourceReplaceRules]
+			],
+			(* No StandardBlank for non-Lunatic *)
+			{}
+		}
+
+	];
+
+	(* Make resources for the standards. This is currently only available on Lunatic *)
+	allStandardResources = If[lunaticQ&&!MatchQ[resolvedStandards,Null|{}],
+
+		(* Lunatic *)
+		Module[
+			{talliedStandards, standardResources, standardResourceReplaceRules},
+
+			(* get the standards without the duplicates *)
+			talliedStandards = Tally[Download[resolvedStandards, Object]];
+
+			(* make a resource for each standard (note that we don't delete duplicate for Standard) *)
+			standardResources = Map[
+				Function[
+					{sampleVolumeTuple},
+					Module[
+						{sample, volume, resourceVolume, containers},
+						{sample, volume} = sampleVolumeTuple;
+						(* Consider the number of standards and retries and get extra volume (1.5x). This should be less than 94 * 10 * 2.1 * 1.5 uL = 2.9 mL and there is guaranteed a container in validModelsForLunaticLoading[] to fulfill this request *)
+						resourceVolume = AchievableResolution[volume * maxLoadingRetries * 2.1 * Microliter * 1.5, Messages -> False];
+						containers = Map[
+							If[MatchQ[Lookup[fetchPacketFromCache[#, Flatten[maxVolumeContainerModelPackets]], MaxVolume, Null], GreaterP[resourceVolume]],
+								#,
+								Nothing
+							]&,
+							validModelsForLunaticLoading[]
+						];
+						Resource[
+							Sample -> sample,
+							Amount -> resourceVolume,
+							Container -> containers,
+							Name -> ToString[Unique[]]
+						]
+					]
+				],
+				talliedStandards
 			];
 
-			(* get the position of each of the models in the list of blanks *)
-			blankPositions = Map[
-				Position[blanksWithReplicates, #]&,
-				blanksNoDupes
-			];
-
-			(* make replace rules converting the blank models to their resources to be used in ReplacePart below *)
-			blankResourceReplaceRules = MapThread[
+			(* make replace rules converting the standard to their resources to be used in ReplaceAll below *)
+			standardResourceReplaceRules = MapThread[
 				#1 -> #2&,
-				{blankPositions, talliedBlankResources}
+				{talliedStandards[[All,1]], standardResources}
 			];
 
-			(* use ReplacePart to return the blank resources *)
-			ReplacePart[blanksWithReplicates, blankResourceReplaceRules]
+			Download[resolvedStandards, Object]/.standardResourceReplaceRules
 
-		]
-
+		],
+		{}
 	];
 
 	(* expand SamplesInStorage with NumberOfReplicates *)
@@ -6016,7 +6630,7 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 	(* --- Generate our protocol packet --- *)
 	(* NOTE: We only include our *)
 	{finalizedPacket, unitOperationPackets}=If[MatchQ[resolvedPreparation, Manual],
-		Module[{standardFields, intensityAndSpectroscopyFields, kineticsFields, protocolPacket, sharedFieldPacket},
+		Module[{standardFields, intensityAndSpectroscopyFields, intensityFields, kineticsFields, protocolPacket, sharedFieldPacket},
 			(* fill in the protocol packet with all the resources *)
 			standardFields = <|
 				Object -> CreateID[myType],
@@ -6103,13 +6717,26 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				Replace[MicrofluidicChips] -> (Link[#]& /@ microfluidicChipResources),
 		        MicrofluidicChipRack -> Link[microfluidicChipRackResource],
 		        MicrofluidicChipLoading->Lookup[expandedResolvedOptions,MicrofluidicChipLoading],
+				ImageMicrofluidicPlate->Lookup[expandedResolvedOptions,ImageMicrofluidicPlate],
+				MaxLoadingRetries->Lookup[expandedResolvedOptions,MaxLoadingRetries],
 		        MicrofluidicChipManualLoadingPipette -> Link[manualLoadingPipetteResource],
 		        MicrofluidicChipManualLoadingTips -> Link[manualLoadingTipsResource],
 				MagnifyingGlass -> Link[magnifyingGlassResource],
 				EquilibrationSample -> Link[controlResource],
 				Replace[wavelengthFieldName] -> wavelengthsWithReplicates,
+				(* Standard options are only supported on Lunatic *)
+				Replace[Standards] -> (Link[#] & /@ allStandardResources),
+				Replace[StandardVolumes] -> If[NullQ[Lookup[expandedResolvedOptions, StandardVolumes]], {}, Lookup[expandedResolvedOptions, StandardVolumes]],
+				Replace[StandardLabels] -> If[NullQ[Lookup[expandedResolvedOptions, StandardLabel]], {}, Lookup[expandedResolvedOptions, StandardLabel]],
+				Replace[StandardBlanks] -> (Link[#] & /@ allStandardBlankResources),
+				Replace[StandardBlankVolumes] -> If[NullQ[Lookup[expandedResolvedOptions, StandardBlankVolumes]], {}, Lookup[expandedResolvedOptions, StandardBlankVolumes]],
+				Replace[StandardBlankLabels] -> If[NullQ[Lookup[expandedResolvedOptions, StandardBlankLabel]], {}, Lookup[expandedResolvedOptions, StandardBlankLabel]],
 				(* AbsorbanceKinetics doesn't use BlankContainers - all samples must be in the same container which is read over time *)
 				Replace[BlankContainers] -> (Link[#]& /@ blankContainersResources)
+			|>;
+
+			intensityFields = <|
+				Replace[StandardWavelengths]  -> If[NullQ[Lookup[expandedResolvedOptions, StandardWavelength]], {}, Lookup[expandedResolvedOptions, StandardWavelength]]
 			|>;
 
 			kineticsFields=<|
@@ -6128,8 +6755,12 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 				QuaternaryInjectionFlowRate->Lookup[expandedResolvedOptions,QuaternaryInjectionFlowRate]
 			|>;
 
-			protocolPacket=If[MatchQ[myType,Object[Protocol,AbsorbanceKinetics]],
+			protocolPacket=Which[
+				MatchQ[myType,Object[Protocol,AbsorbanceKinetics]],
 				Join[standardFields,injectorCleaningFields,kineticsFields],
+				MatchQ[myType,Object[Protocol,AbsorbanceIntensity]],
+				Join[standardFields,injectorCleaningFields,intensityAndSpectroscopyFields,intensityFields],
+				True,
 				Join[standardFields,injectorCleaningFields,intensityAndSpectroscopyFields]
 			];
 
@@ -6153,6 +6784,8 @@ absorbanceResourcePackets[myType : (Object[Protocol, AbsorbanceSpectroscopy] | O
 						{
 							Instrument -> Resource[Instrument -> instrumentOpt, Time -> estimatedReadingTime],
 							Blanks -> allBlankResources,
+							Standards -> allStandardResources,
+							StandardBlanks -> allStandardBlankResources,
 							(* injection sample resources are always in second to last position for all experiments *)
 							PrimaryInjectionSample->If[Length[primaryInjectionWithResources[[All,-2]]]==0,
 								ConstantArray[Null, Length[mySamples]],

@@ -3,7 +3,7 @@
 (*
 General Notes:
 - Plasmids are always assumed to be plotted clockwise, whereas the mathematical convention is anti-clockwise. Functions
-  are written for anti-clockwise, however negative angles can be used to get clockwise behavior. MMs graphics functions,
+  are written for anti-clockwise; however, negative angles can be used to get clockwise behavior. MMs graphics functions,
   such as Circle and Annulus, require angles in increasing order, and while negative angles are allowed, they will need
   to be reversed for those functions, and these helper functions, to use them.
 - Plasmids are also assumed to start plotting at the top of the circle, thus a rotation of +90 degrees needs to be

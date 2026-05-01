@@ -19,7 +19,7 @@ DefineTests[Upload,
 				|>
 			],
 			Object[User, _String],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Basic, "Create a public object:"},
@@ -28,7 +28,7 @@ DefineTests[Upload,
 				AllowPublicObjects -> True
 			],
 			ObjectP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Create a model object:"},
@@ -39,7 +39,7 @@ DefineTests[Upload,
 				|>
 			],
 			Model[Sample, _String],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Basic, "Create multiple objects at once:"},
@@ -57,7 +57,7 @@ DefineTests[Upload,
 				}
 			],
 			{Object[User, _String], Object[Sample, _String]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Basic, "Modify existing objects by specifying the Object key in an Association:"},
@@ -81,7 +81,7 @@ DefineTests[Upload,
 				]
 			],
 			{Object[User, _String], Object[Sample, _String]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Links", "Use pre-created Object IDs to create objects and link them together all in one Upload call:"},
@@ -105,7 +105,7 @@ DefineTests[Upload,
 				]
 			],
 			{Object[Sample, _String], Object[Maintenance, ReceiveInventory, _String]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Pre-created Object IDs can be used in indexed multiples:"},
@@ -129,7 +129,7 @@ DefineTests[Upload,
 				]
 			],
 			{Object[Sample, _String], Object[User, _String]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Links", "Links can refer to Objects by Name:"},
@@ -145,7 +145,7 @@ DefineTests[Upload,
 				{id1, id2}
 			],
 			{_Model, _Object},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 
@@ -163,7 +163,7 @@ DefineTests[Upload,
 				newId[PredictedResponse]
 			],
 			Table[Prime[i], {i, 50}],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Units", "Units are converted on Upload:"},
@@ -184,7 +184,7 @@ DefineTests[Upload,
 				Quantity[1000.0, "Grams"],
 				{{_, Quantity[1000.0, "Grams"], _, _}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "QuantityArray", "QuantityArray expressions can be used as values, and will be converted:"},
@@ -201,7 +201,7 @@ DefineTests[Upload,
 				newId[Temperature]
 			],
 			QuantityArray[{{1000, 1}, {2000, 1}, {3000, 1}}, {"Nanometers", "DegreesCelsius"}],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "QuantityArray", "Insert a list of QuantityArrays into a multiple field:"},
@@ -236,7 +236,7 @@ DefineTests[Upload,
 					{"Seconds", "Meter"}
 				]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "QuantityArray", "Insert a list of QuantityArrays into a multiple field and convert their units:"},
@@ -271,7 +271,7 @@ DefineTests[Upload,
 					{"Seconds", "Meter"}
 				]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "QuantityArray", "QuantityArrays convert complex indexed multiples:"},
@@ -318,7 +318,7 @@ DefineTests[Upload,
 					]
 				}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Links", "Links can go one way if they are so defined:"},
@@ -330,7 +330,7 @@ DefineTests[Upload,
 				|>], Author]
 			],
 			LinkP[Object[User]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Exrpressions get written and read out correctly:"},
@@ -346,13 +346,13 @@ DefineTests[Upload,
 				newDataId[BestFitFunction][3]
 			],
 			9,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Returns an empty list when given an empty list:"},
 			Upload[{}, Verbose -> True],
 			{},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Example[{Additional, "Append a single value to a multiple field:"},
 			With[
@@ -362,7 +362,7 @@ DefineTests[Upload,
 			],
 			ObjectReferenceP[],
 			Variables :> {X},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Example[{Additional, "Prepend a single value to a multiple field:"},
 			With[
@@ -372,7 +372,7 @@ DefineTests[Upload,
 			],
 			ObjectReferenceP[],
 			Variables :> {X},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Example[{Additional, "Boolean fields work and return BooleanP:"},
 			With[
@@ -384,7 +384,7 @@ DefineTests[Upload,
 				Download[objects, BooleanField]
 			],
 			{True, False, Null},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Options, Verbose, "Verbose->False turns off the progress/completion messages:"},
@@ -396,7 +396,7 @@ DefineTests[Upload,
 				Verbose -> False
 			],
 			ObjectReferenceP[],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Options, Transaction, "Transaction->_String creates a unique transaction for the Upload call:"},
@@ -409,7 +409,7 @@ DefineTests[Upload,
 				]
 			],
 			ObjectReferenceP[],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Options, CAS, "CAS->_String appends the provided Check and Set Token to the packet during the Upload call:"},
@@ -437,7 +437,7 @@ DefineTests[Upload,
 				]
 			],
 			ObjectReferenceP[],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "CasLengthMismatch", "Providing an incorrect number of CAS tokens returns $Failed and provides a warning message:"},
@@ -447,7 +447,7 @@ DefineTests[Upload,
 				Message[Warning::CasLengthMismatch],
 				Message[Upload::Error, "Error uploading packets with provided CAS tokens"]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "InvalidPacket", "Providing an invalid packet returns $Failed:"},
@@ -456,14 +456,14 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::InvalidPacket]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "Error", "Providing an invalid CAS token returns $Failed and provides a message:"},
 			Upload[<|Type -> Object[Sample]|>, CAS -> "CAS1"],
 			$Failed,
 			Messages :> {Message[Upload::Error, "Check and set token 'CAS1' could not be interpreted"]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Options, ConstellationMessage, "Only print newly created objects of the specified types:"},
@@ -475,7 +475,7 @@ DefineTests[Upload,
 			}, ConstellationMessage -> {Object[Data, Volume], Object[Data, PAGE]}
 			],
 			{ObjectReferenceP[]..},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Example[{Options, ConstellationMessage, "Print all created objects:"},
 			Upload[{
@@ -486,7 +486,7 @@ DefineTests[Upload,
 			}, ConstellationMessage -> All
 			],
 			{ObjectReferenceP[]..},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Test["Print some created types:",
 			Module[{},
@@ -502,7 +502,7 @@ DefineTests[Upload,
 				Constellation`Private`$NewVerboseObjects
 			],
 			{ObjectReferenceP[Object[Sample]], ObjectReferenceP[Object[Data, Volume]], ObjectReferenceP[Object[Data, Volume]]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Test["Print no created types:",
 			Module[{},
@@ -518,7 +518,7 @@ DefineTests[Upload,
 				Constellation`Private`$NewVerboseObjects
 			],
 			{},
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Test["Print all created types:",
 			Module[{},
@@ -534,7 +534,7 @@ DefineTests[Upload,
 				Constellation`Private`$NewVerboseObjects
 			],
 			{ObjectReferenceP[Object[Sample]], ObjectReferenceP[Object[Analysis, Peaks]], ObjectReferenceP[Object[Data, Volume]], ObjectReferenceP[Object[Data, Volume]]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "MissingObject", "Trying to Upload to a non-existent Object throws an error and returns $Failed:"},
@@ -548,7 +548,7 @@ DefineTests[Upload,
 			Messages :> {
 				Upload::MissingObject
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Backlinks create null sub-fields:",
@@ -566,7 +566,7 @@ DefineTests[Upload,
 				{Null, Link[thingTwo, GroupedMultipleAppendRelation, 2, _String]}
 			},
 			Variables :> {thingOne, thingTwo},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Large / Small Quantities work:",
@@ -575,13 +575,13 @@ DefineTests[Upload,
 				Download[id, Temperature]
 			],
 			_Quantity,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Upload can take Null Single links:",
 			Upload[<|Type -> Object[Example, Data], SingleRelation -> Null|>],
 			_Object,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "MissingLinkID", "Return $Failed and provide a message for one way links with ids:"},
@@ -595,7 +595,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::MissingLinkID},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Basic, "Append[field] adds to existing values in an object:"},
@@ -619,7 +619,7 @@ DefineTests[Upload,
 				{ObjectReferenceP[], ObjectReferenceP[]},
 				{X, Y, Z, W, V, T}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Basic, "Updates are applied in-order so subsequent replaces overwrite previously appended values:"},
@@ -644,7 +644,7 @@ DefineTests[Upload,
 				{Repeated[obj:ObjectReferenceP[], {3}]},
 				{W, V}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "QuantityArray", "Append to a QuantityArray field:"},
@@ -679,7 +679,7 @@ DefineTests[Upload,
 				{3.0 Minute, Convert[QuantityArray[{{10. * 3, 7}}, {"Kilograms" / "Moles", IndependentUnit["ArbitraryUnits"]}], {"Grams" / "Moles", IndependentUnit["ArbitraryUnits"]}]},
 				{6.0 Minute, Convert[QuantityArray[{{11. * 3, 7}}, {"Kilograms" / "Moles", IndependentUnit["ArbitraryUnits"]}], {"Grams" / "Moles", IndependentUnit["ArbitraryUnits"]}]}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Appending an empty list to a multiple field does nothing:",
@@ -688,7 +688,7 @@ DefineTests[Upload,
 				Download[object, Random]
 			],
 			{7.1, 8.2},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Autofields created:",
@@ -699,7 +699,7 @@ DefineTests[Upload,
 					object[DateCreated] <= Now}(*NewDateCreated*)
 			],
 			{True, True},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Cache is busted for objects which are modified after being Downloaded with Cache->Session:",
@@ -711,7 +711,7 @@ DefineTests[Upload,
 				objectCache[getObjectCacheKey[object]]
 			],
 			_Missing,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Cache is busted for objects which are linked to in an upload after being Downloaded with Cache->Session:",
@@ -730,7 +730,7 @@ DefineTests[Upload,
 				}
 			],
 			{_Missing, _Missing},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Cache is busted for objects whose link is removed in an upload after being Downloaded with Cache->Session:",
@@ -750,7 +750,7 @@ DefineTests[Upload,
 				}
 			],
 			{_Missing, _Missing},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Cache is busted for objects which are modified after being Downloaded with Cache->Download:",
@@ -762,7 +762,7 @@ DefineTests[Upload,
 				objectCache[getObjectCacheKey[object]]
 			],
 			_Missing,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Upload to an object by name:",
@@ -775,21 +775,21 @@ DefineTests[Upload,
 				Download[object, Random]
 			],
 			N[{1, 2, 3}],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "InvalidOperation", "Provides a message and returns $Failed for operations that are not Append, Replace or Erase:"},
 			Upload[<|Type -> Object[Sample], My[Name] -> "Tom"|>],
 			$Failed,
 			Messages :> {Message[Upload::InvalidOperation, {{My[Name]}}, {1}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "ComputableField", "Throws a message and returns $Failed if any fields specified as rules are computable:"},
 			Upload[<|Type -> Object[Analysis, Fit], Derivative -> 3x^2|>],
 			$Failed,
 			Messages :> {Message[Upload::ComputableField, {{Derivative}}, {Object[Analysis, Fit]}, {1}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "RuleDelayed", "Ignores an fields which are RuleDelayed:"},
@@ -800,7 +800,7 @@ DefineTests[Upload,
 				|>
 			],
 			ObjectReferenceP[Object[Analysis, Fit]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "Timeout", "Upload must complete within a certain amount of time:"},
@@ -810,7 +810,7 @@ DefineTests[Upload,
 			Stubs :> {
 				ConstellationRequest[___]:=HTTPError[Null, "Request timeout after 1 seconds."]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "A row can be deleted from a Multiple field:"},
@@ -823,7 +823,7 @@ DefineTests[Upload,
 			],
 			{"A1", "A3"},
 			SetUp :> (setupIndexedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A row can be deleted from a named multiple field:",
@@ -836,7 +836,7 @@ DefineTests[Upload,
 			],
 			{1. Nanometer, 3. Nanometer},
 			SetUp :> (setupNamedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "Multiple rows can be deleted from a Multiple field:"},
@@ -849,7 +849,7 @@ DefineTests[Upload,
 			],
 			{"A2"},
 			SetUp :> (setupIndexedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Multiple rows can be deleted from a named multiple field:",
@@ -862,7 +862,7 @@ DefineTests[Upload,
 			],
 			{2. Nanometer},
 			SetUp :> (setupNamedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "Delete a column from all rows in an IndexedMultiple field:"},
@@ -875,7 +875,7 @@ DefineTests[Upload,
 			],
 			{Null, Null, Null},
 			SetUp :> (setupIndexedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "Delete a column from all rows in a named multiple field:"},
@@ -892,7 +892,7 @@ DefineTests[Upload,
 				<|UnitColumn -> 3. Nanometer, SingleLink -> Null|>
 			},
 			SetUp :> (setupNamedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "Delete from an IndexedMultiple a specific row and column:"},
@@ -905,7 +905,7 @@ DefineTests[Upload,
 			],
 			{"A1", Null, "A3"},
 			SetUp :> (setupIndexedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Delete a specific row and column from a named multiple field:",
@@ -922,7 +922,7 @@ DefineTests[Upload,
 				<|UnitColumn -> 3. Nanometer, SingleLink -> _Link|>
 			},
 			SetUp :> (setupNamedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Erase", "Delete a specific index in an IndexedSingle field:"},
@@ -939,7 +939,7 @@ DefineTests[Upload,
 				]
 			],
 			{1.0 Meter, Null, 1.0 Meter},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Delete a column in a named single field:",
@@ -952,7 +952,7 @@ DefineTests[Upload,
 			],
 			<|UnitColumn -> 1. Nanometer, MultipleLink -> Null|>,
 			SetUp :> (setupNamedMultipleErase[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A single row can be deleted from a multiple field:", With[
@@ -962,7 +962,7 @@ DefineTests[Upload,
 			object[Random]
 		],
 			{1., 3.},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Multiple rows can be deleted from a multiple field:", With[
@@ -972,7 +972,7 @@ DefineTests[Upload,
 			object[Random]
 		],
 			{2.},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Deleting a negative index removes that index as counted from the end:", With[
@@ -982,7 +982,7 @@ DefineTests[Upload,
 			object[Random]
 		],
 			{1., 2.},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A single row can be deleted from an indexed field:", With[
@@ -996,7 +996,7 @@ DefineTests[Upload,
 			objects[[1]][IndexedSingle]
 		],
 			{1 Meter, Null, LinkP[]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Multiple rows can be deleted from an indexed field:", With[
@@ -1011,7 +1011,7 @@ DefineTests[Upload,
 			objects[[1]][IndexedSingle]
 		],
 			{Null, "1", Null},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Multiple rows can be deleted from a multiple indexed field:",
@@ -1053,7 +1053,7 @@ DefineTests[Upload,
 				{{"2", LinkP[]}},
 				{{"2", LinkP[]}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A single row can be deleted from a multiple indexed field:",
@@ -1095,7 +1095,7 @@ DefineTests[Upload,
 				{{"1", LinkP[]}, {"3", LinkP[]}},
 				{{"1", LinkP[]}, {"3", LinkP[]}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A single column can be deleted from a multiple indexed field:",
@@ -1133,7 +1133,7 @@ DefineTests[Upload,
 			],
 
 			{{"1", Null}, {"2", Null}, {"3", Null}},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["A row and column can be deleted from a multiple indexed field:",
@@ -1175,7 +1175,7 @@ DefineTests[Upload,
 				{{"1", LinkP[]}, {"2", Null}, {"3", LinkP[]}},
 				{{"1", LinkP[]}, {"3", LinkP[]}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		(* Named fields *)
@@ -1206,7 +1206,7 @@ DefineTests[Upload,
 				}]
 			],
 			{ObjectReferenceP[Object[Example, Data]], ObjectReferenceP[Object[Example, Data]]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NamedField", "Uploading a list to a named field provides a message and returns $Failed:"},
@@ -1227,7 +1227,7 @@ DefineTests[Upload,
 				{Object[Example, Data], Object[Example, Data]},
 				{1, 2}
 			]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NamedMultipleField", "Uploading a list of lists to a named multiple field provides a message and returns $Failed:"},
@@ -1252,7 +1252,7 @@ DefineTests[Upload,
 				{Object[Example, Data], Object[Example, Data]},
 				{1, 2}
 			]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Uploading an incomplete named field returns $Failed and a message:",
@@ -1261,7 +1261,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{NamedSingle}}, {Object[Example, Data]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Uploading a named field with bad keys returns $Failed and a message:",
@@ -1273,7 +1273,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{NamedSingle}}, {Object[Example, Data]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Uploading a named field with bad values returns $Failed and a message:",
@@ -1285,7 +1285,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{NamedSingle}}, {Object[Example, Data]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Uploading a named multiple field with bad values returns $Failed and a message:",
@@ -1297,7 +1297,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{NamedMultiple}}, {Object[Example, Data]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Uploading a named multiple field with a single row returns $Failed and a message:",
@@ -1309,7 +1309,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{NamedMultiple}}, {Object[Example, Data]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["When creating a private object without specifying the notebook, use the default notebook:",
@@ -1332,7 +1332,7 @@ DefineTests[Upload,
 			|>],
 			ObjectReferenceP[Object[Example, Data]],
 			SetUp :> (setupExampleNotebook[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Set the Notebook field to $Notebook if not set:",
@@ -1346,7 +1346,7 @@ DefineTests[Upload,
 			],
 			LinkP[Object[LaboratoryNotebook]],
 			SetUp :> (setupExampleNotebook[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Notebook field set in a packet takes precedence over $Notebook:",
@@ -1360,7 +1360,7 @@ DefineTests[Upload,
 			],
 			PatternTest[LinkP[Object[LaboratoryNotebook]], "Test Notebook" === Download[#, Name]&],
 			SetUp :> {setupExampleNotebook[], setupNotebookNamed123[]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Public objects have no notebook linked to them:",
@@ -1369,7 +1369,7 @@ DefineTests[Upload,
 				Download[object, Notebook]
 			],
 			Null,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["An attempt to create what would otherwise be a public object when no explicit permission is granted should fail",
@@ -1401,7 +1401,7 @@ DefineTests[Upload,
 				Download[object, Notebook]
 			],
 			Null,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "PartDoesntExist", "Deleting a section that does not exist provides an error message:"},
@@ -1415,7 +1415,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::PartDoesntExist},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "ObjectsField", "The Objects field of a LaboratoryNotebook cannot be modified directly because it is a Computable field:"},
@@ -1423,7 +1423,7 @@ DefineTests[Upload,
 			$Failed,
 			Messages :> {Upload::ComputableField},
 			SetUp :> (setupExampleNotebook[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "EmptyName", "Uploading an object with an empty name returns $Failed and provides a message:"},
@@ -1434,7 +1434,7 @@ DefineTests[Upload,
 			}],
 			{$Failed, $Failed, $Failed},
 			Messages :> {Message[Upload::EmptyName, {2, 3}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NameStartsWithId", "Uploading an object with a name that starts with id: returns $Failed and provides a message:"},
@@ -1447,7 +1447,7 @@ DefineTests[Upload,
 			}],
 			{$Failed, $Failed, $Failed, $Failed},
 			Messages :> {Message[Upload::NameStartsWithId, {3, 4}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "FieldStoragePattern", "Data must match the pattern of the corresponding field:"},
@@ -1464,7 +1464,7 @@ DefineTests[Upload,
 			}],
 			{$Failed, $Failed},
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "FieldStoragePattern", "When using EraseCases, value to be deleted must match the storage pattern for the field:"},
@@ -1473,7 +1473,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{Contents}}, {Object[Container, Plate, "Download Test Plate"]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Indexed fields must have the correct number of fields:",
@@ -1483,7 +1483,7 @@ DefineTests[Upload,
 			|>],
 			$Failed,
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Invalid Object field provides a FieldStoragePattern message when there is no Type field:",
@@ -1493,7 +1493,7 @@ DefineTests[Upload,
 				Message[Upload::FieldStoragePattern, {{Object}}, {$Failed}, {1}],
 				Message[Upload::TypeNotSpecified, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Invalid Object field provides a FieldStoragePattern message when there is a Type field:",
@@ -1502,7 +1502,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::FieldStoragePattern, {{Object}}, {Object[Sample]}, {1}]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Null indexed elements are valid:",
@@ -1511,20 +1511,20 @@ DefineTests[Upload,
 				Append[GroupedMultipleAppendRelation] -> {{Null, Null}}|>
 			],
 			ObjectReferenceP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Appending a Null value fails:",
 			Upload[<|Type -> Object[Example, Data], Append[Random] -> Null|>],
 			$Failed,
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Implicit units are provided:",
 			Upload[<|Type -> Object[Example, Data], Temperature -> 10|>],
 			ObjectReferenceP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Links to Named Fields must specify subfields:",
@@ -1539,7 +1539,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Links to Indexed fields must specify indices:",
@@ -1554,7 +1554,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "MultipleField", "Multiple fields must be wrapped in either Replace, Append or Erase:"},
@@ -1577,7 +1577,7 @@ DefineTests[Upload,
 			{$Failed, $Failed},
 			(* TODO: Once message matching bug is fixed, this could use a more specific message *)
 			Messages :> {Upload::MultipleField},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["An indexed multiple field can be replaced with a single list:",
@@ -1586,7 +1586,7 @@ DefineTests[Upload,
 				Replace[StatusLog] -> {Now, InUse, Null}
 			|>],
 			ObjectReferenceP[Object[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["An indexed multiple field can be appended to with a single list:",
@@ -1595,7 +1595,7 @@ DefineTests[Upload,
 				Append[StatusLog] -> {Now, InUse, Null}
 			|>],
 			ObjectReferenceP[Object[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Single fields may be wrapped in Replace or Append:",
@@ -1605,7 +1605,7 @@ DefineTests[Upload,
 				Append[Status] -> InUse
 			|>],
 			ObjectReferenceP[Object[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "SingleEraseField", "Single non indexed fields must not be wrapped in Erase:"},
@@ -1614,14 +1614,14 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::SingleEraseField},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NoObject", "Packets with Erase operator must reference specific Object:"},
 			Upload[<|Type -> Object[Sample], Erase[StatusLog] -> 1|>],
 			$Failed,
 			Messages :> {Message[Upload::NoObject, {1}, {Erase[StatusLog]}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NonUniqueLinkID", "A link id must not already exist in the database:"},
@@ -1640,7 +1640,7 @@ DefineTests[Upload,
 			{$Failed, $Failed},
 			Messages :> {Upload::NonUniqueLinkID},
 			SetUp :> (setupDownloadExampleObjects[]),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NonUniqueName", "Uploading an object with a name that already exists returns $Failed and provides a message:"},
@@ -1663,7 +1663,7 @@ DefineTests[Upload,
 				],
 				Download::ObjectDoesNotExist
 			],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "TypeNotSpecified", "Change packets must have either Object or Type key:"},
@@ -1674,21 +1674,21 @@ DefineTests[Upload,
 			}],
 			{$Failed, $Failed, $Failed},
 			Messages :> {Message[Upload::TypeNotSpecified, {2, 3}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NoSuchType", "Change packets must use an existing type:"},
 			Upload[<|Type -> Object[Bad, Type]|>],
 			$Failed,
 			Messages :> {Message[Upload::NoSuchType, {Object[Bad, Type]}, {1}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NoSuchField", "Change packets must have fields that exist in their types:"},
 			Upload[<|Type -> Object[Sample], NotAField -> 1|>],
 			$Failed,
 			Messages :> {Message[Upload::NoSuchField, {{NotAField}}, {Object[Sample]}, {1}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Erase fields must exist:",
@@ -1697,14 +1697,14 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::NoSuchField},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Erase fields must exist:",
 			Upload[<|Type -> Object[Sample], Append[NotAField] -> 2|>],
 			$Failed,
 			Messages :> {Upload::NoSuchField},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "ErasePattern", "Erase must correspond to an erase part specification:"},
@@ -1717,7 +1717,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Message[Upload::ErasePattern, {{7.0, "seven"}}, {1}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "EraseDimension", "Erase part specification must have dimension corresponding to the field:"},
@@ -1729,7 +1729,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Message[Upload::EraseDimension, {{{1, 2}}}, {1}, {{Dimensions}}]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "RepeatLinkID", "Manually generated link ids must point at each other:"},
@@ -1752,7 +1752,7 @@ DefineTests[Upload,
 			],
 			{$Failed, $Failed},
 			Messages :> {Upload::RepeatLinkID},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "FieldStoragePattern", "Links must point to the correct field:"},
@@ -1767,7 +1767,7 @@ DefineTests[Upload,
 				{Object[Example, Data]},
 				{1}
 			]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Links must point to the correct object:",
@@ -1784,7 +1784,7 @@ DefineTests[Upload,
 				{Object[Example, Data]},
 				{1}
 			]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["The same link ID cannot be used more than once in a single Upload:",
@@ -1816,7 +1816,7 @@ DefineTests[Upload,
 			],
 			{$Failed, $Failed, $Failed, $Failed},
 			Messages :> {Upload::RepeatLinkID},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Only throw one message when a single value used for an indexed multiple field:",
@@ -1830,7 +1830,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Upload::FieldStoragePattern},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "Error", "Returns $Failed and displays a message if there was a problem communicating with the server:"},
@@ -1840,7 +1840,7 @@ DefineTests[Upload,
 			Stubs :> {
 				ConstellationRequest[___]:=HTTPError[None, "Server error."]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "SingleEraseCases", "EraseCases can only be used with multiple fields:"},
@@ -1852,7 +1852,7 @@ DefineTests[Upload,
 			SetUp :> (
 				setupDownloadExampleObjects[]
 			),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "EraseCases", "Delete all values in a multiple field which match the literal value specified:"},
@@ -1871,7 +1871,7 @@ DefineTests[Upload,
 				ObjectReferenceP[Model[Instrument, Centrifuge]],
 				{1, 3, 4}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["EraseCases on a multiple field with links:",
@@ -1889,13 +1889,13 @@ DefineTests[Upload,
 				Download[{{First[objects]}, Rest[objects]}, {{MultipleAppendRelation}, {MultipleAppendRelationAmbiguous}}]
 			],
 			{{{{LinkP[], LinkP[]}}} , {{{LinkP[]}}, {{}}, {{LinkP[]}}}},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["EraseCases on an indexed multiple field with cloud files:",
 			Module[
 				{object, cloudFile, preDownload},
-				cloudFile=Constellation`Private`uploadCloudFile[FindFile["ExampleData/lena.tif"]];
+				cloudFile=EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard6/a1cda4f0c64821153c545e27f9d32125.jpg", ""]; (* Object[EmeraldCloudFile, "example-lena-tif"] *)
 				object=Upload[<|
 					Type -> Object[Example, Data],
 					Replace[IndexedCloudFile] -> {{12, cloudFile}}
@@ -1936,7 +1936,7 @@ DefineTests[Upload,
 				{{"A1", LinkP[]}},
 				{}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["EraseCases on an indexed multiple field with units:",
@@ -1959,7 +1959,7 @@ DefineTests[Upload,
 				{{"A1", 12.0 Second}, {"A2", 600.0 Second}, {"A1", 12.0 Second}},
 				{{"A2", 600.0 Second}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "Transfer", "Super users can transfer objects to different notebooks:"},
@@ -1974,7 +1974,7 @@ DefineTests[Upload,
 				nb1=Upload[<|Type -> Object[LaboratoryNotebook]|>];
 				nb2=Upload[<|Type -> Object[LaboratoryNotebook]|>]
 			),
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Test["Super users can remove notebooks from objects:",
 			(
@@ -1987,7 +1987,7 @@ DefineTests[Upload,
 			SetUp :> (
 				nb=Upload[<|Type -> Object[LaboratoryNotebook]|>];
 			),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Transferring a notebook with a one way link succeeds:",
@@ -2002,7 +2002,7 @@ DefineTests[Upload,
 			TearDown :> (
 				EraseObject[{nb1, nb2, obj}, Force -> True]
 			),
-			Sandbox -> True
+			Sandbox -> False
 		],
 		Test["Transferring a object to Notebook -> Null on first upload where Notebook would implicitly be set works:",
 			Download[Block[{$Notebook=nb}, Upload[<|Object -> obj, Notebook -> Null|>]], {Notebook}],
@@ -2015,7 +2015,7 @@ DefineTests[Upload,
 			TearDown :> (
 				EraseObject[{nb, obj}, Force -> True]
 			),
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "BadTransfer", "Transferring a field other than Notebook returns $Failed and provides a message:"},
@@ -2028,7 +2028,7 @@ DefineTests[Upload,
 					{Object[Sample]}
 				]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Messages, "NotAllowed", "Performing an operation you do not have permission for returns $Failed and provides a message:"},
@@ -2037,7 +2037,7 @@ DefineTests[Upload,
 			],
 			$Failed,
 			Messages :> {Message[Upload::NotAllowed]},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "VariableUnit", "Data can be uploaded to VariableUnit fields:"},
@@ -2049,7 +2049,7 @@ DefineTests[Upload,
 				ObjectReferenceP[Object[Example, Data]],
 				ObjectReferenceP[Object[Example, Data]]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Unsupported (server-side) units can't be uploaded to VariableUnit fields:",
@@ -2062,7 +2062,7 @@ DefineTests[Upload,
 			Messages :> {
 				Message[Upload::Error]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Data with no units can't be uploaded to VariableUnit fields:",
@@ -2077,7 +2077,7 @@ DefineTests[Upload,
 				Message[Upload::Error],
 				Message[Export::jsonstrictencoding]
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Example[{Additional, "BigDataQuantityArray", "Uploading BigDataQuantityArray fields work:"},
@@ -2130,7 +2130,7 @@ DefineTests[Upload,
 				Export::jsonstrictencoding
 			},
 			Variables :> {bigQA},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["BigQuantityArray as indexed multiple field:",
@@ -2174,7 +2174,7 @@ DefineTests[Upload,
 			],
 			Quantity[120, "Seconds"],
 			Variables :> {obj},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Handle unicode characters in string fields:",
@@ -2186,13 +2186,13 @@ DefineTests[Upload,
 				Upload[<|Type -> Object[Example, Data], SingleRelation -> Link[Object[Example, Data, name], SingleRelationAmbiguous]|>]
 			],
 			ObjectReferenceP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["BigQuantityArray field filled with EmeraldCloudFile:",
 			Upload[<|
 				Type -> Object[Example, Data],
-				BigDataQuantityArray -> Link[UploadCloudFile[FindFile["ExampleData/turtle.jpg"]]]
+				BigDataQuantityArray -> Link[Object[EmeraldCloudFile, "example-lena-tif"]]
 			|>],
 			ObjectP[Object[Example, Data]],
 			Sandbox -> False
@@ -2204,7 +2204,7 @@ DefineTests[Upload,
 				Replace[ReferenceChromatographs] -> Null
 			|>,
 			ObjectP[Model[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Regular multiple fields can contain lists:",
@@ -2216,7 +2216,7 @@ DefineTests[Upload,
 				|>
 			],
 			ObjectP[Model[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Regular multiple fields can contain lists including nulls (only null):",
@@ -2228,7 +2228,7 @@ DefineTests[Upload,
 				|>
 			],
 			ObjectP[Model[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Regular multiple fields can contain lists including nulls (replace):",
@@ -2240,7 +2240,7 @@ DefineTests[Upload,
 				|>
 			],
 			ObjectP[Model[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Regular multiple fields can contain lists including nulls (append):",
@@ -2252,21 +2252,21 @@ DefineTests[Upload,
 				|>
 			],
 			ObjectP[Model[Sample]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Indexed multiple fields can be null:",
 			Upload@<|Type -> Object[Example, Data], Replace[S3IndexedMultiple] -> Null|>,
 			ObjectP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Indexed multiple fields can contain lists:",
 			With[
-				{pic=Constellation`Private`uploadCloudFile[FindFile["ExampleData/turtle.jpg"]]},
+				{pic=EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard6/a1cda4f0c64821153c545e27f9d32125.jpg", ""]}, (* Object[EmeraldCloudFile, "example-lena-tif"] *)
 				Upload@<|
 					Type -> Object[Example, Data],
-					Replace[S3IndexedMultiple] -> {{"sample turtle", pic}, {"sample turtle (2)", pic}}
+					Replace[S3IndexedMultiple] -> {{"sample lena", pic}, {"sample lena (2)", pic}}
 				|>
 			],
 			ObjectP[Object[Example, Data]],
@@ -2276,17 +2276,17 @@ DefineTests[Upload,
 		Test["Named multiple fields can be null:",
 			Upload@<|Type -> Object[Example, Data], Replace[S3NamedMultiple] -> Null|>,
 			ObjectP[Object[Example, Data]],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Named multiple fields can contain lists:",
 			With[
-				{pic=Constellation`Private`uploadCloudFile[FindFile["ExampleData/turtle.jpg"]]},
+				{pic=EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard6/a1cda4f0c64821153c545e27f9d32125.jpg", ""]}, (* Object[EmeraldCloudFile, "example-lena-tif"] *)
 				Upload@<|
 					Type -> Object[Example, Data],
 					Replace[S3NamedMultiple] -> {
-						<|Label -> "sample turtle", File -> pic|>,
-						<|Label -> "sample turtle (2)", File -> pic|>
+						<|Label -> "sample lena", File -> pic|>,
+						<|Label -> "sample lena (2)", File -> pic|>
 					}
 				|>
 			],
@@ -2313,7 +2313,7 @@ DefineTests[Upload,
 				ObjectP[Object[Transaction, Order]],
 				{ObjectP[Object[Resource, Sample]]}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Combined upload call properly creates two-way links:",
@@ -2352,7 +2352,7 @@ DefineTests[Upload,
 				{{ObjectP[Model[Container, Vessel]], {}}, {ObjectP[Model[Container, Vessel]], {ObjectP[Object[Product]], ObjectP[Object[Product]]}}},
 				{{ObjectP[Object[Product]], ObjectP[Model[Container, Vessel]]}, {ObjectP[Object[Product]], ObjectP[Model[Container, Vessel]]}}
 			},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Single replace upload call creates proper links:",
@@ -2373,7 +2373,7 @@ DefineTests[Upload,
 				MatchQ[id[Notebook], LinkP[notebook]]
 			],
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Automatically add bookmark when a Protocol or Transaction is uploaded:",
@@ -2397,7 +2397,7 @@ DefineTests[Upload,
 				},
 				{}
 			],
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Download waits for read replication time to complete before beginning:",
@@ -2411,7 +2411,7 @@ DefineTests[Upload,
 				Constellation`Private`readReplicationTotalSleptTime > 0 Second
 			),
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Search waits for read replication time to complete before beginning:",
@@ -2425,7 +2425,7 @@ DefineTests[Upload,
 				Constellation`Private`readReplicationTotalSleptTime > 0 Second
 			),
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Download does not wait if no upload executed:",
@@ -2436,7 +2436,7 @@ DefineTests[Upload,
 				Constellation`Private`readReplicationTotalSleptTime == 0 Second
 			),
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Search does not wait if no upload executed:",
@@ -2447,7 +2447,7 @@ DefineTests[Upload,
 				Constellation`Private`readReplicationTotalSleptTime == 0 Second
 			),
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["Read replication waiting works even with a time change:",
@@ -2460,7 +2460,7 @@ DefineTests[Upload,
 				Constellation`Private`readReplicationTotalSleptTime == Constellation`Private`readReplicationWaitTime
 			),
 			True,
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["If $DeveloperUpload is set to True, then automatically set DeveloperObject -> True for all new packets with or without the Object key set:",
@@ -2481,7 +2481,7 @@ DefineTests[Upload,
 			{True, True},
 			Variables :> {uploadedObjects},
 			Stubs :> {$DeveloperUpload = True},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["If $DeveloperUpload is set to True, but DeveloperObject is set already set in the uploading packets, do not change the value, with or without the Object key set:",
@@ -2504,7 +2504,7 @@ DefineTests[Upload,
 			{False, Null},
 			Variables :> {uploadedObjects},
 			Stubs :> {$DeveloperUpload = True},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["If $DeveloperUpload is set to True, but we are updating an object that already exists, do not set it to DeveloperObject -> True:",
@@ -2525,7 +2525,7 @@ DefineTests[Upload,
 			],
 			False,
 			Stubs :> {$DeveloperUpload = True},
-			Sandbox -> True
+			Sandbox -> False
 		],
 
 		Test["If $DeveloperUpload is set to True, and we have multiple packets updating the same object and DeveloperObject is only set for one of them, don't update DeveloperObject for any of that ID (though do so for the others):",
@@ -2576,7 +2576,7 @@ DefineTests[Upload,
 			],
 			{False, Null, True, True, False},
 			Stubs :> {$DeveloperUpload = True},
-			Sandbox -> True
+			Sandbox -> False
 		]
 	}
 

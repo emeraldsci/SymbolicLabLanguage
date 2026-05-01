@@ -541,28 +541,28 @@ splitOneStructureRule[{struct_Structure, conc: _?NumericQ|_?ConcentrationQ|_?Amo
 
 simulateMechanismCore[initialState: ReactionMechanismP, resolvedOps_] := addKineticRatesToMechanism[initialState, Lookup[resolvedOps, Temperature], resolvedOps];
 
-simulateMechanismCore[initialState: StateP, resolvedOps_] := Module[
+simulateMechanismCore[initialState : StateP, resolvedOps_] := Module[
 	{foldingOps, hybridizationOps, mech, verbose = False},
 
 	foldingOps = SafeOptions[SimulateFolding, {PassOptions[SimulateReactivity, SimulateFolding, Join[
-		ReplaceRule[resolvedOps, {Upload->False, Output->Result, Template->Null, Method->Kinetic, Temperature->Replace[Lookup[resolvedOps, Temperature], Null->37 Celsius], Depth->Lookup[resolvedOps,FoldingDepth]}],
-		{MinLevel->Lookup[resolvedOps, MinFoldLevel], Breadth->Infinity}
+		ReplaceRule[resolvedOps, {Upload -> False, Output -> Result, Template -> Null, Method -> Kinetic, Temperature -> Replace[Lookup[resolvedOps, Temperature], Null -> 37 Celsius], Depth -> Lookup[resolvedOps, FoldingDepth]}],
+		{MinLevel -> Lookup[resolvedOps, MinFoldLevel], Breadth -> Infinity}
 	]]}];
-If[verbose,Print["FoldingOps: ",foldingOps]];
+	If[verbose, Print["FoldingOps: ", foldingOps]];
 	hybridizationOps = SafeOptions[SimulateHybridization, {PassOptions[SimulateReactivity, SimulateHybridization, Join[
-		ReplaceRule[resolvedOps, {Upload->False, Output->Result, Template->Null, Method->Energy, Temperature->Replace[Lookup[resolvedOps, Temperature], Null->37 Celsius], Depth->Lookup[resolvedOps,HybridizationDepth]}],
-		{MinLevel->Lookup[resolvedOps, MinPairLevel], Folding->Lookup[resolvedOps, InterStrandFolding]}
+		ReplaceRule[resolvedOps, {Upload -> False, Output -> Result, Template -> Null, Method -> Energy, Temperature -> Replace[Lookup[resolvedOps, Temperature], Null -> 37 Celsius], Depth -> Lookup[resolvedOps, HybridizationDepth]}],
+		{MinLevel -> Lookup[resolvedOps, MinPairLevel], Folding -> Lookup[resolvedOps, InterStrandFolding]}
 	]]}];
-If[verbose,Print["HybridOps: ",hybridizationOps]];
+	If[verbose, Print["HybridOps: ", hybridizationOps]];
 	mech = If[MatchQ[Lookup[resolvedOps, Reactions], _List],
 		reactionsMechanism[Lookup[resolvedOps, Reactions], resolvedOps, foldingOps, hybridizationOps],
-If[verbose,Print["Switching: ",Lookup[resolvedOps, Method]]];
+		If[verbose, Print["Switching: ", Lookup[resolvedOps, Method]]];
 		Switch[Lookup[resolvedOps, Method],
 			Motif, generateMotifMechanism[initialState, resolvedOps],
 			Base, generateBaseMechanism[initialState, resolvedOps, foldingOps, hybridizationOps]
 		]
 	];
-If[verbose,Print["Mech: ",mech]];
+	If[verbose, Print["Mech: ", mech]];
 	Switch[Lookup[resolvedOps, Temperature],
 		Null, mech,
 		_, addKineticRatesToMechanism[mech, Lookup[resolvedOps, Temperature], resolvedOps]

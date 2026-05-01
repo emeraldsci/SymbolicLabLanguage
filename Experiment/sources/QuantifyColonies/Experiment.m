@@ -4052,7 +4052,7 @@ resolveExperimentQuantifyColoniesOptions[
   ];
 
   (* Resolve the operator option. *)
-  resolvedOperator = If[NullQ[specifiedOperator], Model[User, Emerald, Operator, "Level 2"], specifiedOperator];
+  resolvedOperator = If[NullQ[specifiedOperator], Model[User, Emerald, Operator, "Baseline"], specifiedOperator];
 
   (* Check if the name is used already. We will only make one protocol, so don't need to worry about appending index. *)
   nameInvalidBool = StringQ[specifiedName] && TrueQ[DatabaseMemberQ[Append[Object[Protocol, RoboticCellPreparation], specifiedName]]];

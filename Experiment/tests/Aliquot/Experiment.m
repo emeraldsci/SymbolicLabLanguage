@@ -982,7 +982,7 @@ DefineTests[ExperimentAliquot,
 				ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Output -> Options],
 				{ImageSample, MeasureVolume, MeasureWeight}
 			],
-			{False, False, False},
+			{False|Null, False|Null, False|Null},
 			SetUp :> (Upload[<|
 				Object->Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID],
 				Living -> True
@@ -1405,7 +1405,13 @@ DefineTests[ExperimentAliquot,
 				Warning::UnknownAmount
 			}
 		],
-
+		Example[{Messages, "AliquotAmountPrecision", "Throw a warning and rounds the amount option if the value is more precise than the achievable precision:"},
+			options = ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (1.5 mL)"<>$SessionUUID], 200.0002 Microliter, Output -> Options];
+			Lookup[options, Amount],
+			{EqualP[200 Microliter]},
+			Messages :> {Warning::AliquotAmountPrecision},
+			Variables :> {options}
+		],
 		Example[{Messages, "OverspecifiedBuffer", "Both AssayBuffer and ConcentratedBuffer cannot be simultaneously requested:"},
 			ExperimentAliquot[Object[Sample, "ExperimentAliquot New Test Chemical 1 (200 uL)"<>$SessionUUID], Amount -> 50 Microliter, AssayVolume -> 100 Microliter, AssayBuffer -> Model[Sample, StockSolution, "70% Ethanol"], ConcentratedBuffer -> Model[Sample, StockSolution, "10x UV buffer"]],
 			$Failed,
@@ -1863,7 +1869,7 @@ DefineTests[ExperimentAliquot,
 				Output -> Options
 			],
 			{__Rule},
-			Messages :> {Warning::OptionContainsUnusableObject}
+			Messages :> {Warning::OptionContainsUnsuitableObject}
 		]
 	},
 	Stubs :> {

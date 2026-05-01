@@ -5037,12 +5037,47 @@ DefineObjectType[Object[Protocol, LCMS], {
 			Category -> "Operations Information",
 			Developer -> True
 		},
+		SyringeLoadVerificationCount -> {
+			Format -> Single,
+			Class -> Integer,
+			Pattern :> GreaterEqualP[0],
+			Description -> "Records the number of times operators have attempted the syringe load verification loop during direct infusion syringe loading.",
+			Category -> "Operations Information",
+			Developer -> True
+		},
 		CalibrationLoopCounts -> {
 			Format -> Multiple,
 			Class -> Integer,
 			Pattern :> GreaterEqualP[0],
 			Description -> "For each member of UniqueCalibrants, the number of calibration voltage adjustment loops performed during the procedure.",
 			Category -> "General",
+			Developer -> True
+		},
+		ContainersToUncover -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Containers whose covers are incompatible with the autosampler (i.e. not pierceable) and must be removed prior to loading the autosampler.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		ContainersToCover -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Object[Container],
+			Description -> "Containers for which a cover that is compatible with autosampler (i.e. pierceable) exists and can be covered prior to loading the autosampler.",
+			Category -> "Sample Preparation",
+			Developer -> True
+		},
+		Covers -> {
+			Format -> Multiple,
+			Class -> Link,
+			Pattern :> _Link,
+			Relation -> Alternatives[Model[Item, Cap], Object[Item, Cap]],
+			Description -> "For each member of ContainersToCover, the cover to use.",
+			Category -> "Sample Preparation",
 			Developer -> True
 		}
 	}

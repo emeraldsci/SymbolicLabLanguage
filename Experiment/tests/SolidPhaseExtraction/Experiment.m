@@ -202,10 +202,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				},
 				LoadingSampleVolume -> 100 Milliliter
 			],
-			$Failed,
+			ObjectP[Object[Protocol, SolidPhaseExtraction]],
 			Messages :> {
-				Error::TooLargeRequestVolume,
-				Error::InvalidOption
+				Warning::TooLargeRequestVolume
 			}
 		],
 
@@ -365,23 +364,6 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Error::SPECannotSupportSamples,
 				Warning::SPEExtractionCartridgeAndSorbentMismatch,
 				Error::InvalidOption
-			}
-		],
-
-		Example[{Messages, "PressureMustBeBoolean", "Instrument FilterBlock cannot regulate pressure, thus Pressure options will be converted to boolean:"},
-			ExperimentSolidPhaseExtraction[
-				{
-					Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
-					Object[Sample, "Test Sample 2 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
-					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
-				},
-				LoadingSampleVolume -> 1 Milliliter,
-				Instrument -> Model[Instrument, FilterBlock, "id:rea9jl1orrGr"],
-				PreFlushingSolutionPressure -> 10 PSI
-			],
-			ObjectP[Object[Protocol, SolidPhaseExtraction]],
-			Messages :> {
-				Warning::PressureMustBeBoolean
 			}
 		],
 
@@ -1255,7 +1237,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, LoadingSampleDrainTime, "LoadingSampleDrainTime options allows specification of the amount of time for Centrifugal or Pressure force to be applied to LoadingSample:"},
+			{Options, LoadingTime, "LoadingTime options allows specification of the amount of time for Centrifugal or Pressure force to be applied to LoadingSample:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1265,14 +1247,14 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				LoadingSampleDrainTime -> 1 Minute,
+				LoadingTime -> 1 Minute,
 				Output -> Options
-			], LoadingSampleDrainTime],
+			], LoadingTime],
 			1 Minute
 		],
 
 		Example[
-			{Options, LoadingSampleUntilDrained, "LoadingSampleUntilDrained options allows indication if LoadingSample is continually flushed through the cartridge in cycle of every LoadingSampleDrainTime until it is drained entirely, or until MaxPreFlushingDrainTime has been reached::"},
+			{Options, LoadingSampleUntilDrained, "LoadingSampleUntilDrained options allows indication if LoadingSample is continually flushed through the cartridge in cycle of every LoadingTime until it is drained entirely, or until MaxPreFlushingDrainTime has been reached::"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1289,7 +1271,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxLoadingSampleDrainTime, "MaxLoadingSampleDrainTime options allows specification of maximum amount of time to try and force the totality of LoadingSample to go through ExtractionCartridge:"},
+			{Options, MaxLoadingTime, "MaxLoadingTime options allows specification of maximum amount of time to try and force the totality of LoadingSample to go through ExtractionCartridge:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1299,9 +1281,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				MaxLoadingSampleDrainTime -> {1 Minute, 1 Minute},
+				MaxLoadingTime -> {1 Minute, 1 Minute},
 				Output -> Options
-			], MaxLoadingSampleDrainTime],
+			], MaxLoadingTime],
 			{1 Minute, 1 Minute}
 		],
 
@@ -1516,7 +1498,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, PreFlushingSolutionDrainTime, "PreFlushingSolutionDrainTime options allows specification of The amount of time for PreFlushingSolution to be flushed through the sorbent:"},
+			{Options, PreFlushingTime, "PreFlushingTime options allows specification of The amount of time for PreFlushingSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1526,9 +1508,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				PreFlushingSolutionDrainTime -> 1 Minute,
+				PreFlushingTime -> 1 Minute,
 				Output -> Options
-			], PreFlushingSolutionDrainTime],
+			], PreFlushingTime],
 			1 Minute
 		],
 
@@ -1550,7 +1532,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxPreFlushingSolutionDrainTime, "MaxPreFlushingSolutionDrainTime options allows indication of the maximum amount of time to flush PreFlushingSolution through sorbent:"},
+			{Options, MaxPreFlushingTime, "MaxPreFlushingTime options allows indication of the maximum amount of time to flush PreFlushingSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1560,9 +1542,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				MaxPreFlushingSolutionDrainTime -> 5 Minute,
+				MaxPreFlushingTime -> 5 Minute,
 				Output -> Options
-			], MaxPreFlushingSolutionDrainTime],
+			], MaxPreFlushingTime],
 			5 Minute
 		],
 
@@ -1734,7 +1716,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, ConditioningSolutionDrainTime, "ConditioningSolutionDrainTime options allows specification of the amount of time to set on the Instrument for ConditioningSolution to be flushed through the sorbent:"},
+			{Options, ConditioningTime, "ConditioningTime options allows specification of the amount of time to set on the Instrument for ConditioningSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1745,9 +1727,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				},
 				LoadingSampleVolume -> 0.5 Milliliter,
 				Instrument -> Model[Instrument, Centrifuge, "id:eGakldJEz14E"],
-				ConditioningSolutionDrainTime -> 1 Minute,
+				ConditioningTime -> 1 Minute,
 				Output -> Options
-			], ConditioningSolutionDrainTime],
+			], ConditioningTime],
 			1 Minute
 		],
 
@@ -1769,7 +1751,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxConditioningSolutionDrainTime, "MaxConditioningSolutionDrainTime options allows specification of the maximum amount of time to flush ConditioningSolution through sorbent:"},
+			{Options, MaxConditioningTime, "MaxConditioningTime options allows specification of the maximum amount of time to flush ConditioningSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1780,9 +1762,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				},
 				LoadingSampleVolume -> 0.5 Milliliter,
 				Instrument -> Model[Instrument, Centrifuge, "id:eGakldJEz14E"],
-				MaxConditioningSolutionDrainTime -> 6 Minute,
+				MaxConditioningTime -> 6 Minute,
 				Output -> Options
-			], MaxConditioningSolutionDrainTime],
+			], MaxConditioningTime],
 			6 Minute
 		],
 
@@ -1955,7 +1937,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, WashingSolutionDrainTime, "WashingSolutionDrainTime options allows specification of the amount of time to set on the Instrument for WashingSolution to be flushed through the sorbent:"},
+			{Options, WashingTime, "WashingTime options allows specification of the amount of time to set on the Instrument for WashingSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1965,9 +1947,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				WashingSolutionDrainTime -> 1 Minute,
+				WashingTime -> 1 Minute,
 				Output -> Options
-			], WashingSolutionDrainTime],
+			], WashingTime],
 			1 Minute
 		],
 
@@ -1989,7 +1971,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxWashingSolutionDrainTime, "MaxWashingSolutionDrainTime options allows specification of the maximum amount of time to flush WashingSolution through sorbent:"},
+			{Options, MaxWashingTime, "MaxWashingTime options allows specification of the maximum amount of time to flush WashingSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -1999,9 +1981,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
-				MaxWashingSolutionDrainTime -> 1 Minute,
+				MaxWashingTime -> 1 Minute,
 				Output -> Options
-			], MaxWashingSolutionDrainTime],
+			], MaxWashingTime],
 			1 Minute
 		],
 
@@ -2191,7 +2173,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, SecondaryWashingSolutionDrainTime, "SecondaryWashingSolutionDrainTime options allows specification of the amount of time to set on the Instrument for SecondaryWashingSolution to be flushed through the sorbent:"},
+			{Options, SecondaryWashingTime, "SecondaryWashingTime options allows specification of the amount of time to set on the Instrument for SecondaryWashingSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2203,14 +2185,14 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
 				Washing -> True,
 				SecondaryWashing -> True,
-				SecondaryWashingSolutionDrainTime -> 1 Minute,
+				SecondaryWashingTime -> 1 Minute,
 				Output -> Options
-			], SecondaryWashingSolutionDrainTime],
+			], SecondaryWashingTime],
 			1 Minute
 		],
 
 		Example[
-			{Options, SecondaryWashingSolutionUntilDrained, "SecondaryWashingSolutionUntilDrained options allows specification if SecondaryWashingSolution is continually flushed through the cartridge until it is drained entirely, or until MaxSecondaryWashingSolutionDrainTime:"},
+			{Options, SecondaryWashingSolutionUntilDrained, "SecondaryWashingSolutionUntilDrained options allows specification if SecondaryWashingSolution is continually flushed through the cartridge until it is drained entirely, or until MaxSecondaryWashingTime:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2229,7 +2211,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxSecondaryWashingSolutionDrainTime, "MaxSecondaryWashingSolutionDrainTime options allows specification of the maximum amount of time to flush SecondaryWashingSolution through sorbent:"},
+			{Options, MaxSecondaryWashingTime, "MaxSecondaryWashingTime options allows specification of the maximum amount of time to flush SecondaryWashingSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2241,9 +2223,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
 				Washing -> True,
 				SecondaryWashing -> True,
-				MaxSecondaryWashingSolutionDrainTime -> 1 Minute,
+				MaxSecondaryWashingTime -> 1 Minute,
 				Output -> Options
-			], MaxSecondaryWashingSolutionDrainTime],
+			], MaxSecondaryWashingTime],
 			1 Minute
 		],
 
@@ -2441,7 +2423,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, TertiaryWashingSolutionDrainTime, "TertiaryWashingSolutionDrainTime options allows specification of the amount of time to set on the Instrument for TertiaryWashingSolution to be flushed through the sorbent:"},
+			{Options, TertiaryWashingTime, "TertiaryWashingTime options allows specification of the amount of time to set on the Instrument for TertiaryWashingSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2453,14 +2435,14 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
 				Washing -> True,
 				SecondaryWashing -> True,
-				TertiaryWashingSolutionDrainTime -> 1 Minute,
+				TertiaryWashingTime -> 1 Minute,
 				Output -> Options
-			], TertiaryWashingSolutionDrainTime],
+			], TertiaryWashingTime],
 			1 Minute
 		],
 
 		Example[
-			{Options, TertiaryWashingSolutionUntilDrained, "TertiaryWashingSolutionUntilDrained options allows specification if TertiaryWashingSolution is continually flushed through the cartridge until it is drained entirely, or until MaxTertiaryWashingSolutionDrainTime:"},
+			{Options, TertiaryWashingSolutionUntilDrained, "TertiaryWashingSolutionUntilDrained options allows specification if TertiaryWashingSolution is continually flushed through the cartridge until it is drained entirely, or until MaxTertiaryWashingTime:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2480,7 +2462,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxTertiaryWashingSolutionDrainTime, "MaxTertiaryWashingSolutionDrainTime options allows specification of the maximum amount of time to flush TertiaryWashingSolution through sorbent:"},
+			{Options, MaxTertiaryWashingTime, "MaxTertiaryWashingTime options allows specification of the maximum amount of time to flush TertiaryWashingSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2492,9 +2474,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Instrument -> Model[Instrument, PressureManifold, "id:zGj91a7mElrL"],
 				Washing -> True,
 				SecondaryWashing -> True,
-				MaxTertiaryWashingSolutionDrainTime -> 1 Minute,
+				MaxTertiaryWashingTime -> 1 Minute,
 				Output -> Options
-			], MaxTertiaryWashingSolutionDrainTime],
+			], MaxTertiaryWashingTime],
 			1 Minute
 		],
 
@@ -2670,7 +2652,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, ElutingSolutionDrainTime, "ElutingSolutionDrainTime options allows specification of the amount of time to set on the Instrument for ElutingSolution to be flushed through the sorbent:"},
+			{Options, ElutingTime, "ElutingTime options allows specification of the amount of time to set on the Instrument for ElutingSolution to be flushed through the sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2680,9 +2662,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
 				Instrument -> Model[Instrument, LiquidHandler, "id:o1k9jAKOwLl8"],
-				ElutingSolutionDrainTime -> 1 Minute,
+				ElutingTime -> 1 Minute,
 				Output -> Options
-			], ElutingSolutionDrainTime],
+			], ElutingTime],
 			1 Minute
 		],
 
@@ -2704,7 +2686,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 		],
 
 		Example[
-			{Options, MaxElutingSolutionDrainTime, "MaxElutingSolutionDrainTime options allows specification of the maximum amount of time to flush ElutingSolution through sorbent:"},
+			{Options, MaxElutingTime, "MaxElutingTime options allows specification of the maximum amount of time to flush ElutingSolution through sorbent:"},
 			Lookup[ExperimentSolidPhaseExtraction[
 				{
 					{
@@ -2713,9 +2695,9 @@ DefineTests[ExperimentSolidPhaseExtraction,
 					},
 					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
 				},
-				MaxElutingSolutionDrainTime -> {1 Minute, 1 Minute},
+				MaxElutingTime -> {1 Minute, 1 Minute},
 				Output -> Options
-			], MaxElutingSolutionDrainTime],
+			], MaxElutingTime],
 			{1 Minute, 1 Minute}
 		],
 
@@ -2809,7 +2791,7 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				robotUOs
 			},
 			{
-				{{ObjectP[Model[Sample, "Milli-Q water"]], ObjectP[Model[Sample, StockSolution, "NaCl Solution in Water"]]}},
+				{{_String, _String}},
 				{ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, LabelSample]], ObjectP[Object[UnitOperation, Filter]]}
 			},
 			Variables :> {options, prepUOs},
@@ -3160,6 +3142,22 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Output -> Options
 			], Warning::SampleStowaways], CentrifugeIntensity],
 			1000 RPM
+		],
+		Example[
+			{Messages, "CentrifugePrecision", "Throws a warning if the centrifuge intensity applied to the samples prior to starting the experiment needs rounding:"},
+			Lookup[Quiet[ExperimentSolidPhaseExtraction[
+				{
+					{
+						Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
+						Object[Sample, "Test Sample 2 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+					},
+					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+				},
+				CentrifugeIntensity -> 1001 RPM,
+				Output -> Options
+			], Warning::SampleStowaways], CentrifugeIntensity],
+			1000 RPM,
+			Messages :> {Warning::CentrifugePrecision}
 		],
 		Example[
 			{Options, CentrifugeTime, "The amount of time for which the SamplesIn should be centrifuged prior to starting the experiment:"},
@@ -3642,8 +3640,87 @@ DefineTests[ExperimentSolidPhaseExtraction,
 				Output -> Options
 			], Preparation],
 			Manual
-		]
+		],
 
+		Example[
+			{Options, {PreFlushingTime, PreFlushingSolutionDrainTime}, "PreFlushingTime and PreFlushingSolutionDrainTime resolve independently for Robotic preparation:"},
+			Lookup[ExperimentSolidPhaseExtraction[
+				{
+					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+				},
+				PreFlushingTime -> 3 Minute,
+				PreFlushingSolutionDrainTime -> 1 Minute,
+				Preparation -> Robotic,
+				Output -> Options
+			], {PreFlushingTime, PreFlushingSolutionDrainTime}],
+			{3 Minute, 1 Minute}
+		],
+
+		Example[
+			{Options, {PreFlushingSolutionDrainTime, LoadingSampleDrainTime, WashingSolutionDrainTime, ElutingSolutionDrainTime}, "Various drain time options specifie the gravity drain wait time before applying force during washing when Preparation is Robotic:"},
+			Lookup[
+				ExperimentSolidPhaseExtraction[
+					{
+						Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+					},
+					PreFlushingSolutionDrainTime -> 1 Minute,
+					LoadingSampleDrainTime -> 2 Minute,
+					WashingSolutionDrainTime -> 1 Minute,
+					ElutingSolutionDrainTime -> 2 Minute,
+					Preparation -> Robotic,
+					Output -> Options
+				],
+				{
+					PreFlushingSolutionDrainTime,
+					LoadingSampleDrainTime,
+					WashingSolutionDrainTime,
+					ElutingSolutionDrainTime
+				}
+
+			],
+			{
+				EqualP[1 Minute],
+				EqualP[2 Minute],
+				EqualP[1 Minute],
+				EqualP[2 Minute]
+			}
+		],
+
+		Example[
+			{Options, CartridgePosition, "CartridgePosition automatically resolves to sequential well positions within the ExtractionCartridge when Preparation is Robotic with multiple samples:"},
+			protocol = ExperimentSolidPhaseExtraction[
+				{
+					Object[Sample, "Test Sample 1 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID],
+					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+				},
+				Preparation -> Robotic,
+				CartridgePosition -> {Automatic, "A1"}
+			];
+			Download[protocol, OutputUnitOperations[[1]][RoboticUnitOperations][[2]][FilterPosition]],
+			{"A2", "A1"},
+			TimeConstraint -> 900,
+			Variables :> {protocol}
+		],
+
+		Example[
+			{Options, {PreFlushingSolutionPipettingMethod, ConditioningSolutionPipettingMethod, LoadingSamplePipettingMethod, WashingSolutionPipettingMethod, SecondaryWashingSolutionPipettingMethod, TertiaryWashingSolutionPipettingMethod, ElutingSolutionPipettingMethod}, "PipettingMethod option specifies the pipetting parameters for various transfers when Preparation is Robotic:"},
+			protocol = ExperimentSolidPhaseExtraction[
+				{
+					Object[Sample, "Test Sample 6 - 2 mL in Plate 1 (ExperimentSolidPhaseExtraction)" <> $SessionUUID]
+				},
+				Preparation -> Robotic,
+				PreFlushingSolutionPipettingMethod -> Model[Method, Pipetting, "Aqueous"],
+				LoadingSamplePipettingMethod -> Model[Method, Pipetting, "Aqueous Low Volume"],
+				WashingSolutionPipettingMethod -> Model[Method, Pipetting, "Organic"]
+			];
+			Download[protocol, OutputUnitOperations[[1]][RoboticUnitOperations][[2]][{PipettingMethod, RetentateWashPipettingMethod}]],
+			{
+				{ObjectP[Model[Method, Pipetting, "Aqueous"]]},
+				{{Null, ObjectP[Model[Method, Pipetting, "Aqueous Low Volume"]], ObjectP[Model[Method, Pipetting, "Organic"]], Null}}
+			},
+			Variables :> {protocol},
+			TimeConstraint -> 600
+		]
 	},
 	Parallel -> True,
 	Stubs :> {

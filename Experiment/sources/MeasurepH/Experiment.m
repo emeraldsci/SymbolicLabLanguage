@@ -101,6 +101,18 @@ DefineOptions[
 				Description -> "The solution that should be used to perform the second washing of the pH probe between measurements. The washing process will involve dipping the probe into the liquid to make sure the sensor region is fully immersed. A maximum of 4 milliliters of liquid will be used for each wash.",
 				ResolutionDescription -> "Resolves to input sample unless specified.",
 				Category -> "General"
+			},
+			{
+				OptionName->TemperatureControlInstrument,
+				Default->Automatic,
+				AllowNull->True,
+				Widget->Widget[
+					Type->Object,
+					Pattern:>ObjectP[{Object[Instrument, HeatBlock], Model[Instrument, HeatBlock]}]
+				],
+				Description->"For each sample, the instrument to be used for controlling the temperature during measurement.",
+				ResolutionDescription->"The heat block that is connected to the pH meter.",
+				Category->"General"
 			}
 		],
 		{
@@ -160,14 +172,15 @@ DefineOptions[
 		},
 		{
 			OptionName -> LowCalibrationWashSolution,
-			Default -> Model[Sample, "id:BYDOjvGjGxGr"],  (*Note: if changing this default, please change the resource packet and cacheBall sampleModelsToDownload in AdjustpH as well.*)
+			Default -> Automatic,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
 			],
 			Description -> "The low pH buffer that should be used to wash the probe before calibrating the pH probe.",
-			Category -> "Hidden"
+			ResolutionDescription->"Resolves to the LowCalibrationBuffer model when LowCalibrationBuffer is a Model; otherwise, resolves to water.",
+			Category -> "Calibration"
 		},
 		{
 			OptionName->LowCalibrationBufferpH,
@@ -194,14 +207,15 @@ DefineOptions[
 		},
 		{
 			OptionName -> MediumCalibrationWashSolution,
-			Default -> Model[Sample, "id:vXl9j57j7OVd"], (*Note: if changing this default, please change the resource packet and cacheBall sampleModelsToDownload in AdjustpH as well.*)
+			Default -> Automatic,
 			AllowNull -> True,
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
 			],
 			Description -> "The medium pH buffer that should be used to wash the probe before calibrating the pH probe. This buffer is optional and may be set to Null if a calibration using two reference buffers (low and high) is desired).",
-			Category -> "Hidden"
+			ResolutionDescription->"Resolves to the MediumCalibrationBuffer model when MediumCalibrationBuffer is a Model; otherwise, resolves to water.",
+			Category -> "Calibration"
 		},
 		{
 			OptionName->MediumCalibrationBufferpH,
@@ -228,14 +242,15 @@ DefineOptions[
 		},
 		{
 			OptionName -> HighCalibrationWashSolution,
-			Default -> Model[Sample, "id:n0k9mG8m8dMn"], (* Note: if changing any of these defaults please change the resource packet and cacheBall sampleModelsToDownload in AdjustpH as well.*)
+			Default -> Automatic,
 			AllowNull -> False,
 			Widget -> Widget[
 				Type -> Object,
 				Pattern :> ObjectP[{Object[Sample], Model[Sample]}]
 			],
 			Description -> "The high pH buffer that should be used to wash the probe before calibrating the pH probe.",
-			Category -> "Hidden"
+			ResolutionDescription->"Resolves to the HighCalibrationBuffer model when HighCalibrationBuffer is a Model; otherwise, resolves to water.",
+			Category -> "Calibration"
 		},
 		{
 			OptionName->HighCalibrationBufferpH,
@@ -374,6 +389,42 @@ DefineOptions[
 			Description -> "The rack used to hold calibration wash solution sachet for pH probe calibration.",
 			Category -> "Hidden"
 		},
+		{
+			OptionName -> MeasurementTemperature,
+			Default -> Automatic,
+			AllowNull -> False,
+			Widget -> Alternatives[
+				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, $MaxIncubationTemperature],Units :> Celsius],
+				Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]]
+			],
+			Description -> "The setting temperature of the device that is used to incubate the sample during pH measurement.",
+			ResolutionDescription->"Automatically set to Ambient if not specified.",
+			Category -> "General"
+		},
+		{
+			OptionName -> MinTemperature,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Alternatives[
+				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, $MaxIncubationTemperature],Units :> Celsius],
+				Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]]
+			],
+			Description -> "The lowest temperature of the incubation device at which the measurement is allowed.",
+			ResolutionDescription->"Resolves to Null if MeasurementTemperature is Ambient; otherwise, set to 1 Celsius lower than MeasurementTemperature.",
+			Category -> "General"
+		},
+		{
+			OptionName -> MaxTemperature,
+			Default -> Automatic,
+			AllowNull -> True,
+			Widget -> Alternatives[
+				Widget[Type -> Quantity, Pattern :> RangeP[$MinIncubationTemperature, $MaxIncubationTemperature],Units :> Celsius],
+				Widget[Type->Enumeration,Pattern:>Alternatives[Ambient]]
+			],
+			Description -> "The highest temperature of the incubation device at which the measurement is allowed.",
+			ResolutionDescription->"Resolves to Null if MeasurementTemperature is Ambient; otherwise, set to 1 Celsius higher than MeasurementTemperature.",
+			Category -> "General"
+		},
 		ModifyOptions[
 			ModelInputOptions,
 			PreparedModelAmount,
@@ -427,6 +478,8 @@ Error::pHProbeConflict="The specified pH Probe `1` is not available with the spe
 Error::TemperatureCorrectionConflict="TemperatureCorrection can not be set for the current instrument `1`. Consider letting the Instrument option set automatically.";
 Error::RecoupSampleAliquotConflict="Aliquot must not be False if RecoupSample is True. Consider allowing Aliquot to automatically set.";
 Error::WashSolutionNotEnough = "There is not enough volume of `1` to be used for washing probe. We need 4 Milliliter of sample to wash probe each time. If this sample will be measured pH after washing probe, please make sure the remaining sample volume is still greater than MinSampleVolume of pH probe after washing.";
+Error::InvalidpHOffset = "The specified pH offset range is invalid as it falls within the default values. The MinpHOffset and MaxpHOffset must be configured outside the bounds of the probe(`1`)'s DefaultMinpHOffset `2`, and DefaultMaxpHOffset `3` (i.e., smaller and larger, respectively)";
+Warning::CalibrationWaterWashSolution = "The pH calibration wash solution for the option(s) `1` is not specified, and its corresponding calibration buffer is sample object (not Model[Sample]). In order to prevent potential resource constraints, water will be used to wash the probe before calibration. If this is not desired, please specify the calibration wash solution option(s) `1`.";
 
 Error::UniformedVerificationStandardpH = "The pH of `1` must be informed for automatic resolution of MinVerificationStandardpH and MaxVerificationStandardpH. Please provide update `1` or specify a value for these options.";
 Error::VerificationStandardOptionsRequired = "`1` cannot be set to Null when VerificationStandard is specified. Either allow the options to resolve automatically, specify a value for them, or set the VerificationStandard buffer to its default value: Null.";
@@ -439,9 +492,27 @@ Error::InsufficientVolumeSampleInOption = "The volume of samples `1` used as `2`
 Error::InputCannotBeOption = "The sample(s) `1` in the respective options `2` are also inputs to the function. Input samples cannot also be given as option values. Please update the inputs or options.";
 Error::IncompatibleSampleInOption = "The sample(s) `1` in the respective options `2` are not chemically compatible with the pH probes `3`. Please alter the incompatible sample(s) or select compatible probe(s) for measurements.";
 
+Error::SampleContainerHeatBlockIncompatible = "The sample(s) `1` is required to have temperature control during pH measurement but its container is not compatible with heat block Model[Instrument, HeatBlock, \"Digital Heating Cooling Drybath for SevenExcellence pH Meter\"].";
+Error::BufferContainerHeatBlockIncompatible = "The calibration buffer or standard verification `1` is required to have temperature control during pH measurement but its container is not compatible with heat block.";
+Error::TemperatureControlInstrumentMissing = "The temperature control instrument '1' conflicts with the measurement temperature `2`. pH meter with heat block is required to be used for temperature control during pH measurement. ";
+Error::TemperatureControlInstrumentConflict = "The pH meter instrument '1' conflicts with the measurement temperature `2`. pH meter with heat block is required to be used for temperature control during pH measurement. ";
+Error::InvalidTemperatureRange = "The specified temperature tolerance range is not valid. The min temperature `1` should be lower than measurement temperature `2`; the measurement temperature `2` should be lower than max temperature `3`; the specified temperature tolerance range should be within the instrument compatible temperature range (`4`~`5`).";
+Error::TemperatureControlConflict = "If measurement temperature is Ambient, there will no temperature control during pH measurement. The speicified measurement temperature `1` is conflicted with specified temperature range `2`~`3`.";
+
 (*valid containers for direct measurement pattern*)
 measurepHContainerP=ObjectP[{Object[Container,Vessel]}];
 measurepHContainerModelsP=ObjectP[{Model[Container,Vessel]}];
+
+(* Helper function that returns a list of roboticTitrationCaps packet *)
+sevenExcellencepHMeters[memoization_String] := sevenExcellencepHMeters[memoization] =
+	Module[{allpHMeterObjects},
+		If[!MemberQ[$Memoization, Experiment`Private`sevenExcellencepHMeters],
+			AppendTo[$Memoization, Experiment`Private`sevenExcellencepHMeters]];
+
+		(* Model[Instrument, pHMeter, "SevenExcellence (for pH)"] | Model[Instrument, pHMeter,  "SevenExcellence (for pH) for Robotic Titration"] | Model[Instrument, pHMeter,  "SevenExcellence (for pH) for Temperature Control"] *)
+		allpHMeterObjects = Search[Object[Instrument, pHMeter], Model == (Model[Instrument, pHMeter, "id:dORYzZJx7zpw"] | Model[Instrument, pHMeter, "id:R8e1PjeAn4B4"] | Model[Instrument, pHMeter, "id:dORYzZm9x5WG"])];
+		allpHMeterObjects
+	];
 
 (*container overload function*)
 ExperimentMeasurepH[myContainers:ListableP[ObjectP[{Object[Container],Object[Sample], Model[Sample]}]|_String|{LocationPositionP,_String|ObjectP[Object[Container]]}],myOptions:OptionsPattern[]]:=Module[
@@ -643,7 +714,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	allInstrumentModels=Join[pHInstrumentsModels,specifiedInstrumentModels];
 
 	(* Get all seven excellence pH meter objects, for buffer sets checking. *)
-	instrumentsObjects=Search[Object[Instrument,pHMeter],Model == (Model[Instrument, pHMeter, "SevenExcellence (for pH)"]|Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"])];
+	instrumentsObjects=Experiment`Private`sevenExcellencepHMeters["Memoization"];
 
 	(* Get all the potential preferred containers*)
 	potentialContainers=preferredpHContainer[All];
@@ -655,7 +726,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 	potentialContainersWAliquot=If[MatchQ[aliquotContainerLookup,measurepHContainerModelsP],Union[potentialContainers,{aliquotContainerLookup}],potentialContainers];
 
 	(* Lookup our reference buffers. *)
-	referenceBuffers = Lookup[safeOps, {LowCalibrationBuffer, MediumCalibrationBuffer, HighCalibrationBuffer, VerificationStandard}] /. {Null -> Nothing};
+	referenceBuffers = Lookup[safeOps, {LowCalibrationBuffer, MediumCalibrationBuffer, HighCalibrationBuffer, VerificationStandard, LowCalibrationWashSolution, MediumCalibrationWashSolution, HighCalibrationWashSolution}] /. {Null -> Nothing};
 
 	objectSamplePacketFields=Packet@@Union[Flatten[{pH,IncompatibleMaterials,SamplePreparationCacheFields[Object[Sample]]}]];
 
@@ -684,33 +755,37 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 				{
 					objectSamplePacketFields,
 					Packet[Container[Model][SamplePreparationCacheFields[Model[Container]]]],
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]],
+					Packet[Container[Model][Footprint]]
 				},
 				{
 					Packet[Name,Object,Objects,TemperatureCorrection,WettedMaterials,Dimensions,ProbeLengths,ProbeDiameters,MinpHs,MaxpHs,MinDepths,MinSampleVolumes,ProbeTypes,AssociatedAccessories, TemperatureCorrection, AcquisitionTimeControl],
 					(*get all of the pH probe information*)
-					Packet[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments}]]
+					Packet[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset}]]
 				},
 				{
 					Packet[Name,Model]
 				},
 				{
 					Packet[Name,Model],
-					Packet[Model[{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments}]]
+					Packet[Model[{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset}]]
 				},
 				{
-					Packet[Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments]
+					Packet[Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset]
 				},
 				{
 					Packet[SamplePreparationCacheFields[Model[Container]]],
-					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
-					Packet[pH, TransportTemperature, Name, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Volume],
+					Packet[pH, TransportTemperature, Name, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State, Volume, Container],
 					Packet[Model[pH, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State]]
 				},
 				{
-					Packet[pH, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State]
+					Packet[pH, TransportTemperature, Name, Deprecated, Sterile, LiquidHandlerIncompatible, Tablet, SolidUnitWeight, State],
+					Packet[Products[DefaultContainerModel[Footprint]]],
+					Packet[Products[DefaultContainerModel]],
+					Packet[Products]
 				},
 				{
 					Packet[Model,Volume]
@@ -719,7 +794,10 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 					Packet[WasteBeaker]
 				},
 				{
-					Packet[CalibrationBufferSets]
+					Packet[CalibrationBufferSets, TemperatureControlInstrument],
+					Packet[TemperatureControlInstrument[Model,Name,MinTemperature,MaxTemperature,InternalDimensions]],
+					Packet[TemperatureControlInstrument[Model[CompatibleAdapters, MinTemperature, MaxTemperature, Name, InternalDimensions]]],
+					Packet[TemperatureControlInstrument[Model[CompatibleAdapters[Positions]]]]
 				}
 			},
 			Cache -> Lookup[safeOps, Cache, {}],
@@ -727,7 +805,7 @@ ExperimentMeasurepH[mySamples:ListableP[ObjectP[Object[Sample]]],myOptions:Optio
 			Date -> Now
 			(*some containers don't have a link to VolumeCalibrations. Need to silence those.*)
 		],
-		{Download::FieldDoesntExist,Download::NotLinkField}]
+		{Download::FieldDoesntExist,Download::NotLinkField, Download::MissingField}]
 	}];
 
 
@@ -827,7 +905,7 @@ DefineOptions[
 
 resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptions:{_Rule...},myResolutionOptions:OptionsPattern[resolveExperimentMeasurepHOptions]]:=Module[
 	{outputSpecification,output,gatherTests,cache,samplePrepOptions,measurepHOptions,simulatedSamples,consolidateAliquots,
-	resolvedSamplePrepOptions,updatedSimulation,measurepHOptionsAssociation,invalidInputs,invalidOptions,acquisitionTimeLookup,objectSamplePacketFields, internalUsage, internalUsageQ,
+	resolvedSamplePrepOptions,updatedSimulation,measurepHOptionsAssociation,invalidInputs,invalidOptions,acquisitionTimeLookup,objectSamplePacketFields, internalUsage, internalUsageQ,cacheBall, cacheAssoc,
 
 		(*download variables*)
 		cacheFailedRemoved,probeLookup,specifiedProbeObjects, specifiedProbeModels,
@@ -836,7 +914,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		referenceObjectDownloadValues,referenceModelDownloadValues,lowBufferLookup,mediumBufferLookup,highBufferLookup,
 		instrumentObjectPackets,volumeCalibrationPackets,latestVolumeCalibrationPacket,combinedContainerPackets,instrumentModelPackets,potentialContainerPackets,
 		potentialContainerModelPackets,firstPotentialCalibration,combinedPotentialContainerPackets,incompatibleWithInstrumentBool,pHProbeConflictBool,
-		pHProbeConflictOptions, pHProbeConflictTests,certainCalibrationRequiredOptions, certainCalibrationRequiredTests,washSolutions, washSolutionDownloadValues,
+		pHProbeConflictOptions, pHProbeConflictTests, certainCalibrationRequiredTests,washSolutions, washSolutionDownloadValues,
 		incompatibleRoboticInstrumentBool, incompatibleInputsRoboticInstrument, incompatibleInputsRoboticInstrumentOptions, incompatibleInputsRoboticInstrumentTests, washSolutionConflictOptions, washSolutionConflictTests,
 
 		(*Input validation variables*)
@@ -848,8 +926,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		surfaceAliquotConflictBool,surfaceAliquotConflictInputs,instruments,allProbeObjectDownloadValues, allProbeModelDownloadValues,
 		pHInstrumentsModels,aliquotOptionNames, aliquotTuples, deprecatedInstrumentQ, deprecatedInstrumentOptions, deprecatedInstrumentTest,
 		acquisitionConflictResults,acquisitionConflictInvalidInputs,acquisitionConflictInvalidOptions,acquisitionConflictTests,
-		lowReferenceBufferModel,mediumReferenceBufferModel,highReferenceBufferModel,lowpHValue,mediumpHValue,highpHValue,resolvedLowpHValue,resolvedMediumpHValue,
-		resolvedHighpHValue,invalidLowpHValueOptions,invalidMediumpHValueOptions,invalidHighpHValueOptions,invalidpHOptions,matchingReferencepHTest,invalidMediumCalibrationOptions,mediumCalibrationpHTest,
+		lowpHValue,mediumpHValue,highpHValue,resolvedLowpHValue,resolvedMediumpHValue,
+		resolvedHighpHValue,invalidLowpHValueOptions,invalidMediumpHValueOptions,invalidHighpHValueOptions,invalidpHOptions,matchingReferencepHTest,invalidMediumCalibrationOptions,mediumCalibrationpHTest, resolvedLowCalibrationWashSolution, resolvedMediumCalibrationWashSolution, resolvedHighCalibrationWashSolution, calibrationWaterWashOptions,
 		verificationStandardLookup, verificationStandardpHValue, verificationStandardWashSolutionLookup,
 		specifiedMinVerificationStandardpH, specifiedMaxVerificationStandardpH, resolvedMinVerificationStandardpH, resolvedMaxVerificationStandardpH,
 		verificationStandardObjectpH, verificationStandardModelpH, verificationStandardObjectPacket, verificationStandardModelPacket,
@@ -867,12 +945,14 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		surfaceInstrumentModels, surfaceGlobalMinVol,
 		resolvedProbeList, resolvedTemperatureCorrectionList, acquisitionTimeConflictBool,
 		temperatureCorrectionConflictBool,temperatureCorrectionLookup,resolvedMaxpHSlope, resolvedMinpHSlope, resolvedMinpHOffset, resolvedMaxpHOffset, allDefinedBufferSets, matchedBufferSets, calibrationBufferSet,
-		calibrationBufferSetName, calibrationBufferMethod, calibrationBufferMethodName,
+		calibrationBufferSetName, calibrationBufferMethod, calibrationBufferMethodName, temperatureControlQ, resolvedTemperature, temperatureControlInstrumentLookup, heatBlockList, heatBlockMissingBool, heatBlockConflictBool, resolvedMinTemperature, resolvedMaxTemperature,temperatureControlBufferIncompatibleQ,uniqueHeatBlockRacks,
 
 		targetContainers,resolvedAliquotOptions,
 		incompatibleWInstrumentInputs,incompatibleWInstrumentOptions,noSuitableInstrumentInputs,immersionGlobalMinReach,
-		incompatibleWInstrumentTests,noSuitableInstrumentTests,invalidLowHighpHOptions,invalidLowHighpHTest,
-		temperatureCorrectionConflictOptions, temperatureCorrectionTests,
+		incompatibleWInstrumentTests,noSuitableInstrumentTests,invalidLowHighpHOptions,invalidLowHighpHTest, sampleContainerHeatBlockConflictTests,
+		bufferContainerHeatBlockConflictTests, heatBlockTemperatureConflictTests, heatBlockConflictTests, temperatureRangeTests, temperatureControlConflictTests,
+		temperatureCorrectionConflictOptions, temperatureCorrectionTests, heatBlockSampleContainerIncompatibleBool, invalidSampleContainerHeatBlockOptions,
+		invalidBufferContainerHeatBlockOptions, invalidHeatBlockTemperatureOptions, invalidHeatBlockpHMeterOptions, invalidTemperatureRangeOptions, invalidTemperatureControlOptions, invalidpHOffsetOptions,
 
 		(* for invalid samples given as options *)
 		unmergedSampleVolumeLookup, unmergedSampleOptionsLookup, sampleVolumeRequiredLookup, sampleOptionLookup,
@@ -887,7 +967,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		calibrationFunction,minDepthToVolume,minVolume,requiredAliquotAmounts,
 		name, confirm, canaryBranch, template, samplesInStorageCondition, originalCache, operator, parentProtocol, upload, outputOption, email, imageSample,resolvedEmail,resolvedImageSample,
 		surfaceRecoupWarningSamples, numberOfReplicates,allTests,testsRule,resolvedOptions,resultRule,resolvedPostProcessingOptions,
-		recoupAliquotConflictBool, recoupAliquotConflictOptions, recoupAliquotConflictTests, recoupProbeConflictTest, simulation, resolvedWashSolutions, resolvedSecondaryWashSolutions,  groupedWashSolutions, washSolutionNotEnoughQ, instrumentsObjects
+		recoupAliquotConflictBool, recoupAliquotConflictOptions, recoupAliquotConflictTests, recoupProbeConflictTest, simulation, resolvedWashSolutions, resolvedSecondaryWashSolutions,  groupedWashSolutions, washSolutionNotEnoughQ, instrumentsObjects, temperatureControlValues
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -907,6 +987,10 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	cache=Lookup[ToList[myResolutionOptions],Cache,{}];
 	simulation=Lookup[ToList[myResolutionOptions],Simulation,Simulation[]];
 
+	(* prepare for fastAssoc *)
+	cacheBall = FlattenCachePackets[cache];
+	cacheAssoc = makeFastAssocFromCache[cacheBall];
+
 	(*There is a chance that the container has no volume calibration. Remove such and check if we can resolve SamplePrepOptions*)
 	cacheFailedRemoved = Cases[cache,Except[$Failed]];
 
@@ -923,10 +1007,10 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	pHInstrumentsModels=Search[Model[Instrument,pHMeter],Deprecated!=True];
 
 	(* Get all seven excellence pH meter objects, for buffer sets checking. *)
-	instrumentsObjects=Search[Object[Instrument,pHMeter],Model == (Model[Instrument, pHMeter, "SevenExcellence (for pH)"]|Model[Instrument, pHMeter, "SevenExcellence (for pH) for Robotic Titration"])];
+	instrumentsObjects=Experiment`Private`sevenExcellencepHMeters["Memoization"];
 
 	(*check if the user supplied a instrument that's not in our list (e.g. a developer object)*)
-	{instrumentLookup,probeLookup}=Lookup[myOptions,{Instrument,Probe}];
+	{instrumentLookup,probeLookup, temperatureControlInstrumentLookup}=Lookup[myOptions,{Instrument,Probe,TemperatureControlInstrument}];
 
 	(* Get our NumberOfReplicates option. *)
 	numberOfReplicates=Lookup[myOptions,NumberOfReplicates]/.{Null->1};
@@ -972,33 +1056,34 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				Cases[referenceBuffers,ObjectP[Object[Sample]]],
 				Cases[referenceBuffers,ObjectP[Model[Sample]]],
 				washSolutions,
+				instrumentsObjects,
 				instrumentsObjects
 			},
 			{
 				{
 					objectSamplePacketFields,
 					Packet[Container[Model][{Name,VolumeCalibrations,MaxVolume, Aperture, Dimensions, IncompatibleMaterials, WellDiameter, WellDimensions}]],
-					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[Container[Model][VolumeCalibrations][{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[Name,Object,Objects,WettedMaterials,Dimensions,ProbeLengths,ProbeDiameters,MinpHs,MaxpHs,MinDepths,MinSampleVolumes,ProbeTypes,TemperatureCorrection,AcquisitionTimeControl],
-					Packet[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments}]]
+					Packet[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset}]]
 				},
 				{
 					Packet[Name,Model],
 					Packet[Model[{Name,Object,Objects,WettedMaterials,Dimensions,ProbeLengths,ProbeDiameters,MinpHs,MaxpHs,MinDepths,MinSampleVolumes,ProbeTypes,TemperatureCorrection,AcquisitionTimeControl}]],
-					Packet[Model[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments}]]]
+					Packet[Model[AssociatedAccessories[[All, 1]][{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset}]]]
 				},
 				{
 					Packet[Name,Model],
-					Packet[Model[{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments}]]
+					Packet[Model[{Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset}]]
 				},
 				{
-					Packet[Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments]
+					Packet[Object,ProbeType,ShaftLength,ShaftDiameter,MinSampleVolume,MinpH,MaxpH,MinDepth,WettedMaterials,SupportedInstruments, DefaultMinpHOffset, DefaultMaxpHOffset]
 				},
 				{
 					Packet[Name, MaxVolume, Aperture, Dimensions, WellDiameter, WellDimensions],
-					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated}]]
+					Packet[VolumeCalibrations[{LiquidLevelDetectorModel,CalibrationFunction,DateCreated, Anomalous, Deprecated, DeveloperObject, EmptyDistanceDistribution}]]
 				},
 				{
 					Packet[pH,TransportTemperature,Name,Deprecated,Sterile,LiquidHandlerIncompatible,Tablet,SolidUnitWeight,State,Volume],
@@ -1012,6 +1097,12 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				},
 				{
 					Packet[CalibrationBufferSets]
+				},
+				{
+					Packet[TemperatureControlInstrument],
+					Packet[TemperatureControlInstrument[Model,Name,MinTemperature,MaxTemperature,InternalDimensions]],
+					Packet[TemperatureControlInstrument[Model[CompatibleAdapters, MinTemperature, MaxTemperature, Name, InternalDimensions]]],
+					Packet[TemperatureControlInstrument[Model[CompatibleAdapters[Positions]]]]
 				}
 			},
 			Cache -> cacheFailedRemoved,
@@ -1029,7 +1120,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		referenceObjectDownloadValues,
 		referenceModelDownloadValues,
 		washSolutionDownloadValues,
-		calibrationBufferValues
+		calibrationBufferValues,
+		temperatureControlValues
 	}=allDownloadValues;
 
 	(*pull out all the sample/sample model/container/container model packets*)
@@ -1038,7 +1130,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	volumeCalibrationPackets=allSampleDownloadValues[[All,3]];
 
 	(*only consider the calibration packets with a liquid level monitor*)
-	latestVolumeCalibrationPacket=Map[If[Length[#]>0,FirstCase[#,KeyValuePattern[LiquidLevelDetectorModel->Except[Null]]],Null]&,volumeCalibrationPackets];
+	latestVolumeCalibrationPacket=Map[If[Length[#]>0,FirstCase[#,KeyValuePattern[{Anomalous -> Except[True], Deprecated -> Except[True], DeveloperObject -> Except[True], EmptyDistanceDistribution -> Except[Null], LiquidLevelDetectorModel -> ObjectP[]}]],Null]&,volumeCalibrationPackets];
 
 	(*combine the calibration information into the container model packets.*)
 	combinedContainerPackets=MapThread[If[Not[NullQ[#2]],
@@ -1062,7 +1154,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	firstPotentialCalibration=Map[
 		If[Length[#]>0,
 			Last[
-				Cases[#,KeyValuePattern[LiquidLevelDetectorModel->Except[Null]]]
+				Cases[#,KeyValuePattern[{Anomalous->Except[True],Deprecated->Except[True],DeveloperObject->Except[True], EmptyDistanceDistribution->Except[Null], LiquidLevelDetectorModel -> ObjectP[]}]]
 			],
 			Null
 		]&,
@@ -1270,7 +1362,7 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 	];
 
 
-	(*We only allow robotic mode in AdjustpH,so if InternalUsage is not Ture,give a conflict for given model/object of Model[Instrument,pHMeter,"SevenExcellence (for pH) for Robotic Titration"]*)
+	(*We only allow robotic mode in AdjustpH,so if InternalUsage is not True,give a conflict for given model/object of Model[Instrument,pHMeter,"SevenExcellence (for pH) for Robotic Titration"]*)
 	incompatibleRoboticInstrumentBool = If[!internalUsageQ,
 		MapThread[
 			Which[
@@ -1549,6 +1641,34 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		Lookup[fetchPacketFromCache[mediumBufferLookup,cache],pH]
 	];
 
+	calibrationWaterWashOptions = {};
+	(* From calibration buffers, resolve calibration wash solutions *)
+	{resolvedLowCalibrationWashSolution, resolvedMediumCalibrationWashSolution, resolvedHighCalibrationWashSolution} = MapThread[
+		Which[
+			(* If specified, use that *)
+			MatchQ[Lookup[myOptions, #2], Except[Automatic]],
+			Lookup[myOptions, #2],
+
+			(* If calibration WashSolution is not specified, and calibration buffer is Model -- resolve wash solution to be the same Model  *)
+			MatchQ[#1, ObjectP[Model]],
+			#1,
+
+			(* Otherwise, resolve to water and give a warning *)
+			True,
+			AppendTo[calibrationWaterWashOptions, #2];
+			Model[Sample, "id:8qZ1VWNmdLBD"] (* Model[Sample, "Milli-Q water"] *)
+		]&,
+		{
+			{lowBufferLookup, mediumBufferLookup, highBufferLookup},
+			{LowCalibrationWashSolution, MediumCalibrationWashSolution, HighCalibrationWashSolution}
+		}
+	];
+
+	(*If there are inputs where these options are conflicting, specify the options*)
+	If[Length[calibrationWaterWashOptions]>0&&!gatherTests&&!MatchQ[$ECLApplication,Engine],
+		Message[Warning::CalibrationWaterWashSolution,calibrationWaterWashOptions];
+	];
+
 	(* Fetch the object packet for the verification standard if it exists. *)
 	verificationStandardObjectPacket = If[MatchQ[verificationStandardLookup, ObjectP[Object]],
 		fetchPacketFromCache[verificationStandardLookup, cache],
@@ -1721,14 +1841,6 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		Convert[Lookup[myOptions,MinpHSlope], Percent],
 		95 * Percent
 	];
-	resolvedMaxpHOffset = If[MatchQ[Lookup[myOptions,MaxpHOffset],Except[Automatic]],
-		Lookup[myOptions,MaxpHOffset],
-		20 Milli*Volt
-	];
-	resolvedMinpHOffset = If[MatchQ[Lookup[myOptions,MinpHOffset],Except[Automatic]],
-		Lookup[myOptions,MinpHOffset],
-		-20 Milli*Volt
-	];
 
 	{resolvedWashSolutions, resolvedSecondaryWashSolutions} = Transpose[MapThread[
 		Function[{washSolution, secondaryWashSolution, sample},
@@ -1751,6 +1863,47 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		{Lookup[myOptions,WashSolution], Lookup[myOptions,SecondaryWashSolution], mySamples}
 	]];
 
+	(* Resolve measurement temperature *)
+	resolvedTemperature = If[MatchQ[Lookup[myOptions, MeasurementTemperature], Except[Automatic]],
+		(* if user specified, take that *)
+		Lookup[myOptions, MeasurementTemperature],
+		(* otherwise, resolve to Ambient -- no temperature control during measurement *)
+		Ambient
+	];
+
+	(* Determine if we need to do temperature control *)
+	temperatureControlQ = MatchQ[resolvedTemperature, Except[Ambient]];
+
+	(* Resolve min temperature *)
+	resolvedMinTemperature = Which[
+		(* if user specified, take that *)
+		MatchQ[Lookup[myOptions, MinTemperature], Except[Automatic]],
+		Lookup[myOptions, MinTemperature],
+
+		(* if we do not apply temperature control *)
+		!temperatureControlQ,
+		Null,
+
+		(* otherwise, resolve to 1 Celsius lower than setting temperature *)
+		True,
+		resolvedTemperature - 1 Celsius
+	];
+
+	(* Resolve min temperature *)
+	resolvedMaxTemperature = Which[
+		(* if user specified, take that *)
+		MatchQ[Lookup[myOptions, MaxTemperature], Except[Automatic]],
+		Lookup[myOptions, MaxTemperature],
+
+		(* if we do not apply temperature control *)
+		!temperatureControlQ,
+		Null,
+
+		(* otherwise, resolve to 1 Celsius higher than setting temperature *)
+		True,
+		resolvedTemperature + 1 Celsius
+	];
+
 	(* Convert our options into a MapThread friendly version. *)
 	{
 		aliquotVolumeList,
@@ -1764,7 +1917,11 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 		noSuitableInstrumentErrorList,
 		acquisitionTimeConflictBool,
 		temperatureCorrectionConflictBool,
-		pHProbeConflictBool
+		pHProbeConflictBool,
+		heatBlockList,
+		heatBlockMissingBool,
+		heatBlockConflictBool,
+		heatBlockSampleContainerIncompatibleBool
 	}=Transpose[MapThread[
 		Function[
 			{
@@ -1781,12 +1938,10 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				acquisitionTime,
 				temperatureCorrection,
 				incompatibleInputBool,
-				alreadyIncompatibleWithInstrumentQ
+				alreadyIncompatibleWithInstrumentQ,
+				temperatureControlInstrument
 			},
-			Module[{instrumentProbeType,resolvedProbeType,workingVolume,workingContainerPacket,selectedContainer,selectedCalibration,
-				minimumVolumeRequired,aliquotContainerResolve,incompatibleWInstrumentError,noSuitableInstrumentsError,instrument,aliquotVolumeRes,instrumentModelRes,instrumentSelectionProblems,
-				resolvedAcquisitionTime,resolvedInstrument,probeResolution, resolvedInstrumentModelPacket, resolvedTemperatureCorrection, defaultInstrumentQ,
-				temperatureCorrectionConflictQ, acquisitionTimeConflictQ, pHProbeConflictQ, defaultVolume},
+			Module[{instrumentProbeType,resolvedProbeType,aliquotContainerResolve,incompatibleWInstrumentError,noSuitableInstrumentsError,instrument,aliquotVolumeRes,instrumentModelRes,instrumentSelectionProblems, resolvedAcquisitionTime,resolvedInstrument,probeResolution, resolvedInstrumentModelPacket, resolvedTemperatureCorrection, defaultInstrumentQ, temperatureCorrectionConflictQ, acquisitionTimeConflictQ, pHProbeConflictQ, defaultVolume, resolvedHeatBlock, potentialHeatBlock, heatBlockMissingQ, heatBlockConflictQ, heatBlockContainerConflictQ},
 
 				(*MASTER SWITCH RESOLUTION*)
 
@@ -1818,18 +1973,24 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(*INDIVIDUAL RESOLUTION*)
 
 				(* do our preselection of the instrument *)
-				(*if one was specified, then go with that*)
 				instrument=Which[
-					MatchQ[instrumentPacket,ObjectP[Model[Instrument,pHMeter]]], Lookup[instrumentPacket,Object],
-					(*if the user wants temperature correct, then we go with that*)
-					True,Null
+					(*if one was specified, then go with that*)
+					MatchQ[instrumentPacket,ObjectP[Model[Instrument,pHMeter]]],
+					Lookup[instrumentPacket,Object],
+
+					(*if the user wants temperature control, we have to use SevenExcellence pH meter Model[Instrument, pHMeter, "SevenExcellence (for pH) for Temperature Control"] *)
+					temperatureControlQ,
+					Model[Instrument, pHMeter, "id:dORYzZm9x5WG"],
+
+					(* otherwise, do not pre-resolve, pHDevices will resolve it later *)
+					True,
+					Null
 				];
 
 				(* Resolve several options based on our resolved probe type. *)
 				(* Resolve aliquot and instrument options. *)
-				{aliquotVolumeRes,aliquotContainerResolve,instrumentModelRes,probeResolution,instrumentSelectionProblems}= Module[{desiredAliquotVolume,resolvedAliquotVolume,resolvedAliquotContainer,resolvedContainerPacket,relevantInstrumentModels,resolvedInstrument,instrumentResolutionProblems,
-							returnedInstruments,returnedProbeLists,issuesWInstruments,resolvedProbe, instrumentModelPreselectionPackets,volumeToPass,
-							defaultProbe},
+				{aliquotVolumeRes,aliquotContainerResolve,instrumentModelRes,probeResolution,instrumentSelectionProblems}= Module[
+					{desiredAliquotVolume,resolvedAliquotVolume,resolvedAliquotContainer,resolvedContainerPacket,relevantInstrumentModels,resolvedInstrument,instrumentResolutionProblems, returnedInstruments,returnedProbeLists,issuesWInstruments,resolvedProbe, instrumentModelPreselectionPackets,volumeToPass, defaultProbe},
 							(* Pre-resolve AliquotVolume and AliquotContainer based on the information that we were given. *)
 							{desiredAliquotVolume,resolvedAliquotContainer}= If[aliquotOption,
 								Switch[{resolvedProbeType,MatchQ[aliquotVolume, GreaterP[0 Milliliter]], MatchQ[aliquotContainer, ObjectP[{Object[Container], Model[Container]}]]},
@@ -1965,11 +2126,11 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 							{resolvedInstrument,resolvedProbe,instrumentResolutionProblems}=If[MatchQ[instrument,ObjectP[{Object[Instrument,pHMeter],Model[Instrument,pHMeter]}]],
 								If[Length[returnedInstruments]>0,
 									{
-										rawInstrument,
+										instrument,
 										If[!NullQ[probe], FirstOrDefault[First@returnedProbeLists]],
 										{}
 									},
-									{rawInstrument,probe/.{Automatic->Null},issuesWInstruments}
+									{instrument,probe/.{Automatic->Null},issuesWInstruments}
 								],
 								If[Length[returnedInstruments]>0,
 									If[defaultInstrumentQ,
@@ -1992,7 +2153,65 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				(*get our resolved instrument packet*)
 				resolvedInstrumentModelPacket=If[MatchQ[resolvedInstrument,ObjectP[Model[Instrument]]],
 					fetchPacketFromCache[resolvedInstrument, cache],
-					fetchPacketFromCache[Lookup[fetchPacketFromCache[instrumentModelRes,Flatten[allInstrumentObjDownloadValues]],Model], cache]
+					fetchPacketFromCache[Lookup[fetchPacketFromCache[resolvedInstrument,Flatten[allInstrumentObjDownloadValues]],Model], cache]
+				];
+
+				(* resolve heat block based on temperature setting and pH meter instrument *)
+				{potentialHeatBlock, heatBlockMissingQ} = Which[
+					(* if we do not need temperature control, temperature control instrument is Null *)
+					!temperatureControlQ,
+					{Null, False},
+
+					(* if pH meter object is specified, and instrument model is Model[Instrument, pHMeter, "SevenExcellence (for pH) for Temperature Control"], use the heat block of that pH meter *)
+					MatchQ[resolvedInstrument, ObjectP[Object[Instrument, pHMeter]]]&&MatchQ[instrumentModelRes, ObjectP[Model[Instrument, pHMeter, "id:dORYzZm9x5WG"]]],
+					{Lookup[fetchPacketFromCache[resolvedInstrument, cache], TemperatureControlInstrument], False},
+
+					(* if pH meter is Model[Instrument, pHMeter, "SevenExcellence (for pH) for Temperature Control"], resolve to heat block model ---will be updated to object in compiler *)
+					MatchQ[resolvedInstrument, ObjectP[Model[Instrument, pHMeter, "id:dORYzZm9x5WG"]]],
+					(* Model[Instrument, HeatBlock, "Digital Heating Cooling Drybath for SevenExcellence pH Meter"] *)
+					{Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], False},
+
+					(* otherwise, the resolved pH meter does not have heat block *)
+					True,
+					{Null, True}
+				];
+
+
+
+				(* check if resolved heat block conflicts with specified option *)
+				{resolvedHeatBlock,heatBlockConflictQ} = Which[
+					(* if temperatureControlInstrument is specified, check if it matches resolution *)
+					(* Note: here we will error out the cases where pH meter is still model but heat block is object. Because pH meter resolution is resolved based on probe model/object, it causes much more complexity to trace back and re-resolve pH meter and probes. *)
+					MatchQ[temperatureControlInstrument, ObjectP[{Object[Instrument, HeatBlock], Model[Instrument, HeatBlock]}]],
+					{temperatureControlInstrument, !MatchQ[potentialHeatBlock, ObjectP[temperatureControlInstrument]]},
+
+					(* if temperatureControlInstrument is not specified, no conflict *)
+					MatchQ[temperatureControlInstrument, Automatic],
+					{potentialHeatBlock, False},
+
+					(* otherwise, temperatureControlInstrument is specified Null, make sure it is resolved to Null as well *)
+					True,
+					{Null, !NullQ[potentialHeatBlock]}
+				];
+
+				heatBlockContainerConflictQ = If[NullQ[resolvedHeatBlock],
+					(* if temperature control is not required, no conflict *)
+					False,
+					(* otherwise, check compatible racks *)
+					Module[{heatBlockModel, destinationContainer},
+						(* fetch the heat block model *)
+						heatBlockModel = If[MatchQ[resolvedHeatBlock, ObjectP[Object[Instrument, HeatBlock]]],
+							Lookup[fetchPacketFromCache[resolvedHeatBlock, cache], Model],
+							resolvedHeatBlock
+						];
+						(* fetch the destination container *)
+						destinationContainer = If[NullQ[aliquotContainerResolve],
+							Lookup[sampleContainerPacket, Object],
+							aliquotContainerResolve
+						];
+						(* CompatibleFootprintQ will take CompatibleAdapters into consideration *)
+						!CompatibleFootprintQ[heatBlockModel, destinationContainer, Cache -> cache, Simulation -> updatedSimulation]
+					]
 				];
 
 				(* Resolve AcquisitionTime based on our resolved probe type. Resolve to 5 Second if Immersion/Surface *)
@@ -2072,7 +2291,11 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 					noSuitableInstrumentsError,
 					acquisitionTimeConflictQ,
 					temperatureCorrectionConflictQ,
-					pHProbeConflictQ
+					pHProbeConflictQ,
+					resolvedHeatBlock,
+					heatBlockMissingQ,
+					heatBlockConflictQ,
+					heatBlockContainerConflictQ
 				}
 			]
 		],
@@ -2091,9 +2314,120 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			acquisitionTimeLookup,
 			temperatureCorrectionLookup,
 			incompatibleInputsBool,
-			incompatibleWithInstrumentBool
+			incompatibleWithInstrumentBool,
+			temperatureControlInstrumentLookup
 		}
 	]];
+
+	(* check if resolved calibration buffer and verification standard container are compatible with heat block is compatible *)
+	temperatureControlBufferIncompatibleQ = Map[
+		Function[{bufferSolution},
+			(* if temperature control is required and buffer or standard is specified object *)
+			If[temperatureControlQ && MatchQ[bufferSolution, ObjectP[Object[]]],
+				(* check if the container is compatible with Model[Instrument, HeatBlock, "Digital Heating Cooling Drybath for SevenExcellence pH Meter"] *)
+				!CompatibleFootprintQ[Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], fastAssocLookup[cacheAssoc, bufferSolution, Container], Cache -> cache, Simulation -> updatedSimulation],
+				(* if temperature control is not required, no conflict *)
+				(* if model is specified, we will resource with a compatible container *)
+				False
+			]
+		],
+		{lowBufferLookup, mediumBufferLookup, highBufferLookup, verificationStandardLookup}
+	];
+
+	(* == Temperature and HeatBlock settings == *)
+	(* throw an error if any of the sample container is not compatible for temperature control but requires temperature control *)
+	invalidSampleContainerHeatBlockOptions=If[Or@@heatBlockSampleContainerIncompatibleBool,
+		Message[Error::SampleContainerHeatBlockIncompatible,ObjectToString@PickList[Lookup[samplePackets,Object],heatBlockSampleContainerIncompatibleBool]];
+		{MeasurementTemperature},
+		{}
+	];
+
+	sampleContainerHeatBlockConflictTests=If[gatherTests,
+		Test["If MeasurementTemperature is not Ambient, sample container must be compatible with TemperatureControlInstrument to support temperature control:",
+			Or@@heatBlockSampleContainerIncompatibleBool,
+			False
+		],
+		Nothing
+	];
+
+	(* throw an error if any of the calibration buffer or verification standard container is not compatible for temperature control but requires temperature control *)
+	invalidBufferContainerHeatBlockOptions=If[Or@@temperatureControlBufferIncompatibleQ,
+		Message[Error::BufferContainerHeatBlockIncompatible,ObjectToString@PickList[{lowBufferLookup, mediumBufferLookup, highBufferLookup, verificationStandardLookup},temperatureControlBufferIncompatibleQ]];
+		PickList[{LowCalibrationBuffer, MediumCalibrationBuffer, HighCalibrationBuffer, VerificationStandard},temperatureControlBufferIncompatibleQ],
+		{}
+	];
+
+	bufferContainerHeatBlockConflictTests=If[gatherTests,
+		Test["If MeasurementTemperature is not Ambient, calibration buffer or verification standard container must be compatible with TemperatureControlInstrument to support temperature control:",
+			Or@@temperatureControlBufferIncompatibleQ,
+			False
+		],
+		Nothing
+	];
+
+	(* throw an error if temperature control is required but resolved pH meter does not have heat block *)
+	invalidHeatBlockTemperatureOptions=If[Or@@heatBlockMissingBool,
+		Message[Error::TemperatureControlInstrumentMissing,ObjectToString@PickList[temperatureControlInstrumentLookup,heatBlockMissingBool],resolvedTemperature];
+		{TemperatureControlInstrument,MeasurementTemperature},
+		{}
+	];
+
+	heatBlockTemperatureConflictTests=If[gatherTests,
+		Test["If MeasurementTemperature is not Ambient, TemperatureControlInstrument is required:",
+			Or@@heatBlockMissingBool,
+			False
+		],
+		Nothing
+	];
+
+	(* throw an error if heat block option conflicts with pH meter *)
+	invalidHeatBlockpHMeterOptions=If[Or@@heatBlockConflictBool,
+		Message[Error::TemperatureControlInstrumentConflict,ObjectToString@PickList[temperatureControlInstrumentLookup,heatBlockConflictBool],ObjectToString@PickList[instrumentLookup,heatBlockConflictBool]];
+		{TemperatureControlInstrument,Instrument},
+		{}
+	];
+
+	heatBlockConflictTests=If[gatherTests,
+		Test["If TemperatureControlInstrument and Instrument is set, then they're compatible:",
+			Or@@heatBlockConflictBool,
+			False
+		],
+		Nothing
+	];
+
+	(* throw an error if specified min and max temperature is not valid -- heat block min < min setting < setting < max setting < heat block max *)
+	invalidTemperatureRangeOptions = If[MatchQ[resolvedTemperature, Except[Ambient]],
+		If[
+			!And[
+				fastAssocLookup[cacheAssoc, Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], MinTemperature] < resolvedMinTemperature,
+				resolvedMinTemperature < resolvedTemperature,
+				resolvedTemperature < resolvedMaxTemperature,
+				resolvedMaxTemperature < fastAssocLookup[cacheAssoc, Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], MaxTemperature]
+			],
+			Message[Error::InvalidTemperatureRange, resolvedMinTemperature, resolvedTemperature, resolvedMaxTemperature, fastAssocLookup[cacheAssoc, Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], MinTemperature], fastAssocLookup[cacheAssoc, Model[Instrument, HeatBlock, "id:01G6nvP8PLKd"], MaxTemperature]];
+			{MeasurementTemperature, MinTemperature, MaxTemperature},
+			{}
+		],
+		{}
+	];
+
+	temperatureRangeTests = If[gatherTests && Length[invalidTemperatureRangeOptions] > 0,
+		Test["MinTemperature must be lower than MeasurementTemperature and MaxTemperature must be higher than MeasurementTemperature:", True, False],
+		Test["MinTemperature must be lower than MeasurementTemperature and MaxTemperature must be higher than MeasurementTemperature:", True, True]
+	];
+
+	(* throw an error if min or max temperature is specified but measurement temperature is Ambient *)
+	invalidTemperatureControlOptions = If[MatchQ[resolvedTemperature, Ambient] && MemberQ[{resolvedMinTemperature, resolvedMaxTemperature}, Except[Null]],
+		Message[Error::TemperatureControlConflict, resolvedMinTemperature, resolvedTemperature, resolvedMaxTemperature];
+		{MeasurementTemperature, MinTemperature, MaxTemperature},
+		{}
+	];
+
+	temperatureControlConflictTests = If[gatherTests && Length[invalidTemperatureControlOptions] > 0,
+		Test["MinTemperature and MaxTemperature can only be specified if temperature control is applied:", True, False],
+		Test["MinTemperature and MaxTemperature can only be specified if temperature control is applied:", True, True]
+	];
+
 
 	(* ==Check WashSolutions and SecondaryWashSolutions== *)
 	(* group WashSolutions and SecondaryWashSolutions *)
@@ -2134,6 +2468,42 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	(* Get packets for the resolved probes. *)
 	resolvedProbePackets=Map[fetchPacketFromCache[#,cache]&,resolvedProbeList];
+	
+	(* Validate pH offset against probe type: Sensornet probes utilize expanded Min/Max offset ranges compared to Mettler Toledo pH meter models. *)
+	invalidpHOffsetOptions = If[
+		AnyTrue[
+			Thread[{Lookup[resolvedProbePackets /. Null -> Nothing, Object], Lookup[resolvedProbePackets /. Null->Nothing, {DefaultMinpHOffset, DefaultMaxpHOffset}]}],
+			Apply[
+				Function[{obj, defaultLimits},
+					And[
+						(* Check whether it is a sensornet probe: Model[Part, pHProbe, "InLab Micro (3 mm diameter)"] *)
+						MatchQ[obj, ObjectP[Model[Part, pHProbe, "id:9RdZXv1XvWll"]]],
+						(* The probe must have DefaultMinpHOffset/DefaultMaxpHOffset *)
+						MatchQ[Unitless[defaultLimits], {_?NumericQ, _?NumericQ}],
+						(* The specified MinpHOffset/MaxpHOffset should be outside of the default range. *)
+						With[{min = Lookup[myOptions, MinpHOffset], max = Lookup[myOptions, MaxpHOffset]},
+							(NumericQ[min] && min >= First[defaultLimits]) || (NumericQ[max] && max <= Last[defaultLimits])
+						]
+					]
+				]
+			]
+		],
+		Message[Error::InvalidpHOffset, Lookup[resolvedProbePackets, Object], Lookup[resolvedProbePackets, DefaultMinpHOffset], Lookup[resolvedProbePackets, DefaultMaxpHOffset]];
+		Lookup[myOptions,{MinpHOffset, MaxpHOffset}],
+		{}
+	];
+	
+	(* default MaxpHOffset: 20 Millivolt *)
+	resolvedMaxpHOffset = If[MatchQ[Lookup[myOptions,MaxpHOffset], Except[Automatic]],
+		Lookup[myOptions, MaxpHOffset],
+		Replace[DeleteCases[Lookup[resolvedProbePackets /. Null -> Nothing, DefaultMaxpHOffset], Null], {{} -> 20 Millivolt, x_List :> Max[x]}]
+	];
+	
+	(* default MinpHOffset: -20 Millivolt *)
+	resolvedMinpHOffset = If[MatchQ[Lookup[myOptions,MinpHOffset],Except[Automatic]],
+		Lookup[myOptions,MinpHOffset],
+		Replace[DeleteCases[Lookup[resolvedProbePackets /. Null -> Nothing, DefaultMinpHOffset], Null], {{} -> -20 Millivolt, x_List :> Min[x]}]
+	];
 
 	(*DROPLET Aliquot warning -- If the user is telling us Aliquot\[Rule]False (explicitly) but ProbeType\[Rule]Surface, we're going to aliquot out into the droplet. Warn them that we're going to do this. *)
 
@@ -2565,7 +2935,8 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 
 	invalidOptions=DeleteDuplicates[Flatten[{deprecatedInstrumentOptions,incompatibleInputsSpecificInstrumentOptions,incompatibleInputsRoboticInstrumentOptions, probeInstrumentConflictOptions,incompatibleWInstrumentOptions,acquisitionConflictInvalidOptions,invalidpHOptions,invalidMediumCalibrationOptions,invalidLowHighpHOptions,
 		temperatureCorrectionConflictOptions,pHProbeConflictOptions, recoupAliquotConflictOptions, washSolutionConflictOptions, invalidVerificationStandardpHRangeOptions, invalidAutomaticVerificationpHOptions, invalidNonNullVerificationStandardSubOptions,
-		invalidRequiredVerificationStandardSubOptions, sampleInputsAsOptionsInvalidOptions, optionSampleWithNullVolumeInvalidOptions, optionSampleWithInsufficientVolumeInvalidOptions, incompatibleOptionsSampleInvalidOptions}]];
+		invalidRequiredVerificationStandardSubOptions, sampleInputsAsOptionsInvalidOptions, optionSampleWithNullVolumeInvalidOptions, optionSampleWithInsufficientVolumeInvalidOptions, incompatibleOptionsSampleInvalidOptions, invalidSampleContainerHeatBlockOptions,
+		invalidBufferContainerHeatBlockOptions, invalidHeatBlockTemperatureOptions, invalidHeatBlockpHMeterOptions, invalidTemperatureRangeOptions, invalidTemperatureControlOptions, invalidpHOffsetOptions}]];
 
 	(* Throw Error::InvalidInput if there are invalid inputs. *)
 	If[Length[invalidInputs]>0&&!gatherTests,
@@ -2695,9 +3066,16 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 				Probe->resolvedProbeList,
 				ProbeType->probeTypeList,
 				TemperatureCorrection -> resolvedTemperatureCorrectionList,
+				TemperatureControlInstrument -> heatBlockList,
+				MeasurementTemperature -> resolvedTemperature,
+				MinTemperature -> resolvedMinTemperature,
+				MaxTemperature -> resolvedMaxTemperature,
 				LowCalibrationBufferpH->resolvedLowpHValue,
 				MediumCalibrationBufferpH->resolvedMediumpHValue,
 				HighCalibrationBufferpH->resolvedHighpHValue,
+				LowCalibrationWashSolution->resolvedLowCalibrationWashSolution,
+				MediumCalibrationWashSolution->resolvedMediumCalibrationWashSolution,
+				HighCalibrationWashSolution->resolvedHighCalibrationWashSolution,
 				MaxpHSlope -> resolvedMaxpHSlope,
 				MinpHSlope -> resolvedMinpHSlope,
 				MinpHOffset -> resolvedMinpHOffset,
@@ -2760,7 +3138,13 @@ resolveExperimentMeasurepHOptions[mySamples:{ObjectP[Object[Sample]]...},myOptio
 			sampleInputsAsOptionsTests,
 			optionSampleWithNullVolumeTests,
 			optionSampleWithInsufficientVolumeTests,
-			incompatibleOptionsSampleTests
+			incompatibleOptionsSampleTests,
+			sampleContainerHeatBlockConflictTests,
+			bufferContainerHeatBlockConflictTests,
+			heatBlockTemperatureConflictTests,
+			heatBlockConflictTests,
+			temperatureRangeTests,
+			temperatureControlConflictTests
 		}],
 		_EmeraldTest
 	];
@@ -2797,14 +3181,14 @@ DefineOptions[measurepHResourcePackets,
 
 
 measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptions:{___Rule},myResolvedOptions:{___Rule},myCollapsedResolvedOptions:{___Rule},myOptions:OptionsPattern[]]:=Module[
-	{outputSpecification, output, gatherTests, safeOps, cache, samplesWithoutLinks, probeTypes, instruments, instrumentObjects,
+	{outputSpecification, output, gatherTests, safeOps, cache, cacheAssoc, cacheBall, samplesWithoutLinks, probeTypes, instruments, instrumentObjects,
 		probePositions, aquisitionTimes, probeSamples, probeInstruments, groupedProbeResult, groupedProbeSamples, probeNumberOfAcquisitions,
-		groupedProbeInstruments, groupedProbePositions, probeResult, batchSamples, batchLengths, uuid, id, instrumentResource, optionsWithReplicates, instrumentResources, probeBatchLengths,
+		groupedProbeInstruments, groupedProbePositions, probeResult, batchSamples, batchLengths, id, instrumentResource, optionsWithReplicates, probeBatchLengths,
 		probeInstrumentResources, insitu, lowCalibrationBuffer, mediumCalibrationBuffer, highCalibrationBuffer, protocolPacket, probeRecoupSample, recoupSample, numberOfReplicates, samplesWithReplicates, washSolutions, secondaryWashSolutions, secondaryWashSolutionResources, resourceIndices, probeRelease, probeSelect, allResourceBlobs,
 		fulfillable, frqTests, resultRule, testsRule, probes, temperatureCorrections, probeSampleNames, probeObjects, groupedProbes, probesForUpload, probeForGroup,
 		probeMeasurementOrder, orderedProbeSamples, wasteBeaker, wasteBeakerResource, simulation,parentProtocol, parentProtocolPacket,
 		verificationStandardResource, verificationStandardWashSolutionResource, lowCalibrationWashSolution, mediumCalibrationWashSolution, highCalibrationWashSolution, washSolutionResources, postStorageWashSolution, preStorageWashSolution, washProbe, calibrationBufferRack, calibrationWashSolutionRack,
-		calibrationBufferPlacements, calibrationWashSolutionPlacements
+		calibrationBufferPlacements, calibrationWashSolutionPlacements, heatBlockResources, heatBlockResource, rackHandleResource, nominalTemperature
 	},
 
 	(*-- SETUP OUR USER SPECIFIED OPTIONS AND CACHE --*)
@@ -2820,6 +3204,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 
 	(* Lookup helper options *)
 	{cache, simulation} = Lookup[safeOps, {Cache, Simulation}];
+	(* prepare for fastAssoc *)
+	cacheBall = FlattenCachePackets[cache];
+	cacheAssoc = makeFastAssocFromCache[cacheBall];
 
 	parentProtocol=Lookup[myResolvedOptions,ParentProtocol];
 	(* Extract the packets that we need from our downloaded cache. *)
@@ -2866,6 +3253,8 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 
 	probeSamples=samplesWithReplicates[[probePositions]];
 
+	(*Todo: we might want to batch sample for both probe and container footprint. To achieve this, we also need a hidden option to pass the final sample containers to resource packets. After this change we can possibly move the temperature control rack resource picking to this main function (rather than compiler)*)
+
 	(* Get the instruments that correspond with our samples. *)
 	probeInstruments=instrumentObjects[[probePositions]];
 	probes=probeObjects[[probePositions]];
@@ -2899,7 +3288,20 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			id=ToString[First[groupedInstrument]];
 
 			(* Create the pooled instrument resource. *)
-			instrumentResource=ConstantArray[Resource[Instrument->First[groupedInstrument],Name->id,Time->30Minute*Length[batchLengths]],Length[batchLengths]];
+			instrumentResource=If[MatchQ[First[groupedInstrument], ObjectP[Model[Instrument, pHMeter, "id:dORYzZJx7zpw"]]],
+				(* if it is resolved to use Model[Instrument, pHMeter, "SevenExcellence (for pH)"], we can allow temperature control Model[Instrument, pHMeter, "SevenExcellence (for pH) for Temperature Control"] to be used as well *)
+				ConstantArray[Resource[Instrument->{Model[Instrument, pHMeter, "id:dORYzZJx7zpw"], Model[Instrument, pHMeter, "id:dORYzZm9x5WG"]},Name->id,Time->30Minute*Length[batchLengths]],Length[batchLengths]],
+				(* otherwise, use the resolved instrument *)
+				ConstantArray[Resource[Instrument->First[groupedInstrument],Name->id,Time->30Minute*Length[batchLengths]],Length[batchLengths]]
+			];
+
+			(* Create the pooled heat block resource. *)
+			heatBlockResource= If[MatchQ[Lookup[myResolvedOptions, MeasurementTemperature], Ambient],
+				(* if no temperature control *)
+				ConstantArray[Null,Length[batchLengths]],
+				(* here we resource the model instrument, it will be updated to corresponding object instrument in compiler based on the pH meter selected  *)
+				ConstantArray[Resource[Instrument->Model[Instrument, HeatBlock, "Digital Heating Cooling Drybath for SevenExcellence pH Meter"],Name->ToString[Unique[]],Time->30Minute*Length[batchLengths]],Length[batchLengths]]
+			];
 
 			probeForGroup=Table[FirstOrDefault[probeGroup],Length[batchSamples]];
 
@@ -2907,6 +3309,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			{
 				batchLengths,
 				instrumentResource,
+				heatBlockResource,
 				probeForGroup
 			}
 		],
@@ -2914,7 +3317,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	];
 
 	(* If we have a result, transpose. *)
-	{probeBatchLengths,probeInstrumentResources,probesForUpload}=If[Length[probeResult]>0,
+	{probeBatchLengths,probeInstrumentResources, heatBlockResources, probesForUpload}=If[Length[probeResult]>0,
 		Flatten/@Transpose[probeResult],
 		{{},{},{}}
 	];
@@ -2922,37 +3325,40 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 	insitu=Lookup[myResolvedOptions,InSitu];
 	washProbe = Lookup[myResolvedOptions,WashProbe];
 
-	(* Create resources for our probe reference solutions. *)
-	lowCalibrationBuffer=If[Length[probeBatchLengths]>0&&!insitu,
-		Resource[Sample->Lookup[myResolvedOptions,LowCalibrationBuffer],Amount->20 Milliliter, Name->"Low Calibration Buffer"],
-		Null
+	(*Make resources for calibration buffers*)
+	{lowCalibrationBuffer, mediumCalibrationBuffer, highCalibrationBuffer, lowCalibrationWashSolution, mediumCalibrationWashSolution, highCalibrationWashSolution} = Map[
+		Function[{calibrationBuffer},
+			If[Length[probeBatchLengths] > 0 && !insitu,
+				Which[
+					(* If given Model, generate resource *)
+					MatchQ[calibrationBuffer,ObjectP[Model[Sample]]],
+					Module[{bufferContainers},
+						(* fetch the buffer container -- check if it is sachet *)
+						bufferContainers = fastAssocLookup[cacheAssoc, calibrationBuffer, {Products, DefaultContainerModel, Footprint}];
+
+						(* check if the buffer is in sachet *)
+						If[MatchQ[FirstOrDefault[bufferContainers], Sachet],
+							(* If in sachet, resource 20 mL as that is the volume of sachet *)
+							Link[Resource[Sample -> calibrationBuffer, Amount -> 20 Milliliter, Name->ToString[Unique[]]]],
+							(* Otherwise, resource 4 mL in a 15 mL tube *)
+							Link[Resource[Sample -> calibrationBuffer, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]]
+						]
+					],
+
+					(* If given an Object[Sample], generate a resource for that sample *)
+					MatchQ[calibrationBuffer,ObjectP[Object[Sample]]],
+					Link[Resource[Sample -> calibrationBuffer, Name->ToString[Unique[]]]],
+
+					(* otherwise, do not make a resource *)
+					True,
+					Link[calibrationBuffer]
+				],
+				Null
+			]
+		],
+		Lookup[myResolvedOptions, {LowCalibrationBuffer, MediumCalibrationBuffer, HighCalibrationBuffer, LowCalibrationWashSolution, MediumCalibrationWashSolution, HighCalibrationWashSolution}]
 	];
 
-	mediumCalibrationBuffer=If[Length[probeBatchLengths]>0&&!MatchQ[Lookup[myResolvedOptions,MediumCalibrationBuffer],Null]&&!insitu,
-		Resource[Sample->Lookup[myResolvedOptions,MediumCalibrationBuffer],Amount->20 Milliliter, Name->"Medium Calibration Buffer"],
-		Null
-	];
-
-	highCalibrationBuffer=If[Length[probeBatchLengths]>0&&!insitu,
-		Resource[Sample->Lookup[myResolvedOptions,HighCalibrationBuffer],Amount -> 20 Milliliter, Name->"High Calibration Buffer"],
-		Null
-	];
-
-	(* Create resources for washing probe during calibration *)
-	lowCalibrationWashSolution=If[Length[probeBatchLengths]>0&&!insitu,
-		Resource[Sample -> Lookup[myResolvedOptions, LowCalibrationWashSolution], Amount -> 20 Milliliter, Name->"Low Calibration Wash Solution"],
-		Null
-	];
-
-	mediumCalibrationWashSolution=If[Length[probeBatchLengths] > 0 && !MatchQ[Lookup[myResolvedOptions, MediumCalibrationWashSolution], Null] && !insitu,
-		Resource[Sample -> Lookup[myResolvedOptions, MediumCalibrationWashSolution], Amount -> 20 Milliliter, Name->"Medium Calibration Wash Solution"],
-		Null
-	];
-
-	highCalibrationWashSolution=If[Length[probeBatchLengths] > 0 && !insitu,
-		Resource[Sample -> Lookup[myResolvedOptions, HighCalibrationWashSolution], Amount -> 20 Milliliter, Name->"High Calibration Wash Solution"],
-		Null
-	];
 
 	(*Create placements for calibration buffers and wash solutions*)
 	calibrationBufferRack=If[Length[probeBatchLengths] > 0 && !insitu,
@@ -3001,7 +3407,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandard]],
 
 			True,
-			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandard], Amount -> 20 Milliliter, Container -> Model[Container, Vessel, "id:bq9LA0dBGGR6"]]
+			Resource[Sample -> Lookup[myResolvedOptions, 	VerificationStandard], Amount -> 5 Milliliter, Container -> Model[Container, Vessel, "id:xRO9n3vk11pw"]]
 		],
 		Null
 	];
@@ -3061,12 +3467,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
-				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
-
-				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				(* If given an Object[Sample] generate a resource for that sample *)
+				(* Note: If given an Object[Sample] that is one of the input samples, we will aliquot 4 mL of the sample into a new container for washing using WashSolutionUnitOperations in compiler and update the resource after primitives completed *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)
@@ -3086,12 +3489,9 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Model[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]]]],
 
-				(* If given an Object[Sample] that is one of the input samples, aliquot 4 mL of the sample into a new container for washing *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
-				Link[Resource[Sample -> washSolution, Amount -> $MeasurepHWashSolutionMinVolume, Container-> Model[Container, Vessel, "15mL Tube"], Name->ToString[Unique[]], ExactAmount->True]],
-
-				(* If given an Object[Sample] that is NOT one of the input samples, generate a resource for that sample and do not aliquot it. *)
-				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&!MemberQ[probeSamples, ObjectP[washSolution]]&&washProbe,
+				(* If given an Object[Sample] generate a resource for that sample *)
+				(* Note: If given an Object[Sample] that is one of the input samples, we will aliquot 4 mL of the sample into a new container for washing using WashSolutionUnitOperations in compiler and update the resource after primitives completed *)
+				Length[probeBatchLengths]>0&&MatchQ[washSolution,ObjectP[Object[Sample]]]&&washProbe,
 				Link[Resource[Sample -> washSolution, Name->ToString[Unique[]]]],
 
 				(* otherwise, do not make a resource *)
@@ -3100,6 +3500,20 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			]
 		],
 		secondaryWashSolutions
+	];
+
+	(* find out nominal temperature and min/max temperature if we want to apply temperature control *)
+	nominalTemperature = If[MatchQ[Lookup[myResolvedOptions, MeasurementTemperature], Ambient],
+		(* if MeasurementTemperature is Ambient, we don't apply temperature control so normial temperature is Null *)
+		Null,
+		(* otherwise the setting temperature will be the nominal temperature *)
+		Lookup[myResolvedOptions, MeasurementTemperature]
+	];
+
+	(* resource pick rack handle if we are going to do temperature control *)
+	rackHandleResource = If[MatchQ[Lookup[myResolvedOptions, MeasurementTemperature], Ambient],
+		Null,
+		Link[Resource[Sample -> Model[Item, Handle, "Heat Block Rack Handle for SevenExcellence pH Meter"], Name -> "Rack Handle for Heat Block", Rent -> True]]
 	];
 
 	(*we only need this for the SevenExcellence system, but nonetheless make it for everything*)
@@ -3120,6 +3534,7 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			Replace[ProbeIndices]->probePositions[[probeMeasurementOrder]],
 			Replace[ProbeBatchLength]->probeBatchLengths,
 			Replace[ProbeInstruments]->probeInstrumentResources,
+			Replace[TemperatureControlInstruments] -> heatBlockResources,
 			Replace[ProbeLowCalibrationBuffer]->lowCalibrationBuffer,
 			Replace[ProbeMediumCalibrationBuffer]->mediumCalibrationBuffer,
 			Replace[ProbeHighCalibrationBuffer]->highCalibrationBuffer,
@@ -3165,6 +3580,11 @@ measurepHResourcePackets[mySamples:{ObjectP[Object[Sample]]..},myUnresolvedOptio
 			VerificationStandardWashSolution -> Link[verificationStandardWashSolutionResource],
 			MinVerificationStandardpH -> Lookup[myResolvedOptions, MinVerificationStandardpH],
 			MaxVerificationStandardpH -> Lookup[myResolvedOptions, MaxVerificationStandardpH],
+			NominalTemperature -> nominalTemperature,
+			RackHandle -> rackHandleResource,
+			DisplayedNominalTemperature -> ToString[NumberForm[Unitless[nominalTemperature, Celsius], {Infinity, 1}]],
+			MinTemperature -> Lookup[myResolvedOptions,MinTemperature],
+			MaxTemperature -> Lookup[myResolvedOptions,MaxTemperature],
 
 			Replace[WashSolutions] -> washSolutionResources,
 			Replace[SecondaryWashSolutions] -> secondaryWashSolutionResources,

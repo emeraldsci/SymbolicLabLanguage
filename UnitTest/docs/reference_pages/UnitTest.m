@@ -348,7 +348,9 @@ DefineUsage[TestSummaryNotebook,
 				{"TestSummaryNotebook[summary]","notebook","returns a 'notebook' with formatted results from the input 'summary'."}
 			},
 		MoreInformation->{
-			"Notebook should appear the same as the \"SummaryNotebook\" display for RunUnitTest."
+			"Notebook should appear the same as the \"SummaryNotebook\" display for RunUnitTest.",
+			"Use the NamedObject option to convert all displayed object references into their named object form at unit test run time. Note that this technically modifies the output of the tests and care is required when inspecting failures related to object formatting.",
+			"Use the Differences option to highlight the specific sub-parts of actual and expected values that fail MatchQ in unit test failures."
 			},
 		Input:>
 			{

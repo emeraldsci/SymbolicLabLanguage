@@ -269,7 +269,19 @@ ReportCustomerMetrics[myFinancingTeam:ObjectP[Object[Team, Financing]],startDate
 					Subprotocols,
 					Data,
 					SamplesIn,
-					SamplesOut
+					SamplesOut,
+					TotalLeadTime,
+					TotalTurnaroundTime,
+					TotalCompletionTime,
+					QueueTime,
+					CycleTime,
+					TotalOperatorTime,
+					TotalInstrumentTime,
+					OperationConstraintTime,
+					WaitingTime,
+					EffectiveTurnaroundTime,
+					EffectiveCompletionTime,
+					WaitingTimesBreakdown
 				],
 				Packet[Data[{DateCreated}]]
 			},
@@ -1095,6 +1107,7 @@ DefineOptions[PlotCustomerMetrics,
 (*Error Messages*)
 Error::TooManyDays = "The requested report covers too many days (`1` days). Please limit the date range to 365 days.";
 Error::MissingReports ="No customer metrics report object(s) were found for `1` for part or all of the specified date range. Please run ReportCustomerMetrics for dates `2` before running `3`.";
+Warning::CannotGenerateReportToday = "The EndDate specified (`1`) cannot be today's date since a full day of data is required. The function will continue using `2` as EndDate."
 (* single team overload *)
 PlotCustomerMetrics[myFinancingTeam:ObjectP[Object[Team,Financing]],startDate_?DateObjectQ,endDate_?DateObjectQ,ops:OptionsPattern[]]:=PlotCustomerMetrics[ToList[myFinancingTeam],startDate,endDate,ops];
 
@@ -1137,6 +1150,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		instrumentSavings,
 		
 		convertedStartTime,
+		finalEndDate,
 		convertedEndTime,
 		fullDateRange,
 		totalNumberOfDays,
@@ -1332,15 +1346,28 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		queueTimesSummaryTableContents,
 		queueTimesSummaryTable,
 		
+		effectiveTurnaroundTimeSummaryTableNumber,
+		effectiveTurnaroundTimeSummaryTableTitle,
+		effectiveTurnaroundTimeNote1,
+		
+		protocolExecutionFigure,
+		protocolExecutionFigureNumber,
+		protocolExecutionFigureTitle,
+		protocolExecutionFigureFootnote,
+		protocolExecutionFigureSection,
 		
 		queueTimeSummaryTableNumber,
 		queueTimeSummaryTableTitle,
 		totalProtocolQueueTime,
 		parentProtocolQueueTime,
 		averageProtocolQueueTime,
+		stddevProtocolQueueTime,
 		averageParentQueueTime,
+		stddevParentQueueTime,
 		averageProtocolQueueTimeString,
+		stddevProtocolQueueTimeString,
 		averageParentQueueTimeString,
+		stddevParentQueueTimeString,
 		meanProtocolQueueTimeNote1,
 		averageProtocolQueueTimeCaption1,
 		averageProtocolQueueTimeCaption2,
@@ -1382,6 +1409,39 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		
 		protocolMetricsSection,
 		protocolMetricsBoolean,
+		
+		protocolOperationsTimeTuples,
+		effectiveCompletionTimesSummaryTable,
+		effectiveTurnaroundTimesSummaryTable,
+		operationTimeByType,
+		effectiveTimesByProtocolTypeSummaryTableNumber,
+		effectiveTimesByProtocolTypeSummaryTableTitle,
+		effectiveTimesByProtocolTypeSummaryTableNote,
+		effectiveTimesByProtocolTypeSummary,
+		groupedEffectiveTimesByProtocolTypeSummary,
+		effectiveTimesByProtocolTypeSummaryTableContents,
+		effectiveTimesByProtocolTypeSummaryTables,
+		effectiveTimesByProtocolTypeSummaryTableSection,
+		
+		materialsSupplyAssoc,
+		selectedMaterialsSupplyAssoc,
+		materialsConstraintNumber,
+		materialsConstraintTableTitle,
+		materialsConstraintData,
+		groupedMaterialsConstraintDataString,
+		materialsConstraintTableContents,
+		materialsDataTableFootnote,
+		materialsDataTables,
+		
+		instrumentAvailabilityAssoc,
+		instrumentAvailabilityNumber,
+		instrumentAvailabilityTableTitle,
+		instrumentAvailabilityData,
+		instrumentAvailabilityDataString,
+		groupedInstrumentAvailabilityDataString,
+		instrumentAvaialabilityTableContents,
+		instrumentAvailabilityDataTableFootnote,
+		instrumentAvailabilityTables,
 		
 		numberTeamThreadUtilizationPlot,
 		numberTeamThreadUtilizationTitle,
@@ -1572,7 +1632,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		{Upload,Cache,Email,EmailRecipients,EmailBcc,Target,Bin,ThreadUtilization,MaxThreads,QueueTimesRange,QueueTimesProtocol,TurnaroundTimes,TurnaroundTimeLimit,IncludedTurnaroundStatus,UserUtilizationProtocol,InstrumentWorkingHours,InstrumentSavings,RealEstateRate,ChartStyle}
 	];
 	(* Hard-coding it here until we can finalize how to set apart Journey customers from other Subcription based customers *)
-	journeyTeams = {Object[Team, Financing, "id:P5ZnEjZePZ9l"]};(*{Object[Team,Financing,"Bristol Myers Squibb"]}*)
+	journeyTeams = {Object[Team, Financing, "id:P5ZnEjZePZ9l"],Object[Team, Financing, "id:J8AY5jGJVxBE"]};(*{Object[Team,Financing,"Bristol Myers Squibb"],Object[Team,Financing,"Skye"]}*)
 	
 	(* set Date related variables *)
 	(* Convert the start date to starting second of that date in the "America/Chicago" TimeZone *)
@@ -1582,9 +1642,20 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	];
 	
 	(* Convert the end date to last second of the day in the "America/Chicago" TimeZone - this is to cover the full day of the end date *)
-	convertedEndTime=DateObject[
-		Join[endDate[[1]],{23,59,59.}],
-		"Instant", "Gregorian", "America/Chicago"
+	finalEndDate = If[MatchQ[endDate,Today],
+		Yesterday,
+		endDate
+	];
+	convertedEndTime=If[MatchQ[endDate,Today],
+		Message[Warning::CannotGenerateReportToday,DateString[endDate,{"MonthName", " ", "Day", ", ", "Year"}],DateString[finalEndDate,{"MonthName", " ", "Day", ", ", "Year"}]];
+		DateObject[
+			Join[Yesterday[[1]],{23,59,59.}],
+			"Instant", "Gregorian", "America/Chicago"
+		],
+		DateObject[
+			Join[endDate[[1]],{23,59,59.}],
+			"Instant", "Gregorian", "America/Chicago"
+		]
 	];
 	
 	(* get a list of days included between startDate and endDate *)
@@ -1629,7 +1700,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	]]]];
 	
 	(* create the list of dates needed for the report and check for missing days from the includedReportDateRange *)
-	daysNeeded = DateRange[startDate,endDate];
+	daysNeeded = DateRange[startDate,finalEndDate];
 	
 	(* get the list of dates needed that are not covered by the exsiting report objects, if any *)
 	missingReportDates = Sort[Complement[daysNeeded,includedReportDateRange]];
@@ -1664,7 +1735,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		{
 			{
 				Packet[DataLog, EndDate, FinancingTeam, InstrumentLog, ProtocolLog, ProtocolSummaryLog, QueueTimesSummary, SamplesLog, StartDate, TeamThreadUtilizationLog, UserHourLog, UserThreadUtilizationLog, UserUtilizationSummary, DateCreated],
-				Packet[ProtocolLog[[All,2]][{StatusLog}]],
+				Packet[ProtocolLog[[All,2]][{StatusLog,TotalLeadTime,TotalTurnaroundTime,TotalCompletionTime,EffectiveLeadTime,EffectiveTurnaroundTime,EffectiveCompletionTime,CycleTime,WaitingTime,OperationConstraintTime,TotalOperatorTime,QueueTime}]],
 				Packet[InstrumentLog[[All,3]][{ImageFile}]],
 				Packet[UserUtilizationSummary[[All,2]][{FirstName,LastName}]]
 			},
@@ -1961,7 +2032,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	
 	protocolSummaryTableNumber= Which[
 		MatchQ[target,User],
-		"TABLE 4",
+		"TABLE 3",
 		
 		MatchQ[target,Company],
 		"TABLE 6"
@@ -1973,7 +2044,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["  Summary of Laboratory Productivity between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -2028,13 +2099,24 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	totalProtocolQueueTime = Total[queueTimesTotalList];
 	parentProtocolQueueTime = Total[queueTimesParentList];
 	
-	(* get average queue times *)
+	(* get average and stddev for queue times *)
 	averageProtocolQueueTime = If[MatchQ[Length[queueTimesTotalList],GreaterP[0]],
-		Round[UnitScale[totalProtocolQueueTime/Length[queueTimesTotalList]],0.1],
+		Round[Mean[EmpiricalDistribution[queueTimesTotalList]],0.1],
 		Null
 	];
+	
+	stddevProtocolQueueTime = If[MatchQ[Length[queueTimesTotalList],GreaterP[0]],
+		Round[StandardDeviation[EmpiricalDistribution[queueTimesTotalList]],0.1],
+		Null
+	];
+	
 	averageParentQueueTime = If[MatchQ[Length[queueTimesParentList],GreaterP[0]],
-		Round[UnitScale[parentProtocolQueueTime/Length[queueTimesParentList]],0.1],
+		Round[Mean[EmpiricalDistribution[queueTimesParentList]],0.1],
+		Null
+	];
+	
+	stddevParentQueueTime = If[MatchQ[Length[queueTimesParentList],GreaterP[0]],
+		Round[StandardDeviation[EmpiricalDistribution[queueTimesParentList]],0.1],
 		Null
 	];
 	
@@ -2043,8 +2125,19 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		ToString[averageProtocolQueueTime],
 		"N/A"
 	];
+	
+	stddevProtocolQueueTimeString = If[MatchQ[stddevProtocolQueueTime,_?QuantityQ],
+		ToString[stddevProtocolQueueTime],
+		"N/A"
+	];
+	
 	averageParentQueueTimeString = If[MatchQ[averageParentQueueTime,_?QuantityQ],
 		ToString[averageParentQueueTime],
+		"N/A"
+	];
+	
+	stddevParentQueueTimeString = If[MatchQ[stddevParentQueueTime,_?QuantityQ],
+		ToString[stddevParentQueueTime],
 		"N/A"
 	];
 	
@@ -2155,7 +2248,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DParentCumulative
 				}
 			],
-			Style[averageParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageParentQueueTimeString<>" \[PlusMinus] "<>stddevParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		(* Table depicts delta range and includes both Experiment and Protocol values *)
@@ -2178,7 +2271,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DParentDelta
 				}
 			],
-			Style[averageParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageParentQueueTimeString<>" \[PlusMinus] "<>stddevParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		(* Table depicts delta range and includes only Experiment values *)
@@ -2193,7 +2286,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DParentDelta
 				}
 			],
-			Style[averageParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageParentQueueTimeString<>" \[PlusMinus] "<>stddevParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		(* Table depicts cumulative range and includes only Experiment values *)
@@ -2208,7 +2301,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DParentCumulative
 				}
 			],
-			Style[averageParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageParentQueueTimeString<>" \[PlusMinus] "<>stddevParentQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		(* Table depicts delta range and includes only Protocol values *)
@@ -2223,7 +2316,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DTotalDelta
 				}
 			],
-			Style[averageProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageProtocolQueueTimeString<>" \[PlusMinus] "<>stddevProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		(* Table depicts cumulative range and includes only Protocol values *)
@@ -2238,7 +2331,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DTotalCumulative
 				}
 			],
-			Style[averageProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageProtocolQueueTimeString<>" \[PlusMinus] "<>stddevProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		]
 	];
 	
@@ -2263,7 +2356,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DTotalCumulative
 				}
 			],
-			Style[averageProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageProtocolQueueTimeString<>" \[PlusMinus] "<>stddevProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		MatchQ[queueTimesRange,Delta]&&MatchQ[queueTimesProtocol,Both],
@@ -2285,7 +2378,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					queueAbove1DTotalDelta
 				}
 			],
-			Style[averageProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+			Style[averageProtocolQueueTimeString<>" \[PlusMinus] "<>stddevProtocolQueueTimeString,FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
 		],
 		
 		MatchQ[queueTimesRange,Delta]&&MatchQ[queueTimesProtocol,Experiment],
@@ -2404,7 +2497,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	
 	queueTimeSummaryTableNumber = Which[
 		MatchQ[target,User],
-		"TABLE 5",
+		"TABLE 4",
 		
 		MatchQ[target,Company],
 		"TABLE 7"
@@ -2415,7 +2508,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Frequency Distribution of Queue Times for Shared Instruments for ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -2450,7 +2543,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	meanProtocolQueueTimeNote1=TextCell[Row[{
 		Style[queueTimeSummaryTableNumber<>": ",tableFigureNumbersFootnoteStyle],
 		Style["Queue Time ",italicFootnoteStyle],
-		Style["indicates the range of time from the moment an experiment or supporting protocol is enqueued up until the protocol starts running in the lab and does not include time intervals when protocols are in Backlogged status when maximum thread capacity is reached. These only include queue times for protocols that require shared public instruments.",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+		Style["is the time period between DateEnqueued to DateStarted, not including time intervals when protocols are in Backlogged status when maximum thread capacity is reached or when in ShippingMaterials status.",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
 	}],TextJustification->1];
 	
 	averageProtocolQueueTimeCaption1 = TextCell[Row[{
@@ -2744,7 +2837,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Frequency Distribution of Turnaround Times for ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -2764,7 +2857,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	turnaroundTimesSummaryNote1=TextCell[Row[{
 		Style[turnaroundTimesSummaryTableNumber<>". ",tableFigureNumbersFootnoteStyle],
 		Style["Turnaround Time ",italicFootnoteStyle],
-		Style["indicates the range of time an experiment or supporting protocol is running in the lab until its completion, excluding times when protocols are awaiting shipping of materials or times when instruments are awaiting or undergoing vendor repairs.",italicFootnoteStyle]
+		Style["is the time period between DateEnqueued to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, and ScientificSupport.",italicFootnoteStyle]
 	}],TextJustification->1];
 	
 	turnaroundTimesSummaryCaption1 = TextCell[Row[{
@@ -2828,6 +2921,822 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		(* if both criteria don't pass, no execution summary is presented *)
 		True,
 		Null
+	];
+	
+	(* Operations Times Section - Completion Times and Turnaround Times *)
+	(* Create tuples for updated EffectiveCompletionTime, EffectiveTurnaroundTime and QueueTime for each protocol *)
+	protocolOperationsTimeTuples = MapThread[
+		Function[{protocolObject,parseLogAssoc},
+			Module[{originalEffectiveCompletionTime, originalEffectiveTurnaroundTime, originalQueueTime, sciSupport, opReady, updatedEffectiveCompletionTime, updatedEffectiveTurnaroundTime},
+				originalEffectiveCompletionTime=Experiment`Private`fastAssocLookup[reportFastAssoc,protocolObject,EffectiveCompletionTime];
+				originalEffectiveTurnaroundTime=Experiment`Private`fastAssocLookup[reportFastAssoc,protocolObject,EffectiveTurnaroundTime];
+				originalQueueTime = Experiment`Private`fastAssocLookup[reportFastAssoc,protocolObject,QueueTime];
+				
+				sciSupport = (Lookup[parseLogAssoc,ScientificSupport,0 Hour])/. {x_Quantity -> x, Except[_Quantity] -> 0 Hour};
+				opReady = (Lookup[parseLogAssoc,OperatorReady,0 Hour])/. {x_Quantity -> x, Except[_Quantity] -> 0 Hour};
+				
+				(* Subtract time dedicated to ScientificSupport and OperatorReady (taken from parsed logs of the protocol) from EffectiveCompletionTime*)
+				updatedEffectiveCompletionTime=If[MatchQ[originalEffectiveCompletionTime,_Quantity],
+					Max[originalEffectiveCompletionTime - sciSupport - opReady,0 Hour],
+					Null
+				];
+				
+				(* Subtract time dedicated to ScientificSupport from EffectiveTurnaroundTime*)
+				updatedEffectiveTurnaroundTime=If[MatchQ[originalEffectiveTurnaroundTime,_Quantity],
+					Max[originalEffectiveTurnaroundTime - sciSupport,0 Hour],
+					Null
+				];
+				
+				{protocolObject, updatedEffectiveCompletionTime, updatedEffectiveTurnaroundTime, originalQueueTime}
+			]
+		],
+		{
+			allParentProtocolLogs[[All, 2]][Object],
+			parseLogParent
+		}
+	];
+	
+	(* Create summary table for EffectiveCompletionTime and EffectiveTurnaroundTime *)
+	{
+		effectiveCompletionTimesSummaryTable,
+		effectiveTurnaroundTimesSummaryTable
+	}=Map[
+		Function[{timeField},
+			Module[
+				{
+					allTimesList,
+					meanTime,
+					stddev,
+					lessThan1DParentCumulative,
+					lessThan2DParentCumulative,
+					lessThan3DParentCumulative,
+					above3DParentCumulative,
+					firstColumn,
+					secondColumn,
+					summaryTableColumnLabels,
+					stringTimeField,
+					summaryTableRowLabels,
+					summaryTableContents,
+					summaryTable
+				},
+				
+				allTimesList = Switch[timeField,
+					
+					EffectiveCompletionTime,
+					Cases[protocolOperationsTimeTuples[[All,2]],_Quantity],
+					
+					(* Subtract time dedicated to ScientificSupport from EffectiveTurnaroundTime*)
+					EffectiveTurnaroundTime,
+					Cases[protocolOperationsTimeTuples[[All,3]],_Quantity]
+				];
+				
+				meanTime = If[MatchQ[allTimesList,{_?QuantityQ..}],
+					Round[Mean[EmpiricalDistribution[allTimesList]],0.1],
+					"N/A"
+				];
+				
+				stddev = If[MatchQ[allTimesList,{_?QuantityQ..}],
+					Round[StandardDeviation[EmpiricalDistribution[allTimesList]],0.1],
+					"N/A"
+				];
+				
+				(* count number of protocols within a particular time range *)
+				{
+					lessThan1DParentCumulative,
+					lessThan2DParentCumulative,
+					lessThan3DParentCumulative,
+					above3DParentCumulative
+				} = Map[
+					Function[{rangeCriteria},
+						Module[{numberOfProtocols,percentProtocols},
+							
+							numberOfProtocols = Select[allTimesList,rangeCriteria]//Length;
+							
+							percentProtocols = If[MatchQ[Length[allTimesList],GreaterP[0]],
+								Round[numberOfProtocols/Length[allTimesList]*100,0.1],
+								0.0
+							];
+							
+							{numberOfProtocols,percentProtocols}
+						]
+					],
+					{
+						MatchQ[#,LessEqualP[24 Hour]]&,
+						MatchQ[#,GreaterP[24 Hour]]&&MatchQ[#,LessEqualP[48 Hour]]&,
+						MatchQ[#,GreaterP[48 Hour]]&&MatchQ[#,LessEqualP[72 Hour]]&,
+						MatchQ[#,GreaterP[72 Hour]]&
+					}
+				];
+				
+				(* number of experiments completed per range criteria *)
+				firstColumn = Append[
+					Map[
+						Style[ToString[#[[1]]],FontFamily->"Arial",FontSize->12]&, (* Number of Experiments *)
+						{
+							lessThan1DParentCumulative,
+							lessThan2DParentCumulative,
+							lessThan3DParentCumulative,
+							above3DParentCumulative
+						}
+					],
+					Style[ToString[meanTime]<>" \[PlusMinus] "<>ToString[stddev],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"],FontSlant->Italic]
+				];
+				
+				(* percentage of experiments completed per range criteria *)
+				secondColumn = Append[
+					Map[
+						Style[ToString[#[[2]]]<>"%",FontFamily->"Arial",FontSize->12]&, (* Percentage of Experiments *)
+						{
+							lessThan1DParentCumulative,
+							lessThan2DParentCumulative,
+							lessThan3DParentCumulative,
+							above3DParentCumulative
+						}
+					],
+					SpanFromLeft
+				];
+				
+				summaryTableColumnLabels = {
+					Style["Number of Experiments Completed",FontFamily->"Arial",FontSize->12],
+					Style["% Experiments Completed",FontFamily->"Arial",FontSize->12]
+				};
+				
+				(* string representation of the field - eg. EffectiveCompletionTime -> Completion Time *)
+				stringTimeField = StringDelete[StringDelete[StringJoin[Riffle[StringSplit[ToString[timeField], s_?UpperCaseQ :> s], {"", " "}]],"Effective "],"Total"];
+				
+				summaryTableRowLabels=Style[#,FontFamily->"Arial"]&/@{stringTimeField,"Less than 24 Hours","1-2 Days","2-3 Days","Greater than 3 Days", "Mean"};
+				
+				summaryTableContents=MapThread[
+					Prepend[#1,#2]&,
+					{
+						Prepend[Transpose[{firstColumn,secondColumn}],summaryTableColumnLabels], (* stack each row *)
+						summaryTableRowLabels (* prepend this column *)
+					}
+				];
+				
+				summaryTable = Grid[
+					summaryTableContents,
+					Alignment->{{Left,Center},{Left,Center}},
+					Frame->All,
+					Spacings->{1.5,1.5},
+					Dividers->
+						{
+							{
+								Directive[GrayLevel[0.8],Thickness[2]],
+								Directive[GrayLevel[0.8],Thickness[2]],
+								{Directive[GrayLevel[0.8]]},
+								Directive[GrayLevel[0.8],Thickness[2]]
+							},
+							{
+								Directive[GrayLevel[0.8],Thickness[2]],
+								Directive[GrayLevel[0.8],Thickness[2]],
+								{Directive[GrayLevel[0.8]]},
+								Directive[GrayLevel[0.8],Thickness[2]],
+								Directive[GrayLevel[0.8],Thickness[2]]
+							}
+						},
+					ItemStyle->{
+						{{Directive[FontFamily->"Arial",FontSize->12],FontWeight->Bold},{Directive[FontFamily->"Arial",FontSize->12]}},
+						{Directive[FontFamily->"Arial",FontWeight->Bold,FontSize->12]}
+					},
+					Background->background
+				]
+			]
+		],
+		{
+			EffectiveCompletionTime,
+			EffectiveTurnaroundTime
+		}
+	];
+	
+	effectiveTurnaroundTimeSummaryTableNumber = Which[
+		MatchQ[target,User],
+		"TABLE 5",
+		
+		MatchQ[target,Company],
+		"TABLE 12"
+	];
+	
+	effectiveTurnaroundTimeSummaryTableTitle= TextCell[Row[{
+		Style[effectiveTurnaroundTimeSummaryTableNumber<>". ",FontSize->14,FontWeight->"Bold",FontTracking->"Extended",FontFamily->"Helvetica",FontColor->Black],
+		Style["Frequency Distribution of Experiment Turnaround Times for ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
+	}],TextJustification->1];
+	
+	effectiveTurnaroundTimeNote1=TextCell[Row[{
+		Style[effectiveTurnaroundTimeSummaryTableNumber<>": ",tableFigureNumbersFootnoteStyle],
+		Style["Turnaround Time ",italicFootnoteStyle],
+		Style["is the time period between DateEnqueued to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, and ScientificSupport. ",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	effectiveOperationsStatisticsSummarySection = Column[
+		{
+			queueTimeSummaryTableTitle,
+			queueTimesSummaryTable,
+			meanProtocolQueueTimeNote1,
+			"\n",
+			"\n",
+			effectiveTurnaroundTimeSummaryTableTitle,
+			effectiveTurnaroundTimesSummaryTable,
+			effectiveTurnaroundTimeNote1
+			
+		},
+		Spacings->{1,0.25}
+	];
+	
+	operationTimeByType = GatherBy[protocolOperationsTimeTuples, Experiment`Private`fastAssocLookup[reportFastAssoc, #[[1]], Type] &];
+	
+	(* Protocol Type Summary *)
+	effectiveTimesByProtocolTypeSummaryTableNumber = Which[
+		MatchQ[target,User]&&MatchQ[turnaroundTimes,True],
+		"TABLE 6",
+		MatchQ[target,User]&&MatchQ[turnaroundTimes,False],
+		"TABLE 6",
+		MatchQ[target,Company]&&MatchQ[turnaroundTimes,True],
+		"TABLE 9",
+		MatchQ[target,Company]&&MatchQ[turnaroundTimes,False],
+		"TABLE 8"
+	];
+	
+	effectiveTimesByProtocolTypeSummaryTableTitle= TextCell[Row[{
+		Style[effectiveTimesByProtocolTypeSummaryTableNumber<>". ",FontSize->14,FontWeight->"Bold",FontTracking->"Extended",FontFamily->"Helvetica",FontColor->Black],
+		Style[" Summary of Frequency and Empirical Distributions of Execution Times by Protocol Type Completed between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
+	}],TextJustification->1];
+	
+	effectiveTimesByProtocolTypeSummaryTableNote=TextCell[Row[{
+		Style[effectiveTimesByProtocolTypeSummaryTableNumber<>": ",tableFigureNumbersFootnoteStyle],
+		Style["Number of Experiments ",italicFootnoteStyle],
+		Style["include all protocols that are generated by experiment function calls. ",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Queue Time ",italicFootnoteStyle],
+		Style["is the time period between DateEnqueued to DateStarted, not including time intervals when protocols are in Backlogged status when maximum thread capacity is reached or when in ShippingMaterials status ",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Completion Time ",italicFootnoteStyle],
+		Style["is the time period between DateStarted to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, ScientificSupport, and OperatorReady. ",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Turnaround Time ",italicFootnoteStyle],
+		Style["is the time period between DateEnqueued to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, and ScientificSupport. ",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	(* Set up the table contents for statistics of relevant operation times by protocol type *)
+	effectiveTimesByProtocolTypeSummary=ReverseSortBy[Map[
+		Module[{numberOfProtocols,allQueueTimes,allEffectiveTurnaroundTimes,allEffectiveCompletionTimes,distributionQueueTime,distributionEffectiveTurnaroundTime,distributionEffectiveCompletionTime,meanQueueTime,meanEffectiveTurnaroundTime,meanEffectiveCompletionTime,stddevQueueTime,stddevEffectiveTurnaroundTime,stddevEffectiveCompletionTime,queueTimeColumn,completionTimeColumn,turnaroundTimeColumn},
+			
+			numberOfProtocols = Length[#];
+			allEffectiveCompletionTimes=Cases[#[[All,2]],_?QuantityQ];
+			allEffectiveTurnaroundTimes=Cases[#[[All,3]],_?QuantityQ];
+			allQueueTimes = Cases[#[[All,4]],_?QuantityQ];
+			
+			(* get the Empirical Distribution for all the times *)
+			distributionEffectiveTurnaroundTime=If[MatchQ[allEffectiveTurnaroundTimes,{_?QuantityQ..}],
+				EmpiricalDistribution[allEffectiveTurnaroundTimes],
+				"N/A"
+			];
+			distributionEffectiveCompletionTime=If[MatchQ[allEffectiveCompletionTimes,{_?QuantityQ..}],
+				EmpiricalDistribution[allEffectiveCompletionTimes],
+				"N/A"
+			];
+			distributionQueueTime=If[MatchQ[allQueueTimes,{_?QuantityQ..}],
+				EmpiricalDistribution[allQueueTimes],
+				"N/A"
+			];
+			
+			(* get the Mean from the Empirical Distribution*)
+			meanEffectiveTurnaroundTime=If[MatchQ[distributionEffectiveTurnaroundTime,_?DistributionQ],
+				Round[UnitScale[Mean[distributionEffectiveTurnaroundTime]],0.1],
+				"N/A"
+			];
+			meanEffectiveCompletionTime=If[MatchQ[distributionEffectiveCompletionTime,_?DistributionQ],
+				Round[UnitScale[Mean[distributionEffectiveCompletionTime]],0.1],
+				"N/A"
+			];
+			meanQueueTime=If[MatchQ[distributionQueueTime,_?DistributionQ],
+				Round[UnitScale[Mean[distributionQueueTime]],0.1],
+				"N/A"
+			];
+			
+			(* get the Std Dev from the Empirical Distribution*)
+			stddevEffectiveTurnaroundTime=If[MatchQ[distributionEffectiveTurnaroundTime,_?DistributionQ],
+				Round[UnitScale[StandardDeviation[distributionEffectiveTurnaroundTime]],0.1],
+				"N/A"
+			];
+			stddevEffectiveCompletionTime=If[MatchQ[distributionEffectiveCompletionTime,_?DistributionQ],
+				Round[UnitScale[StandardDeviation[distributionEffectiveCompletionTime]],0.1],
+				"N/A"
+			];
+			stddevQueueTime=If[MatchQ[distributionQueueTime,_?DistributionQ],
+				Round[UnitScale[StandardDeviation[distributionQueueTime]],0.1],
+				"N/A"
+			];
+			
+			(* Format  into the columns *)
+			{
+				queueTimeColumn,
+				completionTimeColumn,
+				turnaroundTimeColumn
+			} = Map[
+				Function[{timeList},
+					Module[{allTimes,mean,stdDev},
+						{
+							allTimes,
+							mean,
+							stdDev
+						}=timeList;
+						
+						Column[
+							{
+								(* This section shows the histogram chart with appropriate sizing *)
+								Histogram[
+									Convert[allTimes, Day],
+									{0 Day, 4 Day, 1 Day},
+									ChartStyle -> RGBColor["#0CBD96"], FrameStyle -> Bold,
+									FrameLabel -> {Style["Days", Bold, 10,Gray], None},
+									Frame -> {True, False, False, False},
+									FrameTicks->{{0,1,2,3,4},None},
+									FrameTicksStyle->Gray,
+									ImageSize -> {60, Automatic}
+								],
+								(* This shows the summary mean and stddev *)
+								Column[{
+									TextCell[Style[ToString[mean],FontFamily->"Helvetica",FontSize->12,FontWeight->Bold],TextAlignment->Center],
+									TextCell[Style["\[PlusMinus] "<>ToString[stdDev],FontFamily->"Helvetica",FontSlant->Italic,FontSize->10,FontWeight->Bold,FontColor->RGBColor["#299984"]],TextAlignment->Center]
+								},Spacings->0.2,Alignment->Center]
+								
+								
+							},
+							Alignment->Center,
+							Spacings->1.1
+						]
+					]
+				],
+				{
+					{allQueueTimes,meanQueueTime,stddevQueueTime},
+					{allEffectiveCompletionTimes,meanEffectiveCompletionTime,stddevEffectiveCompletionTime},
+					{allEffectiveTurnaroundTimes,meanEffectiveTurnaroundTime,stddevEffectiveTurnaroundTime}
+				}
+			];
+			
+			{StringDelete[
+				StringDelete[
+					ToString[Experiment`Private`fastAssocLookup[reportFastAssoc,#[[1]][[1]],Type]],
+					"Object[Protocol, "
+				],
+				"]"
+			],{numberOfProtocols,queueTimeColumn,completionTimeColumn,turnaroundTimeColumn}}
+		]&,
+		operationTimeByType
+	],#[[2]]&];
+
+	(* We need to divide the full list of protocolTypeSummary into groups of 4 so the tables generated do not get cut off when converted to PDF *)
+	groupedEffectiveTimesByProtocolTypeSummary = Partition[effectiveTimesByProtocolTypeSummary,UpTo[4]];
+	
+	(* The data is arranged with the appropriate row and column labels to work with the Grid call for the table design layout where row and column headers have gray background *)
+	effectiveTimesByProtocolTypeSummaryTableContents = Map[
+		Function[{protocolTypeSummaryData},
+			Module[{protocolSummaryTypeTableColumnLabels,protocolSummaryTypeTableRowLabels},
+				
+				protocolSummaryTypeTableColumnLabels={"Number of \nExperiments","Queue Time","Completion Time","Turnaround Time"};
+				protocolSummaryTypeTableRowLabels=Prepend[protocolTypeSummaryData[[All,1]],"Protocol Type"];
+				
+				MapThread[
+					Prepend[#1,#2]&,
+					{
+						Prepend[protocolTypeSummaryData[[All,2]],protocolSummaryTypeTableColumnLabels], (* stack each row *)
+						Style[#,FontFamily->"Arial"]&/@protocolSummaryTypeTableRowLabels (* add the column that has teh row labels *)
+					}
+				]
+			
+			]
+		],
+		groupedEffectiveTimesByProtocolTypeSummary
+	];
+	
+	(* since the contents are subdivided into a certain length in order to limit table size per page, create a table for each set of contents with a Note at the bottom *)
+	effectiveTimesByProtocolTypeSummaryTables=Map[
+		Column[{
+			Grid[
+				#,
+				Alignment->{{Left,Center},{Left,Center}},
+				Frame->All,
+				Spacings->{1.5,1.5},
+				Dividers->dividers,
+				ItemStyle->{
+					{{Directive[FontFamily->"Arial",FontSize->12],FontWeight->Bold},{Directive[FontFamily->"Arial",FontSize->12]}},
+					{Directive[FontFamily->"Arial",FontWeight->Bold,FontSize->12]}
+				},
+				Background->background
+			],
+			effectiveTimesByProtocolTypeSummaryTableNote
+		},Alignment->Left,Spacings->1]&,
+		effectiveTimesByProtocolTypeSummaryTableContents
+	];
+	
+	(* Each table must be inside a list and the tables turned into a Sequence in order for ExportReport to interpret it properly *)
+	effectiveTimesByProtocolTypeSummaryTableSection = Sequence@@MapIndexed[
+		If[MatchQ[#2,{1}],
+			{#,None},
+			{#,PageBreakAbove->True}
+		]&,
+		effectiveTimesByProtocolTypeSummaryTables
+	];
+	
+	(* Availability of Materials *)
+	materialsSupplyAssoc = ECL`SupplyTimeReport[
+		myFinancingTeams,
+		startDate,
+		finalEndDate,
+		OutputFormat -> Association,
+		Contemporaneous -> True
+	];
+	
+	(* Only include associations that have Inventories, ProtocolDelayTimes and ReorderAmount populated *)
+	selectedMaterialsSupplyAssoc  = Select[
+		materialsSupplyAssoc,
+		And[
+			!MatchQ[Lookup[#,Inventories],{}],
+			!MatchQ[Lookup[#,ProtocolDelayTimes],{}],
+			!MatchQ[Unitless[Lookup[#,ReorderAmount]],0]
+		]&
+	];
+	
+	(* set up the Table Number *)
+	materialsConstraintNumber = Which[
+		MatchQ[target,User],
+		"TABLE 7",
+		MatchQ[target,Company],
+		"TABLE 9"
+	];
+	
+	(* set up the Title *)
+	materialsConstraintTableTitle= Row[{
+		Style[materialsConstraintNumber<>".",FontSize->14,FontWeight->"Bold",FontTracking->"Extended",FontFamily->"Helvetica",FontColor->Black],
+		Style["  Materials Availability Constraints between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
+	}];
+	
+	(* Create a list for the table: {Sample Model, Shipping Delay, Requested Amount, ReorderThreshold, ReorderAmount} *)
+	materialsConstraintData = If[MatchQ[selectedMaterialsSupplyAssoc,{}],
+		{},
+		Flatten[MapThread[
+			Function[
+				{
+					sampleModels,
+					shippingDelay,
+					requestedAmount,
+					reorderThresholdsOld,
+					reorderThresholdsNew,
+					reorderAmountsOld,
+					reorderAmountsNew
+				},
+				MapThread[
+					Function[
+						{
+							sampleModel,
+							reorderThresholdOld,
+							reorderThresholdNew,
+							reorderAmountOld,
+							reorderAmountNew
+						},
+						
+						(* If there were any updates in the ReorderThreshold or ReorderAmount, this is shown in the table *)
+						Module[{reorderThresholdChange,reorderAmountChange,finalReorderThreshold, finalReorderAmount},
+							(* Check if there is a ReorderThreshold change *)
+							reorderThresholdChange = If[MatchQ[Unitless[(reorderThresholdOld-reorderThresholdNew)],GreaterP[0]],
+								reorderThresholdOld-reorderThresholdNew,
+								Null
+							];
+							
+							(* Check if there is a ReorderAmount change *)
+							reorderAmountChange = If[MatchQ[Unitless[(reorderAmountNew-reorderAmountOld)],GreaterP[0]],
+								reorderAmountNew-reorderAmountOld,
+								Null
+							];
+							
+							{
+								finalReorderThreshold,
+								finalReorderAmount
+							} = MapThread[
+								Function[{change, old, new},
+									Which[
+										(* if we have a change, display the old (-change), new *)
+										MatchQ[change,Except[Null]]&&MatchQ[Unitless[new],GreaterP[0]],
+										Column[
+											{
+												TextCell[Style[ToString[Round[UnitScale[old],0.1]],FontFamily->"Helvetica",FontSize->12],TextAlignment->Center],
+												TextCell[Style["(- "<>ToString[Round[UnitScale[change],0.1]]<>")",FontFamily->"Helvetica",FontSize->10,FontSlant->Italic,FontColor->RGBColor["#299984"]],TextAlignment->Center]
+											},Alignment->Center
+										],
+										(* if we have no change, display the new *)
+										MatchQ[Unitless[new],GreaterP[0]],
+										Column[
+											{
+												TextCell[Style[ToString[Round[UnitScale[new],0.1]],FontFamily->"Helvetica",FontSize->12],TextAlignment->Center]
+											},Alignment->Center
+										],
+										(* Otherwise, N/A *)
+										True,
+										Column[
+											{
+												TextCell[Style["N/A",FontFamily->"Helvetica",FontSize->12],TextAlignment->Center]
+											},Alignment->Center
+										]
+									]
+								],
+								Transpose[{
+									{reorderThresholdChange,reorderThresholdOld,reorderThresholdNew},
+									{reorderAmountChange,reorderAmountOld,reorderAmountNew}
+								}]
+							];
+							
+							{
+								Style[StringDelete[StringDelete[ToString[NamedObject[sampleModel]],"Model[Sample, "],"]"],FontFamily->"Helvetica",FontSize->10,TextAlignment->Center],
+								Style[ToString[Round[UnitScale[shippingDelay],0.1]],FontFamily->"Helvetica",FontSize->12],
+								Style[ToString[Round[UnitScale[requestedAmount/.{0->2}],0.1]],FontFamily->"Helvetica",FontSize->12],
+								finalReorderThreshold,
+								finalReorderAmount
+							}
+						]
+					],
+					(* The association output of SupplyTimeInventory does not expand the ReorderXX values even though product can be used for multiple sample models so we expand it here *)
+					{
+						sampleModels,
+						reorderThresholdsOld/.{{}->ConstantArray[Null,Length[sampleModels]],{___,x_}->ConstantArray[x,Length[sampleModels]]},
+						reorderThresholdsNew/.{{}->ConstantArray[Null,Length[sampleModels]],{___,x_}->ConstantArray[x,Length[sampleModels]]},
+						reorderAmountsOld/.{{}->ConstantArray[Null,Length[sampleModels]],{___,x_}->ConstantArray[x,Length[sampleModels]]},
+						reorderAmountsNew/.{{}->ConstantArray[Null,Length[sampleModels]],{___,x_}->ConstantArray[x,Length[sampleModels]]}
+					}
+				]
+			],
+			Lookup[selectedMaterialsSupplyAssoc,{
+				ProductModels,
+				ProtocolDelayTime,
+				RequestedAmount,
+				InventoryReorderThresholdsOld,
+				InventoryReorderThresholds,
+				InventoryReorderAmountsOld,
+				InventoryReorderAmounts
+			}]//Transpose
+		],1]
+	];
+	
+	(* separate contents into multiple tables in order to fit properly in a page *)
+	groupedMaterialsConstraintDataString = Which[
+		MatchQ[Length[materialsConstraintData],GreaterP[9]],
+		Partition[materialsConstraintData, UpTo[9]],
+		
+		MatchQ[materialsConstraintData,Except[{}]],
+		{materialsConstraintData},
+		
+		True,
+		{}
+	];
+	
+	(* add Column and Row labels to contents *)
+	materialsConstraintTableContents = If[MatchQ[groupedMaterialsConstraintDataString,{}],
+		{},
+		Map[
+			Function[{materialsData},
+				Module[{materialsDataTableColumnLabels,materialsDataTableRowLabels},
+					
+					materialsDataTableColumnLabels=Style[#,FontFamily->"Helvetica",FontWeight->Bold]&/@{
+						"Shipping \nDelay",
+						"Requested \nAmount",
+						"Reorder \nThreshold",
+						"Reorder \nAmount"
+					};
+					
+					materialsDataTableRowLabels=Prepend[Style[#,FontFamily->"Helvetica",FontWeight->Bold]&/@materialsData[[All,1]],Style["Sample Model",FontFamily->"Helvetica",FontWeight->Bold,TextAlignment->Center]];
+					
+					MapThread[
+						Prepend[#1,#2]&,
+						{
+							Prepend[Drop[#, 1] & /@materialsData,materialsDataTableColumnLabels],
+							materialsDataTableRowLabels
+						}
+					]
+				]
+			],
+			Cases[#, Except[{}]] & /@groupedMaterialsConstraintDataString
+		]
+	];
+	
+	(* each Table has an added Footnote to define headers *)
+	materialsDataTableFootnote = TextCell[Row[{
+		Style[materialsConstraintNumber<>": ", tableFigureNumbersFootnoteStyle],
+		Style["Shipping Delay ",italicFootnoteStyle],
+		Style["is the length of time between when the product is requested by the protocol up until the protocol run is resumed after the shipment's arrival. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Updates to ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Reorder Threshold ",italicFootnoteStyle],
+		Style["and ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Reorder Amount ",italicFootnoteStyle],
+		Style["after a shipping delay has been encountered is noted in green.",FontWeight->"Medium",FontSize->10,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	(* set up the individual tables for materialsConstraintTableContents by adding a PageBreakAbove->True to all tables except the first one *)
+	materialsDataTables = If[MatchQ[materialsConstraintTableContents,{}],
+		Null,
+		Sequence@@MapIndexed[
+			{
+				Column[
+					{
+						Grid[
+							#,
+							Alignment->{{Left,Center},{Left,Center}},
+							Frame->All,
+							Spacings->{3,1.2},
+							Dividers->dividers,
+							Background->background
+						],
+						materialsDataTableFootnote
+					},
+					Alignment->Left,Spacings->1
+				],
+				If[MatchQ[#2,{1}],
+					None,
+					PageBreakAbove->True
+				]
+			}&,
+			materialsConstraintTableContents
+		]
+	];
+	
+	(* Availability of Instruments *)
+	instrumentAvailabilityAssoc =ECL`PlotInstrumentQueueTimes[
+		myFinancingTeams[[1]],
+		startDate;;finalEndDate,
+		Output -> Association
+	];
+	
+	(* set up the Table Number *)
+	instrumentAvailabilityNumber = Which[
+		MatchQ[target,User],
+		"TABLE 8",
+		MatchQ[target,Company],
+		"TABLE 10"
+	];
+	
+	(* set up the Title *)
+	instrumentAvailabilityTableTitle= Row[{
+		Style[instrumentAvailabilityNumber<>".",FontSize->14,FontWeight->"Bold",FontTracking->"Extended",FontFamily->"Helvetica",FontColor->Black],
+		Style["  Instrument Availability Constraints between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
+	}];
+	
+	(* Set up the data for the table *)
+	(* sort by Mean Instrument Queue Time ([[4]])*)
+	instrumentAvailabilityData = ReverseSortBy[MapThread[
+		Function[
+			{
+				instrumentModel,
+				numberOfInstruments,
+				totalInstrumentQueueTime,
+				meanInstrumentQueueTime,
+				totalInstrumentRepairTime
+			},
+			Module[{finalTotalInstrumentRepairTime,numberOfUseInstances,finalMeanInstrumentRepairTime,instrumentModelTextList,instrumentModelColumn},
+				
+				finalTotalInstrumentRepairTime = If[MatchQ[totalInstrumentRepairTime,_Quantity],
+					ToString[Round[UnitScale[totalInstrumentRepairTime],0.1]],
+					"-"
+				];
+				
+				numberOfUseInstances=If[MatchQ[meanInstrumentQueueTime,GreaterP[0 Hour]]&&MatchQ[totalInstrumentQueueTime,_Quantity],
+					totalInstrumentQueueTime/meanInstrumentQueueTime,
+					Null
+				];
+				
+				finalMeanInstrumentRepairTime = If[MatchQ[totalInstrumentRepairTime,GreaterP[0 Hour]]&&MatchQ[numberOfUseInstances,GreaterP[0]],
+					ToString[Round[UnitScale[totalInstrumentRepairTime/numberOfUseInstances],0.1]],
+					"-"
+				];
+				
+				(* only display the  model Name *)
+				instrumentModelTextList = StringSplit[StringDelete[StringDelete[ToString[instrumentModel],"Model[Instrument, "],"]"],","];
+				
+				instrumentModelColumn=Column[{
+					Style[StringJoin[Drop[instrumentModelTextList,-1]],FontFamily->"Helvetica",FontSize->10,TextAlignment->Center,FontWeight->Bold],
+					Style[StringDrop[instrumentModelTextList[[-1]], 1],FontFamily->"Helvetica",FontSize->10,TextAlignment->Center]
+				},
+					Alignment->Left
+				];
+				
+				
+				{
+					instrumentModelColumn,
+					numberOfInstruments,
+					totalInstrumentQueueTime,
+					meanInstrumentQueueTime,
+					finalTotalInstrumentRepairTime,
+					finalMeanInstrumentRepairTime
+				}
+			]
+		],
+		Lookup[instrumentAvailabilityAssoc,{
+			"Instrument Model",
+			"Number of Instruments\nat ECL-2",
+			"Total Instrumentation Queue Time",
+			"Mean Instrumentation Queue Time",
+			"Total Repair Time"
+		}]
+	],#[[4]]&];
+	
+	instrumentAvailabilityDataString = Map[
+		Function[{dataSet},
+			{
+				Module[
+					{instrumentModelColumn,numberOfInstruments,totalInstrumentQueueTime,meanInstrumentQueueTime,finalTotalInstrumentRepairTime,finalMeanInstrumentRepairTime},
+					{instrumentModelColumn,numberOfInstruments,totalInstrumentQueueTime,meanInstrumentQueueTime,finalTotalInstrumentRepairTime,finalMeanInstrumentRepairTime} = dataSet;
+					{
+						instrumentModelColumn,
+						Style[ToString[numberOfInstruments], FontFamily -> "Helvetica", FontSize -> 10],
+						Style[ToString[Round[UnitScale[totalInstrumentQueueTime], 0.1]], FontFamily -> "Helvetica", FontSize -> 10],
+						Style[ToString[Round[UnitScale[meanInstrumentQueueTime], 0.1]], FontFamily -> "Helvetica", FontSize -> 10],
+						Style[finalTotalInstrumentRepairTime, FontFamily -> "Helvetica", FontSize -> 10],
+						Style[finalMeanInstrumentRepairTime, FontFamily -> "Helvetica", FontSize -> 10]
+					}
+				]
+				
+			}
+		],
+		instrumentAvailabilityData
+	];
+	
+	(* separate contents into multiple tables in order to fit properly in a page *)
+	groupedInstrumentAvailabilityDataString = If[MatchQ[Length[instrumentAvailabilityDataString],GreaterP[10]],
+		Partition[instrumentAvailabilityDataString, UpTo[10]],
+		{instrumentAvailabilityDataString}
+	];
+	
+	(* add Column and Row labels to contents *)
+	instrumentAvaialabilityTableContents = Map[
+		Function[{instrumentAvailableDataSet},
+			Module[{instrumentAvailabilityDataTableColumnLabels,instrumentAvailabilityDataTableRowLabels},
+				
+				instrumentAvailabilityDataTableColumnLabels=Style[#,FontFamily->"Helvetica",FontWeight->Bold,FontSize->10]&/@{
+					"Instrument Model",
+					"Instrument \n Count",
+					"Total \nQueue Times",
+					"Mean \nQueue Times",
+					"Total \nRepair Times",
+					"Mean \nRepair Times"
+				};
+				
+				instrumentAvailabilityDataTableRowLabels=instrumentAvailableDataSet[[All,1]];
+				
+				Prepend[instrumentAvailabilityDataTableRowLabels,instrumentAvailabilityDataTableColumnLabels]
+			]
+		],
+		groupedInstrumentAvailabilityDataString
+	];
+	
+	(* each Table has an added Footnote to define headers *)
+	instrumentAvailabilityDataTableFootnote = TextCell[Row[{
+		Style[instrumentAvailabilityNumber<>": ", tableFigureNumbersFootnoteStyle],
+		Style["Instrument Count ",italicFootnoteStyle],
+		Style[" indicates the total count of instrument objects of this model at the ECL-2 Site. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Total Queue Time ",italicFootnoteStyle],
+		Style[" the amount of time spent waiting for the instruments while they are being used by a different protocol, being qualified, or receiving a scheduled maintenance. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Mean Queue Time ",italicFootnoteStyle],
+		Style[" indicates the average amount of time spent waiting for the instruments by taking the total time and dividing it by the total number of fulfilled resource requests for the instrument. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Total Repair Time ",italicFootnoteStyle],
+		Style[" indicates the amount of time that user protocols spent waiting for repairs to be completed on the instrument. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Mean Repair Time ",italicFootnoteStyle],
+		Style[" indicates the average amount of time spent repairing instruments by taking the total time and dividing it by the total number of fulfilled resource requests for the instrument. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	(* set up the individual tables for instrumentAvailabilityTableContents by adding a PageBreakAbove->True to all tables except the first one *)
+	instrumentAvailabilityTables = Sequence@@MapIndexed[
+		{
+			Column[
+				{
+					Grid[
+						#,
+						Alignment->{{Left,Center},{Left,Center}},
+						Frame->All,
+						Spacings->{2.9,1.1},
+						Dividers->dividers,
+						Background->background
+					],
+					instrumentAvailabilityDataTableFootnote
+				},
+				Alignment->Left,Spacings->0.9
+			],
+			If[MatchQ[#2,{1}],
+				None,
+				PageBreakAbove->True
+			]
+		}&,
+		instrumentAvaialabilityTableContents
 	];
 	
 	(* Completed Protocols *)
@@ -2902,7 +3811,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		MatchQ[target,Company],
 		"FIGURE 1a",
 		MatchQ[target,User],
-		"FIGURE 2a",
+		"FIGURE 3",
 		True,
 		"FIGURE 1a"
 	];
@@ -2912,7 +3821,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Number of Protocols Completed Daily between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3010,7 +3919,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3093,7 +4002,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Distribution of Experiment Types Completed between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3165,7 +4074,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Number of Samples Processed between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3257,7 +4166,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3347,7 +4256,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Number of Data Object(s) Generated between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3432,7 +4341,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3514,7 +4423,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Distribution of Data Types for Experiments Completed between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3540,9 +4449,9 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	(* Protocol Type Summary *)
 	protocolTypeSummaryTableNumber = Which[
 		MatchQ[target,User]&&MatchQ[turnaroundTimes,True],
-		"TABLE 7",
+		"TABLE 10",
 		MatchQ[target,User]&&MatchQ[turnaroundTimes,False],
-		"TABLE 6",
+		"TABLE 9",
 		MatchQ[target,Company]&&MatchQ[turnaroundTimes,True],
 		"TABLE 9",
 		MatchQ[target,Company]&&MatchQ[turnaroundTimes,False],
@@ -3554,7 +4463,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" Summary of Laboratory Productivity by Protocol Type Completed between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -3663,21 +4572,68 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		protocolTypeSummaryTables
 	];
 	
+	(* add this figure to explain the different relevant operation times presented in the report *)
+	protocolExecutionFigure = Graphics[ImportCloudFile[EmeraldCloudFile["AmazonS3", "emeraldsci-ecl-blobstore-stage", "shard2/859fd211d6102e8c9a73adfae8caad88.png", ""]],ImageSize->UpTo[650]];
+	
+	protocolExecutionFigureNumber = Which[
+		MatchQ[target,User],
+		"FIGURE 2",
+		MatchQ[target,Company],
+		"TABLE 7"
+	];
+	
+	protocolExecutionFigureTitle=TextCell[Row[{
+		Style[protocolExecutionFigureNumber<>". ",FontSize->14,FontWeight->"Bold",FontTracking->"Extended",FontFamily->"Helvetica",FontColor->Black],
+		Style["Graphical Representation of Protocol Execution Statistics",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	protocolExecutionFigureFootnote = TextCell[Row[{
+		Style[protocolExecutionFigureNumber<>": ", tableFigureNumbersFootnoteStyle],
+		Style["Queue Time ",italicFootnoteStyle],
+		Style[" is the time period between DateEnqueued to DateStarted, not including time intervals when protocols are in Backlogged status when maximum thread capacity is reached or when in ShippingMaterials status. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Completion Time ",italicFootnoteStyle],
+		Style[" is the time period between DateStarted to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, ScientificSupport, and OperatorReady. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Turnaround Time ",italicFootnoteStyle],
+		Style[" is the time period between DateEnqueued to DateCompleted of the protocol, not including any time period when the experiment is under the statuses RepairingInstrumentation, ShippingMaterials, and ScientificSupport. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]],
+		Style["Operator Time ",italicFootnoteStyle],
+		Style[" is the time period when the experiment is under Operator Processing. ",FontSize->10,FontFamily->"Helvetica", FontColor->RGBColor[0.3,0.3,0.3]]
+	}],TextJustification->1];
+	
+	protocolExecutionFigureSection = Column[
+		{
+			protocolExecutionFigure,
+			protocolExecutionFigureTitle,
+			protocolExecutionFigureFootnote
+		},
+		Left,
+		Spacings -> 1
+	];
+	
 	protocolMetricsSection=If[MatchQ[protocolExecutionSummarySection,Null],
 		{
 			{Section,"PROTOCOL METRICS",PageBreakAbove->True},
 			{Subsubsection,"Protocol Metrics Summary",None},
 			{protocolSummaryTableSection,None},
+			{Subsubsection,"Protocol Execution Summary",None},
+			{protocolExecutionFigureSection,None},
+			{effectiveOperationsStatisticsSummarySection,PageBreakAbove->True},
+			{effectiveTimesByProtocolTypeSummaryTableTitle,PageBreakAbove->True},
+			effectiveTimesByProtocolTypeSummaryTableSection,
+			{Subsubsection,"Resource Constraints",PageBreakAbove->True},
+			If[MatchQ[{materialsDataTables}, {Null}],
+				{TextCell[Column[{
+					Style["Materials Availability Constraints: ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+					Style["No Materials Availability Constraints has been encountered for this period.",FontSize->12,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+				}],TextJustification->1],None},
+				Sequence@@{
+					{materialsConstraintTableTitle,None},
+					materialsDataTables
+				}
+			],
+			{instrumentAvailabilityTableTitle,PageBreakAbove->True},
+			instrumentAvailabilityTables,
 			{Subsubsection,"Protocols Completed",PageBreakAbove->True},
 			{protocolBarChartSection,None},
-			{Text," ",None},
-			{wordCloudProtocolSection,None},
-			{Subsubsection,"Samples Processed",PageBreakAbove->True},
-			{samplesBarChartSection,None},
-			{Subsubsection,"Data Generated",PageBreakAbove->True},
-			{dataBarChartSection,None},
-			{Text," ",None},
-			{wordCloudDataSection,None},
 			{Subsubsection,"Protocol Type Summary",PageBreakAbove->True},
 			{protocolTypeSummaryTableTitle,None},
 			protocolTypeSummaryTableSection
@@ -3688,16 +4644,25 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			{protocolSummaryTableSection,None},
 			{Subsubsection,"Protocol Execution Summary",None},
 			{protocolExecutionSummarySection,None},
+			{protocolExecutionFigureSection,None},
+			{effectiveOperationsStatisticsSummarySection,PageBreakAbove->True},
+			{effectiveTimesByProtocolTypeSummaryTableTitle,PageBreakAbove->True},
+			effectiveTimesByProtocolTypeSummaryTableSection,
+			{Subsubsection,"Resource Constraints",PageBreakAbove->True},
+			If[MatchQ[{materialsDataTables}, {Null}],
+				{TextCell[Column[{
+					Style["Materials Availability Constraints: ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
+					Style["No Materials Availability Constraints has been encountered for this period.",FontSize->12,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]]
+				}],TextJustification->1],None},
+				Sequence@@{
+					{materialsConstraintTableTitle,None},
+					materialsDataTables
+				}
+			],
+			{instrumentAvailabilityTableTitle,PageBreakAbove->True},
+			instrumentAvailabilityTables,
 			{Subsubsection,"Protocols Completed",PageBreakAbove->True},
 			{protocolBarChartSection,None},
-			{Text," ",None},
-			{wordCloudProtocolSection,None},
-			{Subsubsection,"Samples Processed",PageBreakAbove->True},
-			{samplesBarChartSection,None},
-			{Subsubsection,"Data Generated",PageBreakAbove->True},
-			{dataBarChartSection,None},
-			{Text," ",None},
-			{wordCloudDataSection,None},
 			{Subsubsection,"Protocol Type Summary",PageBreakAbove->True},
 			{protocolTypeSummaryTableTitle,None},
 			protocolTypeSummaryTableSection
@@ -4000,7 +4965,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			Style["Productivity with Current Utilization for ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.2,0.2,0.2]],
 			Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 			Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-			Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+			Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 			Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 		}],TextJustification->1],
 		
@@ -4010,7 +4975,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			Style["Comparison of Productivity between Current Utilization and Potential Full Utilization for ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.2,0.2,0.2]],
 			Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 			Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-			Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+			Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 			Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 		}],TextJustification->1]
 	];
@@ -4089,7 +5054,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Daily Thread Utilization between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -4117,7 +5082,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["  Daily Percent Utilization between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -4206,12 +5171,13 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["  Summary of Scientist Labor and Productivity between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}];
 	
 	(* summarize data from the UserUtilizationSummary field *)
-	userUtilizationData = ReverseSortBy[Map[
+	(* Sort by # of protocols completed and only include top 15 users *)
+	userUtilizationData = Take[ReverseSortBy[Select[Map[
 		Module[
 			{
 				userFirstName,
@@ -4289,7 +5255,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			]
 		]&,
 		groupedUserUtilizationSummaryLogsPerUser
-	],#[[2]]&];
+	],MatchQ[#[[3]],GreaterP[0]]&],#[[3]]&],UpTo[15]]; (* Sort by # of protocols completed ([[3]]) and only include top 15 users who have completed protocols *)
 	
 	(* turn data into text that works with the Grid presentation *)
 	userUtilizationDataString = Map[
@@ -4508,7 +5474,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["From ",FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic],
 		Style[" to ",FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic],
 		Style[", the team has performed ",FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]],
 		Style[ToString[Round[totalNumberOfProtocolHours]]<>" of laboratory work ",FontSlant->Italic, FontSize->13,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style["(",FontSize->13,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]],
@@ -4538,7 +5504,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			Style["  on Command Center",FontSize->12,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]](*,
 			Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic],
 			Style[" to ",FontSize->14,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13]],
-			Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic]
+			Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontFamily->"Helvetica", FontColor->RGBColor[0.13,0.13,0.13],FontSlant->Italic]
 			*)
 		}],TextAlignment->Left],
 		
@@ -4699,7 +5665,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" Summary of Instrument Usage for instruments used between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -4774,7 +5740,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	
 	instrumentCollageFigureText = Which[
 		MatchQ[target,User],
-		"TABLE 3b",
+		"FIGURE 4",
 		MatchQ[target,Company],
 		"TABLE 5b"
 	];
@@ -4784,7 +5750,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style["Graphical Representation of Instrument Models utilized between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -4806,11 +5772,8 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Spacings -> 1
 	];
 	
+	(* Only include the Instrument collage for the Instrument Metrics section *)
 	instrumentMetricsSection={
-		{Section,"INSTRUMENT METRICS",PageBreakAbove->True},
-		{Subsubsection,"Instrument Usage Metrics",None},
-		{instrumentSummaryTableTitle,None},
-		instrumentSummaryTableSequence,
 		{instrumentCollageFigure,PageBreakAbove->True}
 	};
 	
@@ -4935,7 +5898,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 						Style["calculated from the total purchase price of all utilized instruments from ", FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
 						Style[DateString[convertedStartTime, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
 						Style[" to ", FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
-						Style[DateString[endDate, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic]
+						Style[DateString[finalEndDate, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic]
 					}], TextAlignment -> Center]
 				},
 					Alignment -> Center, Spacings -> 1], Frame -> Directive[GrayLevel[0.8]]
@@ -4951,7 +5914,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 						Style["calculated assuming the financing of the total purchase price of all utilized instruments from ", FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
 						Style[DateString[convertedStartTime, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
 						Style[" to ", FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
-						Style[DateString[endDate, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
+						Style[DateString[finalEndDate, {"Day", "-", "MonthNameShort", "-", "Year"}], FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic],
 						Style[" on a "<>ToString[financingYears]<>" yr, "<>ToString[purchasingInterestRate*100]<>"% terms ", FontFamily -> "Helvetica", FontSize -> 10, FontSlant -> Italic]
 					}], TextAlignment -> Center]
 				},
@@ -5052,7 +6015,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 		Style[" Comparison of Traditional Laboratory Instrument Ownership vs ECL Instrument Service based on Instrument Usage between ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica",FontColor->RGBColor[0.3,0.3,0.3]],
 		Style[DateString[convertedStartTime,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[" to ",FontSize->14,FontWeight->Bold,FontFamily->"Helvetica"],
-		Style[DateString[endDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
+		Style[DateString[finalEndDate,{"Day","-","MonthNameShort","-","Year"}],FontSize->14,FontWeight->Bold,FontFamily->"Helvetica", FontColor->RGBColor["#299984"]],
 		Style[".",FontSize->14,FontWeight->"Medium",FontFamily->"Helvetica"]
 	}],TextJustification->1];
 	
@@ -5610,7 +6573,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 					FontSlant -> Italic
 				],
 				Style[
-					DateString[endDate, {"Day", " ", "MonthName", " ", "Year"}],
+					DateString[finalEndDate, {"Day", " ", "MonthName", " ", "Year"}],
 					FontWeight -> Bold,
 					FontSize -> 17,
 					FontTracking -> "Narrowed",
@@ -5653,8 +6616,8 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			Sequence@@Map[
 				Sequence@@#&,
 				PickList[
-					{scientistLaborProductivitySection, teamEfficiencyMetricsSection, instrumentMetricsSection, protocolMetricsSection},
-					{scientistLaborProductivityBoolean, teamEfficiencyMetricsBoolean, instrumentMetricsBoolean, protocolMetricsBoolean}
+					{scientistLaborProductivitySection, teamEfficiencyMetricsSection, protocolMetricsSection, instrumentMetricsSection},
+					{scientistLaborProductivityBoolean, teamEfficiencyMetricsBoolean, protocolMetricsBoolean, instrumentMetricsBoolean}
 				]
 			]
 		},
@@ -5702,7 +6665,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	
 	report = Export[
 		docPath<>docNotebookExtension,
-		Notebook[notebookCells,StyleDefinitions->"CommandCenter.nb"]
+		Notebook[notebookCells]
 	];
 	
 	(* A notebook version of the pdf must first be made before it can successfully created (filename.pdf.nb) *)
@@ -5717,8 +6680,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 			WindowMargins -> {{0, Automatic}, {Automatic, 0}},
 			PrintingOptions -> {
 				"PaperSize" -> {612, 792}
-			},
-			StyleDefinitions->"CommandCenter.nb"]
+			}]
 	];
 	
 	(* Close the notebook *)
@@ -5748,7 +6710,7 @@ PlotCustomerMetrics[myFinancingTeams:{ObjectP[Object[Team,Financing]]..},startDa
 	(* set up Email details *)
 	emailSubject = "Customer Metrics Automated Report";
 	
-	emailContents = StringJoin["Attached is the Customer Metrics Report for ",Riffle[financingTeamNames,"&"]," from ",DateString[startDate,{"MonthName", " ","Day",", ", "Year"}]," to ",DateString[endDate,{"MonthName", " ","Day",", ", "Year"}]];
+	emailContents = StringJoin["Attached is the Customer Metrics Report for ",Riffle[financingTeamNames,"&"]," from ",DateString[startDate,{"MonthName", " ","Day",", ", "Year"}]," to ",DateString[finalEndDate,{"MonthName", " ","Day",", ", "Year"}]];
 	
 	emailAttachments = {docPath<>docPDFExtension};
 	

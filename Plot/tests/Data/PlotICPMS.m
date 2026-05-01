@@ -9,6 +9,13 @@
 
 DefineTests[PlotICPMS,
 	{
+		Example[{Basic, "Plots Object[Data, ICPMS] objects:"},
+			PlotICPMS[
+				Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID]
+			],
+			_?ValidGraphicsQ,
+			TimeConstraint -> 120
+		],
 		Example[{Basic, "Displays raw mass spectrum data as a graphical plot:"},
 			PlotICPMS[
 				QuantityArray[
@@ -29,6 +36,21 @@ DefineTests[PlotICPMS,
 			],
 			_?ValidGraphicsQ,
 			TimeConstraint -> 120
+		],
+		Example[{Messages, "Missin Mass Spectrum Data", "A warning is thrown when data object does not contain valid MassSpectrum data:"},
+			PlotICPMS[
+				Object[Data, ICPMS, "ICPMS Null Data For PlotICPMS Test " <> $SessionUUID]
+			],
+			$Failed,
+			Messages :> {Error::MissingMassSpectrumData}
+		],
+		Example[{Messages, "Partial Missing Mass Spectrum Data", "If only some objects are missing data, an error is thrown for the relevant objects, but the plot is generated for the valid objects:"},
+			PlotICPMS[
+				{Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID],
+				 Object[Data, ICPMS, "ICPMS Null Data For PlotICPMS Test " <> $SessionUUID]}
+			],
+			_?ValidGraphicsQ,
+			Messages :> {Error::MissingMassSpectrumData}
 		]
 	},
 	SymbolSetUp :> (
@@ -38,7 +60,8 @@ DefineTests[PlotICPMS,
 		(* Gather and erase all pre-existing objects created in SymbolSetUp *)
 		Module[
 			{
-				allObjects, existingObjects, protocol1, data1
+				allObjects, existingObjects,
+				validProtocolObj, validIcpmsDataObj, nullIcpmsDataObj, validMsDataObj
 			},
 
 			(* All data objects generated for unit tests *)
@@ -46,7 +69,8 @@ DefineTests[PlotICPMS,
 			allObjects=
 				{
 					Object[Protocol, ICPMS, "ICPMS Protocol For PlotICPMS Test " <> $SessionUUID],
-					Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID]
+					Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID],
+					Object[Data, ICPMS, "ICPMS Null Data For PlotICPMS Test " <> $SessionUUID]
 				};
 
 			(* Check whether the names we want to give below already exist in the database *)
@@ -55,12 +79,13 @@ DefineTests[PlotICPMS,
 			(* Erase any test objects and models that we failed to erase in the last unit test *)
 			Quiet[EraseObject[existingObjects,Force->True,Verbose->False]];
 
-			{protocol1, data1} = CreateID[{Object[Protocol, ICPMS], Object[Data, ICPMS]}];
+			{validProtocolObj, validIcpmsDataObj, nullIcpmsDataObj} = CreateID[
+				{Object[Protocol, ICPMS], Object[Data, ICPMS], Object[Data, ICPMS]}];
 
 			Upload[
 				<|
 					Name -> "ICPMS Data For PlotICPMS Test " <> $SessionUUID,
-					Object -> data1,
+					Object -> validIcpmsDataObj,
 					Type -> Object[Data, ICPMS],
 					MassSpectrum -> QuantityArray[{#, RandomReal[50000]} & /@ Range[7, 243], {Gram/Mole, ArbitraryUnit}]
 				|>
@@ -68,10 +93,19 @@ DefineTests[PlotICPMS,
 
 			Upload[
 				<|
+					Name -> "ICPMS Null Data For PlotICPMS Test " <> $SessionUUID,
+					Object -> nullIcpmsDataObj,
+					Type -> Object[Data, ICPMS],
+					MassSpectrum -> Null
+				|>
+			];
+
+			Upload[
+				<|
 					Name -> "ICPMS Protocol For PlotICPMS Test " <> $SessionUUID,
-					Object -> protocol1,
+					Object -> validProtocolObj,
 					Type -> Object[Protocol, ICPMS],
-					Replace[AnalyteData] -> {Link[data1, Protocol]}
+					Replace[Data] -> {Link[validIcpmsDataObj, Protocol]}
 				|>
 			];
 		];
@@ -79,7 +113,8 @@ DefineTests[PlotICPMS,
 	SymbolTearDown :> Module[{objects},
 		objects = {
 			Object[Protocol, ICPMS, "ICPMS Protocol For PlotICPMS Test " <> $SessionUUID],
-			Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID]
+			Object[Data, ICPMS, "ICPMS Data For PlotICPMS Test " <> $SessionUUID],
+			Object[Data, ICPMS, "ICPMS Null Data For PlotICPMS Test " <> $SessionUUID]
 		};
 
 		EraseObject[
